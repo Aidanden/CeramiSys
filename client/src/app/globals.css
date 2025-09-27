@@ -1,0 +1,326 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .card {
+    @apply bg-white rounded-lg border border-slate-200 shadow-sm;
+  }
+  .card-body {
+    @apply p-6;
+  }
+  .card-header {
+    @apply px-6 pt-6 pb-3 border-b border-slate-200;
+  }
+  .card-title {
+    @apply text-lg font-semibold text-slate-800;
+  }
+
+  .input {
+    @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-slate-700 hover:bg-slate-100 focus:ring-slate-300;
+  }
+}
+
+/* Custom Color Variables for Better Contrast */
+:root {
+  --primary-bg: #e2e8f0;
+  --secondary-bg: #ffffff;
+  --card-bg: #f8fafc;
+  --accent-bg: #cbd5e1;
+  --primary-text: #0f172a;
+  --secondary-text: #334155;
+  --muted-text: #64748b;
+  --border-color: #94a3b8;
+  --hover-bg: #f1f5f9;
+  --success-color: #059669;
+  --success-bg: #d1fae5;
+  --warning-color: #d97706;
+  --warning-bg: #fef3c7;
+  --error-color: #dc2626;
+  --error-bg: #fee2e2;
+  --info-color: #2563eb;
+  --info-bg: #dbeafe;
+  --shadow-light: rgba(0, 0, 0, 0.1);
+  --shadow-medium: rgba(0, 0, 0, 0.15);
+  --shadow-heavy: rgba(0, 0, 0, 0.25);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root,
+.app {
+  font-size: 16px;
+  font-family: "Tajawal", sans-serif;
+  background-color: var(--primary-bg);
+  color: var(--primary-text);
+}
+
+@font-face {
+  font-family: 'Tajawal';
+  src: url('./fonts/Tajawal-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@media (min-width:768px) {
+  .custom-grid-rows {
+    grid-template-rows: repeat(8,20vh);
+  }
+}
+
+@media (min-width: 1280px){
+  .custom-grid-rows {
+    grid-template-rows: repeat(8,7.5vh);
+  }
+}
+
+/* Enhanced Modal Styles with Better Contrast */
+.modal-overlay {
+  @apply fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[3];
+}
+
+.modal-container {
+  background-color: var(--secondary-bg);
+  @apply rounded-lg shadow-2xl w-full mx-4 max-h-[90vh] overflow-y-auto;
+  border: 1px solid var(--border-color);
+}
+
+.modal-header {
+  @apply flex justify-between items-start p-6;
+  border-bottom: 2px solid var(--accent-bg);
+  background-color: var(--primary-bg);
+}
+
+.modal-content {
+  background-color: var(--secondary-bg);
+  color: var(--primary-text);
+}
+
+.modal-footer {
+  @apply p-6;
+  border-top: 2px solid var(--accent-bg);
+  background-color: var(--primary-bg);
+}
+
+/* Enhanced Modal Form Elements */
+.modal-input {
+  @apply w-full p-3 rounded-lg transition-all duration-200;
+  background-color: var(--secondary-bg);
+  border: 2px solid var(--border-color);
+  color: var(--primary-text);
+}
+
+.modal-input:focus {
+  border-color: var(--info-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: none;
+}
+
+.modal-select {
+  @apply w-full p-3 rounded-lg transition-all duration-200;
+  background-color: var(--secondary-bg);
+  border: 2px solid var(--border-color);
+  color: var(--primary-text);
+}
+
+.modal-select:focus {
+  border-color: var(--info-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: none;
+}
+
+.modal-button {
+  @apply px-6 py-3 rounded-lg font-medium transition-all duration-200;
+  background-color: var(--muted-text);
+  color: white;
+}
+
+.modal-button:hover {
+  background-color: var(--secondary-text);
+  transform: translateY(-1px);
+}
+
+.modal-button-primary {
+  @apply px-6 py-3 rounded-lg font-medium transition-all duration-200;
+  background-color: var(--info-color);
+  color: white;
+}
+
+.modal-button-primary:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+/* Enhanced Modal Table Styles */
+.modal-table-header {
+  background-color: var(--accent-bg);
+}
+
+.modal-table-header th {
+  @apply px-6 py-4 text-right text-sm font-semibold uppercase tracking-wider;
+  color: var(--primary-text);
+}
+
+.modal-table-body {
+  background-color: var(--secondary-bg);
+}
+
+.modal-table-row {
+  @apply transition-colors duration-150;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-table-row:hover {
+  background-color: var(--hover-bg);
+  color: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+.modal-table-cell {
+  @apply px-6 py-4 whitespace-nowrap text-sm;
+  color: var(--primary-text);
+}
+
+/* Enhanced Button Styles */
+.btn-primary {
+  @apply px-6 py-3 rounded-lg font-medium transition-all duration-200;
+  background-color: var(--info-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.btn-success {
+  @apply px-6 py-3 rounded-lg font-medium transition-all duration-200;
+  background-color: var(--success-color);
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+.btn-warning {
+  @apply px-6 py-3 rounded-lg font-medium transition-all duration-200;
+  background-color: var(--warning-color);
+  color: white;
+}
+
+.btn-warning:hover {
+  background-color: #b45309;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+}
+
+.btn-danger {
+  @apply px-6 py-3 rounded-lg font-medium transition-all duration-200;
+  background-color: var(--error-color);
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* Enhanced Card Styles */
+.card {
+  background-color: var(--card-bg);
+  border: 2px solid var(--border-color);
+  @apply rounded-xl transition-all duration-200;
+  box-shadow: 0 4px 12px var(--shadow-light);
+}
+
+.card:hover {
+  box-shadow: 0 8px 20px var(--shadow-medium);
+  transform: translateY(-2px);
+  border-color: var(--accent-bg);
+}
+
+.card-header {
+  background-color: var(--secondary-bg);
+  border-bottom: 2px solid var(--border-color);
+  @apply p-6 rounded-t-xl;
+}
+
+.card-body {
+  @apply p-6;
+  color: var(--primary-text);
+  background-color: var(--card-bg);
+}
+
+/* Enhanced Input Styles */
+.form-input {
+  @apply w-full p-4 rounded-lg transition-all duration-200;
+  background-color: var(--secondary-bg);
+  border: 2px solid var(--border-color);
+  color: var(--primary-text);
+  font-size: 16px;
+}
+
+.form-input:focus {
+  border-color: var(--info-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: none;
+}
+
+.form-input::placeholder {
+  color: var(--muted-text);
+}
+
+/* Enhanced Table Styles */
+.table-container {
+  background-color: var(--card-bg);
+  border: 2px solid var(--border-color);
+  @apply rounded-xl overflow-hidden;
+  box-shadow: 0 4px 12px var(--shadow-light);
+}
+
+.table-header {
+  background-color: var(--accent-bg);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.table-header th {
+  @apply px-6 py-4 text-right text-sm font-semibold uppercase tracking-wider;
+  color: var(--primary-text);
+}
+
+.table-row {
+  @apply transition-colors duration-150;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+}
+
+.table-row:hover {
+  background-color: var(--secondary-bg);
+}
+
+.table-cell {
+  @apply px-6 py-4 text-sm;
+  color: var(--primary-text);
+}

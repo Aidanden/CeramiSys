@@ -1,0 +1,250 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/////////////////////////////////////////////////
+//              Companies & Products
+/////////////////////////////////////////////////
+
+model Company {
+  id       Int       @id @default(autoincrement())
+  name     String
+  code     String    @unique
+  isParent Boolean   @default(false) // هل هي الشركة الأم؟
+  parentId Int?
+  parent   Company?  @relation("CompanyChildren", fields: [parentId], references: [id])
+  children Company[] @relation("CompanyChildren")
+
+  // Relations
+  users               Users[]
+  stocks              Stock[]
+  prices              CompanyProductPrice[]
+  products            Product[]             @relation("ProductsCreated")
+  sales               Sale[]
+  purchasesFromParent PurchaseFromParent[]  @relation("BranchPurchases")
+  // Back relation for parentCompany on PurchaseFromParent
+  parentSales         PurchaseFromParent[]  @relation("ParentSales")
+  receivedPayments    Receipt[]             @relation("CompanyReceipts")
+  // Back relation for optional branchCompany on Receipt
+  branchReceipts      Receipt[]             @relation("BranchCompanyReceipts")
+}
+
+model Product {
+  id                 Int      @id @default(autoincrement())
+  sku                String   @unique
+  name               String
+  unit               String?
+  createdByCompany   Company  @relation("ProductsCreated", fields: [createdByCompanyId], references: [id])
+  createdByCompanyId Int // دائماً الشركة الأم
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  stocks        Stock[]
+  prices        CompanyProductPrice[]
+  saleLines     SaleLine[]
+  purchaseLines PurchaseFromParentLine[]
+}
+
+model Stock {
+  id        Int      @id @default(autoincrement())
+  company   Company  @relation(fields: [companyId], references: [id])
+  companyId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  quantity  Decimal  @default(0) @db.Decimal(20, 4)
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, productId])
+}
+
+model CompanyProductPrice {
+  id        Int     @id @default(autoincrement())
+  company   Company @relation(fields: [companyId], references: [id])
+  companyId Int
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+
+  sellPrice Decimal  @db.Decimal(18, 4) // سعر البيع الرسمي (فقط للشركة الأم)
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, productId])
+}
+
+/////////////////////////////////////////////////
+//              Users & Roles
+/////////////////////////////////////////////////
+
+model Users {
+  UserID            String    @id @default(cuid())
+  UserName          String    @unique
+  Password          String
+  FullName          String
+  Email             String?   @unique
+  Phone             String?
+  RoleID            String
+  CompanyID         Int
+  IsSystemUser      Boolean   @default(false)
+  IsActive          Boolean   @default(true)
+  LastLogin         DateTime?
+  PasswordChangedAt DateTime?
+  LoginAttempts     Int       @default(0)
+  LockedUntil       DateTime?
+  CreatedAt         DateTime  @default(now())
+  UpdatedAt         DateTime  @updatedAt
+
+  // Relations
+  Role     UserRoles      @relation(fields: [RoleID], references: [RoleID])
+  Company  Company        @relation(fields: [CompanyID], references: [id])
+  Sessions UserSessions[]
+}
+
+model UserRoles {
+  RoleID      String   @id @default(cuid())
+  RoleName    String   @unique
+  DisplayName String
+  Permissions Json
+  Description String?
+  IsActive    Boolean  @default(true)
+  CreatedAt   DateTime @default(now())
+  UpdatedAt   DateTime @updatedAt
+
+  // Relations
+  Users Users[]
+}
+
+model UserSessions {
+  SessionID String   @id @default(cuid())
+  UserID    String
+  Token     String   @unique
+  ExpiresAt DateTime
+  IsActive  Boolean  @default(true)
+  IPAddress String?
+  UserAgent String?
+  CreatedAt DateTime @default(now())
+  UpdatedAt DateTime @updatedAt
+
+  // Relations
+  User Users @relation(fields: [UserID], references: [UserID])
+}
+
+/////////////////////////////////////////////////
+//              Customers & Sales
+/////////////////////////////////////////////////
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String?
+  note      String?
+  createdAt DateTime @default(now())
+
+  sales Sale[]
+}
+
+model Sale {
+  id            Int           @id @default(autoincrement())
+  company       Company       @relation(fields: [companyId], references: [id]) // البائع - الفرع
+  companyId     Int
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  customerId    Int?
+  invoiceNumber String?
+  total         Decimal       @default(0) @db.Decimal(18, 4)
+  saleType      SaleType      @default(CREDIT) // نقدي أو آجل
+  paymentMethod PaymentMethod @default(CASH) // كاش، حوالة، بطاقة
+  createdAt     DateTime      @default(now())
+  lines         SaleLine[]
+
+  @@index([companyId])
+}
+
+model SaleLine {
+  id        Int     @id @default(autoincrement())
+  sale      Sale    @relation(fields: [saleId], references: [id])
+  saleId    Int
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+
+  qty       Decimal @db.Decimal(20, 4)
+  unitPrice Decimal @db.Decimal(18, 4)
+  subTotal  Decimal @db.Decimal(18, 4)
+}
+
+/////////////////////////////////////////////////
+//       Purchases from Parent & Receipts
+/////////////////////////////////////////////////
+
+model PurchaseFromParent {
+  id              Int                         @id @default(autoincrement())
+  branchCompany   Company                     @relation("BranchPurchases", fields: [branchCompanyId], references: [id])
+  branchCompanyId Int
+  parentCompany   Company                     @relation("ParentSales", fields: [parentCompanyId], references: [id])
+  parentCompanyId Int
+  invoiceNumber   String?
+  total           Decimal                     @default(0) @db.Decimal(18, 4)
+  isSettled       Boolean                     @default(false) // هل تم تسوية الفاتورة؟
+  createdAt       DateTime                    @default(now())
+  settledAt       DateTime? // تاريخ التسوية
+  lines           PurchaseFromParentLine[]
+  receipts        PurchaseFromParentReceipt[]
+}
+
+model PurchaseFromParentLine {
+  id         Int                @id @default(autoincrement())
+  purchase   PurchaseFromParent @relation(fields: [purchaseId], references: [id])
+  purchaseId Int
+  product    Product            @relation(fields: [productId], references: [id])
+  productId  Int
+  qty        Decimal            @db.Decimal(20, 4)
+  unitPrice  Decimal            @db.Decimal(18, 4) // سعر الشركة الأم
+  subTotal   Decimal            @db.Decimal(20, 4)
+}
+
+model Receipt {
+  id              Int                         @id @default(autoincrement())
+  company         Company                     @relation("CompanyReceipts", fields: [companyId], references: [id])
+  companyId       Int
+  branchCompany   Company?                    @relation("BranchCompanyReceipts", fields: [branchCompanyId], references: [id])
+  branchCompanyId Int?
+  amount          Decimal                     @db.Decimal(18, 4)
+  paymentDate     DateTime                    @default(now())
+  paymentMethod   PaymentMethod               @default(CASH)
+  notes           String?
+  linkedPurchases PurchaseFromParentReceipt[]
+  createdAt       DateTime                    @default(now())
+}
+
+model PurchaseFromParentReceipt {
+  id         Int                @id @default(autoincrement())
+  purchase   PurchaseFromParent @relation(fields: [purchaseId], references: [id])
+  purchaseId Int
+  receipt    Receipt            @relation(fields: [receiptId], references: [id])
+  receiptId  Int
+  amountPaid Decimal            @db.Decimal(18, 4)
+}
+
+/////////////////////////////////////////////////
+//                   Enums
+/////////////////////////////////////////////////
+
+enum SaleType {
+  CASH // نقدي
+  CREDIT // آجل
+}
+
+enum PaymentMethod {
+  CASH // كاش
+  BANK // حوالة مصرفية
+  CARD // بطاقة
+}

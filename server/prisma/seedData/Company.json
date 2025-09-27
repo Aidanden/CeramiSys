@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "name": "شركة السيراميك الليبية",
+    "code": "LCT001",
+    "isParent": true,
+    "parentId": null
+  },
+  {
+    "id": 2,
+    "name": "فرع طرابلس",
+    "code": "LCT001-TRP",
+    "isParent": false,
+    "parentId": 1
+  },
+  {
+    "id": 3,
+    "name": "فرع بنغازي", 
+    "code": "LCT001-BEN",
+    "isParent": false,
+    "parentId": 1
+  }
+]

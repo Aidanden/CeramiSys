@@ -1,0 +1,55 @@
+[
+  {
+    "RoleID": "role_admin_001",
+    "RoleName": "admin",
+    "DisplayName": "مدير النظام",
+    "Permissions": ["all"],
+    "Description": "مدير النظام له جميع الصلاحيات",
+    "IsActive": true
+  },
+  {
+    "RoleID": "role_manager_001",
+    "RoleName": "manager",
+    "DisplayName": "مدير",
+    "Permissions": [
+      "users.view",
+      "users.create", 
+      "users.edit",
+      "reports.view",
+      "treasury.view",
+      "customers.view",
+      "currencies.view",
+      "buys.view",
+      "sales.view"
+    ],
+    "Description": "مدير له صلاحيات إدارية محدودة",
+    "IsActive": true
+  },
+  {
+    "RoleID": "role_cashier_001", 
+    "RoleName": "cashier",
+    "DisplayName": "صراف",
+    "Permissions": [
+      "buys.create",
+      "sales.create", 
+      "customers.view",
+      "currencies.view"
+    ],
+    "Description": "صراف يمكنه إجراء عمليات البيع والشراء",
+    "IsActive": true
+  },
+  {
+    "RoleID": "role_accountant_001",
+    "RoleName": "accountant", 
+    "DisplayName": "محاسب",
+    "Permissions": [
+      "reports.view",
+      "treasury.view",
+      "debts.view",
+      "buys.view", 
+      "sales.view"
+    ],
+    "Description": "محاسب يمكنه عرض التقارير والحسابات",
+    "IsActive": true
+  }
+]

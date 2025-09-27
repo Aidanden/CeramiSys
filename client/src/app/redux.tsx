@@ -1,0 +1,144 @@
+"use client";
+
+import { useRef } from "react";
+import { combineReducers, configureStore } from "@reduxjs/toolkit";
+import {
+  TypedUseSelectorHook,
+  useDispatch,
+  useSelector,
+  Provider,
+} from "react-redux";
+import globalReducer from "@/state";
+import authReducer from "@/state/authSlice";
+import companyReducer from "@/state/companySlice";
+
+import { authApi } from "@/state/authApi"; // إضافة authApi
+import { usersApi } from "@/state/usersApi"; // إضافة usersApi
+import { permissionsApi } from "@/state/permissionsApi"; // إضافة permissionsApi
+import { companyApi } from "@/state/companyApi"; // إضافة companyApi
+import { setupListeners } from "@reduxjs/toolkit/query";
+import {
+  persistStore,
+  persistReducer,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from "redux-persist";
+import { PersistGate } from "redux-persist/integration/react";
+import createWebStorage from "redux-persist/lib/storage/createWebStorage";
+
+
+/* REDUX PERSISTENCE */
+const createNoopStorage = () => {
+  return {
+    getItem(_key: any) {
+      return Promise.resolve(null);
+    },
+    setItem(_key: any, value: any) {
+      return Promise.resolve(value);
+    },
+    removeItem(_key: any) {
+      return Promise.resolve();
+    },
+  };
+};
+
+const storage =
+  typeof window === "undefined"
+    ? createNoopStorage()
+    : createWebStorage("local");
+
+const persistConfig = {
+  key: "root",
+  storage,
+  whitelist: ["global", "auth", "users", "permissions", "company"], // إضافة المصادقة والعملات إلى القائمة البيضاء
+  transforms: [
+    // إزالة حالات التحميل من الحفظ
+    {
+      in: (inboundState: any, key: string) => {
+        if (key === 'auth') {
+          return {
+            ...inboundState,
+            isLoading: false,
+            isInitializing: false,
+            error: null
+          };
+        }
+        return inboundState;
+      },
+      out: (outboundState: any, key: string) => {
+        if (key === 'auth') {
+          return {
+            ...outboundState,
+            isLoading: false,
+            isInitializing: false,
+            error: null
+          };
+        }
+        return outboundState;
+      }
+    }
+  ]
+};
+
+/* ROOT REDUCER */
+const rootReducer = combineReducers({
+  global: globalReducer,
+  auth: authReducer, // إضافة authReducer
+  company: companyReducer, // إضافة companyReducer
+  
+  /*categories: categoriesReducer,  // إضافة reducer جديد */
+  [authApi.reducerPath]: authApi.reducer, // إضافة authApi.reducer
+  [usersApi.reducerPath]: usersApi.reducer, // إضافة usersApi.reducer
+  [permissionsApi.reducerPath]: permissionsApi.reducer, // إضافة permissionsApi.reducer
+  [companyApi.reducerPath]: companyApi.reducer, // إضافة companyApi.reducer
+});
+
+const persistedReducer = persistReducer(persistConfig, rootReducer);
+
+/* REDUX STORE */
+export const makeStore = () => {
+  return configureStore({
+    reducer: persistedReducer,
+    middleware: (getDefaultMiddleware) =>
+      getDefaultMiddleware({
+        serializableCheck: {
+          ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        },
+      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware), // إضافة middleware الخاص بـ APIs
+  });
+};
+
+/* REDUX TYPES */
+export type AppStore = ReturnType<typeof makeStore>;
+export type RootState = ReturnType<AppStore["getState"]>;
+export type AppDispatch = AppStore["dispatch"];
+export const useAppDispatch = () => useDispatch<AppDispatch>();
+export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
+
+/* PROVIDER */
+export default function StoreProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const storeRef = useRef<AppStore>();
+  const persistorRef = useRef<ReturnType<typeof persistStore>>();
+  if (!storeRef.current) {
+    const store = makeStore();
+    storeRef.current = store;
+    persistorRef.current = persistStore(store);
+    setupListeners(store.dispatch);
+  }
+
+  return (
+    <Provider store={storeRef.current!}>
+      <PersistGate loading={null} persistor={persistorRef.current!}>
+        {children}
+      </PersistGate>
+    </Provider>
+  );
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "UserID": "admin_user_001",
+    "UserName": "admin",
+    "Password": "$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+    "FullName": "مدير النظام",
+    "Email": "admin@exchange.com",
+    "Phone": "+218911234567",
+    "RoleID": "role_admin_001",
+    "CompanyID": 1,
+    "IsActive": true,
+    "LoginAttempts": 0
+  },
+  {
+    "UserID": "manager_user_002",
+    "UserName": "manager_tripoli",
+    "Password": "$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+    "FullName": "مدير فرع طرابلس",
+    "Email": "manager.tripoli@ceramics.ly",
+    "Phone": "+218912345678",
+    "RoleID": "role_manager_001",
+    "CompanyID": 2,
+    "IsActive": true,
+    "LoginAttempts": 0
+  },
+  {
+    "UserID": "cashier_user_003",
+    "UserName": "cashier_benghazi",
+    "Password": "$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+    "FullName": "صراف فرع بنغازي",
+    "Email": "cashier.benghazi@ceramics.ly",
+    "Phone": "+218913456789",
+    "RoleID": "role_cashier_001",
+    "CompanyID": 3,
+    "IsActive": true,
+    "LoginAttempts": 0
+  }
+]
