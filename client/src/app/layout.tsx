@@ -5,6 +5,7 @@ import DashboardWrapper from "./dashboardWrapper";
 import AuthProvider from "@/components/AuthProvider";
 import StoreProvider from "./redux";
 import { SessionTimeoutProvider } from "@/components/SessionTimeoutProvider";
+import { ToastProvider } from "@/components/ui/Toast";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -27,7 +28,9 @@ export default function RootLayout({
         <StoreProvider>
           <AuthProvider>
             <SessionTimeoutProvider>
-              <DashboardWrapper>{children}</DashboardWrapper>
+              <ToastProvider>
+                <DashboardWrapper>{children}</DashboardWrapper>
+              </ToastProvider>
             </SessionTimeoutProvider>
           </AuthProvider>
         </StoreProvider>

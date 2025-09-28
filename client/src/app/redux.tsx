@@ -11,11 +11,13 @@ import {
 import globalReducer from "@/state";
 import authReducer from "@/state/authSlice";
 import companyReducer from "@/state/companySlice";
+import usersReducer from "@/state/usersSlice";
 
 import { authApi } from "@/state/authApi"; // إضافة authApi
 import { usersApi } from "@/state/usersApi"; // إضافة usersApi
 import { permissionsApi } from "@/state/permissionsApi"; // إضافة permissionsApi
 import { companyApi } from "@/state/companyApi"; // إضافة companyApi
+import { productsApi } from "@/state/productsApi"; // إضافة productsApi
 import { setupListeners } from "@reduxjs/toolkit/query";
 import {
   persistStore,
@@ -89,12 +91,14 @@ const rootReducer = combineReducers({
   global: globalReducer,
   auth: authReducer, // إضافة authReducer
   company: companyReducer, // إضافة companyReducer
+  users: usersReducer, // إضافة usersReducer
   
   /*categories: categoriesReducer,  // إضافة reducer جديد */
   [authApi.reducerPath]: authApi.reducer, // إضافة authApi.reducer
   [usersApi.reducerPath]: usersApi.reducer, // إضافة usersApi.reducer
   [permissionsApi.reducerPath]: permissionsApi.reducer, // إضافة permissionsApi.reducer
   [companyApi.reducerPath]: companyApi.reducer, // إضافة companyApi.reducer
+  [productsApi.reducerPath]: productsApi.reducer, // إضافة productsApi.reducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -108,7 +112,7 @@ export const makeStore = () => {
         serializableCheck: {
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
-      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware), // إضافة middleware الخاص بـ APIs
+      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware), // إضافة middleware الخاص بـ APIs
   });
 };
 

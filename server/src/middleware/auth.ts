@@ -47,6 +47,15 @@ export const authenticateToken = async (
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
+    // Debug logging
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Auth Debug:', {
+        path: req.path,
+        authHeader: authHeader ? 'exists' : 'null',
+        token: token ? 'exists' : 'null'
+      });
+    }
+
     if (!token) {
       responseHelper.error(res, 'رمز المصادقة مطلوب', 401);
       return;
@@ -54,8 +63,6 @@ export const authenticateToken = async (
 
     const jwtSecret = process.env['JWT_SECRET'] || 'your-secret-key';
     const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
-
-    // التحقق من صحة المستخدم ونشاط الجلسة
     const user = await prisma.users.findFirst({
       where: {
         UserID: decoded.userId,

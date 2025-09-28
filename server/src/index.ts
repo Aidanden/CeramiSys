@@ -7,6 +7,7 @@ import morgan from "morgan";
 import authRoute from "./routes/authRoute";
 import usersRoute from "./routes/usersRoute";
 import companyRoutes from "./routes/companyRoutes";
+import productRoutes from "./routes/productRoutes";
 
 
 /*CONFIGRATION*/
@@ -46,6 +47,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoute);
 app.use('/api/users', usersRoute);
 app.use('/api/company', companyRoutes);
+app.use('/api/products', productRoutes);
 
 
 // Health check endpoint

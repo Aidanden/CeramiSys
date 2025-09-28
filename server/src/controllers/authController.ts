@@ -236,6 +236,7 @@ export const getCurrentUser = async (req: AuthRequest, res: Response): Promise<v
         phone: user.Phone,
         role: user.Role.RoleName,
         permissions: user.Role.Permissions as string[],
+        companyId: user.CompanyID,
         lastLogin: user.LastLogin
       }
     });

@@ -42,6 +42,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
 
         if (response.ok) {
           // Token is valid, restore session
+          console.log('AuthProvider: Token validated successfully');
           dispatch(loginSuccess({ user, token }));
         } else {
           // Token is invalid or expired, clear session

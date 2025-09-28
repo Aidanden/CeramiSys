@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/app/redux';
 import { 
   setSelectedCompany, 
-  setCurrentFilter, 
   setSearchTerm, 
   setCurrentPage,
   setViewMode,
@@ -14,15 +13,16 @@ import {
 } from '@/state/companySlice';
 import { 
   useGetCompaniesQuery, 
-  useGetCompanyStatsQuery,
-  useCreateCompanyMutation,
-  useUpdateCompanyMutation,
+  useCreateCompanyMutation, 
+  useUpdateCompanyMutation, 
   useDeleteCompanyMutation,
   useGetCompanyHierarchyQuery,
-  Company,
+  useGetCompanyStatsQuery,
   CreateCompanyRequest,
-  UpdateCompanyRequest
+  UpdateCompanyRequest,
+  Company
 } from '@/state/companyApi';
+import { useToast } from '@/components/ui/Toast';
 import { 
   Building2, 
   Plus, 
@@ -41,6 +41,7 @@ import {
 const CompaniesPage = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const toast = useToast();
   
   // استخدام Redux state بدلاً من local state
   const { 
@@ -115,30 +116,59 @@ const CompaniesPage = () => {
   // Handle create company
   const handleCreateCompany = async (companyData: CreateCompanyRequest | UpdateCompanyRequest) => {
     try {
+      // Validation
+      if (!companyData.name?.trim()) {
+        toast.error('خطأ في البيانات', 'يرجى إدخال اسم الشركة');
+        return;
+      }
+      
+      if (!companyData.code?.trim()) {
+        toast.error('خطأ في البيانات', 'يرجى إدخال رمز الشركة');
+        return;
+      }
+      
+      // التحقق من وجود كود الشركة مسبقاً
+      const existingCompanies = companiesData?.data?.companies || [];
+      const codeExists = existingCompanies.some(company => 
+        company.code.toLowerCase() === companyData.code?.trim().toLowerCase()
+      );
+      
+      if (codeExists) {
+        toast.error('كود مكرر', `كود الشركة "${companyData.code.trim()}" موجود مسبقاً. يرجى استخدام كود آخر.`);
+        return;
+      }
+      
+      // التحقق من أن الشركة الفرعية لها شركة أم
+      if (companyData.isParent === false && !companyData.parentId) {
+        toast.error('بيانات ناقصة', 'يرجى اختيار الشركة الأم للشركة الفرعية');
+        return;
+      }
+      
       // تأكد من أن البيانات تحتوي على الحقول المطلوبة للإنشاء
       const createData: CreateCompanyRequest = {
-        name: companyData.name || '',
-        code: companyData.code || '',
+        name: companyData.name.trim(),
+        code: companyData.code.trim(),
         isParent: companyData.isParent ?? true,
-        parentId: companyData.parentId || undefined
+        parentId: companyData.isParent === false ? (companyData.parentId || undefined) : undefined
       };
       
       console.log('🚀 Creating company with data:', createData);
       const result = await createCompany(createData).unwrap();
       setIsCreateModalOpen(false);
-      refetch();
-      alert('تم إنشاء الشركة بنجاح!');
+      toast.success('تم بنجاح!', 'تم إنشاء الشركة بنجاح');
       return result; // إرجاع النتيجة للمودال
     } catch (error: any) {
-      console.error('خطأ في إنشاء الشركة:', error);
+      console.error('❌ خطأ في إنشاء الشركة:', error);
       
       if (error?.status === 401) {
-        alert('جلسة المستخدم منتهية. يرجى تسجيل الدخول مرة أخرى.');
+        toast.error('جلسة منتهية', 'جلسة المستخدم منتهية. يرجى تسجيل الدخول مرة أخرى.');
         router.push('/login');
+      } else if (error?.status === 409 || error?.data?.message?.includes('كود') || error?.data?.message?.includes('code')) {
+        toast.error('كود مكرر', `كود الشركة "${companyData.code?.trim()}" موجود مسبقاً في قاعدة البيانات. يرجى استخدام كود آخر.`);
       } else if (error?.data?.message) {
-        alert(`خطأ: ${error.data.message}`);
+        toast.error('خطأ في العملية', error.data.message);
       } else {
-        alert('حدث خطأ في إنشاء الشركة. يرجى المحاولة مرة أخرى.');
+        toast.error('خطأ غير متوقع', 'حدث خطأ في إنشاء الشركة. يرجى المحاولة مرة أخرى.');
       }
     }
   };
@@ -154,46 +184,46 @@ const CompaniesPage = () => {
       }).unwrap();
       setIsEditModalOpen(false);
       dispatch(setSelectedCompany(null));
-      refetch();
-      alert('تم تحديث الشركة بنجاح!');
+      toast.success('تم بنجاح!', 'تم تحديث الشركة بنجاح');
     } catch (error: any) {
       console.error('خطأ في تحديث الشركة:', error);
       
       if (error?.status === 401) {
-        alert('جلسة المستخدم منتهية. يرجى تسجيل الدخول مرة أخرى.');
+        toast.error('جلسة منتهية', 'جلسة المستخدم منتهية. يرجى تسجيل الدخول مرة أخرى.');
         router.push('/login');
       } else if (error?.data?.message) {
-        alert(`خطأ: ${error.data.message}`);
+        toast.error('خطأ في العملية', error.data.message);
       } else {
-        alert('حدث خطأ في تحديث الشركة. يرجى المحاولة مرة أخرى.');
+        toast.error('خطأ غير متوقع', 'حدث خطأ في تحديث الشركة. يرجى المحاولة مرة أخرى.');
       }
     }
   };
 
   // Handle delete company
   const handleDeleteCompany = async (companyId: number) => {
-    if (!confirm('هل أنت متأكد من حذف هذه الشركة؟\n\nملاحظة: لا يمكن حذف الشركة إذا كان لديها مستخدمين أو منتجات أو شركات تابعة.')) return;
+    const confirmed = await toast.confirm(
+      'تأكيد حذف الشركة',
+      'هل أنت متأكد من حذف هذه الشركة؟ لا يمكن حذف الشركة إذا كان لديها مستخدمين أو منتجات أو شركات تابعة.'
+    );
+    
+    if (!confirmed) return;
     
     try {
       console.log('🗑️ Deleting company with ID:', companyId);
       const result = await deleteCompany(companyId).unwrap();
       console.log('✅ Company deleted successfully:', result);
       
-      // إجبار تحديث البيانات
-      await refetch();
-      console.log('🔄 Data refetched after deletion');
-      
-      alert('تم حذف الشركة بنجاح!');
+      toast.success('تم بنجاح!', 'تم حذف الشركة بنجاح');
     } catch (error: any) {
       console.error('❌ خطأ في حذف الشركة:', error);
       
       if (error?.status === 401) {
-        alert('جلسة المستخدم منتهية. يرجى تسجيل الدخول مرة أخرى.');
+        toast.error('جلسة منتهية', 'جلسة المستخدم منتهية. يرجى تسجيل الدخول مرة أخرى.');
         router.push('/login');
       } else if (error?.data?.message) {
-        alert(`لا يمكن حذف الشركة:\n${error.data.message}`);
+        toast.error('لا يمكن الحذف', error.data.message);
       } else {
-        alert('حدث خطأ في حذف الشركة. يرجى المحاولة مرة أخرى.');
+        toast.error('خطأ غير متوقع', 'حدث خطأ في حذف الشركة. يرجى المحاولة مرة أخرى.');
       }
     }
   };
@@ -546,8 +576,8 @@ const CompaniesPage = () => {
           isLoading={isCreating}
           title="إضافة شركة جديدة"
           onCompanyCreated={() => {
-            // تحديث جميع البيانات عند إضافة شركة جديدة
-            refetch();
+            // Optimistic update سيتولى التحديث تلقائياً
+            console.log('Company created via optimistic update');
           }}
         />
       )}
@@ -565,8 +595,8 @@ const CompaniesPage = () => {
           title="تعديل الشركة"
           company={selectedCompany}
           onCompanyCreated={() => {
-            // تحديث جميع البيانات عند تعديل شركة
-            refetch();
+            // Optimistic update سيتولى التحديث تلقائياً
+            console.log('Company updated via optimistic update');
           }}
         />
       )}
@@ -601,10 +631,16 @@ const CompanyModal: React.FC<CompanyModalProps> = ({
     parentId: company?.parentId || undefined,
   });
 
+  // للتحقق من كود الشركة في الوقت الفعلي
+  const [codeWarning, setCodeWarning] = useState('');
+
   const { data: companiesData, refetch: refetchParentCompanies } = useGetCompaniesQuery({
     isParent: true,
     limit: 100,
   });
+
+  // للحصول على جميع الشركات للتحقق من الكود
+  const { data: allCompaniesData } = useGetCompaniesQuery({ limit: 1000 });
 
   // تحديث القائمة عند فتح المودال - RTK Query سيتولى التحديث تلقائياً
   React.useEffect(() => {
@@ -612,6 +648,27 @@ const CompanyModal: React.FC<CompanyModalProps> = ({
       console.log('Modal opened, RTK Query will auto-update parent companies list');
     }
   }, [isOpen]);
+
+  // التحقق من كود الشركة في الوقت الفعلي
+  React.useEffect(() => {
+    if (formData.code) {
+      const existingCompanies = allCompaniesData?.data?.companies || [];
+      const codeExists = existingCompanies.some(comp => 
+        comp.code.toLowerCase() === formData.code.toLowerCase() &&
+        comp.id !== company?.id // استثناء الشركة الحالية في حالة التعديل
+      );
+      
+      if (codeExists) {
+        setCodeWarning('⚠️ هذا الكود موجود مسبقاً');
+      } else if (formData.code.length < 2) {
+        setCodeWarning('⚠️ الكود يجب أن يكون حرفين على الأقل');
+      } else {
+        setCodeWarning('');
+      }
+    } else {
+      setCodeWarning('');
+    }
+  }, [formData.code, company, allCompaniesData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -663,9 +720,19 @@ const CompanyModal: React.FC<CompanyModalProps> = ({
               type="text"
               value={formData.code}
               onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:border-blue-500 ${
+                codeWarning 
+                  ? 'border-red-300 focus:ring-red-500 bg-red-50' 
+                  : 'border-gray-300 focus:ring-blue-500'
+              }`}
               required
             />
+            {codeWarning && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <span>⚠️</span>
+                {codeWarning}
+              </p>
+            )}
           </div>
 
           <div>
@@ -719,8 +786,12 @@ const CompanyModal: React.FC<CompanyModalProps> = ({
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              disabled={isLoading}
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading || !!codeWarning}
+              className={`flex-1 py-2 px-4 rounded-md transition-colors ${
+                isLoading || codeWarning
+                  ? 'bg-gray-400 cursor-not-allowed opacity-50'
+                  : 'bg-blue-600 hover:bg-blue-700'
+              } text-white`}
             >
               {isLoading ? 'جاري الحفظ...' : 'حفظ'}
             </button>

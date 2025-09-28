@@ -72,6 +72,19 @@ export class CompanyService {
       return result;
     } catch (error: any) {
       console.error('❌ Error creating company:', error);
+      
+      // معالجة خاصة لخطأ Unique constraint على ID
+      if (error.code === 'P2002' && error.meta?.target?.includes('id')) {
+        console.error('🔧 Unique constraint failed on ID - this suggests auto-increment sequence issue');
+        console.error('💡 Solution: Run the fix-sequence.sql script to reset the sequence');
+        throw new Error('خطأ في تسلسل معرف الشركة. يرجى الاتصال بالدعم الفني.');
+      }
+      
+      // معالجة خطأ تكرار الكود
+      if (error.code === 'P2002' && error.meta?.target?.includes('code')) {
+        throw new Error('كود الشركة موجود مسبقاً');
+      }
+      
       throw error;
     }
   }
@@ -248,6 +261,8 @@ export class CompanyService {
 
   // حذف الشركة
   async deleteCompany(id: number): Promise<void> {
+    console.log('🗑️ CompanyService.deleteCompany - Starting deletion process for ID:', id);
+    
     const company = await this.prisma.company.findUnique({
       where: { id },
       include: {
@@ -259,32 +274,41 @@ export class CompanyService {
     });
 
     if (!company) {
+      console.log('❌ Company not found with ID:', id);
       throw new Error('الشركة غير موجودة');
     }
 
+   
+
     // منع حذف الشركة إذا كان لديها شركات تابعة
     if (company.children.length > 0) {
+      console.log('❌ Cannot delete - Company has children:', company.children.length);
       throw new Error('لا يمكن حذف الشركة لأن لديها شركات تابعة');
     }
 
     // منع حذف الشركة إذا كان لديها مستخدمين
     if (company.users.length > 0) {
+      console.log('❌ Cannot delete - Company has users:', company.users.length);
       throw new Error('لا يمكن حذف الشركة لأن لديها مستخدمين');
     }
 
     // منع حذف الشركة إذا كان لديها منتجات
     if (company.products.length > 0) {
+      console.log('❌ Cannot delete - Company has products:', company.products.length);
       throw new Error('لا يمكن حذف الشركة لأن لديها منتجات');
     }
 
     // منع حذف الشركة إذا كان لديها مبيعات
     if (company.sales.length > 0) {
+      console.log('❌ Cannot delete - Company has sales:', company.sales.length);
       throw new Error('لا يمكن حذف الشركة لأن لديها مبيعات');
     }
 
+    console.log('✅ All checks passed, proceeding with deletion');
     await this.prisma.company.delete({
       where: { id }
     });
+    console.log('✅ Company deleted successfully');
   }
 
   // الحصول على الهيكل الهرمي للشركات

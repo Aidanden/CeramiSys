@@ -20,6 +20,7 @@ import {
   ChevronRight,
   Home,
   Building2,
+  ShoppingBag,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -132,6 +133,12 @@ const Sidebar = () => {
             href="/users"
             icon={UsersRound}
             label="إدارة المستخدمين"
+            isCollapsed={isSidebarCollapsed}
+          />
+          <SidebarLink
+            href="/products"
+            icon={ShoppingBag}
+            label="الأصناف والمخزن"
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink

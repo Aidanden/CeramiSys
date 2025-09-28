@@ -1,6 +1,6 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
-import { API_CACHE_CONFIG } from "@/lib/config";
 import { baseQueryWithAuthInterceptor } from "./apiUtils";
+import { API_CACHE_CONFIG } from "@/lib/config";
 
 export interface LoginRequest {
   username: string;
@@ -31,12 +31,13 @@ export interface User {
   email: string;
   role: string;
   permissions: string[];
+  companyId: number;
 }
 
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: baseQueryWithAuthInterceptor,
-  tagTypes: ["Auth"],
+  tagTypes: ["Auth", "CurrentUser"],
   ...API_CACHE_CONFIG.auth,
   endpoints: (builder) => ({
     login: builder.mutation<LoginResponse, LoginRequest>({
@@ -54,7 +55,7 @@ export const authApi = createApi({
     }),
     getCurrentUser: builder.query<{ success: boolean; data: User }, void>({
       query: () => "/auth/me",
-      providesTags: ["Auth"],
+      providesTags: ["CurrentUser"],
     }),
     changePassword: builder.mutation<
       { success: boolean; message: string },

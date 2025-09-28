@@ -11,7 +11,10 @@ export const getUsers = async (req: AuthRequest, res: Response): Promise<void> =
     const { page = 1, limit = 10, search, role } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
-    const where: any = {};
+    const where: any = {
+      IsActive: true,
+      // عرض المستخدمين النشطين فقط
+    };
 
     if (search) {
       where.OR = [
@@ -103,8 +106,8 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
       return;
     }
 
-    // التحقق من عدم وجود البريد الإلكتروني
-    if (email) {
+    // التحقق من عدم وجود البريد الإلكتروني (فقط إذا كان موجوداً وغير فارغ)
+    if (email && email.trim() !== '') {
       const existingEmail = await prisma.users.findUnique({
         where: { Email: email }
       });
@@ -135,12 +138,24 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // تحديد الشركة
-    let finalCompanyId = companyId || req.user?.companyId || 1;
+    let finalCompanyId;
     
     if (isSystemUser) {
       // مستخدم نظام - يمكن أن يكون له أي شركة أو الشركة الافتراضية
-      finalCompanyId = companyId || 1;
+      // إذا لم يتم تحديد companyId، نستخدم الشركة الافتراضية
+      finalCompanyId = companyId || req.user?.companyId || 1;
     } else {
+      // للمستخدمين العاديين، الشركة مطلوبة
+      if (!companyId) {
+        res.status(400).json({
+          success: false,
+          message: 'الشركة مطلوبة للمستخدمين العاديين'
+        });
+        return;
+      }
+      
+      finalCompanyId = companyId;
+      
       // التحقق من وجود الشركة للمستخدمين العاديين
       const company = await prisma.company.findUnique({
         where: { id: finalCompanyId }
@@ -160,7 +175,7 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
       data: {
         UserName: username,
         FullName: fullName,
-        Email: email,
+        Email: email && email.trim() !== '' ? email : null, // تعيين null إذا كان email فارغ
         Phone: phone,
         Password: hashedPassword,
         RoleID: roleId,

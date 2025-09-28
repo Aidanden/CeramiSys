@@ -19,7 +19,7 @@ export const UpdateCompanyDto = z.object({
 // DTO للاستعلام عن الشركات
 export const GetCompaniesQueryDto = z.object({
   page: z.string().optional().default('1').transform(Number).pipe(z.number().int().positive()),
-  limit: z.string().optional().default('10').transform(Number).pipe(z.number().int().positive().max(100)),
+  limit: z.string().optional().default('10').transform(Number).pipe(z.number().int().positive().max(10000)),
   search: z.string().optional(),
   isParent: z.enum(['true', 'false']).optional(),
   parentId: z.string().optional().transform((val) => val ? Number(val) : undefined),

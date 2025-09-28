@@ -1,6 +1,6 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
-import { API_CACHE_CONFIG } from '@/lib/config';
 import { baseQueryWithAuthInterceptor } from './apiUtils';
+import { API_CACHE_CONFIG } from '@/lib/config';
 
 // تعريف أنواع البيانات
 export interface Company {
@@ -91,7 +91,7 @@ export interface CompanyStatsResponse {
 export const companyApi = createApi({
   reducerPath: "companyApi",
   baseQuery: baseQueryWithAuthInterceptor,
-  tagTypes: ["Company", "CompanyStats", "CompanyHierarchy", "ParentCompanies"],
+  tagTypes: ["Companies", "Company", "CompanyHierarchy", "CompanyStats"],
   ...API_CACHE_CONFIG.companies,
   endpoints: (builder) => ({
     // الحصول على جميع الشركات
@@ -100,14 +100,10 @@ export const companyApi = createApi({
         url: "/company/companies",
         params,
       }),
-      providesTags: (result, error, arg) => {
-        const tags: ("Company" | "ParentCompanies")[] = ["Company"];
-        // إضافة ParentCompanies tag إذا كان البحث عن الشركات الأم
-        if (arg.isParent === true) {
-          tags.push("ParentCompanies");
-        }
-        return tags;
-      },
+      providesTags: (result) => [
+        "Companies",
+        ...(result?.data?.companies?.map(({ id }) => ({ type: "Company" as const, id })) ?? []),
+      ],
     }),
 
     // الحصول على شركة بواسطة المعرف
@@ -123,7 +119,43 @@ export const companyApi = createApi({
         method: "POST",
         body: company,
       }),
-      invalidatesTags: ["Company", "CompanyStats", "CompanyHierarchy", "ParentCompanies"],
+      invalidatesTags: ["Companies", "CompanyHierarchy", "CompanyStats"],
+      // Optimistic Update للإضافة
+      async onQueryStarted(companyData, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          companyApi.util.updateQueryData('getCompanies', {}, (draft) => {
+            const newCompany = {
+              id: Date.now(), // ID مؤقت
+              name: companyData.name,
+              code: companyData.code,
+              isParent: companyData.isParent ?? true,
+              parentId: companyData.parentId || null,
+              parent: companyData.parentId ? { id: companyData.parentId, name: 'جاري التحميل...', code: '' } : undefined,
+              _count: { users: 0, products: 0, sales: 0 },
+            };
+            if (draft.data?.companies) {
+              draft.data.companies.unshift(newCompany as any);
+            }
+          })
+        );
+        
+        try {
+          const result = await queryFulfilled;
+          // تحديث بالبيانات الحقيقية
+          dispatch(
+            companyApi.util.updateQueryData('getCompanies', {}, (draft) => {
+              if (draft.data?.companies) {
+                const tempIndex = draft.data.companies.findIndex(c => typeof c.id === 'number' && c.id > 1000000000000);
+                if (tempIndex !== -1 && result.data) {
+                  draft.data.companies[tempIndex] = result.data;
+                }
+              }
+            })
+          );
+        } catch {
+          patchResult.undo();
+        }
+      },
     }),
 
     // تحديث الشركة
@@ -135,11 +167,33 @@ export const companyApi = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: "Company", id },
-        "Company",
-        "CompanyStats",
+        "Companies",
         "CompanyHierarchy",
-        "ParentCompanies",
+        "CompanyStats",
       ],
+      // Optimistic Update للتحديث
+      async onQueryStarted({ id, updates }, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          companyApi.util.updateQueryData('getCompanies', {}, (draft) => {
+            if (draft.data?.companies) {
+              const companyIndex = draft.data.companies.findIndex(c => c.id === id);
+              if (companyIndex !== -1) {
+                const company = draft.data.companies[companyIndex];
+                if (updates.name) company.name = updates.name;
+                if (updates.code) company.code = updates.code;
+                if (updates.isParent !== undefined) company.isParent = updates.isParent;
+                if (updates.parentId !== undefined) company.parentId = updates.parentId;
+              }
+            }
+          })
+        );
+        
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
     }),
 
     // حذف الشركة
@@ -148,7 +202,28 @@ export const companyApi = createApi({
         url: `/company/companies/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Company", "CompanyStats", "CompanyHierarchy", "ParentCompanies"],
+      invalidatesTags: (result, error, id) => [
+        { type: "Company", id },
+        "Companies",
+        "CompanyHierarchy",
+        "CompanyStats",
+      ],
+      // Optimistic Update للحذف
+      async onQueryStarted(id, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          companyApi.util.updateQueryData('getCompanies', {}, (draft) => {
+            if (draft.data?.companies) {
+              draft.data.companies = draft.data.companies.filter(c => c.id !== id);
+            }
+          })
+        );
+        
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
     }),
 
     // الحصول على الهيكل الهرمي
@@ -160,8 +235,8 @@ export const companyApi = createApi({
     // إحصائيات الشركات
     getCompanyStats: builder.query<CompanyStats, void>({
       query: () => "/company/companies/stats",
-      providesTags: ["CompanyStats"],
       transformResponse: (response: CompanyStatsResponse) => response.data,
+      providesTags: ["CompanyStats"],
     }),
 
     // الحصول على الفروع التابعة

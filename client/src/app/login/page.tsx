@@ -7,11 +7,13 @@ import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/redux";
 import { useLoginMutation } from "@/state/authApi";
 import { loginStart, loginSuccess, loginFailure, resetLoadingStates } from "@/state/authSlice";
+import { useToast } from "@/components/ui/Toast";
 
 const LoginPage = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { isAuthenticated, isLoading, error } = useAppSelector((state) => state.auth);
+  const toast = useToast();
   const [login] = useLoginMutation();
   
   const [showPassword, setShowPassword] = useState(false);
@@ -43,7 +45,7 @@ const LoginPage = () => {
     e.preventDefault();
     
     if (!formData.username || !formData.password) {
-      alert("يرجى إدخال اسم المستخدم وكلمة المرور");
+      toast.error("بيانات ناقصة", "يرجى إدخال اسم المستخدم وكلمة المرور");
       return;
     }
 
@@ -71,12 +73,12 @@ const LoginPage = () => {
         router.push("/dashboard");
       } else {
         dispatch(loginFailure(result.message || "خطأ في تسجيل الدخول"));
-        alert(result.message || "خطأ في تسجيل الدخول");
+        toast.error("فشل تسجيل الدخول", result.message || "خطأ في تسجيل الدخول");
       }
     } catch (err: any) {
       const errorMessage = err?.data?.message || "خطأ في اسم المستخدم أو كلمة المرور";
       dispatch(loginFailure(errorMessage));
-      alert(errorMessage);
+      toast.error("خطأ في تسجيل الدخول", errorMessage);
     }
   };
 

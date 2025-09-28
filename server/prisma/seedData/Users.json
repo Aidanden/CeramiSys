@@ -9,7 +9,8 @@
     "RoleID": "role_admin_001",
     "CompanyID": 1,
     "IsActive": true,
-    "LoginAttempts": 0
+    "LoginAttempts": 0,
+    "IsSystemUser": true
   },
   {
     "UserID": "manager_user_002",
@@ -19,7 +20,7 @@
     "Email": "manager.tripoli@ceramics.ly",
     "Phone": "+218912345678",
     "RoleID": "role_manager_001",
-    "CompanyID": 2,
+    "CompanyID": 1,
     "IsActive": true,
     "LoginAttempts": 0
   },
@@ -31,7 +32,7 @@
     "Email": "cashier.benghazi@ceramics.ly",
     "Phone": "+218913456789",
     "RoleID": "role_cashier_001",
-    "CompanyID": 3,
+    "CompanyID": 2,
     "IsActive": true,
     "LoginAttempts": 0
   }

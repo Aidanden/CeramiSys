@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
 import { 
   Plus, 
@@ -12,6 +11,23 @@ import {
 } from "lucide-react";
 import { useGetUsersQuery, useCreateUserMutation, useDeleteUserMutation, useUpdateUserMutation } from "@/state/usersApi";
 import { useGetCompaniesQuery } from "@/state/companyApi";
+import { useToast } from "@/components/ui/Toast";
+import { useAppDispatch, useAppSelector } from "@/app/redux";
+import { 
+  setCurrentFilter, 
+  setSearchTerm, 
+  setCurrentPage, 
+  setViewMode,
+  toggleSort,
+  resetFilters,
+  selectUsersState,
+  selectCurrentFilter,
+  selectSearchTerm,
+  selectCurrentPage,
+  selectViewMode,
+  selectSortConfig,
+  selectShowSystemUsers
+} from "@/state/usersSlice";
 import PermissionGuard from "@/components/PermissionGuard";
 import { toast } from "react-hot-toast";
 
@@ -37,40 +53,64 @@ interface User {
   email: string;
   phone: string;
   role: string;
+  companyId?: number;
+  companyName?: string;
+  isSystemUser?: boolean;
   isActive: boolean;
   createdAt: string;
   lastLogin?: string;
 }
 
+
 const UsersPage = () => {
-  const { data: usersData, isLoading: isLoadingUsers, error: usersError, refetch } = useGetUsersQuery();
+  const dispatch = useAppDispatch();
+  const toast = useToast();
+  const usersState = useAppSelector(selectUsersState);
+  const currentFilter = useAppSelector(selectCurrentFilter);
+  const searchTerm = useAppSelector(selectSearchTerm);
+  const currentPage = useAppSelector(selectCurrentPage);
+  const viewMode = useAppSelector(selectViewMode);
+  const sortConfig = useAppSelector(selectSortConfig);
+  const showSystemUsers = useAppSelector(selectShowSystemUsers);
+
+  const { data: usersData, isLoading: isLoadingUsers, error: usersError, refetch } = useGetUsersQuery({
+    page: currentPage,
+    limit: 10,
+    search: searchTerm,
+    role: currentFilter === 'all' ? undefined : currentFilter,
+  });
+
+ 
   const { data: companiesData } = useGetCompaniesQuery({ page: 1, limit: 100 });
   
-  // Enhanced Debug logging for Users
-  console.log('👥 Users Debug - Full Details:', {
+ 
+  const [createUser, { isLoading: isCreatingUser }] = useCreateUserMutation();
+  const [deleteUser, { isLoading: isDeletingUser }] = useDeleteUserMutation();
+  const [updateUser, { isLoading: isUpdatingUser }] = useUpdateUserMutation();
+
+  // Combined loading state
+  const isAnyOperationLoading = isCreatingUser || isUpdatingUser || isDeletingUser;
+  
+  // استخدام البيانات مباشرة من API بدلاً من local state
+  const users = usersData?.data?.users || [];
+  
+  // Debug: Log data for troubleshooting
+  console.log('🔍 Users Debug:', {
+    hasUsersData: !!usersData,
+    success: usersData?.success,
+    usersCount: users?.length,
     isLoading: isLoadingUsers,
     error: usersError,
-    data: usersData,
-    hasUsers: usersData?.data?.users?.length,
-    success: usersData?.success
+    showSystemUsers,
+    users: users?.map(u => ({
+      id: u.id,
+      username: u.username,
+      fullName: u.fullName,
+      isSystemUser: u.isSystemUser,
+      isActive: u.isActive,
+      companyName: u.companyName
+    }))
   });
-  
-  // Log if there's an error
-  if (usersError) {
-    console.error('❌ Users API Error:', usersError);
-  }
-  const [createUser, { isLoading: isCreatingUser }] = useCreateUserMutation();
-  const [deleteUser] = useDeleteUserMutation();
-  const [updateUser] = useUpdateUserMutation();
-  
-  const [users, setUsers] = useState<User[]>([]);
-  
-  // تحديث المستخدمين عند وصول البيانات
-  useEffect(() => {
-    if (usersData?.success && usersData.data?.users) {
-      setUsers(usersData.data.users);
-    }
-  }, [usersData]);
 
   const [roles] = useState<UserRole[]>([
     {
@@ -112,8 +152,6 @@ const UsersPage = () => {
     { id: "currencies.view", name: "عرض العملات", description: "يمكن عرض أسعار العملات", module: "العملات" }
   ]);
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedRole, setSelectedRole] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPermissionsModal, setShowPermissionsModal] = useState(false);
@@ -143,9 +181,14 @@ const UsersPage = () => {
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = selectedRole === "all" || user.role === selectedRole;
-    return matchesSearch && matchesRole;
+                         (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesRole = currentFilter === "all" || user.role === currentFilter;
+    //const isActive = user.isActive === true; // عرض المستخدمين النشطين فقط
+    
+    // Debug: Log filter results for each user
+   
+    
+    return matchesSearch && matchesRole ;
   });
 
   const getRoleInfo = (roleId: string) => {
@@ -157,6 +200,12 @@ const UsersPage = () => {
       // التحقق من البيانات المطلوبة
       if (!newUser.username || !newUser.fullName || !newUser.password) {
         toast.error('يرجى ملء جميع الحقول المطلوبة');
+        return;
+      }
+
+      // التحقق من اختيار الشركة إذا لم يكن مستخدم نظام
+      if (!newUser.isSystemUser && !newUser.companyId) {
+        toast.error('يرجى اختيار الشركة أو تحديد المستخدم كمدير عام');
         return;
       }
       
@@ -171,20 +220,29 @@ const UsersPage = () => {
         return roleMap[roleName] || 'role_cashier_001';
       };
       
-      const result = await createUser({
+      const userData = {
         username: newUser.username,
         fullName: newUser.fullName,
         email: newUser.email,
         phone: newUser.phone,
         password: newUser.password,
         roleId: getRoleId(newUser.role),
-        companyId: newUser.companyId,
+        companyId: newUser.isSystemUser ? undefined : newUser.companyId, // إرسال undefined لمستخدمي النظام
         isSystemUser: newUser.isSystemUser,
         isActive: newUser.isActive
-      }).unwrap();
+      };
+      
+      // Debug: Log the data being sent
+      console.log('🔍 User data being sent:', userData);
+      
+      const result = await createUser(userData).unwrap();
+      // console.log('✅ User created successfully:', result);
       
       if (result.success) {
-        toast.success('تم إضافة المستخدم بنجاح');
+        toast.success('تم إضافة المستخدم بنجاح', {
+          duration: 3000,
+          position: 'top-center',
+        });
         setNewUser({
           username: "",
           fullName: "",
@@ -197,13 +255,20 @@ const UsersPage = () => {
           isActive: true
         });
         setShowAddModal(false);
-        refetch(); // إعادة تحميل البيانات
+        // Optimistic update سيتولى التحديث تلقائياً
       } else {
-        toast.error(result.message || 'خطأ في إضافة المستخدم');
+        toast.error(result.message || 'خطأ في إضافة المستخدم', {
+          duration: 4000,
+          position: 'top-center',
+        });
       }
     } catch (error) {
+      // console.error('❌ Error in handleAddUser:', error);
       const errorMessage = (error as { data?: { message?: string } })?.data?.message || 'خطأ في إضافة المستخدم';
-      toast.error(errorMessage);
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: 'top-center',
+      });
     }
   };
 
@@ -233,40 +298,55 @@ const UsersPage = () => {
       }).unwrap();
       
       if (result.success) {
-        toast.success('تم تحديث المستخدم بنجاح');
+        toast.success('تم تحديث المستخدم بنجاح', {
+          duration: 3000,
+          position: 'top-center',
+        });
         setShowEditModal(false);
-        refetch(); // إعادة تحميل البيانات
+        // Optimistic update سيتولى التحديث تلقائياً
       } else {
-        toast.error(result.message || 'خطأ في تحديث المستخدم');
+        toast.error(result.message || 'خطأ في تحديث المستخدم', {
+          duration: 4000,
+          position: 'top-center',
+        });
       }
     } catch (error) {
+      // console.error('❌ Error in handleUpdateUser:', error);
       const errorMessage = (error as { data?: { message?: string } })?.data?.message || 'خطأ في تحديث المستخدم';
-      toast.error(errorMessage);
+      toast.error(errorMessage, {
+        duration: 5000,
+        position: 'top-center',
+      });
     }
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (confirm("هل أنت متأكد من حذف هذا المستخدم؟")) {
-      try {
-        const result = await deleteUser(userId).unwrap();
-        if (result.success) {
-          toast.success('تم حذف المستخدم بنجاح');
-          refetch(); // إعادة تحميل البيانات
-        } else {
-          toast.error(result.message || 'خطأ في حذف المستخدم');
-        }
-      } catch (error) {
-        const errorMessage = (error as { data?: { message?: string } })?.data?.message || 'خطأ في حذف المستخدم';
-        toast.error(errorMessage);
+    const confirmed = await toast.confirm(
+      "تأكيد تعطيل المستخدم",
+      "هل أنت متأكد من تعطيل هذا المستخدم؟"
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      const result = await deleteUser(userId).unwrap();
+      if (result.success) {
+        toast.success('تم بنجاح!', 'تم تعطيل المستخدم بنجاح');
+      } else {
+        toast.error('خطأ في العملية', result.message || 'خطأ في تعطيل المستخدم');
       }
+    } catch (error) {
+      const errorMessage = (error as { data?: { message?: string } })?.data?.message || 'خطأ في تعطيل المستخدم';
+      toast.error('خطأ غير متوقع', errorMessage);
     }
   };
 
-  const toggleUserStatus = (userId: string) => {
-    setUsers(users.map(user => 
-      user.id === userId ? { ...user, isActive: !user.isActive } : user
-    ));
-  };
+  // تم إزالة toggleUserStatus لأن البيانات تأتي مباشرة من API
+  // const toggleUserStatus = (userId: string) => {
+  //   setUsers(users.map(user => 
+  //     user.id === userId ? { ...user, isActive: !user.isActive } : user
+  //   ));
+  // };
 
   return (
     <PermissionGuard requiredPermission="users:read">
@@ -288,7 +368,7 @@ const UsersPage = () => {
                 type="text"
                 placeholder="البحث عن مستخدم..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => dispatch(setSearchTerm(e.target.value))}
                 className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -297,8 +377,8 @@ const UsersPage = () => {
             <div className="relative">
               <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <select
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
+                value={currentFilter}
+                onChange={(e) => dispatch(setCurrentFilter(e.target.value as any))}
                 className="pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               >
                 <option value="all">جميع الأدوار</option>
@@ -329,7 +409,21 @@ const UsersPage = () => {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative">
+        {/* Loading Overlay */}
+        {isAnyOperationLoading && (
+          <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+              <span className="text-gray-600 font-medium">
+                {isCreatingUser && 'جاري إضافة المستخدم...'}
+                {isUpdatingUser && 'جاري تحديث المستخدم...'}
+                {isDeletingUser && 'جاري تعطيل المستخدم...'}
+              </span>
+            </div>
+          </div>
+        )}
+        
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -385,7 +479,9 @@ const UsersPage = () => {
                         <div>
                           <div className="font-semibold text-gray-900">{user.fullName}</div>
                           <div className="text-sm text-gray-500">@{user.username}</div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
+                          <div className="text-sm text-gray-500">
+                            {user.email || <span className="text-gray-400 italic">لا يوجد بريد إلكتروني</span>}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -408,16 +504,13 @@ const UsersPage = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <button
-                        onClick={() => toggleUserStatus(user.id)}
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200 ${
-                          user.isActive 
-                            ? 'bg-green-100 text-green-800 hover:bg-green-200' 
-                            : 'bg-red-100 text-red-800 hover:bg-red-200'
-                        }`}
-                      >
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                        user.isActive 
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
                         {user.isActive ? 'نشط' : 'غير نشط'}
-                      </button>
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {new Date(user.createdAt).toLocaleDateString('ar-SA')}
@@ -448,7 +541,7 @@ const UsersPage = () => {
                         <button
                           onClick={() => handleDeleteUser(user.id)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                          title="حذف"
+                          title="تعطيل"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -493,13 +586,15 @@ const UsersPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">البريد الإلكتروني</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    البريد الإلكتروني <span className="text-gray-400 text-sm">(اختياري)</span>
+                  </label>
                   <input
                     type="email"
                     value={newUser.email}
                     onChange={(e) => setNewUser({...newUser, email: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="أدخل البريد الإلكتروني"
+                    placeholder="أدخل البريد الإلكتروني (اختياري)"
                   />
                 </div>
 
@@ -539,22 +634,35 @@ const UsersPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">الشركة</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    الشركة {!newUser.isSystemUser && <span className="text-red-500">*</span>}
+                  </label>
                   <select
                     value={newUser.companyId || ''}
                     onChange={(e) => setNewUser({...newUser, companyId: e.target.value ? parseInt(e.target.value) : undefined})}
                     disabled={newUser.isSystemUser}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${newUser.isSystemUser ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      newUser.isSystemUser 
+                        ? 'bg-gray-100 cursor-not-allowed border-gray-300' 
+                        : !newUser.companyId 
+                          ? 'border-red-300 focus:ring-red-500' 
+                          : 'border-gray-300'
+                    }`}
                   >
-                    <option value="">اختر الشركة (اختياري)</option>
-                    {companiesData?.data?.companies?.map(company => (
+                    <option value="">{newUser.isSystemUser ? 'غير مطلوب لمستخدم النظام' : 'اختر الشركة (مطلوب)'}</option>
+                    {companiesData?.data?.companies?.map((company: any) => (
                       <option key={company.id} value={company.id}>
                         {company.name} {company.isParent ? '(شركة أم)' : '(فرع)'}
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {newUser.isSystemUser ? 'مستخدم النظام لا يحتاج شركة محددة' : 'إذا لم تختار شركة، سيتم ربط المستخدم بشركة المدير الحالي'}
+                  <p className={`text-xs mt-1 ${!newUser.isSystemUser && !newUser.companyId ? 'text-red-500' : 'text-gray-500'}`}>
+                    {newUser.isSystemUser 
+                      ? 'مستخدم النظام لا يحتاج شركة محددة' 
+                      : !newUser.companyId 
+                        ? 'يرجى اختيار الشركة أو تحديد المستخدم كمدير عام'
+                        : 'تم اختيار الشركة بنجاح'
+                    }
                   </p>
                 </div>
 
@@ -578,13 +686,16 @@ const UsersPage = () => {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={handleAddUser}
-                  disabled={isCreatingUser}
-                  className={`flex-1 py-2 px-4 rounded-lg transition-all duration-200 ${
-                    isCreatingUser 
+                  disabled={isCreatingUser || !newUser.username || !newUser.fullName || !newUser.password || (!newUser.isSystemUser && !newUser.companyId)}
+                  className={`flex-1 py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
+                    isCreatingUser || !newUser.username || !newUser.fullName || !newUser.password || (!newUser.isSystemUser && !newUser.companyId)
                       ? 'bg-gray-400 cursor-not-allowed' 
                       : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
                   } text-white`}
                 >
+                  {isCreatingUser && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  )}
                   {isCreatingUser ? 'جاري الإضافة...' : 'إضافة المستخدم'}
                 </button>
                 <button
@@ -630,13 +741,15 @@ const UsersPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">البريد الإلكتروني</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    البريد الإلكتروني <span className="text-gray-400 text-sm">(اختياري)</span>
+                  </label>
                   <input
                     type="email"
-                    value={editUser.email}
+                    value={editUser.email || ""}
                     onChange={(e) => setEditUser({...editUser, email: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="أدخل البريد الإلكتروني"
+                    placeholder="أدخل البريد الإلكتروني (اختياري)"
                   />
                 </div>
 
@@ -644,7 +757,7 @@ const UsersPage = () => {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">رقم الهاتف</label>
                   <input
                     type="tel"
-                    value={editUser.phone}
+                    value={editUser.phone || ""}
                     onChange={(e) => setEditUser({...editUser, phone: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="أدخل رقم الهاتف"

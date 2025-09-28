@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Shield, Users, Settings, Plus, Edit, Trash2, X, BarChart3 } from "lucide-react";
-import { toast, Toaster } from "react-hot-toast";
+import { useToast } from "@/components/ui/Toast";
 import PermissionGuard from "@/components/PermissionGuard";
 import { PERMISSIONS, ROLES, ROLE_PERMISSIONS } from "@/config/permissions";
 import UserPermissionsManager from "./UserPermissionsManager";
@@ -29,6 +29,7 @@ interface CustomPermission {
 }
 
 const PermissionsManagementPage = () => {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<'roles' | 'permissions' | 'assignments' | 'users' | 'editor' | 'report'>('roles');
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
   const [customPermissions, setCustomPermissions] = useState<CustomPermission[]>([]);
@@ -76,7 +77,7 @@ const PermissionsManagementPage = () => {
   // إضافة دور جديد
   const handleAddRole = () => {
     if (!newRole.name || !newRole.displayName) {
-      toast.error("يرجى ملء جميع الحقول المطلوبة");
+      toast.error("بيانات ناقصة", "يرجى ملء جميع الحقول المطلوبة");
       return;
     }
 
@@ -96,13 +97,13 @@ const PermissionsManagementPage = () => {
     
     setNewRole({ name: "", displayName: "", description: "", permissions: [] });
     setShowAddRoleModal(false);
-    toast.success("تم إضافة الدور بنجاح");
+    toast.success("تم بنجاح!", "تم إضافة الدور بنجاح");
   };
 
   // إضافة صلاحية جديدة
   const handleAddPermission = () => {
     if (!newPermission.name || !newPermission.displayName || !newPermission.module) {
-      toast.error("يرجى ملء جميع الحقول المطلوبة");
+      toast.error("بيانات ناقصة", "يرجى ملء جميع الحقول المطلوبة");
       return;
     }
 
@@ -121,27 +122,37 @@ const PermissionsManagementPage = () => {
     
     setNewPermission({ name: "", displayName: "", description: "", module: "" });
     setShowAddPermissionModal(false);
-    toast.success("تم إضافة الصلاحية بنجاح");
+    toast.success("تم بنجاح!", "تم إضافة الصلاحية بنجاح");
   };
 
   // حذف دور
-  const handleDeleteRole = (roleId: string) => {
-    if (confirm("هل أنت متأكد من حذف هذا الدور؟")) {
-      const updatedRoles = customRoles.filter(role => role.id !== roleId);
-      setCustomRoles(updatedRoles);
-      saveToStorage(updatedRoles, customPermissions);
-      toast.success("تم حذف الدور بنجاح");
-    }
+  const handleDeleteRole = async (roleId: string) => {
+    const confirmed = await toast.confirm(
+      "تأكيد حذف الدور",
+      "هل أنت متأكد من حذف هذا الدور؟"
+    );
+    
+    if (!confirmed) return;
+    
+    const updatedRoles = customRoles.filter(role => role.id !== roleId);
+    setCustomRoles(updatedRoles);
+    saveToStorage(updatedRoles, customPermissions);
+    toast.success("تم بنجاح!", "تم حذف الدور بنجاح");
   };
 
   // حذف صلاحية
-  const handleDeletePermission = (permissionId: string) => {
-    if (confirm("هل أنت متأكد من حذف هذه الصلاحية؟")) {
-      const updatedPermissions = customPermissions.filter(perm => perm.id !== permissionId);
-      setCustomPermissions(updatedPermissions);
-      saveToStorage(customRoles, updatedPermissions);
-      toast.success("تم حذف الصلاحية بنجاح");
-    }
+  const handleDeletePermission = async (permissionId: string) => {
+    const confirmed = await toast.confirm(
+      "تأكيد حذف الصلاحية",
+      "هل أنت متأكد من حذف هذه الصلاحية؟"
+    );
+    
+    if (!confirmed) return;
+    
+    const updatedPermissions = customPermissions.filter(perm => perm.id !== permissionId);
+    setCustomPermissions(updatedPermissions);
+    saveToStorage(customRoles, updatedPermissions);
+    toast.success("تم بنجاح!", "تم حذف الصلاحية بنجاح");
   };
 
   // تبديل حالة الصلاحية في الدور
@@ -172,7 +183,6 @@ const PermissionsManagementPage = () => {
 
   return (
     <PermissionGuard requiredRole="admin">
-      <Toaster position="top-right" />
       <div className="p-6 max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">

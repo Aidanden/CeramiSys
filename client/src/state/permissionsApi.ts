@@ -1,6 +1,6 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
-import { API_CACHE_CONFIG } from "@/lib/config";
 import { baseQueryWithAuthInterceptor } from "./apiUtils";
+import { API_CACHE_CONFIG } from "@/lib/config";
 
 interface Permission {
   id: string;
@@ -31,13 +31,16 @@ interface UserPermission {
 export const permissionsApi = createApi({
   reducerPath: "permissionsApi",
   baseQuery: baseQueryWithAuthInterceptor,
-  tagTypes: ["Permission", "Role", "UserPermission"],
+  tagTypes: ["Permissions", "Permission", "Roles", "Role", "UserPermissions"],
   ...API_CACHE_CONFIG.permissions,
   endpoints: (builder) => ({
     // إدارة الصلاحيات
     getPermissions: builder.query<Permission[], void>({
       query: () => "/permissions",
-      providesTags: ["Permission"],
+      providesTags: (result) => [
+        "Permissions",
+        ...(result?.map(({ id }) => ({ type: "Permission" as const, id })) ?? []),
+      ],
     }),
     
     createPermission: builder.mutation<Permission, Partial<Permission>>({
@@ -46,7 +49,7 @@ export const permissionsApi = createApi({
         method: "POST",
         body: permission,
       }),
-      invalidatesTags: ["Permission"],
+      invalidatesTags: ["Permissions"],
     }),
     
     updatePermission: builder.mutation<Permission, { id: string; data: Partial<Permission> }>({
@@ -55,7 +58,10 @@ export const permissionsApi = createApi({
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: ["Permission"],
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Permission", id },
+        "Permissions",
+      ],
     }),
     
     deletePermission: builder.mutation<void, string>({
@@ -63,13 +69,19 @@ export const permissionsApi = createApi({
         url: `/permissions/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Permission"],
+      invalidatesTags: (result, error, id) => [
+        { type: "Permission", id },
+        "Permissions",
+      ],
     }),
 
     // إدارة الأدوار
     getRoles: builder.query<Role[], void>({
       query: () => "/roles",
-      providesTags: ["Role"],
+      providesTags: (result) => [
+        "Roles",
+        ...(result?.map(({ id }) => ({ type: "Role" as const, id })) ?? []),
+      ],
     }),
     
     createRole: builder.mutation<Role, Partial<Role>>({
@@ -78,7 +90,7 @@ export const permissionsApi = createApi({
         method: "POST",
         body: role,
       }),
-      invalidatesTags: ["Role"],
+      invalidatesTags: ["Roles"],
     }),
     
     updateRole: builder.mutation<Role, { id: string; data: Partial<Role> }>({
@@ -87,7 +99,10 @@ export const permissionsApi = createApi({
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: ["Role"],
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Role", id },
+        "Roles",
+      ],
     }),
     
     deleteRole: builder.mutation<void, string>({
@@ -95,13 +110,18 @@ export const permissionsApi = createApi({
         url: `/roles/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Role"],
+      invalidatesTags: (result, error, id) => [
+        { type: "Role", id },
+        "Roles",
+      ],
     }),
 
     // تخصيص صلاحيات المستخدمين
     getUserPermissions: builder.query<UserPermission[], string>({
       query: (userId) => `/users/${userId}/permissions`,
-      providesTags: ["UserPermission"],
+      providesTags: (result, error, userId) => [
+        { type: "UserPermissions", id: userId },
+      ],
     }),
     
     assignUserRole: builder.mutation<void, { userId: string; roleId: string }>({
@@ -110,7 +130,9 @@ export const permissionsApi = createApi({
         method: "POST",
         body: { roleId },
       }),
-      invalidatesTags: ["UserPermission"],
+      invalidatesTags: (result, error, { userId }) => [
+        { type: "UserPermissions", id: userId },
+      ],
     }),
     
     assignUserPermissions: builder.mutation<void, { userId: string; permissions: string[] }>({
@@ -119,7 +141,9 @@ export const permissionsApi = createApi({
         method: "POST",
         body: { permissions },
       }),
-      invalidatesTags: ["UserPermission"],
+      invalidatesTags: (result, error, { userId }) => [
+        { type: "UserPermissions", id: userId },
+      ],
     }),
 
     // التحقق من الصلاحيات
@@ -129,7 +153,9 @@ export const permissionsApi = createApi({
     
     getUserRolePermissions: builder.query<string[], string>({
       query: (userId) => `/users/${userId}/role-permissions`,
-      providesTags: ["UserPermission"],
+      providesTags: (result, error, userId) => [
+        { type: "UserPermissions", id: userId },
+      ],
     }),
   }),
 });

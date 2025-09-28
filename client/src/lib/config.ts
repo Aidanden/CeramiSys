@@ -1,50 +1,104 @@
 /**
+ * API Configuration
  * إعدادات API للتطبيق
  */
 
-// الحصول على API Base URL من متغيرات البيئة أو next.config
+// تحديد عنوان API الأساسي
 export const getApiBaseUrl = (): string => {
-  // في بيئة المتصفح، استخدم NEXT_PUBLIC_API_BASE_URL
   if (typeof window !== 'undefined') {
+    // في المتصفح
     return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
   }
-  
-  // في بيئة الخادم، استخدم API_BASE_URL
+  // في الخادم
   return process.env.API_BASE_URL || 'http://localhost:8000/api';
 };
 
-// إعدادات API الافتراضية
+// إعدادات API
 export const API_CONFIG = {
   baseUrl: getApiBaseUrl(),
-  timeout: 10000, // 10 ثوانٍ
+  timeout: 30000, // 30 seconds
   retries: 3,
-  cacheMaxAge: 30, // 30 ثانية
-} as const;
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+};
 
-// إعدادات مختلفة لكل نوع API
+// إعدادات الكاش لـ RTK Query
 export const API_CACHE_CONFIG = {
+  // إعدادات المصادقة - كاش طويل لأنها لا تتغير كثيراً
   auth: {
-    keepUnusedDataFor: 600, // 10 دقائق للمصادقة
+    keepUnusedDataFor: 600, // 10 minutes
     refetchOnMountOrArgChange: false,
     refetchOnFocus: false,
     refetchOnReconnect: false,
   },
+  // إعدادات الشركات - كاش متوسط
   companies: {
-    keepUnusedDataFor: 300, // 5 دقائق للشركات
+    keepUnusedDataFor: 300, // 5 minutes
     refetchOnMountOrArgChange: true,
     refetchOnFocus: false,
     refetchOnReconnect: true,
   },
+  // إعدادات المستخدمين - كاش قصير لأنها تتغير كثيراً
   users: {
-    keepUnusedDataFor: 180, // 3 دقائق للمستخدمين
+    keepUnusedDataFor: 180, // 3 minutes
     refetchOnMountOrArgChange: true,
     refetchOnFocus: false,
     refetchOnReconnect: true,
+    // إضافة polling للتحديث التلقائي (اختياري)
+    pollingInterval: 30000, // 30 ثانية (معطل افتراضياً)
   },
+  // إعدادات الصلاحيات - كاش طويل لأنها لا تتغير كثيراً
   permissions: {
-    keepUnusedDataFor: 900, // 15 دقيقة للصلاحيات (نادراً ما تتغير)
+    keepUnusedDataFor: 900, // 15 minutes
     refetchOnMountOrArgChange: false,
     refetchOnFocus: false,
-    refetchOnReconnect: false,
+    refetchOnReconnect: true,
   },
-} as const;
+  // إعدادات الأصناف - كاش متوسط لأنها تتغير أحياناً
+  products: {
+    keepUnusedDataFor: 300, // 5 minutes
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: false,
+    refetchOnReconnect: true,
+  },
+};
+
+
+// إعدادات التطبيق
+export const APP_CONFIG = {
+  name: 'CeramiSys',
+  version: '1.0.0',
+  description: 'نظام إدارة السيراميك',
+  author: 'CeramiSys Team',
+  support: {
+    email: 'EM.Said@amadholding.com',
+    phone: '0918636083',
+  },
+};
+
+// إعدادات التطوير
+export const DEV_CONFIG = {
+  enableLogging: process.env.NODE_ENV === 'development',
+  enableDebug: process.env.NODE_ENV === 'development',
+  enableReduxDevTools: process.env.NODE_ENV === 'development',
+};
+
+// إعدادات الإنتاج
+export const PROD_CONFIG = {
+  enableLogging: false,
+  enableDebug: false,
+  enableReduxDevTools: false,
+};
+
+// إعدادات البيئة
+export const ENV_CONFIG = process.env.NODE_ENV === 'production' ? PROD_CONFIG : DEV_CONFIG;
+
+// تصدير الإعدادات الافتراضية
+export default {
+  API_CONFIG,
+  API_CACHE_CONFIG,
+  APP_CONFIG,
+  ENV_CONFIG,
+};
