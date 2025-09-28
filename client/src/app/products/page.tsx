@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Plus, 
@@ -49,6 +49,18 @@ const ProductsPage = () => {
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  // وحدة القياس في نماذج الإضافة والتعديل
+  const [createUnit, setCreateUnit] = useState<'صندوق' | 'قطعة'>('صندوق');
+  const [editUnit, setEditUnit] = useState<'صندوق' | 'قطعة'>('صندوق');
+
+  // مزامنة قيمة الوحدة في نموذج التعديل عند فتح المودال
+  useEffect(() => {
+    if (isEditModalOpen && selectedProduct) {
+      const unit = (selectedProduct.unit as 'صندوق' | 'قطعة' | undefined) || 'صندوق';
+      setEditUnit(unit);
+    }
+  }, [isEditModalOpen, selectedProduct]);
 
   // RTK Query hooks
   const { data: productsData, isLoading: isLoadingProducts, error: productsError, refetch } = useGetProductsQuery({
@@ -611,19 +623,21 @@ const ProductsPage = () => {
                     </p>
                   )}
                 </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     الوحدة
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="unit"
+                    value={createUnit}
+                    onChange={(e) => setCreateUnit(e.target.value as 'صندوق' | 'قطعة')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="مثال: كيلو، قطعة، متر"
-                  />
+                  >
+                    <option value="صندوق">صندوق</option>
+                    <option value="قطعة">قطعة</option>
+                  </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     عدد الوحدات في الصندوق
@@ -633,14 +647,15 @@ const ProductsPage = () => {
                     name="unitsPerBox"
                     step="0.01"
                     min="0.01"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                    disabled={createUnit !== 'صندوق'}
                     placeholder="مثال: 6 (6 متر في الصندوق)"
                   />
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    السعر
+                    سعر البيع
                   </label>
                   <input
                     type="number"
@@ -715,6 +730,7 @@ const ProductsPage = () => {
                 sku: formData.get('sku') as string,
                 name: formData.get('name') as string,
                 unit: formData.get('unit') as string || undefined,
+                unitsPerBox: formData.get('unitsPerBox') ? Number(formData.get('unitsPerBox')) : undefined,
                 sellPrice: formData.get('sellPrice') ? Number(formData.get('sellPrice')) : undefined,
               };
               handleUpdateProduct(productData);
@@ -752,12 +768,30 @@ const ProductsPage = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     الوحدة
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="unit"
-                    defaultValue={selectedProduct.unit || ''}
+                    value={editUnit}
+                    onChange={(e) => setEditUnit(e.target.value as 'صندوق' | 'قطعة')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="مثال: كيلو، قطعة، متر"
+                  >
+                    <option value="صندوق">صندوق</option>
+                    <option value="قطعة">قطعة</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    عدد الوحدات في الصندوق
+                  </label>
+                  <input
+                    type="number"
+                    name="unitsPerBox"
+                    step="0.01"
+                    min="0.01"
+                    defaultValue={selectedProduct.unitsPerBox || ''}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                    disabled={editUnit !== 'صندوق'}
+                    placeholder="مثال: 6 (6 وحدات في الصندوق)"
                   />
                 </div>
                 
