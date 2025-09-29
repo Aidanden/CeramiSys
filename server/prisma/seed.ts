@@ -7,10 +7,13 @@ const path = require("path");
 async function deleteAllData() {
   // Delete in reverse order to handle foreign key constraints
   const deletionOrder = [
-    "userSessions",  // UserSessions model
-    "users",         // Users model
-    "userRoles",     // UserRoles model
-    "company"        // Company model
+    "userSessions",        // UserSessions model
+    "companyProductPrice", // CompanyProductPrice model
+    "stock",              // Stock model
+    "product",            // Product model
+    "users",              // Users model
+    "userRoles",          // UserRoles model
+    "company"             // Company model
   ];
 
   for (const modelName of deletionOrder) {
@@ -32,7 +35,10 @@ async function main() {
   const orderedFileNames = [
     "Company.json",
     "UserRoles.json", 
-    "Users.json"
+    "Users.json",
+    "Product.json",
+    "Stock.json",
+    "CompanyProductPrice.json"
   ];
 
   await deleteAllData();
@@ -53,6 +59,15 @@ async function main() {
         break;
       case 'Users':
         modelName = 'users';
+        break;
+      case 'Product':
+        modelName = 'product';
+        break;
+      case 'Stock':
+        modelName = 'stock';
+        break;
+      case 'CompanyProductPrice':
+        modelName = 'companyProductPrice';
         break;
       default:
         modelName = baseModelName.toLowerCase();

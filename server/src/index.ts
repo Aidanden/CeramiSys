@@ -8,6 +8,7 @@ import authRoute from "./routes/authRoute";
 import usersRoute from "./routes/usersRoute";
 import companyRoutes from "./routes/companyRoutes";
 import productRoutes from "./routes/productRoutes";
+import salesRoutes from "./routes/salesRoutes";
 
 
 /*CONFIGRATION*/
@@ -48,6 +49,7 @@ app.use('/api/auth', authRoute);
 app.use('/api/users', usersRoute);
 app.use('/api/company', companyRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/sales', salesRoutes);
 
 
 // Health check endpoint

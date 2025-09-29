@@ -117,7 +117,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         companyId: user.CompanyID,
         roleId: user.RoleID,
         username: user.UserName,
-        role: user.Role.RoleName
+        role: user.Role.RoleName,
+        isSystemUser: user.IsSystemUser
       },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: tokenExpiry }

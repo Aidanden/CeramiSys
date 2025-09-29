@@ -1,0 +1,32 @@
+[
+  {
+    "companyId": 1,
+    "productId": 1,
+    "sellPrice": 120.50
+  },
+  {
+    "companyId": 1,
+    "productId": 2,
+    "sellPrice": 85.75
+  },
+  {
+    "companyId": 1,
+    "productId": 3,
+    "sellPrice": 95.00
+  },
+  {
+    "companyId": 2,
+    "productId": 1,
+    "sellPrice": 125.00
+  },
+  {
+    "companyId": 2,
+    "productId": 2,
+    "sellPrice": 88.50
+  },
+  {
+    "companyId": 2,
+    "productId": 4,
+    "sellPrice": 110.25
+  }
+]

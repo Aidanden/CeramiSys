@@ -1,0 +1,32 @@
+[
+  {
+    "companyId": 1,
+    "productId": 1,
+    "boxes": 50
+  },
+  {
+    "companyId": 1,
+    "productId": 2,
+    "boxes": 25
+  },
+  {
+    "companyId": 1,
+    "productId": 3,
+    "boxes": 100
+  },
+  {
+    "companyId": 2,
+    "productId": 1,
+    "boxes": 30
+  },
+  {
+    "companyId": 2,
+    "productId": 2,
+    "boxes": 15
+  },
+  {
+    "companyId": 2,
+    "productId": 4,
+    "boxes": 75
+  }
+]

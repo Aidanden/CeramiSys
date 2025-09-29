@@ -33,9 +33,15 @@ export class CreateProductDto {
   createdByCompanyId: number;
 
   @IsOptional()
+  @Transform(({ value }) => parseFloat(value))
+  @IsNumber({ maxDecimalPlaces: 4 }, { message: 'سعر البيع يجب أن يكون رقم صالح' })
+  @Min(0, { message: 'سعر البيع يجب أن يكون أكبر من أو يساوي صفر' })
   sellPrice?: number;
 
   @IsOptional()
+  @Transform(({ value }) => parseFloat(value))
+  @IsNumber({ maxDecimalPlaces: 4 }, { message: 'عدد الصناديق الأولية يجب أن يكون رقم صالح' })
+  @Min(0, { message: 'عدد الصناديق الأولية يجب أن يكون أكبر من أو يساوي صفر' })
   initialBoxes?: number;
 }
 

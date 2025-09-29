@@ -9,6 +9,7 @@ interface JwtPayload {
   userId: string;
   companyId: number;
   roleId: string;
+  isSystemUser?: boolean;
 }
 
 // تعريف نوع AuthRequest
@@ -20,6 +21,7 @@ export interface AuthRequest extends Request {
     roleId: string;
     roleName?: string;
     permissions?: any;
+    isSystemUser?: boolean;
   };
 }
 
@@ -33,6 +35,7 @@ declare global {
         roleId: string;
         roleName?: string;
         permissions?: any;
+        isSystemUser?: boolean;
       };
     }
   }
@@ -105,6 +108,7 @@ export const authenticateToken = async (
       roleId: decoded.roleId,
       roleName: user.Role.RoleName,
       permissions: user.Role.Permissions,
+      isSystemUser: decoded.isSystemUser || user.IsSystemUser,
     };
 
     next();

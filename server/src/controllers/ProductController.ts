@@ -37,6 +37,8 @@ export class ProductController {
       }
 
       const userCompanyId = (req as any).user?.companyId;
+      const isSystemUser = (req as any).user?.isSystemUser;
+      
       if (!userCompanyId) {
         console.log('ProductController Error: userCompanyId is null or undefined');
         res.status(401).json({
@@ -46,7 +48,7 @@ export class ProductController {
         return;
       }
 
-      const result = await this.productService.getProducts(query, userCompanyId);
+      const result = await this.productService.getProducts(query, userCompanyId, isSystemUser);
       res.status(200).json(result);
     } catch (error: any) {
       console.error('خطأ في جلب الأصناف:', error);
@@ -73,6 +75,8 @@ export class ProductController {
       }
 
       const userCompanyId = (req as any).user?.companyId;
+      const isSystemUser = (req as any).user?.isSystemUser;
+      
       if (!userCompanyId) {
         res.status(401).json({
           success: false,
@@ -81,7 +85,7 @@ export class ProductController {
         return;
       }
 
-      const product = await this.productService.getProductById(productId, userCompanyId);
+      const product = await this.productService.getProductById(productId, userCompanyId, isSystemUser);
       
       res.status(200).json({
         success: true,
@@ -110,7 +114,7 @@ export class ProductController {
    */
   async createProduct(req: Request, res: Response): Promise<void> {
     try {
-      const { sku, name, unit, createdByCompanyId, sellPrice, initialQuantity } = req.body;
+      const { sku, name, unit, unitsPerBox, createdByCompanyId, sellPrice, initialBoxes } = req.body;
 
       // التحقق من البيانات المطلوبة
       if (!sku || !name || !createdByCompanyId) {
@@ -122,6 +126,8 @@ export class ProductController {
       }
 
       const userCompanyId = (req as any).user?.companyId;
+      const isSystemUser = (req as any).user?.isSystemUser;
+      
       if (!userCompanyId) {
         res.status(401).json({
           success: false,
@@ -130,8 +136,8 @@ export class ProductController {
         return;
       }
 
-      // التأكد من أن المستخدم ينشئ الصنف لشركته
-      if (createdByCompanyId !== userCompanyId) {
+      // التأكد من أن المستخدم ينشئ الصنف لشركته (إلا إذا كان مستخدم نظام)
+      if (!isSystemUser && createdByCompanyId !== userCompanyId) {
         res.status(403).json({
           success: false,
           message: 'لا يمكنك إنشاء أصناف لشركة أخرى',
@@ -143,10 +149,21 @@ export class ProductController {
         sku,
         name,
         unit,
+        unitsPerBox: unitsPerBox ? parseFloat(unitsPerBox) : undefined,
         createdByCompanyId,
         sellPrice: sellPrice ? parseFloat(sellPrice) : undefined,
-        initialQuantity: initialQuantity ? parseFloat(initialQuantity) : undefined,
+        initialBoxes: initialBoxes ? parseFloat(initialBoxes) : undefined,
       };
+
+      // Debug logging for initialBoxes
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('ProductController - Create Product Debug:', {
+          receivedInitialBoxes: initialBoxes,
+          typeOfInitialBoxes: typeof initialBoxes,
+          parsedInitialBoxes: initialBoxes ? parseFloat(initialBoxes) : undefined,
+          finalProductData: productData
+        });
+      }
 
       const product = await this.productService.createProduct(productData);
       
@@ -193,6 +210,8 @@ export class ProductController {
       }
 
       const userCompanyId = (req as any).user?.companyId;
+      const isSystemUser = (req as any).user?.isSystemUser;
+      
       if (!userCompanyId) {
         res.status(401).json({
           success: false,
@@ -208,7 +227,7 @@ export class ProductController {
         sellPrice: req.body.sellPrice ? parseFloat(req.body.sellPrice) : undefined,
       };
 
-      const product = await this.productService.updateProduct(productId, updateData, userCompanyId);
+      const product = await this.productService.updateProduct(productId, updateData, userCompanyId, isSystemUser);
       
       res.status(200).json({
         success: true,
@@ -411,6 +430,8 @@ export class ProductController {
   async getProductStats(req: Request, res: Response): Promise<void> {
     try {
       const userCompanyId = (req as any).user?.companyId;
+      const isSystemUser = (req as any).user?.isSystemUser;
+      
       if (!userCompanyId) {
         res.status(401).json({
           success: false,
@@ -419,7 +440,7 @@ export class ProductController {
         return;
       }
 
-      const stats = await this.productService.getProductStats(userCompanyId);
+      const stats = await this.productService.getProductStats(userCompanyId, isSystemUser);
       res.status(200).json(stats);
     } catch (error: any) {
       console.error('خطأ في جلب إحصائيات الأصناف:', error);

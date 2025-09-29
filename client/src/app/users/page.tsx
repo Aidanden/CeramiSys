@@ -513,10 +513,10 @@ const UsersPage = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {new Date(user.createdAt).toLocaleDateString('ar-SA')}
+                      {new Date(user.createdAt).toLocaleDateString('ar-LY')}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('ar-SA') : 'لم يسجل دخول'}
+                      {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('ar-LY') : 'لم يسجل دخول'}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">

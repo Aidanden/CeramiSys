@@ -25,15 +25,15 @@ export class ProductService {
   /**
    * الحصول على جميع الأصناف مع التصفية والبحث
    */
-  async getProducts(query: GetProductsQueryDto, userCompanyId: number): Promise<ProductsResponseDto> {
+  async getProducts(query: GetProductsQueryDto, userCompanyId: number, isSystemUser?: boolean): Promise<ProductsResponseDto> {
     try {
       const { page = 1, limit = 10, search, companyId, unit } = query;
       const skip = (page - 1) * limit;
 
       // بناء شروط البحث
       const whereConditions: Prisma.ProductWhereInput = {
-        // كل شركة ترى فقط الأصناف الخاصة بها
-        createdByCompanyId: userCompanyId,
+        // مستخدمو النظام يرون جميع الأصناف، المستخدمون العاديون يرون أصناف شركتهم فقط
+        ...(isSystemUser !== true && { createdByCompanyId: userCompanyId }),
       };
 
       // إضافة شرط البحث
@@ -60,11 +60,15 @@ export class ProductService {
             select: { id: true, name: true, code: true }
           },
           stocks: {
-            where: { companyId: userCompanyId },
+            where: {
+              ...(isSystemUser !== true && { companyId: userCompanyId })
+            },
             select: { boxes: true, updatedAt: true }
           },
           prices: {
-            where: { companyId: userCompanyId },
+            where: {
+              ...(isSystemUser !== true && { companyId: userCompanyId })
+            },
             select: { sellPrice: true, updatedAt: true }
           }
         },
@@ -87,7 +91,10 @@ export class ProductService {
         stock: product.stocks[0] ? {
           boxes: Number(product.stocks[0].boxes),
           updatedAt: product.stocks[0].updatedAt
-        } : undefined,
+        } : {
+          boxes: 0,
+          updatedAt: new Date()
+        },
         price: product.prices[0] ? {
           sellPrice: Number(product.prices[0].sellPrice),
           updatedAt: product.prices[0].updatedAt
@@ -113,23 +120,28 @@ export class ProductService {
   /**
    * الحصول على صنف واحد بالمعرف
    */
-  async getProductById(id: number, userCompanyId: number): Promise<ProductResponseDto> {
+  async getProductById(id: number, userCompanyId: number, isSystemUser?: boolean): Promise<ProductResponseDto> {
     try {
       const product = await this.prisma.product.findFirst({
         where: { 
           id,
-          createdByCompanyId: userCompanyId // التأكد من أن الصنف ينتمي لنفس الشركة
+          // مستخدمو النظام يمكنهم الوصول لجميع الأصناف، المستخدمون العاديون للشركة فقط
+          ...(isSystemUser !== true && { createdByCompanyId: userCompanyId })
         },
         include: {
           createdByCompany: {
             select: { id: true, name: true, code: true }
           },
           stocks: {
-            where: { companyId: userCompanyId },
+            where: {
+              ...(isSystemUser !== true && { companyId: userCompanyId })
+            },
             select: { boxes: true, updatedAt: true }
           },
           prices: {
-            where: { companyId: userCompanyId },
+            where: {
+              ...(isSystemUser !== true && { companyId: userCompanyId })
+            },
             select: { sellPrice: true, updatedAt: true }
           }
         },
@@ -152,7 +164,10 @@ export class ProductService {
         stock: product.stocks[0] ? {
           boxes: Number(product.stocks[0].boxes),
           updatedAt: product.stocks[0].updatedAt
-        } : undefined,
+        } : {
+          boxes: 0,
+          updatedAt: new Date()
+        },
         price: product.prices[0] ? {
           sellPrice: Number(product.prices[0].sellPrice),
           updatedAt: product.prices[0].updatedAt
@@ -193,6 +208,7 @@ export class ProductService {
           sku: data.sku,
           name: data.name,
           unit: data.unit,
+          unitsPerBox: data.unitsPerBox,
           createdByCompanyId: data.createdByCompanyId,
         },
         include: {
@@ -213,27 +229,37 @@ export class ProductService {
         });
       }
 
-      // إنشاء مخزون أولي إذا تم تحديده
-      if (data.initialBoxes !== undefined) {
-        console.log('Creating stock with data:', {
-          companyId: data.createdByCompanyId,
-          productId: product.id,
-          boxes: data.initialBoxes,
-        });
-        await this.prisma.stock.create({
-          data: {
+      // إنشاء مخزون أولي (افتراضياً 0 إذا لم يتم تحديد قيمة)
+      const initialBoxes = data.initialBoxes !== undefined ? data.initialBoxes : 0;
+      
+      // Enhanced debug logging
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('ProductService - Create Stock Debug:', { 
+          receivedInitialBoxes: data.initialBoxes, 
+          typeOfReceived: typeof data.initialBoxes, 
+          finalInitialBoxes: initialBoxes,
+          typeOfFinal: typeof initialBoxes,
+          willCreateStockWith: {
             companyId: data.createdByCompanyId,
-            productId: product.id,
-            boxes: data.initialBoxes,
+            productId: 'will be set after product creation',
+            boxes: initialBoxes
           }
         });
       }
+      await this.prisma.stock.create({
+        data: {
+          companyId: data.createdByCompanyId,
+          productId: product.id,
+          boxes: initialBoxes,
+        }
+      });
 
       return {
         id: product.id,
         sku: product.sku,
         name: product.name,
         unit: product.unit ?? undefined,
+        unitsPerBox: product.unitsPerBox ? Number(product.unitsPerBox) : undefined,
         createdByCompanyId: product.createdByCompanyId,
         createdByCompany: product.createdByCompany,
         createdAt: product.createdAt,
@@ -248,7 +274,7 @@ export class ProductService {
   /**
    * تحديث صنف
    */
-  async updateProduct(id: number, data: UpdateProductDto, userCompanyId: number): Promise<ProductResponseDto> {
+  async updateProduct(id: number, data: UpdateProductDto, userCompanyId: number, isSystemUser?: boolean): Promise<ProductResponseDto> {
     try {
       // التحقق من وجود الصنف
       const existingProduct = await this.prisma.product.findUnique({
@@ -259,8 +285,8 @@ export class ProductService {
         throw new Error('الصنف غير موجود');
       }
 
-      // التحقق من الصلاحية (فقط الشركة المنشئة يمكنها التعديل)
-      if (existingProduct.createdByCompanyId !== userCompanyId) {
+      // التحقق من الصلاحية (فقط الشركة المنشئة أو مستخدمو النظام يمكنهم التعديل)
+      if (!isSystemUser && existingProduct.createdByCompanyId !== userCompanyId) {
         throw new Error('ليس لديك صلاحية لتعديل هذا الصنف');
       }
 
@@ -344,11 +370,13 @@ export class ProductService {
   /**
    * حذف صنف
    */
-  async deleteProduct(id: number, userCompanyId: number): Promise<void> {
+  async deleteProduct(id: number, userCompanyId: number, isSystemUser?: boolean): Promise<void> {
     try {
       // التحقق من وجود الصنف
+      const whereConditions = isSystemUser !== true ? { id, createdByCompanyId: userCompanyId } : { id };
+
       const existingProduct = await this.prisma.product.findUnique({
-        where: { id },
+        where: whereConditions,
         include: {
           saleLines: true,
           purchaseLines: true,
@@ -441,16 +469,19 @@ export class ProductService {
   /**
    * الحصول على إحصائيات الأصناف
    */
-  async getProductStats(userCompanyId: number): Promise<ProductStatsResponseDto> {
+  async getProductStats(userCompanyId: number, isSystemUser?: boolean): Promise<ProductStatsResponseDto> {
     try {
+      // شروط البحث حسب نوع المستخدم
+      const whereConditions = isSystemUser !== true ? { createdByCompanyId: userCompanyId } : {};
+
       // إحصائيات الأصناف
       const totalProducts = await this.prisma.product.count({
-        where: { createdByCompanyId: userCompanyId }
+        where: whereConditions
       });
 
       const productsWithStock = await this.prisma.stock.count({
         where: {
-          companyId: userCompanyId,
+          ...(isSystemUser !== true && { companyId: userCompanyId }),
           boxes: { gt: 0 }
         }
       });
@@ -459,12 +490,16 @@ export class ProductService {
 
       // قيمة المخزون الإجمالية - استخدام Prisma ORM بدلاً من raw query
       const stockWithPrices = await this.prisma.stock.findMany({
-        where: { companyId: userCompanyId },
+        where: {
+          ...(isSystemUser !== true && { companyId: userCompanyId })
+        },
         include: {
           product: {
             include: {
               prices: {
-                where: { companyId: userCompanyId }
+                where: {
+                  ...(isSystemUser !== true && { companyId: userCompanyId })
+                }
               }
             }
           }
@@ -480,7 +515,9 @@ export class ProductService {
 
       // متوسط سعر الأصناف
       const avgPrice = await this.prisma.companyProductPrice.aggregate({
-        where: { companyId: userCompanyId },
+        where: {
+          ...(isSystemUser !== true && { companyId: userCompanyId })
+        },
         _avg: { sellPrice: true }
       });
 

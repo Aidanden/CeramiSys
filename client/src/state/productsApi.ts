@@ -125,11 +125,19 @@ export const productsApi = createApi({
         const queryString = searchParams.toString();
         return `/products${queryString ? `?${queryString}` : ''}`;
       },
+      providesTags: (result) => 
+        result?.data?.products
+          ? [
+              ...result.data.products.map(({ id }) => ({ type: 'Product' as const, id })),
+              { type: 'Products', id: 'LIST' },
+            ]
+          : [{ type: 'Products', id: 'LIST' }],
     }),
 
     // الحصول على صنف واحد
     getProduct: builder.query<ProductResponse, number>({
       query: (id) => `/products/${id}`,
+      providesTags: (result, error, id) => [{ type: 'Product', id }],
     }),
 
     // إنشاء صنف جديد
@@ -139,6 +147,7 @@ export const productsApi = createApi({
         method: "POST",
         body: productData,
       }),
+      invalidatesTags: [{ type: 'Products', id: 'LIST' }, 'ProductStats'],
     }),
 
     // تحديث صنف
@@ -148,6 +157,11 @@ export const productsApi = createApi({
         method: "PUT",
         body: productData,
       }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Product', id },
+        { type: 'Products', id: 'LIST' },
+        'ProductStats'
+      ],
     }),
 
     // حذف صنف
@@ -156,6 +170,11 @@ export const productsApi = createApi({
         url: `/products/${id}`,
         method: "DELETE",
       }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Product', id },
+        { type: 'Products', id: 'LIST' },
+        'ProductStats'
+      ],
     }),
 
     // تحديث المخزون
@@ -165,6 +184,11 @@ export const productsApi = createApi({
         method: "PUT",
         body: stockData,
       }),
+      invalidatesTags: (result, error, { productId }) => [
+        { type: 'Product', id: productId },
+        { type: 'Products', id: 'LIST' },
+        'ProductStats'
+      ],
     }),
 
     // تحديث السعر
@@ -174,11 +198,17 @@ export const productsApi = createApi({
         method: "PUT",
         body: priceData,
       }),
+      invalidatesTags: (result, error, { productId }) => [
+        { type: 'Product', id: productId },
+        { type: 'Products', id: 'LIST' },
+        'ProductStats'
+      ],
     }),
 
     // الحصول على إحصائيات الأصناف
     getProductStats: builder.query<ProductStatsResponse, void>({
       query: () => "/products/stats",
+      providesTags: ['ProductStats'],
     }),
   }),
 });
