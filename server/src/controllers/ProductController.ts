@@ -450,4 +450,72 @@ export class ProductController {
       });
     }
   }
+
+  /**
+   * الحصول على الأصناف الأكثر مبيعاً
+   */
+  async getTopSellingProducts(req: Request, res: Response): Promise<void> {
+    try {
+      const userCompanyId = (req as any).user?.companyId;
+      const isSystemUser = (req as any).user?.isSystemUser;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const companyId = req.query.companyId ? parseInt(req.query.companyId as string) : undefined;
+      
+      if (!userCompanyId) {
+        res.status(401).json({
+          success: false,
+          message: 'غير مصرح لك بالوصول',
+        });
+        return;
+      }
+
+      const topProducts = await this.productService.getTopSellingProducts(
+        userCompanyId, 
+        isSystemUser, 
+        limit, 
+        companyId
+      );
+      res.status(200).json(topProducts);
+    } catch (error: any) {
+      console.error('خطأ في جلب الأصناف الأكثر مبيعاً:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'خطأ في الخادم الداخلي',
+      });
+    }
+  }
+
+  /**
+   * الحصول على الأصناف التي ستنتهي قريباً
+   */
+  async getLowStockProducts(req: Request, res: Response): Promise<void> {
+    try {
+      const userCompanyId = (req as any).user?.companyId;
+      const isSystemUser = (req as any).user?.isSystemUser;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const companyId = req.query.companyId ? parseInt(req.query.companyId as string) : undefined;
+      
+      if (!userCompanyId) {
+        res.status(401).json({
+          success: false,
+          message: 'غير مصرح لك بالوصول',
+        });
+        return;
+      }
+
+      const lowStockProducts = await this.productService.getLowStockProducts(
+        userCompanyId, 
+        isSystemUser, 
+        limit, 
+        companyId
+      );
+      res.status(200).json(lowStockProducts);
+    } catch (error: any) {
+      console.error('خطأ في جلب الأصناف التي ستنتهي قريباً:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'خطأ في الخادم الداخلي',
+      });
+    }
+  }
 }

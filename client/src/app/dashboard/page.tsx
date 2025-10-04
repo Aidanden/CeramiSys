@@ -16,8 +16,30 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   MoreVertical,
-  Eye
+  Eye,
+  AlertTriangle,
+  Star,
+  TrendingUp as TrendingUpIcon,
+  BarChart3,
+  Activity
 } from "lucide-react";
+import { 
+  useGetSalesStatsQuery
+} from "@/state/salesApi";
+import { 
+  useGetPurchaseStatsQuery
+} from "@/state/purchaseApi";
+import { 
+  useGetCreditSalesStatsQuery
+} from "@/state/salePaymentApi";
+import { 
+  useGetTopSellingProductsQuery,
+  useGetLowStockProductsQuery
+} from "@/state/productsApi";
+import { 
+  useGetRecentActivitiesQuery
+} from "@/state/activityApi";
+import { formatArabicNumber, formatArabicCurrency } from "@/utils/formatArabicNumbers";
 
 interface StatCardProps {
   title: string;
@@ -69,39 +91,36 @@ interface ActivityItem {
 }
 
 const ActivityFeed = () => {
-  const activities: ActivityItem[] = [
-    {
-      id: 1,
-      type: "sale",
-      title: "عملية بيع جديدة",
-      description: "تم بيع منتجات بقيمة 15,000 دينار",
-      time: "منذ 5 دقائق",
-      amount: "+15,000 د.ل"
-    },
-    {
-      id: 2,
-      type: "user",
-      title: "مستخدم جديد",
-      description: "انضم أحمد محمد إلى النظام",
-      time: "منذ 30 دقيقة"
-    },
-    {
-      id: 3,
-      type: "payment",
-      title: "دفعة مستلمة",
-      description: "تم استلام دفعة من العميل محمد علي",
-      time: "منذ ساعة",
-      amount: "+25,000 د.ل"
-    },
-    {
-      id: 4,
-      type: "purchase",
-      title: "طلبية شراء",
-      description: "تم شراء مواد خام بقيمة 8,000 دينار",
-      time: "منذ ساعتين",
-      amount: "-8,000 د.ل"
-    }
-  ];
+  const { data: activitiesData, isLoading } = useGetRecentActivitiesQuery({ limit: 10 });
+  
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-slate-900">الأنشطة الأخيرة</h3>
+          <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+            عرض الكل
+          </button>
+        </div>
+        <div className="space-y-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={`activity-skeleton-${i}`} className="animate-pulse">
+              <div className="flex items-start gap-3 p-3 rounded-lg">
+                <div className="w-8 h-8 bg-slate-200 rounded-lg"></div>
+                <div className="flex-1">
+                  <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-slate-200 rounded w-1/2 mb-1"></div>
+                  <div className="h-3 bg-slate-200 rounded w-1/4"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const activities = activitiesData?.data || [];
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -113,6 +132,8 @@ const ActivityFeed = () => {
         return <DollarSign className="w-4 h-4 text-emerald-600" />;
       case "user":
         return <Users className="w-4 h-4 text-purple-600" />;
+      case "product":
+        return <Package className="w-4 h-4 text-orange-600" />;
       default:
         return <Bell className="w-4 h-4 text-gray-600" />;
     }
@@ -127,7 +148,8 @@ const ActivityFeed = () => {
         </button>
       </div>
       <div className="space-y-4">
-        {activities.map((activity) => (
+        {activities.length > 0 ? (
+          activities.map((activity) => (
           <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors">
             <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
               {getActivityIcon(activity.type)}
@@ -147,7 +169,162 @@ const ActivityFeed = () => {
               </span>
             )}
           </div>
-        ))}
+          ))
+        ) : (
+          <div className="text-center py-8">
+            <Activity className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+            <p className="text-slate-600">لا توجد أنشطة حديثة</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// مكون الأصناف الأكثر مبيعاً
+const TopSellingProducts = () => {
+  const { data: topProductsData, isLoading } = useGetTopSellingProductsQuery({ limit: 5 });
+
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h3 className="text-lg font-semibold text-slate-900 mb-6">الأصناف الأكثر مبيعاً</h3>
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={`top-products-skeleton-${i}`} className="animate-pulse">
+              <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const topProducts = topProductsData?.data || [];
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold text-slate-900">الأصناف الأكثر مبيعاً</h3>
+        <Star className="w-5 h-5 text-yellow-500" />
+      </div>
+      <div className="space-y-4">
+        {topProducts.length > 0 ? (
+          topProducts.map((product, index) => (
+            <div key={`top-product-${product.productId}-${index}`} className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <span className="text-sm font-bold text-yellow-600">#{index + 1}</span>
+                </div>
+                <div>
+                  <p className="font-medium text-slate-900">{product.productName}</p>
+                  <p className="text-sm text-slate-600">{product.sku}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="font-semibold text-slate-900">{formatArabicNumber(product.totalQuantitySold)} {product.unit}</p>
+                <p className="text-sm text-green-600">{formatArabicCurrency(product.totalRevenue)}</p>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-8">
+            <BarChart3 className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+            <p className="text-slate-600">لا توجد بيانات مبيعات</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// مكون الأصناف التي ستنتهي قريباً
+const LowStockProducts = () => {
+  const { data: lowStockData, isLoading } = useGetLowStockProductsQuery({ limit: 5 });
+
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h3 className="text-lg font-semibold text-slate-900 mb-6">الأصناف التي ستنتهي قريباً</h3>
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={`low-stock-skeleton-${i}`} className="animate-pulse">
+              <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const lowStockProducts = lowStockData?.data || [];
+
+  const getStockStatusColor = (status: string) => {
+    switch (status) {
+      case 'OUT_OF_STOCK':
+        return 'text-red-600 bg-red-100';
+      case 'CRITICAL':
+        return 'text-orange-600 bg-orange-100';
+      case 'LOW':
+        return 'text-yellow-600 bg-yellow-100';
+      default:
+        return 'text-slate-600 bg-slate-100';
+    }
+  };
+
+  const getStockStatusText = (status: string) => {
+    switch (status) {
+      case 'OUT_OF_STOCK':
+        return 'نفد المخزون';
+      case 'CRITICAL':
+        return 'حرج';
+      case 'LOW':
+        return 'منخفض';
+      default:
+        return 'عادي';
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold text-slate-900">الأصناف التي ستنتهي قريباً</h3>
+        <AlertTriangle className="w-5 h-5 text-orange-500" />
+      </div>
+      <div className="space-y-4">
+        {lowStockProducts.length > 0 ? (
+          lowStockProducts.map((product, index) => (
+            <div key={`low-stock-product-${product.productId}-${index}`} className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <AlertTriangle className="w-4 h-4 text-orange-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-slate-900">{product.productName}</p>
+                  <p className="text-sm text-slate-600">{product.sku}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="font-semibold text-slate-900">{formatArabicNumber(product.currentStock)} {product.unit}</p>
+                {product.unit !== 'صندوق' && product.unitsPerBox > 1 && (
+                  <p className="text-xs text-slate-600">
+                    ({formatArabicNumber(product.totalUnits)} {product.unit})
+                  </p>
+                )}
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStockStatusColor(product.stockStatus)}`}>
+                  {getStockStatusText(product.stockStatus)}
+                </span>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-8">
+            <Package className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+            <p className="text-slate-600">جميع الأصناف متوفرة</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -185,6 +362,11 @@ const QuickActions = () => {
 
 const Dashboard = () => {
   const { user } = useAppSelector((state) => state.auth);
+  
+  // جلب البيانات من APIs
+  const { data: salesStats, isLoading: salesLoading } = useGetSalesStatsQuery();
+  const { data: purchaseStats, isLoading: purchaseLoading } = useGetPurchaseStatsQuery({});
+  const { data: creditStats, isLoading: creditLoading } = useGetCreditSalesStatsQuery();
 
   return (
     <div className="space-y-6">
@@ -203,7 +385,7 @@ const Dashboard = () => {
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5" />
               <span className="text-sm">
-                {new Date().toLocaleDateString("ar-LY", {
+                {new Date().toLocaleDateString("en-US", {
                   weekday: "long",
                   year: "numeric",
                   month: "long",
@@ -214,7 +396,7 @@ const Dashboard = () => {
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5" />
               <span className="text-sm">
-                {new Date().toLocaleTimeString("ar-LY", {
+                {new Date().toLocaleTimeString("en-US", {
                   hour: "2-digit",
                   minute: "2-digit"
                 })}
@@ -227,50 +409,96 @@ const Dashboard = () => {
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          title="إجمالي المبيعات"
-          value="450,000 دينار"
-          change="+12.5%"
+          title="مبيعات اليوم"
+          value={salesLoading ? "جاري التحميل..." : formatArabicCurrency(salesStats?.data?.todayRevenue || 0)}
+          change=""
           changeType="increase"
           icon={TrendingUp}
           color="bg-gradient-to-r from-green-500 to-emerald-500"
         />
         <StatCard
-          title="عدد العملاء"
-          value="1,250"
-          change="+8.2%"
+          title="مبيعات الشهر"
+          value={salesLoading ? "جاري التحميل..." : formatArabicCurrency(salesStats?.data?.monthRevenue || 0)}
+          change=""
           changeType="increase"
-          icon={Users}
+          icon={BarChart3}
           color="bg-gradient-to-r from-blue-500 to-indigo-500"
         />
         <StatCard
-          title="المشتريات"
-          value="180,000 دينار"
-          change="-3.1%"
-          changeType="decrease"
-          icon={ShoppingCart}
+          title="مبيعات السنة"
+          value={salesLoading ? "جاري التحميل..." : formatArabicCurrency(salesStats?.data?.yearRevenue || 0)}
+          change=""
+          changeType="increase"
+          icon={Activity}
           color="bg-gradient-to-r from-purple-500 to-pink-500"
         />
         <StatCard
-          title="رصيد الخزينة"
-          value="75,000 دينار"
-          change="+15.7%"
+          title="المبيعات الآجلة"
+          value={creditLoading ? "جاري التحميل..." : formatArabicCurrency(creditStats?.data?.totalRemaining || 0)}
+          change=""
+          changeType="increase"
+          icon={CreditCard}
+          color="bg-gradient-to-r from-orange-500 to-red-500"
+        />
+      </div>
+
+      {/* Purchase Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          title="إجمالي المشتريات"
+          value={purchaseLoading ? "جاري التحميل..." : formatArabicCurrency(purchaseStats?.totalAmount || 0)}
+          change=""
+          changeType="increase"
+          icon={ShoppingCart}
+          color="bg-gradient-to-r from-indigo-500 to-purple-500"
+        />
+        <StatCard
+          title="المبلغ المدفوع"
+          value={purchaseLoading ? "جاري التحميل..." : formatArabicCurrency(purchaseStats?.totalPaid || 0)}
+          change=""
           changeType="increase"
           icon={DollarSign}
           color="bg-gradient-to-r from-emerald-500 to-teal-500"
+        />
+        <StatCard
+          title="المبلغ المتبقي"
+          value={purchaseLoading ? "جاري التحميل..." : formatArabicCurrency(purchaseStats?.totalRemaining || 0)}
+          change=""
+          changeType="increase"
+          icon={AlertTriangle}
+          color="bg-gradient-to-r from-yellow-500 to-orange-500"
+        />
+        <StatCard
+          title="عدد المشتريات"
+          value={purchaseLoading ? "جاري التحميل..." : formatArabicNumber(purchaseStats?.totalPurchases || 0)}
+          change=""
+          changeType="increase"
+          icon={Package}
+          color="bg-gradient-to-r from-cyan-500 to-blue-500"
         />
       </div>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Activity Feed - Takes 2 columns */}
-        <div className="lg:col-span-2">
-          <ActivityFeed />
+        {/* Top Selling Products - Takes 1 column */}
+        <div>
+          <TopSellingProducts />
+        </div>
+
+        {/* Low Stock Products - Takes 1 column */}
+        <div>
+          <LowStockProducts />
         </div>
 
         {/* Quick Actions - Takes 1 column */}
         <div>
           <QuickActions />
         </div>
+      </div>
+
+      {/* Activity Feed */}
+      <div className="grid grid-cols-1">
+        <ActivityFeed />
       </div>
 
       {/* Charts Section */}

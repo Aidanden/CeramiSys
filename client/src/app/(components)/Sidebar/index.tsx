@@ -17,10 +17,10 @@ import {
   FileText,
   Wallet,
   Shield,
-  ChevronRight,
   Home,
   Building2,
   ShoppingBag,
+  ArrowRightLeft,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -64,9 +64,7 @@ const SidebarLink = ({
           {label}
         </span>
         {isActive && !isCollapsed && (
-          <div className="absolute left-2">
-            <ChevronRight className="h-4 w-4 text-white" />
-          </div>
+          <div className="absolute left-2 w-1 h-8 bg-white rounded-full"></div>
         )}
       </div>
     </Link>
@@ -148,6 +146,18 @@ const Sidebar = () => {
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink
+            href="/credit-sales"
+            icon={FileText}
+            label="المبيعات الآجلة"
+            isCollapsed={isSidebarCollapsed}
+          />
+          <SidebarLink
+            href="/inter-company-sales"
+            icon={ArrowRightLeft}
+            label="مبيعات بين الشركات"
+            isCollapsed={isSidebarCollapsed}
+          />
+          <SidebarLink
             href="/purchases"
             icon={CreditCard}
             label="المشتريات"
@@ -163,6 +173,12 @@ const Sidebar = () => {
             href="/customers"
             icon={SquareUserRound}
             label="العملاء"
+            isCollapsed={isSidebarCollapsed}
+          />
+          <SidebarLink
+            href="/suppliers"
+            icon={UsersRound}
+            label="الموردين"
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink

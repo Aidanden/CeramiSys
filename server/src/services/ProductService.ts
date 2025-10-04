@@ -539,4 +539,156 @@ export class ProductService {
       throw new Error('فشل في جلب الإحصائيات');
     }
   }
+
+  /**
+   * الحصول على الأصناف الأكثر مبيعاً
+   */
+  async getTopSellingProducts(userCompanyId: number, isSystemUser?: boolean, limit: number = 10, companyId?: number): Promise<any> {
+    try {
+      const whereConditions: any = {};
+      
+      // تحديد الشركة للبحث
+      if (companyId) {
+        whereConditions.companyId = companyId;
+      } else if (isSystemUser !== true) {
+        whereConditions.companyId = userCompanyId;
+      }
+
+      // جلب الأصناف الأكثر مبيعاً
+      const topProducts = await this.prisma.saleLine.groupBy({
+        by: ['productId'],
+        where: {
+          sale: whereConditions
+        },
+        _sum: {
+          qty: true,
+          subTotal: true
+        },
+        _count: {
+          productId: true
+        },
+        orderBy: {
+          _sum: {
+            qty: 'desc'
+          }
+        },
+        take: limit
+      });
+
+      // جلب تفاصيل الأصناف
+      const productIds = topProducts.map(item => item.productId);
+      const products = await this.prisma.product.findMany({
+        where: {
+          id: { in: productIds }
+        },
+        select: {
+          id: true,
+          name: true,
+          sku: true,
+          unit: true
+        }
+      });
+
+      // دمج البيانات
+      const result = topProducts.map(item => {
+        const product = products.find(p => p.id === item.productId);
+        return {
+          productId: item.productId,
+          productName: product?.name || 'غير محدد',
+          sku: product?.sku || 'غير محدد',
+          totalQuantitySold: Number(item._sum.qty || 0),
+          totalRevenue: Number(item._sum.subTotal || 0),
+          unit: product?.unit || 'وحدة'
+        };
+      });
+
+      return {
+        success: true,
+        message: 'تم جلب الأصناف الأكثر مبيعاً بنجاح',
+        data: result
+      };
+    } catch (error) {
+      console.error('خطأ في جلب الأصناف الأكثر مبيعاً:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * الحصول على الأصناف التي ستنتهي قريباً
+   */
+  async getLowStockProducts(userCompanyId: number, isSystemUser?: boolean, limit: number = 10, companyId?: number): Promise<any> {
+    try {
+      const whereConditions: any = {};
+      
+      // تحديد الشركة للبحث
+      if (companyId) {
+        whereConditions.companyId = companyId;
+      } else if (isSystemUser !== true) {
+        whereConditions.companyId = userCompanyId;
+      }
+
+      // جلب الأصناف ذات المخزون المنخفض
+      const lowStockProducts = await this.prisma.stock.findMany({
+        where: {
+          ...whereConditions,
+          OR: [
+            { boxes: { lte: 0 } }, // نفد المخزون
+            { boxes: { lte: 20 } }  // مخزون منخفض (أقل من 20 صندوق أو قطعة)
+          ]
+        },
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              sku: true,
+              unit: true,
+              unitsPerBox: true
+            }
+          }
+        },
+        orderBy: {
+          boxes: 'asc'
+        },
+        take: limit
+      });
+
+      // تحويل البيانات
+      const result = lowStockProducts.map(stock => {
+        const currentStock = Number(stock.boxes);
+        const unitsPerBox = Number(stock.product.unitsPerBox || 1);
+        const totalUnits = currentStock * unitsPerBox;
+        
+        let stockStatus: 'LOW' | 'CRITICAL' | 'OUT_OF_STOCK' = 'LOW';
+        
+        if (currentStock === 0) {
+          stockStatus = 'OUT_OF_STOCK';
+        } else if (currentStock <= 5) {
+          stockStatus = 'CRITICAL';
+        } else if (currentStock <= 20) {
+          stockStatus = 'LOW';
+        }
+
+        return {
+          productId: stock.product.id,
+          productName: stock.product.name,
+          sku: stock.product.sku,
+          currentStock: currentStock,
+          totalUnits: totalUnits,
+          unit: stock.product.unit || 'صندوق',
+          unitsPerBox: unitsPerBox,
+          stockStatus
+        };
+      });
+
+      return {
+        success: true,
+        message: 'تم جلب الأصناف التي ستنتهي قريباً بنجاح',
+        data: result
+      };
+    } catch (error) {
+      console.error('خطأ في جلب الأصناف التي ستنتهي قريباً:', error);
+      throw error;
+    }
+  }
 }

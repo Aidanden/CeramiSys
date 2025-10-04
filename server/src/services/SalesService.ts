@@ -15,6 +15,13 @@ export class SalesService {
 
   /**
    * إنشاء فاتورة مبيعات جديدة
+   * 
+   * @param data - بيانات الفاتورة (يمكن أن تحتوي على companyId للـ System User)
+   * @param userCompanyId - معرف الشركة المستهدفة للفاتورة
+   * @param isSystemUser - هل المستخدم System User (يمكنه البيع من أي شركة)
+   * 
+   * ملاحظة: userCompanyId هنا يمثل الشركة التي سيتم البيع منها (targetCompanyId)
+   * وليس شركة المستخدم الأصلية
    */
   async createSale(data: CreateSaleDto, userCompanyId: number, isSystemUser: boolean = false) {
     try {
@@ -36,10 +43,10 @@ export class SalesService {
           ...(isSystemUser !== true && { createdByCompanyId: userCompanyId })
         },
         include: {
-          stocks: {
+          stocks: isSystemUser ? true : {
             where: { companyId: userCompanyId }
           },
-          prices: {
+          prices: isSystemUser ? true : {
             where: { companyId: userCompanyId }
           }
         }
@@ -54,11 +61,45 @@ export class SalesService {
         const product = products.find(p => p.id === line.productId);
         if (!product) continue;
 
-        const stock = product.stocks[0];
-        if (!stock || Number(stock.boxes) < line.qty) {
-          throw new Error(`المخزون غير كافي للصنف: ${product.name}`);
+        // للـ System User: نبحث عن المخزون في الشركة المحددة في الفاتورة
+        // للمستخدم العادي: نستخدم مخزون شركته فقط
+        const stock = isSystemUser 
+          ? product.stocks.find(s => s.companyId === userCompanyId)
+          : product.stocks[0];
+        
+        // Debug logging
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('📦 Stock Check Debug:', {
+            productId: product.id,
+            productName: product.name,
+            isSystemUser,
+            userCompanyId,
+            stocksFound: product.stocks.length,
+            allStocks: product.stocks.map(s => ({ companyId: s.companyId, boxes: Number(s.boxes) })),
+            selectedStock: stock ? {
+              companyId: stock.companyId,
+              boxes: Number(stock.boxes)
+            } : 'NO_STOCK'
+          });
+        }
+        
+        // الكمية المطلوبة هي دائماً بالصناديق (line.qty = عدد الصناديق)
+        const requiredBoxes = line.qty;
+        
+        if (!stock || Number(stock.boxes) < requiredBoxes) {
+          // عرض الكمية المتوفرة بالوحدة المناسبة
+          const availableBoxes = Number(stock?.boxes || 0);
+          const availableUnits = product.unit === 'صندوق' 
+            ? `${availableBoxes} صندوق`
+            : `${availableBoxes} صندوق (${(availableBoxes * Number(product.unitsPerBox || 1)).toFixed(2)} ${product.unit || 'وحدة'})`;
+          
+          throw new Error(`المخزون غير كافي للصنف: ${product.name}. المتوفر: ${availableUnits}، المطلوب: ${requiredBoxes} صندوق`);
         }
       }
+
+      // توليد رقم الفاتورة تلقائياً
+      const invoiceNumber = await this.generateInvoiceNumber(userCompanyId);
+      console.log('🧾 رقم الفاتورة المولد:', invoiceNumber);
 
       // حساب المجموع الإجمالي
       let total = 0;
@@ -72,10 +113,13 @@ export class SalesService {
         data: {
           companyId: userCompanyId,
           customerId: data.customerId,
-          invoiceNumber: data.invoiceNumber,
+          invoiceNumber: invoiceNumber,
           total: total,
+          paidAmount: data.saleType === 'CASH' ? total : 0, // للبيع النقدي: مدفوع بالكامل، للآجل: 0
+          remainingAmount: data.saleType === 'CASH' ? 0 : total, // للبيع النقدي: 0، للآجل: المبلغ كامل
           saleType: data.saleType,
           paymentMethod: data.paymentMethod,
+          isFullyPaid: data.saleType === 'CASH', // البيع النقدي مسدد بالكامل
           lines: {
             create: data.lines.map(line => ({
               productId: line.productId,
@@ -102,6 +146,9 @@ export class SalesService {
 
       // تحديث المخزون
       for (const line of data.lines) {
+        // الكمية المطلوبة هي دائماً بالصناديق (line.qty = عدد الصناديق)
+        const boxesToDecrement = line.qty;
+        
         await this.prisma.stock.update({
           where: {
             companyId_productId: {
@@ -111,7 +158,7 @@ export class SalesService {
           },
           data: {
             boxes: {
-              decrement: line.qty
+              decrement: boxesToDecrement
             }
           }
         });
@@ -328,7 +375,23 @@ export class SalesService {
       // إذا تم تحديث البنود، نحتاج لإعادة حساب المخزون
       if (data.lines) {
         // إرجاع المخزون للحالة السابقة
+        // الحصول على بيانات الأصناف للبنود القديمة
+        const oldProductIds = existingSale.lines.map(line => line.productId);
+        const oldProducts = await this.prisma.product.findMany({
+          where: {
+            id: { in: oldProductIds }
+          },
+          select: {
+            id: true,
+            unit: true,
+            unitsPerBox: true
+          }
+        });
+        
         for (const line of existingSale.lines) {
+          // الكمية المخزنة هي دائماً بالصناديق (line.qty = عدد الصناديق)
+          const boxesToIncrement = Number(line.qty);
+          
           await this.prisma.stock.update({
             where: {
               companyId_productId: {
@@ -338,7 +401,7 @@ export class SalesService {
             },
             data: {
               boxes: {
-                increment: Number(line.qty)
+                increment: boxesToIncrement
               }
             }
           });
@@ -352,7 +415,7 @@ export class SalesService {
             ...(isSystemUser !== true && { createdByCompanyId: userCompanyId })
           },
           include: {
-            stocks: {
+            stocks: isSystemUser ? true : {
               where: { companyId: userCompanyId }
             }
           }
@@ -362,9 +425,19 @@ export class SalesService {
           const product = products.find(p => p.id === line.productId);
           if (!product) continue;
 
-          const stock = product.stocks[0];
-          if (!stock || Number(stock.boxes) < line.qty) {
-            throw new Error(`المخزون غير كافي للصنف: ${product.name}`);
+          // للـ System User: نبحث عن المخزون في الشركة المحددة
+          const stock = isSystemUser 
+            ? product.stocks.find(s => s.companyId === userCompanyId)
+            : product.stocks[0];
+          // الكمية المطلوبة هي دائماً بالصناديق (line.qty = عدد الصناديق)
+          const requiredBoxes = line.qty;
+          
+          if (!stock || Number(stock.boxes) < requiredBoxes) {
+            const availableBoxes = Number(stock?.boxes || 0);
+            const availableUnits = product.unit === 'صندوق' 
+              ? `${availableBoxes} صندوق`
+              : `${availableBoxes} صندوق (${(availableBoxes * Number(product.unitsPerBox || 1)).toFixed(2)} ${product.unit || 'وحدة'})`;
+            throw new Error(`المخزون غير كافي للصنف: ${product.name}. المتوفر: ${availableUnits}، المطلوب: ${requiredBoxes} صندوق`);
           }
         }
 
@@ -421,6 +494,9 @@ export class SalesService {
       // تحديث المخزون للبنود الجديدة
       if (data.lines) {
         for (const line of data.lines) {
+          // الكمية المطلوبة هي دائماً بالصناديق (line.qty = عدد الصناديق)
+          const boxesToDecrement = line.qty;
+          
           await this.prisma.stock.update({
             where: {
               companyId_productId: {
@@ -430,7 +506,7 @@ export class SalesService {
             },
             data: {
               boxes: {
-                decrement: line.qty
+                decrement: boxesToDecrement
               }
             }
           });
@@ -485,6 +561,9 @@ export class SalesService {
 
       // إرجاع المخزون
       for (const line of existingSale.lines) {
+        // الكمية المخزنة هي دائماً بالصناديق (line.qty = عدد الصناديق)
+        const boxesToIncrement = Number(line.qty);
+        
         await this.prisma.stock.update({
           where: {
             companyId_productId: {
@@ -494,7 +573,7 @@ export class SalesService {
           },
           data: {
             boxes: {
-              increment: Number(line.qty)
+              increment: boxesToIncrement
             }
           }
         });
@@ -720,6 +799,53 @@ export class SalesService {
     } catch (error) {
       console.error('خطأ في حذف العميل:', error);
       throw error;
+    }
+  }
+
+  /**
+   * توليد رقم فاتورة تلقائي
+   */
+  private async generateInvoiceNumber(companyId: number): Promise<string> {
+    try {
+      // الحصول على آخر فاتورة للشركة
+      const lastSale = await this.prisma.sale.findFirst({
+        where: { companyId },
+        orderBy: { id: 'desc' },
+        select: { id: true, invoiceNumber: true }
+      });
+
+      // الحصول على تاريخ اليوم
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+
+      // تنسيق التاريخ: YYYYMMDD
+      const datePrefix = `${year}${month}${day}`;
+
+      // البحث عن آخر رقم فاتورة لنفس اليوم
+      const todaySales = await this.prisma.sale.count({
+        where: {
+          companyId,
+          createdAt: {
+            gte: new Date(year, today.getMonth(), today.getDate()),
+            lt: new Date(year, today.getMonth(), today.getDate() + 1)
+          }
+        }
+      });
+
+      // رقم تسلسلي جديد
+      const sequenceNumber = String(todaySales + 1).padStart(4, '0');
+
+      // تكوين رقم الفاتورة: INV-YYYYMMDD-XXXX
+      const invoiceNumber = `INV-${datePrefix}-${sequenceNumber}`;
+
+      return invoiceNumber;
+    } catch (error) {
+      console.error('خطأ في توليد رقم الفاتورة:', error);
+      // في حالة الخطأ، استخدم timestamp كبديل
+      const timestamp = Date.now();
+      return `INV-${timestamp}`;
     }
   }
 }

@@ -29,6 +29,22 @@ router.get('/', (req, res) => productController.getProducts(req, res));
 router.get('/stats', (req, res) => productController.getProductStats(req, res));
 
 /**
+ * @route GET /api/products/top-selling
+ * @desc الحصول على الأصناف الأكثر مبيعاً
+ * @access Private
+ * @query limit, companyId
+ */
+router.get('/top-selling', (req, res) => productController.getTopSellingProducts(req, res));
+
+/**
+ * @route GET /api/products/low-stock
+ * @desc الحصول على الأصناف التي ستنتهي قريباً
+ * @access Private
+ * @query limit, companyId
+ */
+router.get('/low-stock', (req, res) => productController.getLowStockProducts(req, res));
+
+/**
  * @route GET /api/products/:id
  * @desc الحصول على صنف واحد بالمعرف
  * @access Private

@@ -18,6 +18,11 @@ import { usersApi } from "@/state/usersApi"; // إضافة usersApi
 import { permissionsApi } from "@/state/permissionsApi"; // إضافة permissionsApi
 import { companyApi } from "@/state/companyApi"; // إضافة companyApi
 import { productsApi } from "@/state/productsApi"; // إضافة productsApi
+import { salesApi } from "@/state/salesApi"; // إضافة salesApi
+import { salePaymentApi } from "@/state/salePaymentApi"; // إضافة salePaymentApi
+import { interCompanySalesApi } from "@/state/interCompanySalesApi"; // إضافة interCompanySalesApi
+import { purchaseApi } from "@/state/purchaseApi"; // إضافة purchaseApi
+import { activityApi } from "@/state/activityApi"; // إضافة activityApi
 import { setupListeners } from "@reduxjs/toolkit/query";
 import {
   persistStore,
@@ -99,6 +104,11 @@ const rootReducer = combineReducers({
   [permissionsApi.reducerPath]: permissionsApi.reducer, // إضافة permissionsApi.reducer
   [companyApi.reducerPath]: companyApi.reducer, // إضافة companyApi.reducer
   [productsApi.reducerPath]: productsApi.reducer, // إضافة productsApi.reducer
+  [salesApi.reducerPath]: salesApi.reducer, // إضافة salesApi.reducer
+  [salePaymentApi.reducerPath]: salePaymentApi.reducer, // إضافة salePaymentApi.reducer
+  [interCompanySalesApi.reducerPath]: interCompanySalesApi.reducer, // إضافة interCompanySalesApi.reducer
+  [purchaseApi.reducerPath]: purchaseApi.reducer, // إضافة purchaseApi.reducer
+  [activityApi.reducerPath]: activityApi.reducer, // إضافة activityApi.reducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -112,7 +122,7 @@ export const makeStore = () => {
         serializableCheck: {
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
-      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware), // إضافة middleware الخاص بـ APIs
+      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, activityApi.middleware), // إضافة middleware الخاص بـ APIs
   });
 };
 

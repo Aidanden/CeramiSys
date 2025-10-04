@@ -5,7 +5,20 @@
 
 import { Request, Response } from 'express';
 import { SalesService } from '../services/SalesService';
-import { CreateSaleDto, UpdateSaleDto, GetSalesQueryDto, CreateCustomerDto, UpdateCustomerDto, GetCustomersQueryDto } from '../dto/salesDto';
+import { 
+  CreateSaleDto, 
+  UpdateSaleDto, 
+  GetSalesQueryDto, 
+  CreateCustomerDto, 
+  UpdateCustomerDto, 
+  GetCustomersQueryDto,
+  CreateSaleDtoSchema,
+  UpdateSaleDtoSchema,
+  GetSalesQueryDtoSchema,
+  CreateCustomerDtoSchema,
+  UpdateCustomerDtoSchema,
+  GetCustomersQueryDtoSchema
+} from '../dto/salesDto';
 
 export class SalesController {
   private salesService: SalesService;
@@ -21,16 +34,22 @@ export class SalesController {
    */
   async createSale(req: Request, res: Response): Promise<void> {
     try {
-      const saleData: CreateSaleDto = req.body;
-
-      // التحقق من البيانات المطلوبة
-      if (!saleData.saleType || !saleData.paymentMethod || !saleData.lines || saleData.lines.length === 0) {
+      // التحقق من صحة البيانات باستخدام Zod
+      const validationResult = CreateSaleDtoSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
         res.status(400).json({
           success: false,
-          message: 'نوع البيع وطريقة الدفع وبنود الفاتورة مطلوبة',
+          message: 'بيانات غير صحيحة',
+          errors: validationResult.error.issues.map((err: any) => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
         });
         return;
       }
+
+      const saleData: CreateSaleDto = validationResult.data;
 
       const userCompanyId = (req as any).user?.companyId;
       const isSystemUser = (req as any).user?.isSystemUser;
@@ -43,12 +62,21 @@ export class SalesController {
         return;
       }
 
+      // تحديد الشركة للفاتورة:
+      // - System User: يمكنه تحديد أي شركة (إذا لم يحدد، يستخدم شركته)
+      // - مستخدم عادي: يستخدم شركته فقط
+      const targetCompanyId = isSystemUser && saleData.companyId 
+        ? saleData.companyId 
+        : userCompanyId;
+
       // Debug logging
       if (process.env.NODE_ENV !== 'production') {
         console.log('SalesController - Create Sale Debug:', {
           userCompanyId,
           isSystemUser,
+          targetCompanyId,
           saleData: {
+            companyId: saleData.companyId,
             customerId: saleData.customerId,
             saleType: saleData.saleType,
             paymentMethod: saleData.paymentMethod,
@@ -57,7 +85,7 @@ export class SalesController {
         });
       }
 
-      const sale = await this.salesService.createSale(saleData, userCompanyId, isSystemUser);
+      const sale = await this.salesService.createSale(saleData, targetCompanyId, isSystemUser);
 
       res.status(201).json({
         success: true,

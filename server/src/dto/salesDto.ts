@@ -3,6 +3,8 @@
  * كائنات نقل البيانات للمبيعات
  */
 
+import { z } from 'zod';
+
 // Enums
 export enum SaleType {
   CASH = 'CASH',   // نقدي
@@ -15,55 +17,65 @@ export enum PaymentMethod {
   CARD = 'CARD'    // بطاقة
 }
 
-// Interfaces للمبيعات
-export interface CreateSaleLineDto {
-  productId: number;
-  qty: number;
-  unitPrice: number;
-}
+// Zod Schemas للتحقق من صحة البيانات
+export const CreateSaleLineDtoSchema = z.object({
+  productId: z.number().int().positive('معرف الصنف يجب أن يكون رقم موجب'),
+  qty: z.number().positive('الكمية يجب أن تكون أكبر من صفر'),
+  unitPrice: z.number().min(0, 'سعر الوحدة يجب أن يكون أكبر من أو يساوي صفر')
+});
 
-export interface CreateSaleDto {
-  customerId?: number;
-  invoiceNumber?: string;
-  saleType: SaleType;
-  paymentMethod: PaymentMethod;
-  lines: CreateSaleLineDto[];
-}
+export const CreateSaleDtoSchema = z.object({
+  companyId: z.number().int().positive().optional(), // للـ System User: تحديد الشركة التي يريد البيع منها
+  customerId: z.number().int().positive().optional(),
+  invoiceNumber: z.string().optional(),
+  saleType: z.nativeEnum(SaleType, { message: 'نوع البيع غير صحيح' }),
+  paymentMethod: z.nativeEnum(PaymentMethod, { message: 'طريقة الدفع غير صحيحة' }).optional(), // اختياري للبيع الآجل
+  lines: z.array(CreateSaleLineDtoSchema).min(1, 'يجب إضافة بند واحد على الأقل')
+});
 
-export interface UpdateSaleDto {
-  customerId?: number;
-  invoiceNumber?: string;
-  saleType?: SaleType;
-  paymentMethod?: PaymentMethod;
-  lines?: CreateSaleLineDto[];
-}
+export const UpdateSaleDtoSchema = z.object({
+  customerId: z.number().int().positive().optional(),
+  invoiceNumber: z.string().optional(),
+  saleType: z.nativeEnum(SaleType).optional(),
+  paymentMethod: z.nativeEnum(PaymentMethod).optional(),
+  lines: z.array(CreateSaleLineDtoSchema).optional()
+});
 
-export interface GetSalesQueryDto {
-  page?: number;
-  limit?: number;
-  search?: string;
-  customerId?: number;
-  saleType?: SaleType;
-  paymentMethod?: PaymentMethod;
-  startDate?: string;
-  endDate?: string;
-}
+export const GetSalesQueryDtoSchema = z.object({
+  page: z.string().optional().default('1').transform(Number).pipe(z.number().int().positive()),
+  limit: z.string().optional().default('10').transform(Number).pipe(z.number().int().positive().max(1000)),
+  search: z.string().optional(),
+  customerId: z.string().optional().transform(Number).pipe(z.number().int().positive()).optional(),
+  saleType: z.nativeEnum(SaleType).optional(),
+  paymentMethod: z.nativeEnum(PaymentMethod).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional()
+});
 
-// Interfaces للعملاء
-export interface CreateCustomerDto {
-  name: string;
-  phone?: string;
-  note?: string;
-}
+// Customer DTOs
+export const CreateCustomerDtoSchema = z.object({
+  name: z.string().min(1, 'اسم العميل مطلوب'),
+  phone: z.string().optional(),
+  note: z.string().optional()
+});
 
-export interface UpdateCustomerDto {
-  name?: string;
-  phone?: string;
-  note?: string;
-}
+export const UpdateCustomerDtoSchema = z.object({
+  name: z.string().min(1, 'اسم العميل مطلوب').optional(),
+  phone: z.string().optional(),
+  note: z.string().optional()
+});
 
-export interface GetCustomersQueryDto {
-  page?: number;
-  limit?: number;
-  search?: string;
-}
+export const GetCustomersQueryDtoSchema = z.object({
+  page: z.string().optional().default('1').transform(Number).pipe(z.number().int().positive()),
+  limit: z.string().optional().default('10').transform(Number).pipe(z.number().int().positive().max(1000)),
+  search: z.string().optional()
+});
+
+// Types من الـ schemas
+export type CreateSaleLineDto = z.infer<typeof CreateSaleLineDtoSchema>;
+export type CreateSaleDto = z.infer<typeof CreateSaleDtoSchema>;
+export type UpdateSaleDto = z.infer<typeof UpdateSaleDtoSchema>;
+export type GetSalesQueryDto = z.infer<typeof GetSalesQueryDtoSchema>;
+export type CreateCustomerDto = z.infer<typeof CreateCustomerDtoSchema>;
+export type UpdateCustomerDto = z.infer<typeof UpdateCustomerDtoSchema>;
+export type GetCustomersQueryDto = z.infer<typeof GetCustomersQueryDtoSchema>;

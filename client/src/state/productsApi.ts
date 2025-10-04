@@ -99,6 +99,26 @@ export interface ProductStats {
   averageProductPrice: number;
 }
 
+export interface TopSellingProduct {
+  productId: number;
+  productName: string;
+  sku: string;
+  totalQuantitySold: number;
+  totalRevenue: number;
+  unit: string;
+}
+
+export interface LowStockProduct {
+  productId: number;
+  productName: string;
+  sku: string;
+  currentStock: number;
+  totalUnits: number;
+  unit: string;
+  unitsPerBox: number;
+  stockStatus: 'LOW' | 'CRITICAL' | 'OUT_OF_STOCK';
+}
+
 export interface ProductStatsResponse {
   success: boolean;
   message: string;
@@ -210,6 +230,36 @@ export const productsApi = createApi({
       query: () => "/products/stats",
       providesTags: ['ProductStats'],
     }),
+
+    // الحصول على الأصناف الأكثر مبيعاً
+    getTopSellingProducts: builder.query<{
+      success: boolean;
+      message: string;
+      data: TopSellingProduct[];
+    }, { limit?: number; companyId?: number }>({
+      query: (params = {}) => {
+        const searchParams = new URLSearchParams();
+        if (params.limit) searchParams.append('limit', params.limit.toString());
+        if (params.companyId) searchParams.append('companyId', params.companyId.toString());
+        return `/products/top-selling?${searchParams.toString()}`;
+      },
+      providesTags: ['ProductStats'],
+    }),
+
+    // الحصول على الأصناف التي ستنتهي قريباً
+    getLowStockProducts: builder.query<{
+      success: boolean;
+      message: string;
+      data: LowStockProduct[];
+    }, { limit?: number; companyId?: number }>({
+      query: (params = {}) => {
+        const searchParams = new URLSearchParams();
+        if (params.limit) searchParams.append('limit', params.limit.toString());
+        if (params.companyId) searchParams.append('companyId', params.companyId.toString());
+        return `/products/low-stock?${searchParams.toString()}`;
+      },
+      providesTags: ['ProductStats'],
+    }),
   }),
 });
 
@@ -222,4 +272,6 @@ export const {
   useUpdateStockMutation,
   useUpdatePriceMutation,
   useGetProductStatsQuery,
+  useGetTopSellingProductsQuery,
+  useGetLowStockProductsQuery,
 } = productsApi;

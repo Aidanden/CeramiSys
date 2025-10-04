@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import "../styles/print.css";
 import DashboardWrapper from "./dashboardWrapper";
 import AuthProvider from "@/components/AuthProvider";
 import StoreProvider from "./redux";

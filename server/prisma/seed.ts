@@ -8,6 +8,9 @@ async function deleteAllData() {
   // Delete in reverse order to handle foreign key constraints
   const deletionOrder = [
     "userSessions",        // UserSessions model
+    "saleLine",           // SaleLine model
+    "sale",               // Sale model
+    "customer",           // Customer model
     "companyProductPrice", // CompanyProductPrice model
     "stock",              // Stock model
     "product",            // Product model
@@ -38,7 +41,8 @@ async function main() {
     "Users.json",
     "Product.json",
     "Stock.json",
-    "CompanyProductPrice.json"
+    "CompanyProductPrice.json",
+    "Customer.json"
   ];
 
   await deleteAllData();
@@ -68,6 +72,9 @@ async function main() {
         break;
       case 'CompanyProductPrice':
         modelName = 'companyProductPrice';
+        break;
+      case 'Customer':
+        modelName = 'customer';
         break;
       default:
         modelName = baseModelName.toLowerCase();

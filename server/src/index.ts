@@ -9,6 +9,10 @@ import usersRoute from "./routes/usersRoute";
 import companyRoutes from "./routes/companyRoutes";
 import productRoutes from "./routes/productRoutes";
 import salesRoutes from "./routes/salesRoutes";
+import salePaymentRoutes from "./routes/salePaymentRoutes";
+import interCompanySaleRoutes from "./routes/interCompanySaleRoutes";
+import purchaseRoutes from "./routes/purchaseRoutes";
+import activityRoutes from "./routes/activityRoutes";
 
 
 /*CONFIGRATION*/
@@ -50,6 +54,10 @@ app.use('/api/users', usersRoute);
 app.use('/api/company', companyRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/sales', salesRoutes);
+app.use('/api/sale-payments', salePaymentRoutes);
+app.use('/api/inter-company-sales', interCompanySaleRoutes);
+app.use('/api', purchaseRoutes);
+app.use('/api/activities', activityRoutes);
 
 
 // Health check endpoint

@@ -32,6 +32,9 @@ model Company {
   prices              CompanyProductPrice[]
   products            Product[]             @relation("ProductsCreated")
   sales               Sale[]
+  salePayments        SalePayment[] // إيصالات قبض المبيعات
+  purchases           Purchase[] // المشتريات
+  purchasePayments    PurchasePayment[] // إيصالات دفع المشتريات
   purchasesFromParent PurchaseFromParent[]  @relation("BranchPurchases")
   // Back relation for parentCompany on PurchaseFromParent
   parentSales         PurchaseFromParent[]  @relation("ParentSales")
@@ -56,6 +59,7 @@ model Product {
   prices        CompanyProductPrice[]
   saleLines     SaleLine[]
   purchaseLines PurchaseFromParentLine[]
+  purchaseLineItems PurchaseLine[]
 }
 
 model Stock {
@@ -155,19 +159,26 @@ model Customer {
 }
 
 model Sale {
-  id            Int           @id @default(autoincrement())
-  company       Company       @relation(fields: [companyId], references: [id]) // البائع - الفرع
+  id            Int            @id @default(autoincrement())
+  company       Company        @relation(fields: [companyId], references: [id]) // البائع - الفرع
   companyId     Int
-  customer      Customer?     @relation(fields: [customerId], references: [id])
+  customer      Customer?      @relation(fields: [customerId], references: [id])
   customerId    Int?
   invoiceNumber String?
-  total         Decimal       @default(0) @db.Decimal(18, 4)
-  saleType      SaleType      @default(CREDIT) // نقدي أو آجل
-  paymentMethod PaymentMethod @default(CASH) // كاش، حوالة، بطاقة
-  createdAt     DateTime      @default(now())
+  total         Decimal        @default(0) @db.Decimal(18, 4)
+  paidAmount    Decimal        @default(0) @db.Decimal(18, 4) // المبلغ المدفوع
+  remainingAmount Decimal      @default(0) @db.Decimal(18, 4) // المبلغ المتبقي
+  saleType      SaleType       @default(CREDIT) // نقدي أو آجل
+  paymentMethod PaymentMethod? // كاش، حوالة، بطاقة - اختياري للبيع الآجل
+  isFullyPaid   Boolean        @default(false) // هل تم السداد بالكامل؟
+  createdAt     DateTime       @default(now())
   lines         SaleLine[]
+  payments      SalePayment[] // الدفعات
 
   @@index([companyId])
+  @@index([customerId])
+  @@index([saleType])
+  @@index([isFullyPaid])
 }
 
 model SaleLine {
@@ -180,6 +191,95 @@ model SaleLine {
   qty       Decimal @db.Decimal(20, 4)
   unitPrice Decimal @db.Decimal(18, 4)
   subTotal  Decimal @db.Decimal(18, 4)
+}
+
+// إيصالات قبض المبيعات الآجلة
+model SalePayment {
+  id              Int           @id @default(autoincrement())
+  sale            Sale          @relation(fields: [saleId], references: [id])
+  saleId          Int
+  company         Company       @relation(fields: [companyId], references: [id])
+  companyId       Int
+  receiptNumber   String? // رقم إيصال القبض
+  amount          Decimal       @db.Decimal(18, 4) // مبلغ الدفعة
+  paymentMethod   PaymentMethod @default(CASH) // طريقة الدفع
+  paymentDate     DateTime      @default(now()) // تاريخ الدفع
+  notes           String? // ملاحظات
+  createdAt       DateTime      @default(now())
+
+  @@index([saleId])
+  @@index([companyId])
+  @@index([paymentDate])
+}
+
+/////////////////////////////////////////////////
+//              Purchases
+/////////////////////////////////////////////////
+
+model Purchase {
+  id            Int            @id @default(autoincrement())
+  company       Company        @relation(fields: [companyId], references: [id]) // المشتري - الشركة
+  companyId     Int
+  supplier      Supplier?      @relation(fields: [supplierId], references: [id])
+  supplierId    Int?
+  invoiceNumber String?
+  total         Decimal        @default(0) @db.Decimal(18, 4)
+  paidAmount    Decimal        @default(0) @db.Decimal(18, 4) // المبلغ المدفوع
+  remainingAmount Decimal      @default(0) @db.Decimal(18, 4) // المبلغ المتبقي
+  purchaseType  PurchaseType   @default(CREDIT) // نقدي أو آجل
+  paymentMethod PaymentMethod? // كاش، حوالة، بطاقة - اختياري للشراء الآجل
+  isFullyPaid   Boolean        @default(false) // هل تم السداد بالكامل؟
+  createdAt     DateTime       @default(now())
+  lines         PurchaseLine[]
+  payments      PurchasePayment[] // الدفعات
+
+  @@index([companyId])
+  @@index([supplierId])
+  @@index([purchaseType])
+  @@index([isFullyPaid])
+}
+
+model PurchaseLine {
+  id        Int     @id @default(autoincrement())
+  purchase  Purchase @relation(fields: [purchaseId], references: [id])
+  purchaseId Int
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+
+  qty       Decimal @db.Decimal(20, 4)
+  unitPrice Decimal @db.Decimal(18, 4)
+  subTotal  Decimal @db.Decimal(18, 4)
+}
+
+// إيصالات دفع المشتريات الآجلة
+model PurchasePayment {
+  id              Int           @id @default(autoincrement())
+  purchase        Purchase      @relation(fields: [purchaseId], references: [id])
+  purchaseId      Int
+  company         Company       @relation(fields: [companyId], references: [id])
+  companyId       Int
+  receiptNumber   String? // رقم إيصال الدفع
+  amount          Decimal       @db.Decimal(18, 4) // مبلغ الدفعة
+  paymentMethod   PaymentMethod @default(CASH) // طريقة الدفع
+  paymentDate     DateTime      @default(now()) // تاريخ الدفع
+  notes           String? // ملاحظات
+  createdAt       DateTime      @default(now())
+
+  @@index([purchaseId])
+  @@index([companyId])
+  @@index([paymentDate])
+}
+
+model Supplier {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  note      String?
+  createdAt DateTime @default(now())
+
+  purchases Purchase[]
 }
 
 /////////////////////////////////////////////////
@@ -248,4 +348,9 @@ enum PaymentMethod {
   CASH // كاش
   BANK // حوالة مصرفية
   CARD // بطاقة
+}
+
+enum PurchaseType {
+  CASH // نقدي
+  CREDIT // آجل
 }

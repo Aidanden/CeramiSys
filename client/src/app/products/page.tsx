@@ -30,6 +30,7 @@ import { useGetCompaniesQuery } from '@/state/companyApi';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/app/redux';
 import { toast } from 'react-hot-toast';
+import { formatArabicNumber, formatArabicCurrency, formatArabicQuantity, formatArabicArea } from '@/utils/formatArabicNumbers';
 
 const ProductsPage = () => {
   const router = useRouter();
@@ -403,20 +404,17 @@ const ProductsPage = () => {
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        {(product.stock?.boxes || 0).toLocaleString('ar-LY')} {product.unit === 'صندوق' ? 'صندوق' : (product.unit || 'وحدة')}
+                        {formatArabicQuantity(product.stock?.boxes || 0)} {product.unit === 'صندوق' ? 'صندوق' : (product.unit || 'وحدة')}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {product.unit === 'صندوق' && product.unitsPerBox ? (
                         <div className="text-center">
                           <span className="font-medium text-blue-600">
-                            {((product.stock?.boxes || 0) * product.unitsPerBox).toLocaleString('ar-LY', { 
-                              minimumFractionDigits: 2, 
-                              maximumFractionDigits: 2 
-                            })} م²
+                            {formatArabicArea(Number(product.stock?.boxes || 0) * Number(product.unitsPerBox))} م²
                           </span>
                           <div className="text-xs text-gray-500">
-                            ({product.unitsPerBox.toLocaleString('ar-LY')} م² × {(product.stock?.boxes || 0).toLocaleString('ar-LY')} صندوق)
+                            ({formatArabicArea(product.unitsPerBox)} م² × {formatArabicQuantity(product.stock?.boxes || 0)} صندوق)
                           </div>
                         </div>
                       ) : (
@@ -426,10 +424,7 @@ const ProductsPage = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <span className="font-medium text-green-600">
                         {product.price?.sellPrice 
-                          ? `${product.price.sellPrice.toLocaleString('ar-LY', { 
-                              minimumFractionDigits: 2, 
-                              maximumFractionDigits: 2 
-                            })} د.ل` 
+                          ? formatArabicCurrency(product.price.sellPrice) 
                           : '-'}
                       </span>
                     </td>
@@ -926,21 +921,18 @@ const ProductsPage = () => {
                 <div className="text-sm text-gray-600 space-y-2">
                   <div className="flex justify-between">
                     <span>{selectedProduct.unit === 'صندوق' ? 'الصناديق الحالية:' : `الكمية الحالية (${selectedProduct.unit || 'وحدة'}):`}</span>
-                    <span className="font-medium">{(selectedProduct.stock?.boxes || 0).toLocaleString('ar-LY')} {selectedProduct.unit === 'صندوق' ? 'صندوق' : (selectedProduct.unit || 'وحدة')}</span>
+                    <span className="font-medium">{formatArabicQuantity(selectedProduct.stock?.boxes || 0)} {selectedProduct.unit === 'صندوق' ? 'صندوق' : (selectedProduct.unit || 'وحدة')}</span>
                   </div>
                   {selectedProduct.unit === 'صندوق' && selectedProduct.unitsPerBox && (
                     <>
                       <div className="flex justify-between">
                         <span>الوحدات في الصندوق:</span>
-                        <span className="font-medium">{selectedProduct.unitsPerBox.toLocaleString('ar-LY')} م²</span>
+                        <span className="font-medium">{formatArabicArea(selectedProduct.unitsPerBox)} م²</span>
                       </div>
                       <div className="flex justify-between border-t pt-2">
                         <span className="font-medium text-blue-600">إجمالي المساحة:</span>
                         <span className="font-bold text-blue-600">
-                          {((selectedProduct.stock?.boxes || 0) * selectedProduct.unitsPerBox).toLocaleString('ar-LY', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                          })} م²
+                          {formatArabicArea(Number(selectedProduct.stock?.boxes || 0) * Number(selectedProduct.unitsPerBox))} م²
                         </span>
                       </div>
                     </>
@@ -972,7 +964,7 @@ const ProductsPage = () => {
                   />
                   {selectedProduct.unit === 'صندوق' && selectedProduct.unitsPerBox && (
                     <p className="text-xs text-gray-500 mt-1">
-                      المساحة الإجمالية = عدد الصناديق × {selectedProduct.unitsPerBox.toLocaleString('ar-LY')} م² لكل صندوق
+                      المساحة الإجمالية = عدد الصناديق × {formatArabicArea(selectedProduct.unitsPerBox)} م² لكل صندوق
                     </p>
                   )}
                 </div>
@@ -1025,19 +1017,13 @@ const ProductsPage = () => {
                 <div className="text-sm text-gray-600 space-y-1">
                   <div className="flex justify-between">
                     <span>السعر الحالي:</span>
-                    <span className="font-medium">{(selectedProduct.price?.sellPrice || 0).toLocaleString('ar-LY', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2
-                    })} د.ل</span>
+                    <span className="font-medium">{formatArabicCurrency(selectedProduct.price?.sellPrice || 0)}</span>
                   </div>
                   {selectedProduct.unit === 'صندوق' && selectedProduct.unitsPerBox && selectedProduct.price?.sellPrice && (
                     <div className="flex justify-between text-blue-600">
                       <span>السعر لكل متر مربع:</span>
                       <span className="font-medium">
-                        {(selectedProduct.price.sellPrice / selectedProduct.unitsPerBox).toLocaleString('ar-LY', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                        })} د.ل/م²
+                        {formatArabicCurrency(Number(selectedProduct.price.sellPrice) / Number(selectedProduct.unitsPerBox))}/م²
                       </span>
                     </div>
                   )}

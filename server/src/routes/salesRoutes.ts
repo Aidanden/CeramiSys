@@ -36,27 +36,6 @@ router.post('/', salesController.createSale.bind(salesController));
  */
 router.get('/stats', salesController.getSalesStats.bind(salesController));
 
-/**
- * @route   GET /api/sales/:id
- * @desc    الحصول على فاتورة مبيعات واحدة
- * @access  Private
- */
-router.get('/:id', salesController.getSaleById.bind(salesController));
-
-/**
- * @route   PUT /api/sales/:id
- * @desc    تحديث فاتورة مبيعات
- * @access  Private
- */
-router.put('/:id', salesController.updateSale.bind(salesController));
-
-/**
- * @route   DELETE /api/sales/:id
- * @desc    حذف فاتورة مبيعات
- * @access  Private
- */
-router.delete('/:id', salesController.deleteSale.bind(salesController));
-
 // ============== مسارات العملاء ==============
 
 /**
@@ -93,5 +72,28 @@ router.put('/customers/:id', salesController.updateCustomer.bind(salesController
  * @access  Private
  */
 router.delete('/customers/:id', salesController.deleteCustomer.bind(salesController));
+
+// ============== مسارات المبيعات بـ ID ==============
+
+/**
+ * @route   GET /api/sales/:id
+ * @desc    الحصول على فاتورة مبيعات واحدة
+ * @access  Private
+ */
+router.get('/:id', salesController.getSaleById.bind(salesController));
+
+/**
+ * @route   PUT /api/sales/:id
+ * @desc    تحديث فاتورة مبيعات
+ * @access  Private
+ */
+router.put('/:id', salesController.updateSale.bind(salesController));
+
+/**
+ * @route   DELETE /api/sales/:id
+ * @desc    حذف فاتورة مبيعات
+ * @access  Private
+ */
+router.delete('/:id', salesController.deleteSale.bind(salesController));
 
 export default router;
