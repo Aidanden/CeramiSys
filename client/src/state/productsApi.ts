@@ -247,19 +247,40 @@ export const productsApi = createApi({
     }),
 
     // الحصول على الأصناف التي ستنتهي قريباً
-    getLowStockProducts: builder.query<{
-      success: boolean;
-      message: string;
-      data: LowStockProduct[];
-    }, { limit?: number; companyId?: number }>({
-      query: (params = {}) => {
-        const searchParams = new URLSearchParams();
-        if (params.limit) searchParams.append('limit', params.limit.toString());
-        if (params.companyId) searchParams.append('companyId', params.companyId.toString());
-        return `/products/low-stock?${searchParams.toString()}`;
-      },
-      providesTags: ['ProductStats'],
-    }),
+        getLowStockProducts: builder.query<{
+          success: boolean;
+          message: string;
+          data: LowStockProduct[];
+        }, { limit?: number; companyId?: number }>({
+          query: (params = {}) => {
+            const searchParams = new URLSearchParams();
+            if (params.limit) searchParams.append('limit', params.limit.toString());
+            if (params.companyId) searchParams.append('companyId', params.companyId.toString());
+            return `/products/low-stock?${searchParams.toString()}`;
+          },
+          providesTags: ['ProductStats'],
+        }),
+
+        getParentCompanyProducts: builder.query<{
+          success: boolean;
+          message: string;
+          data: Array<{
+            id: number;
+            name: string;
+            sku: string;
+            unit: string;
+            unitsPerBox: number;
+            currentStock: number;
+            unitPrice: number;
+          }>;
+        }, { parentCompanyId: number }>({
+          query: (params) => {
+            const searchParams = new URLSearchParams();
+            searchParams.append('parentCompanyId', params.parentCompanyId.toString());
+            return `/products/parent-company?${searchParams.toString()}`;
+          },
+          providesTags: ['Product'],
+        }),
   }),
 });
 
@@ -274,4 +295,5 @@ export const {
   useGetProductStatsQuery,
   useGetTopSellingProductsQuery,
   useGetLowStockProductsQuery,
+  useGetParentCompanyProductsQuery,
 } = productsApi;

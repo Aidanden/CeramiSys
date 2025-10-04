@@ -45,6 +45,14 @@ router.get('/top-selling', (req, res) => productController.getTopSellingProducts
 router.get('/low-stock', (req, res) => productController.getLowStockProducts(req, res));
 
 /**
+ * @route GET /api/products/parent-company
+ * @desc الحصول على أصناف الشركة الأم مع أسعارها
+ * @access Private
+ * @query parentCompanyId
+ */
+router.get('/parent-company', (req, res) => productController.getParentCompanyProducts(req, res));
+
+/**
  * @route GET /api/products/:id
  * @desc الحصول على صنف واحد بالمعرف
  * @access Private

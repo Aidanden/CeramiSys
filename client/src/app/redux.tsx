@@ -12,6 +12,7 @@ import globalReducer from "@/state";
 import authReducer from "@/state/authSlice";
 import companyReducer from "@/state/companySlice";
 import usersReducer from "@/state/usersSlice";
+import complexInterCompanySalesReducer from "@/state/complexInterCompanySalesSlice";
 
 import { authApi } from "@/state/authApi"; // إضافة authApi
 import { usersApi } from "@/state/usersApi"; // إضافة usersApi
@@ -23,6 +24,7 @@ import { salePaymentApi } from "@/state/salePaymentApi"; // إضافة salePayme
 import { interCompanySalesApi } from "@/state/interCompanySalesApi"; // إضافة interCompanySalesApi
 import { purchaseApi } from "@/state/purchaseApi"; // إضافة purchaseApi
 import { activityApi } from "@/state/activityApi"; // إضافة activityApi
+import { complexInterCompanySalesApi } from "@/state/complexInterCompanySalesApi"; // إضافة complexInterCompanySalesApi
 import { setupListeners } from "@reduxjs/toolkit/query";
 import {
   persistStore,
@@ -61,7 +63,7 @@ const storage =
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["global", "auth", "users", "permissions", "company"], // إضافة المصادقة والعملات إلى القائمة البيضاء
+  whitelist: ["global", "auth", "users", "permissions", "company", "complexInterCompanySales"], // إضافة المصادقة والعملات إلى القائمة البيضاء
   transforms: [
     // إزالة حالات التحميل من الحفظ
     {
@@ -97,6 +99,7 @@ const rootReducer = combineReducers({
   auth: authReducer, // إضافة authReducer
   company: companyReducer, // إضافة companyReducer
   users: usersReducer, // إضافة usersReducer
+  complexInterCompanySales: complexInterCompanySalesReducer, // إضافة complexInterCompanySalesReducer
   
   /*categories: categoriesReducer,  // إضافة reducer جديد */
   [authApi.reducerPath]: authApi.reducer, // إضافة authApi.reducer
@@ -109,6 +112,7 @@ const rootReducer = combineReducers({
   [interCompanySalesApi.reducerPath]: interCompanySalesApi.reducer, // إضافة interCompanySalesApi.reducer
   [purchaseApi.reducerPath]: purchaseApi.reducer, // إضافة purchaseApi.reducer
   [activityApi.reducerPath]: activityApi.reducer, // إضافة activityApi.reducer
+  [complexInterCompanySalesApi.reducerPath]: complexInterCompanySalesApi.reducer, // إضافة complexInterCompanySalesApi.reducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -122,7 +126,7 @@ export const makeStore = () => {
         serializableCheck: {
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
-      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, activityApi.middleware), // إضافة middleware الخاص بـ APIs
+      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware), // إضافة middleware الخاص بـ APIs
   });
 };
 

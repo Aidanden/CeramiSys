@@ -479,14 +479,47 @@ export class ProductService {
         where: whereConditions
       });
 
-      const productsWithStock = await this.prisma.stock.count({
+      // حساب عدد المنتجات الفريدة التي لها مخزون (boxes > 0)
+      const stocksWithPositiveBoxes = await this.prisma.stock.findMany({
         where: {
           ...(isSystemUser !== true && { companyId: userCompanyId }),
           boxes: { gt: 0 }
-        }
+        },
+        select: {
+          productId: true
+        },
+        distinct: ['productId']
       });
 
-      const productsWithoutStock = totalProducts - productsWithStock;
+      const productsWithStock = stocksWithPositiveBoxes.length;
+
+      // حساب عدد المنتجات الفريدة بدون مخزون (boxes = 0 أو لا يوجد سجل مخزون)
+      const stocksWithZeroBoxes = await this.prisma.stock.findMany({
+        where: {
+          ...(isSystemUser !== true && { companyId: userCompanyId }),
+          boxes: { lte: 0 }
+        },
+        select: {
+          productId: true
+        },
+        distinct: ['productId']
+      });
+
+      // المنتجات التي ليس لها سجل مخزون أصلاً
+      const productsWithStockRecords = await this.prisma.stock.findMany({
+        where: {
+          ...(isSystemUser !== true && { companyId: userCompanyId })
+        },
+        select: {
+          productId: true
+        },
+        distinct: ['productId']
+      });
+
+      const productIdsWithStock = new Set(productsWithStockRecords.map(s => s.productId));
+      
+      // المنتجات بدون مخزون = المنتجات التي لها boxes = 0 + المنتجات بدون سجل مخزون
+      const productsWithoutStock = stocksWithZeroBoxes.length + (totalProducts - productIdsWithStock.size);
 
       // قيمة المخزون الإجمالية - استخدام Prisma ORM بدلاً من raw query
       const stockWithPrices = await this.prisma.stock.findMany({
@@ -609,6 +642,69 @@ export class ProductService {
       };
     } catch (error) {
       console.error('خطأ في جلب الأصناف الأكثر مبيعاً:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * الحصول على أصناف الشركة الأم مع أسعارها
+   */
+  async getParentCompanyProducts(userCompanyId: number, parentCompanyId: number, isSystemUser?: boolean): Promise<any> {
+    try {
+      // التحقق من الصلاحيات
+      if (!isSystemUser && userCompanyId !== parentCompanyId) {
+        // التحقق من أن الشركة الحالية تابعة للشركة الأم
+        const userCompany = await this.prisma.company.findUnique({
+          where: { id: userCompanyId },
+          include: { parent: true }
+        });
+
+        if (!userCompany || userCompany.parentId !== parentCompanyId) {
+          throw new Error('غير مصرح لك بالوصول إلى أصناف هذه الشركة');
+        }
+      }
+
+      // جلب الأصناف مع أسعارها من الشركة الأم
+      const products = await this.prisma.product.findMany({
+        where: {
+          createdByCompanyId: parentCompanyId
+        },
+        include: {
+          stocks: {
+            where: { companyId: parentCompanyId },
+            select: { boxes: true }
+          },
+          prices: {
+            where: { companyId: parentCompanyId },
+            select: { sellPrice: true }
+          }
+        },
+        orderBy: { name: 'asc' }
+      });
+
+      const result = products.map(product => {
+        const stock = product.stocks[0];
+        const price = product.prices[0];
+        
+        return {
+          id: product.id,
+          name: product.name,
+          sku: product.sku,
+          unit: product.unit,
+          unitsPerBox: product.unitsPerBox,
+          currentStock: stock ? Number(stock.boxes) : 0,
+          unitPrice: price ? Number(price.sellPrice) : 0
+        };
+      });
+
+      return {
+        success: true,
+        message: 'تم جلب أصناف الشركة الأم بنجاح',
+        data: result
+      };
+
+    } catch (error) {
+      console.error('خطأ في جلب أصناف الشركة الأم:', error);
       throw error;
     }
   }

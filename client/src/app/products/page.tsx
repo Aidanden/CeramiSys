@@ -237,7 +237,7 @@ const ProductsPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray-600 text-sm">أصناف بدون مخزون</p>
-                    <p className="text-2xl font-bold text-red-600">{statsData.data.productsWithoutStock}</p>
+                    <p className="text-2xl font-bold text-red-600">{Math.abs(statsData.data.productsWithoutStock)}</p>
                   </div>
                   <ShoppingBag className="w-8 h-8 text-red-600" />
                 </div>
@@ -247,7 +247,9 @@ const ProductsPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray-600 text-sm">قيمة المخزون</p>
-                    <p className="text-2xl font-bold text-purple-600">{statsData.data.totalStockValue.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-purple-600">
+                      {formatArabicNumber(statsData.data.totalStockValue)} د.ل
+                    </p>
                   </div>
                   <DollarSign className="w-8 h-8 text-purple-600" />
                 </div>

@@ -1,0 +1,128 @@
+/**
+ * Complex Inter-Company Sales API
+ * واجهة برمجة المبيعات المعقدة بين الشركات
+ */
+
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQueryWithAuthInterceptor } from "./apiUtils";
+
+// Types
+export interface ComplexInterCompanySaleLine {
+  productId: number;
+  qty: number;
+  parentUnitPrice: number; // سعر التقازي
+  branchUnitPrice: number;  // سعر الإمارات (مع هامش الربح)
+  subTotal: number;
+}
+
+export interface CreateComplexInterCompanySaleRequest {
+  customerId: number;
+  branchCompanyId: number; // شركة الإمارات
+  parentCompanyId: number; // شركة التقازي
+  lines: ComplexInterCompanySaleLine[];
+  profitMargin?: number; // هامش الربح (نسبة مئوية)
+  customerSaleType: 'CASH' | 'CREDIT'; // نوع فاتورة العميل: نقدي أو آجل
+  customerPaymentMethod: 'CASH' | 'BANK' | 'CARD'; // طريقة الدفع: كاش، حوالة، بطاقة
+}
+
+export interface ComplexInterCompanySaleResult {
+  customerSale: {
+    id: number;
+    invoiceNumber: string;
+    total: number;
+  };
+  parentSale: {
+    id: number;
+    invoiceNumber: string;
+    total: number;
+  };
+  stockUpdates: Array<{
+    productId: number;
+    companyId: number;
+    newStock: number;
+  }>;
+}
+
+export interface ComplexInterCompanyStats {
+  customerSales: {
+    count: number;
+    total: number;
+  };
+  parentPurchases: {
+    count: number;
+    total: number;
+  };
+  parentSales: {
+    count: number;
+    total: number;
+    remaining: number;
+  };
+}
+
+export interface SettleParentSaleRequest {
+  amount: number;
+  paymentMethod: 'CASH' | 'BANK' | 'CARD';
+}
+
+// API Definition
+export const complexInterCompanySalesApi = createApi({
+  reducerPath: "complexInterCompanySalesApi",
+  baseQuery: baseQueryWithAuthInterceptor,
+  tagTypes: ["ComplexInterCompanySales", "ComplexInterCompanyStats"],
+  keepUnusedDataFor: 60, // 1 minute
+  refetchOnMountOrArgChange: true,
+  refetchOnFocus: false,
+  refetchOnReconnect: true,
+  endpoints: (builder) => ({
+    /**
+     * إنشاء عملية بيع معقدة بين الشركات
+     */
+    createComplexInterCompanySale: builder.mutation<{
+      success: boolean;
+      message: string;
+      data: ComplexInterCompanySaleResult;
+    }, CreateComplexInterCompanySaleRequest>({
+      query: (data) => ({
+        url: "/complex-inter-company-sales",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["ComplexInterCompanySales", "ComplexInterCompanyStats"],
+    }),
+
+    /**
+     * تسوية فاتورة الشراء من الشركة الأم
+     */
+    settleParentSale: builder.mutation<{
+      success: boolean;
+      message: string;
+      data: any;
+    }, { parentSaleId: number; data: SettleParentSaleRequest }>({
+      query: ({ parentSaleId, data }) => ({
+        url: `/complex-inter-company-sales/${parentSaleId}/settle`,
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["ComplexInterCompanySales", "ComplexInterCompanyStats"],
+    }),
+
+    /**
+     * الحصول على إحصائيات المبيعات المعقدة
+     */
+    getComplexInterCompanyStats: builder.query<{
+      success: boolean;
+      message: string;
+      data: ComplexInterCompanyStats;
+    }, void>({
+      query: () => "/complex-inter-company-sales/stats",
+      providesTags: ["ComplexInterCompanyStats"],
+    }),
+  }),
+});
+
+// Export hooks
+export const {
+  useCreateComplexInterCompanySaleMutation,
+  useSettleParentSaleMutation,
+  useGetComplexInterCompanyStatsQuery,
+} = complexInterCompanySalesApi;

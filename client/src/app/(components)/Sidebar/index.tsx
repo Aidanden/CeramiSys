@@ -151,10 +151,16 @@ const Sidebar = () => {
             label="المبيعات الآجلة"
             isCollapsed={isSidebarCollapsed}
           />
-          <SidebarLink
+        {/*  <SidebarLink
             href="/inter-company-sales"
             icon={ArrowRightLeft}
             label="مبيعات بين الشركات"
+            isCollapsed={isSidebarCollapsed}
+          /> */}
+          <SidebarLink
+            href="/complex-inter-company-sales"
+            icon={ArrowRightLeft}
+            label="المبيعات من الشركة الام"
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink
@@ -163,12 +169,7 @@ const Sidebar = () => {
             label="المشتريات"
             isCollapsed={isSidebarCollapsed}
           />
-          <SidebarLink
-            href="/treasury"
-            icon={Wallet}
-            label="الخزينة"
-            isCollapsed={isSidebarCollapsed}
-          />
+        
           <SidebarLink
             href="/customers"
             icon={SquareUserRound}
@@ -181,24 +182,7 @@ const Sidebar = () => {
             label="الموردين"
             isCollapsed={isSidebarCollapsed}
           />
-          <SidebarLink
-            href="/currencies"
-            icon={CircleDollarSign}
-            label="العملات"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
-            href="/expenses"
-            icon={TrendingDown}
-            label="المصروفات"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
-            href="/debts"
-            icon={DollarSign}
-            label="الديون"
-            isCollapsed={isSidebarCollapsed}
-          />
+       
           <SidebarLink
             href="/reports"
             icon={FileText}

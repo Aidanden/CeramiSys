@@ -24,11 +24,41 @@ export class SalePaymentService {
       // بناء شروط البحث
       const where: any = {
         saleType: 'CREDIT', // فقط المبيعات الآجلة
-        ...(isSystemUser !== true && { companyId: userCompanyId })
       };
 
-      // البحث في رقم الفاتورة أو اسم العميل
-      if (search) {
+      // للمستخدمين العاديين: إظهار المبيعات التي شركتهم بائع أو مشتري (عميل)
+      if (isSystemUser !== true) {
+        // البحث عن عميل وهمي يمثل شركة المستخدم
+        const branchAsCustomer = await this.prisma.customer.findFirst({
+          where: {
+            phone: `BRANCH-${userCompanyId}`
+          }
+        });
+
+        // إظهار المبيعات التي:
+        // 1. شركة المستخدم هي البائع (companyId)
+        // 2. أو شركة المستخدم هي العميل (customerId) - للمبيعات من الشركة الأم
+        const companyConditions = [
+          { companyId: userCompanyId },
+          ...(branchAsCustomer ? [{ customerId: branchAsCustomer.id }] : [])
+        ];
+
+        // إذا كان هناك بحث، ندمج الشروط
+        if (search) {
+          where.AND = [
+            { OR: companyConditions },
+            {
+              OR: [
+                { invoiceNumber: { contains: search, mode: 'insensitive' } },
+                { customer: { name: { contains: search, mode: 'insensitive' } } }
+              ]
+            }
+          ];
+        } else {
+          where.OR = companyConditions;
+        }
+      } else if (search) {
+        // للـ System Users: بحث عادي بدون قيود الشركة
         where.OR = [
           { invoiceNumber: { contains: search, mode: 'insensitive' } },
           { customer: { name: { contains: search, mode: 'insensitive' } } }
@@ -375,8 +405,21 @@ export class SalePaymentService {
     try {
       const where: any = {
         saleType: 'CREDIT',
-        ...(isSystemUser !== true && { companyId: userCompanyId })
       };
+
+      // للمستخدمين العاديين: إظهار إحصائيات المبيعات التي شركتهم بائع أو مشتري
+      if (isSystemUser !== true) {
+        const branchAsCustomer = await this.prisma.customer.findFirst({
+          where: {
+            phone: `BRANCH-${userCompanyId}`
+          }
+        });
+
+        where.OR = [
+          { companyId: userCompanyId },
+          ...(branchAsCustomer ? [{ customerId: branchAsCustomer.id }] : [])
+        ];
+      }
 
       const [
         totalCreditSales,

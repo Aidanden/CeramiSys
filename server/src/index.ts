@@ -13,6 +13,7 @@ import salePaymentRoutes from "./routes/salePaymentRoutes";
 import interCompanySaleRoutes from "./routes/interCompanySaleRoutes";
 import purchaseRoutes from "./routes/purchaseRoutes";
 import activityRoutes from "./routes/activityRoutes";
+import complexInterCompanySaleRoutes from "./routes/complexInterCompanySaleRoutes";
 
 
 /*CONFIGRATION*/
@@ -58,6 +59,7 @@ app.use('/api/sale-payments', salePaymentRoutes);
 app.use('/api/inter-company-sales', interCompanySaleRoutes);
 app.use('/api', purchaseRoutes);
 app.use('/api/activities', activityRoutes);
+app.use('/api/complex-inter-company-sales', complexInterCompanySaleRoutes);
 
 
 // Health check endpoint

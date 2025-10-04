@@ -486,6 +486,34 @@ export class ProductController {
   }
 
   /**
+   * الحصول على أصناف الشركة الأم مع أسعارها
+   * تم إلغاء جميع القيود - يمكن الوصول لأصناف أي شركة
+   */
+  async getParentCompanyProducts(req: Request, res: Response): Promise<void> {
+    try {
+      const parentCompanyId = req.query.parentCompanyId ? parseInt(req.query.parentCompanyId as string) : undefined;
+
+      if (!parentCompanyId) {
+        res.status(400).json({
+          success: false,
+          message: 'معرف الشركة الأم مطلوب',
+        });
+        return;
+      }
+
+      // إلغاء جميع القيود - السماح بالوصول لأي شركة
+      const products = await this.productService.getParentCompanyProducts(0, parentCompanyId, true);
+      res.status(200).json(products);
+    } catch (error: any) {
+      console.error('خطأ في جلب أصناف الشركة الأم:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'خطأ في الخادم الداخلي',
+      });
+    }
+  }
+
+  /**
    * الحصول على الأصناف التي ستنتهي قريباً
    */
   async getLowStockProducts(req: Request, res: Response): Promise<void> {

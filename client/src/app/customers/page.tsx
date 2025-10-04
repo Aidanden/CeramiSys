@@ -234,7 +234,7 @@ const CustomersPage = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(customer.createdAt).toLocaleDateString('ar-SA')}
+                      {new Date(customer.createdAt).toLocaleDateString('ar-LY')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">

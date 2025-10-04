@@ -75,3 +75,26 @@ export function formatArabicArea(value: number | string): string {
     maximumFractionDigits: 2
   });
 }
+
+/**
+ * تحويل الأرقام الهندية إلى عربية
+ * @param text - النص المراد تحويله
+ * @returns النص مع الأرقام العربية
+ */
+export function convertToArabicNumbers(text: string): string {
+  if (!text) return text;
+  
+  const arabicNumbers = '٠١٢٣٤٥٦٧٨٩';
+  const englishNumbers = '0123456789';
+  
+  let result = text;
+  
+  // تحويل الأرقام الإنجليزية إلى عربية
+  for (let i = 0; i < englishNumbers.length; i++) {
+    const englishChar = englishNumbers.charAt(i);
+    const arabicChar = arabicNumbers.charAt(i);
+    result = result.replace(new RegExp(englishChar, 'g'), arabicChar);
+  }
+  
+  return result;
+}

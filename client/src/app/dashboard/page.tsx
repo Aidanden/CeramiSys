@@ -39,7 +39,7 @@ import {
 import { 
   useGetRecentActivitiesQuery
 } from "@/state/activityApi";
-import { formatArabicNumber, formatArabicCurrency } from "@/utils/formatArabicNumbers";
+import { formatArabicNumber, formatArabicCurrency, convertToArabicNumbers } from "@/utils/formatArabicNumbers";
 
 interface StatCardProps {
   title: string;
@@ -165,7 +165,7 @@ const ActivityFeed = () => {
                   activity.amount.startsWith("+") ? "text-green-600" : "text-red-600"
                 }`}
               >
-                {activity.amount}
+                {convertToArabicNumbers(activity.amount)}
               </span>
             )}
           </div>

@@ -69,6 +69,24 @@ export class CompanyService {
       });
       
       console.log('✅ Company created successfully:', result);
+
+      // إذا كانت شركة فرعية، أنشئ عميل وهمي يمثلها
+      if (!data.isParent && result.id) {
+        try {
+          const dummyCustomer = await this.prisma.customer.create({
+            data: {
+              name: result.name,
+              phone: `BRANCH-${result.id}`,
+              note: `عميل وهمي يمثل الشركة الفرعية: ${result.name}`
+            }
+          });
+          console.log('✅ Dummy customer created for branch company:', dummyCustomer);
+        } catch (customerError) {
+          console.error('⚠️ Failed to create dummy customer (non-critical):', customerError);
+          // لا نرمي خطأ هنا لأن الشركة تم إنشاؤها بنجاح
+        }
+      }
+
       return result;
     } catch (error: any) {
       console.error('❌ Error creating company:', error);
