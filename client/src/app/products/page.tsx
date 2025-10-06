@@ -613,26 +613,36 @@ const ProductsPage = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     الشركة *
                   </label>
-                  <select
-                    name="companyId"
-                    required
-                    defaultValue={currentUser?.companyId || ''}
-                    disabled={isLoadingCompanies}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
-                  >
-                    <option value="">
-                      {isLoadingCompanies ? 'جاري تحميل الشركات...' : 'اختر الشركة'}
-                    </option>
-                    {companiesData?.data?.companies?.map((company) => (
-                      <option key={company.id} value={company.id}>
-                        {company.name} {company.code ? `(${company.code})` : ''}
+                  {currentUser?.isSystemUser ? (
+                    <select
+                      name="companyId"
+                      required
+                      defaultValue={currentUser?.companyId || ''}
+                      disabled={isLoadingCompanies}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="">
+                        {isLoadingCompanies ? 'جاري تحميل الشركات...' : 'اختر الشركة'}
                       </option>
-                    ))}
-                  </select>
-                  {!isLoadingCompanies && (!companiesData?.data?.companies || companiesData.data.companies.length === 0) && (
-                    <p className="text-sm text-red-500 mt-1">
-                      لا توجد شركات متاحة. يرجى إضافة شركة أولاً.
-                    </p>
+                      {companiesData?.data?.companies?.map((company) => (
+                        <option key={company.id} value={company.id}>
+                          {company.name} {company.code ? `(${company.code})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <>
+                      <input type="hidden" name="companyId" value={currentUser?.companyId || ''} />
+                      <input 
+                        type="text" 
+                        value={companiesData?.data?.companies?.find(c => c.id === currentUser?.companyId)?.name || 'جاري التحميل...'} 
+                        readOnly 
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600 cursor-not-allowed"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        سيتم إضافة الصنف لشركتك فقط
+                      </p>
+                    </>
                   )}
                 </div>
                 <div>
@@ -652,7 +662,7 @@ const ProductsPage = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    عدد الوحدات في الصندوق
+                    {createUnit === 'صندوق' ? 'عدد الوحدات في الصندوق' : `عدد ال${createUnit} في الصندوق`}
                   </label>
                   <input
                     type="number"
@@ -661,7 +671,7 @@ const ProductsPage = () => {
                     min="0.01"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
                     disabled={createUnit !== 'صندوق'}
-                    placeholder="مثال: 6 (6 متر في الصندوق)"
+                    placeholder={createUnit === 'صندوق' ? 'مثال: 6 (6 متر في الصندوق)' : `مثال: 100 (100 ${createUnit} في الصندوق)`}
                   />
                 </div>
                 
@@ -681,7 +691,7 @@ const ProductsPage = () => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    عدد الصناديق الأولية
+                    {createUnit === 'صندوق' ? 'عدد الصناديق الأولية' : `الكمية الأولية (${createUnit})`}
                   </label>
                   <input
                     type="number"
@@ -689,10 +699,13 @@ const ProductsPage = () => {
                     min="0"
                     step="0.01"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="0"
+                    placeholder={createUnit === 'صندوق' ? 'عدد الصناديق' : `الكمية بال${createUnit}`}
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    إذا تركت هذا الحقل فارغاً، سيتم إنشاء الصنف بمخزون 0 صندوق
+                    {createUnit === 'صندوق' 
+                      ? 'إذا تركت هذا الحقل فارغاً، سيتم إنشاء الصنف بمخزون 0 صندوق'
+                      : `إذا تركت هذا الحقل فارغاً، سيتم إنشاء الصنف بمخزون 0 ${createUnit}`
+                    }
                   </p>
                 </div>
               </div>
@@ -793,7 +806,7 @@ const ProductsPage = () => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    عدد الوحدات في الصندوق
+                    {editUnit === 'صندوق' ? 'عدد الوحدات في الصندوق' : `عدد ال${editUnit} في الصندوق`}
                   </label>
                   <input
                     type="number"
@@ -803,7 +816,7 @@ const ProductsPage = () => {
                     defaultValue={selectedProduct.unitsPerBox || ''}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
                     disabled={editUnit !== 'صندوق'}
-                    placeholder="مثال: 6 (6 وحدات في الصندوق)"
+                    placeholder={editUnit === 'صندوق' ? 'مثال: 6 (6 وحدات في الصندوق)' : `مثال: 100 (100 ${editUnit} في الصندوق)`}
                   />
                 </div>
                 

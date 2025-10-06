@@ -89,7 +89,7 @@ netstat -ano | findstr :3000
 ```
 
 ### **2. فتح صفحة المشتريات:**
-- انتقل إلى: http://localhost:3000/purchases
+- انتقل إلى: http://localhost:3030/purchases
 - اختر الشركة من القائمة المنسدلة
 
 ### **3. إضافة مورد جديد:**
@@ -137,7 +137,7 @@ netstat -ano | findstr :3000
 - **المنفذ**: 3000
 - **الحالة**: يعمل بشكل صحيح
 - **API Configuration**: صحيح
-- **Base URL**: `http://localhost:8000/api`
+- **Base URL**: `http://localhost:4000/api`
 
 ### **✅ API Integration:**
 - **الحقول**: متطابقة بين الفرونت إند والباك إند

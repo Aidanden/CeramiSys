@@ -21,6 +21,7 @@ import {
   Building2,
   ShoppingBag,
   ArrowRightLeft,
+  BarChart3,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -157,6 +158,7 @@ const Sidebar = () => {
             label="مبيعات بين الشركات"
             isCollapsed={isSidebarCollapsed}
           /> */}
+          
           <SidebarLink
             href="/complex-inter-company-sales"
             icon={ArrowRightLeft}
@@ -185,7 +187,7 @@ const Sidebar = () => {
        
           <SidebarLink
             href="/reports"
-            icon={FileText}
+            icon={BarChart3}
             label="التقارير"
             isCollapsed={isSidebarCollapsed}
           />

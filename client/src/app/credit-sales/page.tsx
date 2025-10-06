@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   useGetCreditSalesQuery,
   useGetCreditSalesStatsQuery,
@@ -123,6 +123,13 @@ const CreditSalesPage = () => {
     `);
     printWindow.document.close();
   };
+
+  // Auto-select company for non-system users
+  useEffect(() => {
+    if (currentUser && !currentUser.isSystemUser && currentUser.companyId) {
+      setSelectedCompanyId(currentUser.companyId);
+    }
+  }, [currentUser]);
 
   // API calls
   const { data: companiesData, isLoading: companiesLoading } = useGetCompaniesQuery({ limit: 1000 });
@@ -312,17 +319,32 @@ const CreditSalesPage = () => {
             <select
               value={selectedCompanyId || ''}
               onChange={(e) => setSelectedCompanyId(e.target.value ? Number(e.target.value) : null)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              disabled={false}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
-              <option value="">جميع الشركات</option>
+              <option value="">{currentUser?.isSystemUser ? 'جميع الشركات' : 'الشركة المحددة'}</option>
               {companiesLoading ? (
                 <option disabled>جاري تحميل الشركات...</option>
+              ) : companiesData?.data?.companies && companiesData.data.companies.length > 0 ? (
+                // عرض جميع الشركات في القائمة
+                companiesData.data.companies.map((company) => {
+                  const isUserCompany = company.id === currentUser?.companyId;
+                  const isSystemUser = currentUser?.isSystemUser;
+                  const isAvailable = isSystemUser || isUserCompany;
+                  
+                  return (
+                    <option 
+                      key={company.id} 
+                      value={company.id}
+                      disabled={!isAvailable}
+                    >
+                      {company.name} ({company.code})
+                      {!isAvailable ? ' - غير متاح' : ''}
+                    </option>
+                  );
+                })
               ) : (
-                companiesData?.data?.companies?.map((company) => (
-                  <option key={company.id} value={company.id}>
-                    {company.name} ({company.code})
-                  </option>
-                ))
+                <option disabled>لا توجد شركات متاحة</option>
               )}
             </select>
           </div>

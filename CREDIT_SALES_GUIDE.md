@@ -158,7 +158,7 @@ npm run dev
 ### 4. الوصول للصفحة
 افتح المتصفح وانتقل إلى:
 ```
-http://localhost:3000/credit-sales
+http://localhost:3030/credit-sales
 ```
 
 ---

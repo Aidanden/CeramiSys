@@ -97,7 +97,7 @@ npm run dev
 
 ### 2. افتح المتصفح:
 ```
-http://localhost:3000/credit-sales
+http://localhost:3030/credit-sales
 ```
 
 ### 3. جرب النظام:

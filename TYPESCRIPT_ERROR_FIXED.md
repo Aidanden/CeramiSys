@@ -122,16 +122,16 @@ npm run dev
 ### **2. اختبار API:**
 ```bash
 # اختبار بدون مصادقة (يجب أن يعطي 401)
-curl http://localhost:8000/api/suppliers?limit=1000
+curl http://localhost:4000/api/suppliers?limit=1000
 
 # النتيجة المتوقعة:
 # {"success":false,"message":"غير مصرح"}
 ```
 
 ### **3. اختبار من الفرونت إند:**
-1. **افتح المتصفح**: http://localhost:3000
-2. **سجل الدخول**: http://localhost:3000/login
-3. **انتقل إلى المشتريات**: http://localhost:3000/purchases
+1. **افتح المتصفح**: http://localhost:3030
+2. **سجل الدخول**: http://localhost:3030/login
+3. **انتقل إلى المشتريات**: http://localhost:3030/purchases
 4. **اختر الشركة**: من القائمة المنسدلة
 5. **اضغط على "مورد جديد"**: يجب أن تفتح النافذة بدون أخطاء
 

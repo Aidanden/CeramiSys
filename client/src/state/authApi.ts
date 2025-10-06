@@ -20,6 +20,8 @@ export interface LoginResponse {
       email: string;
       role: string;
       permissions: string[];
+      companyId: number;
+      isSystemUser?: boolean;
     };
   };
 }
@@ -32,6 +34,7 @@ export interface User {
   role: string;
   permissions: string[];
   companyId: number;
+  isSystemUser?: boolean;
 }
 
 export const authApi = createApi({

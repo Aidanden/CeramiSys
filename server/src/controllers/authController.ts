@@ -159,7 +159,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           fullName: user.FullName,
           email: user.Email,
           role: user.Role.RoleName,
-          permissions: user.Role.Permissions as string[]
+          permissions: user.Role.Permissions as string[],
+          companyId: user.CompanyID,
+          isSystemUser: user.IsSystemUser
         }
       }
     });
@@ -238,6 +240,7 @@ export const getCurrentUser = async (req: AuthRequest, res: Response): Promise<v
         role: user.Role.RoleName,
         permissions: user.Role.Permissions as string[],
         companyId: user.CompanyID,
+        isSystemUser: user.IsSystemUser,
         lastLogin: user.LastLogin
       }
     });

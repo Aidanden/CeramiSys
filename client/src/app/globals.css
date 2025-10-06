@@ -315,7 +315,6 @@ body,
   border-bottom: 1px solid var(--border-color);
   background-color: var(--card-bg);
 }
-
 .table-row:hover {
   background-color: var(--secondary-bg);
 }
@@ -323,4 +322,102 @@ body,
 .table-cell {
   @apply px-6 py-4 text-sm;
   color: var(--primary-text);
+}
+
+/* Print Styles */
+@media print {
+  /* Hide non-printable elements */
+  .no-print,
+  nav,
+  aside,
+  button:not(.print-button),
+  .sidebar,
+  header,
+  footer {
+    display: none !important;
+  }
+
+  /* Show print-only elements */
+  .print\:block {
+    display: block !important;
+  }
+
+  /* Page setup */
+  @page {
+    size: A4;
+    margin: 1cm;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+  }
+
+  /* Remove shadows and borders for print */
+  .shadow,
+  .shadow-lg,
+  .shadow-xl,
+  .rounded-lg,
+  .rounded-xl {
+    box-shadow: none !important;
+  }
+
+  /* Table styles for print */
+  table {
+    page-break-inside: auto;
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  /* Ensure text is black for print */
+  * {
+    color: black !important;
+    background: white !important;
+  }
+
+  /* Keep table borders */
+  table,
+  th,
+  td {
+    border: 1px solid #000 !important;
+  }
+
+  /* Remove hover effects */
+  .hover\:bg-gray-50:hover,
+  .print\:hover\:bg-white:hover {
+    background: white !important;
+  }
+
+  /* Stats cards in print */
+  .grid {
+    display: grid !important;
+  }
+
+  /* Ensure proper spacing */
+  .space-y-6 > * + * {
+    margin-top: 1.5rem !important;
+  }
+
+  /* Page breaks */
+  .page-break {
+    page-break-after: always;
+  }
+
+  .avoid-break {
+    page-break-inside: avoid;
+  }
 }

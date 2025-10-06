@@ -7,10 +7,10 @@
 export const getApiBaseUrl = (): string => {
   if (typeof window !== 'undefined') {
     // في المتصفح
-    return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+    return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
   }
   // في الخادم
-  return process.env.API_BASE_URL || 'http://localhost:8000/api';
+  return process.env.API_BASE_URL || 'http://localhost:4000/api';
 };
 
 // إعدادات API

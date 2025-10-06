@@ -339,6 +339,34 @@ export class SalesController {
     }
   }
 
+  /**
+   * الحصول على بيانات الرسم البياني للمبيعات اليومية
+   */
+  async getDailySalesChart(req: Request, res: Response): Promise<void> {
+    try {
+      const userCompanyId = (req as any).user?.companyId;
+      const isSystemUser = (req as any).user?.isSystemUser;
+
+      if (!userCompanyId) {
+        res.status(401).json({
+          success: false,
+          message: 'غير مصرح لك بالوصول',
+        });
+        return;
+      }
+
+      const days = req.query.days ? parseInt(req.query.days as string) : 30;
+      const chartData = await this.salesService.getDailySalesChart(userCompanyId, isSystemUser, days);
+      res.status(200).json(chartData);
+    } catch (error: any) {
+      console.error('خطأ في جلب بيانات الرسم البياني:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'خطأ في الخادم الداخلي',
+      });
+    }
+  }
+
   // ============== إدارة العملاء ==============
 
   /**

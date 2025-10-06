@@ -25,6 +25,7 @@ import { interCompanySalesApi } from "@/state/interCompanySalesApi"; // إضاف
 import { purchaseApi } from "@/state/purchaseApi"; // إضافة purchaseApi
 import { activityApi } from "@/state/activityApi"; // إضافة activityApi
 import { complexInterCompanySalesApi } from "@/state/complexInterCompanySalesApi"; // إضافة complexInterCompanySalesApi
+import { reportsApi } from "@/state/reportsApi"; // إضافة reportsApi
 import { setupListeners } from "@reduxjs/toolkit/query";
 import {
   persistStore,
@@ -113,6 +114,7 @@ const rootReducer = combineReducers({
   [purchaseApi.reducerPath]: purchaseApi.reducer, // إضافة purchaseApi.reducer
   [activityApi.reducerPath]: activityApi.reducer, // إضافة activityApi.reducer
   [complexInterCompanySalesApi.reducerPath]: complexInterCompanySalesApi.reducer, // إضافة complexInterCompanySalesApi.reducer
+  [reportsApi.reducerPath]: reportsApi.reducer, // إضافة reportsApi.reducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -126,7 +128,7 @@ export const makeStore = () => {
         serializableCheck: {
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
-      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware), // إضافة middleware الخاص بـ APIs
+      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware), // إضافة middleware الخاص بـ APIs
   });
 };
 

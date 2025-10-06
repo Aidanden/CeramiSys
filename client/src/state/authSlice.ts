@@ -9,6 +9,7 @@ export interface User {
   permissions: string[];
   companyId: number;
   isActive?: boolean;
+  isSystemUser?: boolean;
 }
 
 export interface AuthState {

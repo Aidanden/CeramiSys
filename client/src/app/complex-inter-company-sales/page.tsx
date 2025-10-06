@@ -51,7 +51,7 @@ const ComplexInterCompanySalesPage = () => {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const currentCompanyId = currentUser?.companyId;
 
-  // Filter companies
+  // عرض جميع الشركات في القوائم
   const parentCompanies = companiesData?.data?.companies?.filter(company => 
     company.isParent === true
   ) || [];
@@ -60,15 +60,23 @@ const ComplexInterCompanySalesPage = () => {
     company.isParent === false && company.parentId !== null
   ) || [];
 
-  // Debug logging
-  console.log('🔍 Debug Info:', {
-    selectedParentCompany,
-    parentProductsData,
-    isLoadingProducts,
-    productsError,
-    hasData: !!parentProductsData?.data,
-    dataLength: parentProductsData?.data?.length
-  });
+  // Auto-select company for non-system users
+  useEffect(() => {
+    if (currentUser && !currentUser.isSystemUser && currentCompanyId) {
+      // إذا كان المستخدم عادي، اختر شركته تلقائياً
+      if (companiesData?.data?.companies) {
+        const userCompany = companiesData.data.companies.find(c => c.id === currentCompanyId);
+        if (userCompany) {
+          if (userCompany.isParent) {
+            setSelectedParentCompany(currentCompanyId);
+          } else {
+            setSelectedBranchCompany(currentCompanyId);
+          }
+        }
+      }
+    }
+  }, [currentUser, currentCompanyId, companiesData]);
+
 
   // Add line to invoice
   const handleAddLine = () => {
@@ -129,6 +137,18 @@ const ComplexInterCompanySalesPage = () => {
   // Handle create sale
   const handleCreateSale = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // التحقق من أن المستخدم العادي لا يمكنه إنشاء فاتورة لشركة أخرى
+    if (!currentUser?.isSystemUser) {
+      if (selectedParentCompany && selectedParentCompany !== currentCompanyId) {
+        error('خطأ', 'لا يمكنك إنشاء فاتورة لشركة أخرى غير شركتك');
+        return;
+      }
+      if (selectedBranchCompany && selectedBranchCompany !== currentCompanyId) {
+        error('خطأ', 'لا يمكنك إنشاء فاتورة لشركة أخرى غير شركتك');
+        return;
+      }
+    }
     
     if (!selectedCustomer) {
       error('خطأ', 'يجب اختيار العميل');
@@ -310,15 +330,27 @@ const ComplexInterCompanySalesPage = () => {
                   <select
                     value={selectedBranchCompany || ''}
                     onChange={(e) => setSelectedBranchCompany(Number(e.target.value) || undefined)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    disabled={false}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     required
                   >
                     <option value="">اختر الشركة الفرعية</option>
-                    {branchCompanies.map((company) => (
-                      <option key={company.id} value={company.id}>
-                        {company.name}
-                      </option>
-                    ))}
+                    {branchCompanies.map((company) => {
+                      const isUserCompany = company.id === currentCompanyId;
+                      const isSystemUser = currentUser?.isSystemUser;
+                      const isAvailable = isSystemUser || isUserCompany;
+                      
+                      return (
+                        <option 
+                          key={company.id} 
+                          value={company.id}
+                          disabled={!isAvailable}
+                        >
+                          {company.name}
+                          {!isAvailable ? ' - غير متاح' : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -329,15 +361,27 @@ const ComplexInterCompanySalesPage = () => {
                   <select
                     value={selectedParentCompany || ''}
                     onChange={(e) => setSelectedParentCompany(Number(e.target.value) || undefined)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    disabled={false}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                     required
                   >
                     <option value="">اختر الشركة الأم</option>
-                    {parentCompanies.map((company) => (
-                      <option key={company.id} value={company.id}>
-                        {company.name}
-                      </option>
-                    ))}
+                    {parentCompanies.map((company) => {
+                      const isUserCompany = company.id === currentCompanyId;
+                      const isSystemUser = currentUser?.isSystemUser;
+                      const isAvailable = isSystemUser || isUserCompany;
+                      
+                      return (
+                        <option 
+                          key={company.id} 
+                          value={company.id}
+                          disabled={!isAvailable}
+                        >
+                          {company.name}
+                          {!isAvailable ? ' - غير متاح' : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 

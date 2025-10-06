@@ -10,7 +10,7 @@
     "id": 2,
     "name": "شركة الامارات",
     "code": "EM",
-    "isParent": true,
-    "parentId": null
+    "isParent": false,
+    "parentId": 1
   }
 ]

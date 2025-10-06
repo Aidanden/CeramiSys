@@ -14,12 +14,22 @@ import {
 } from '@/state/salesApi';
 import { useGetProductsQuery } from '@/state/productsApi';
 import { useGetCompaniesQuery } from '@/state/companyApi';
+import { useGetCurrentUserQuery } from '@/state/authApi';
 import { useToast } from '@/components/ui/Toast';
 import { formatArabicNumber, formatArabicCurrency, formatArabicQuantity, formatArabicArea } from '@/utils/formatArabicNumbers';
 import { PrintModal } from '@/components/sales/PrintModal';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/app/redux';
 
 const SalesPage = () => {
   const { success, error, warning, info, confirm } = useToast();
+  
+  // Get current user info
+  const currentUser = useSelector((state: RootState) => state.auth.user);
+  const { data: currentUserData, isLoading: userLoading } = useGetCurrentUserQuery();
+  
+  // استخدام البيانات من API إذا كانت متوفرة، وإلا من Redux
+  const user = currentUserData?.data || currentUser;
   
   // States
   const [currentPage, setCurrentPage] = useState(1);
@@ -63,6 +73,14 @@ const SalesPage = () => {
 
   const { data: customersData, isLoading: customersLoading, error: customersError } = useGetCustomersQuery({ limit: 1000 });
   const { data: companiesData, isLoading: companiesLoading } = useGetCompaniesQuery({ limit: 1000 });
+
+  // Auto-select company for non-system users
+  useEffect(() => {
+    if (user && !user.isSystemUser && user.companyId) {
+      setSelectedCompanyId(user.companyId);
+    }
+  }, [user]);
+
   // جلب جميع الأصناف ثم الفلترة في الواجهة الأمامية حسب الشركة المختارة
   const { data: productsData, isLoading: productsLoading } = useGetProductsQuery({ 
     limit: 1000
@@ -76,8 +94,17 @@ const SalesPage = () => {
   const handleCreateSale = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedCompanyId) {
-      error('خطأ', 'يجب اختيار الشركة أولاً');
+    // تحديد الشركة المستهدفة
+    const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
+    
+    if (!targetCompanyId) {
+      error('خطأ', user?.isSystemUser ? 'يجب اختيار الشركة أولاً' : 'لا يمكن تحديد شركتك');
+      return;
+    }
+    
+    // التحقق من أن المستخدم العادي لا يمكنه إنشاء فاتورة لشركة أخرى
+    if (!user?.isSystemUser && selectedCompanyId && selectedCompanyId !== user?.companyId) {
+      error('خطأ', 'لا يمكنك إنشاء فاتورة لشركة أخرى غير شركتك');
       return;
     }
     
@@ -91,14 +118,14 @@ const SalesPage = () => {
       return;
     }
 
-    // التحقق من أن جميع الأصناف في البنود تنتمي للشركة المختارة
+    // التحقق من أن جميع الأصناف في البنود تنتمي للشركة المستهدفة
     const invalidLines = saleForm.lines.filter(line => {
       const product = productsData?.data?.products?.find(p => p.id === line.productId);
-      return !product || product.createdByCompanyId !== selectedCompanyId;
+      return !product || product.createdByCompanyId !== targetCompanyId;
     });
 
     if (invalidLines.length > 0) {
-      error('خطأ', 'بعض الأصناف المختارة لا تنتمي للشركة المختارة. يرجى التحقق من البنود.');
+      error('خطأ', 'بعض الأصناف المختارة لا تنتمي للشركة المستهدفة. يرجى التحقق من البنود.');
       return;
     }
 
@@ -106,7 +133,7 @@ const SalesPage = () => {
       // إضافة companyId للطلب
       const saleRequest = {
         ...saleForm,
-        companyId: selectedCompanyId
+        companyId: targetCompanyId
       };
       
       await createSale(saleRequest).unwrap();
@@ -120,7 +147,10 @@ const SalesPage = () => {
       });
       setProductSearchTerm('');
       setProductCodeSearch('');
-      setSelectedCompanyId(null); // إعادة تعيين الشركة المختارة
+      // للمستخدمين العاديين: الاحتفاظ بالشركة، لمستخدمي النظام: إعادة تعيين
+      if (user?.isSystemUser) {
+        setSelectedCompanyId(null);
+      }
       refetchSales();
     } catch (err: any) {
       error('خطأ', err.data?.message || 'حدث خطأ أثناء إنشاء الفاتورة');
@@ -173,13 +203,16 @@ const SalesPage = () => {
 
   // Filter products based on search and selected company
   const filteredProducts = productsData?.data?.products?.filter(product => {
-    // فلترة صارمة: يجب أن تكون الشركة مختارة وأن يكون الصنف تابع لها
-    if (!selectedCompanyId) {
-      return false; // لا تعرض أي أصناف إذا لم يتم اختيار شركة
+    // للمستخدمين العاديين: عرض أصناف شركتهم فقط
+    // لمستخدمي النظام: عرض أصناف الشركة المختارة
+    const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
+    
+    if (!targetCompanyId) {
+      return false; // لا تعرض أي أصناف إذا لم يتم تحديد الشركة
     }
     
-    // التأكد من أن الصنف ينتمي للشركة المختارة فقط
-    if (product.createdByCompanyId !== selectedCompanyId) {
+    // التأكد من أن الصنف ينتمي للشركة المستهدفة فقط
+    if (product.createdByCompanyId !== targetCompanyId) {
       return false;
     }
     
@@ -217,17 +250,23 @@ const SalesPage = () => {
     
     // الانتظار 800ms بعد توقف المستخدم عن الكتابة
     searchTimeoutRef.current = setTimeout(() => {
-      if (!productsData?.data?.products || !selectedCompanyId) {
-        if (code && !selectedCompanyId) {
-          error('خطأ', 'يجب اختيار الشركة أولاً قبل البحث عن الأصناف');
+      // تحديد الشركة المستهدفة
+      const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
+      
+      if (!productsData?.data?.products || !targetCompanyId) {
+        if (code && !targetCompanyId) {
+          error('خطأ', user?.isSystemUser 
+            ? 'يجب اختيار الشركة أولاً قبل البحث عن الأصناف'
+            : 'لا يمكن تحديد شركتك للبحث عن الأصناف'
+          );
         }
         return;
       }
 
-      // البحث فقط في أصناف الشركة المختارة
+      // البحث فقط في أصناف الشركة المستهدفة
       const exactMatch = productsData.data.products.find(
         product => product.sku.toLowerCase() === code.toLowerCase() 
-          && product.createdByCompanyId === selectedCompanyId
+          && product.createdByCompanyId === targetCompanyId
       );
       
       if (exactMatch) {
@@ -257,12 +296,26 @@ const SalesPage = () => {
           const otherCompany = companiesData?.data?.companies?.find(
             c => c.id === productExistsInOtherCompany.createdByCompanyId
           );
-          error(
-            'الصنف غير متاح', 
-            `الصنف "${code}" (${productExistsInOtherCompany.name}) غير موجود في مخزن الشركة المختارة.\n\n` +
-            `هذا الصنف تابع لـ: ${otherCompany?.name || 'شركة أخرى'}\n\n` +
-            `يرجى اختيار صنف من مخزن الشركة الحالية فقط.`
+          const currentCompany = companiesData?.data?.companies?.find(
+            c => c.id === targetCompanyId
           );
+          
+          if (user?.isSystemUser) {
+            error(
+              'الصنف غير متاح', 
+              `الصنف "${code}" (${productExistsInOtherCompany.name}) غير موجود في مخزن الشركة المختارة.\n\n` +
+              `هذا الصنف تابع لـ: ${otherCompany?.name || 'شركة أخرى'}\n` +
+              `الشركة المختارة: ${currentCompany?.name || 'غير محددة'}\n\n` +
+              `يرجى اختيار صنف من مخزن الشركة المختارة فقط.`
+            );
+          } else {
+            error(
+              'الصنف غير متاح', 
+              `الصنف "${code}" (${productExistsInOtherCompany.name}) غير موجود في مخزن شركتك.\n\n` +
+              `هذا الصنف تابع لـ: ${otherCompany?.name || 'شركة أخرى'}\n\n` +
+              `يمكنك فقط بيع الأصناف التابعة لشركتك.`
+            );
+          }
         } else {
           warning('غير موجود', `الصنف بالكود "${code}" غير موجود في النظام.`);
         }
@@ -274,7 +327,7 @@ const SalesPage = () => {
     }, 800); // الانتظار 800ms
   };
 
-  if (salesLoading) {
+  if (salesLoading || userLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -300,19 +353,20 @@ const SalesPage = () => {
           </div>
           <button
             onClick={() => {
-              if (!selectedCompanyId) {
-                error('تنبيه', 'يجب اختيار الشركة أولاً');
+              const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
+              if (!targetCompanyId) {
+                error('تنبيه', user?.isSystemUser ? 'يجب اختيار الشركة أولاً' : 'لا يمكن تحديد شركتك');
                 return;
               }
               setShowCreateSaleModal(true);
             }}
-            disabled={!selectedCompanyId}
+            disabled={user?.isSystemUser ? !selectedCompanyId : !user?.companyId}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-              selectedCompanyId 
+              (user?.isSystemUser ? selectedCompanyId : user?.companyId)
                 ? 'bg-green-600 hover:bg-green-700 text-white' 
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
-            title={!selectedCompanyId ? 'يجب اختيار الشركة أولاً' : 'إنشاء فاتورة جديدة'}
+            title={(user?.isSystemUser ? !selectedCompanyId : !user?.companyId) ? 'يجب اختيار الشركة أولاً' : 'إنشاء فاتورة جديدة'}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -376,7 +430,7 @@ const SalesPage = () => {
       {/* Company Selection */}
       <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-200">
         <label className="block text-sm font-bold text-blue-900 mb-2">
-          🏢 اختر الشركة للعمل عليها *
+          🏢 {user?.isSystemUser ? 'اختر الشركة للعمل عليها' : 'الشركة المحددة'} *
         </label>
         <select
           value={selectedCompanyId || ''}
@@ -392,17 +446,38 @@ const SalesPage = () => {
             setProductSearchTerm('');
             setProductCodeSearch('');
           }}
-          className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-lg font-medium"
+          disabled={false}
+          className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-lg font-medium disabled:bg-gray-100 disabled:cursor-not-allowed"
         >
           <option value="">-- اختر الشركة أولاً --</option>
           {companiesLoading ? (
             <option disabled>جاري تحميل الشركات...</option>
+          ) : companiesData?.data?.companies && companiesData.data.companies.length > 0 ? (
+            // عرض الشركات حسب صلاحية المستخدم
+            companiesData.data.companies
+              .filter((company) => {
+                // مستخدمو النظام يرون جميع الشركات
+                if (user?.isSystemUser) {
+                  return true;
+                }
+                // المستخدمون العاديون يرون شركتهم فقط
+                return company.id === user?.companyId;
+              })
+              .map((company) => (
+                <option 
+                  key={company.id} 
+                  value={company.id}
+                >
+                  {company.name} ({company.code})
+                  {company.id === user?.companyId ? ' - شركتك' : ''}
+                </option>
+              ))
           ) : (
-            companiesData?.data?.companies?.map((company) => (
-              <option key={company.id} value={company.id}>
-                {company.name} ({company.code})
-              </option>
-            ))
+            <option disabled>
+              {user?.isSystemUser 
+                ? 'لا توجد شركات في النظام' 
+                : 'لا يمكن العثور على شركتك'}
+            </option>
           )}
         </select>
         {!selectedCompanyId && (
@@ -418,6 +493,15 @@ const SalesPage = () => {
             <p className="text-xs text-blue-600">
               💡 ملاحظة: سيتم عرض الأصناف الخاصة بهذه الشركة فقط، ولا يمكن إضافة أصناف من شركات أخرى
             </p>
+            {user?.isSystemUser ? (
+              <p className="text-xs text-purple-600">
+                👑 مستخدم نظام: يمكنك إنشاء فواتير لأي شركة
+              </p>
+            ) : (
+              <p className="text-xs text-gray-600">
+                🔒 مستخدم عادي: يمكنك إنشاء فواتير لشركتك فقط
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -650,6 +734,24 @@ const SalesPage = () => {
                 <p className="text-xs text-blue-600 mt-1">
                   💡 سيتم البيع من مخزون هذه الشركة فقط
                 </p>
+              </div>
+
+              {/* ملاحظة مهمة عن البيع بالمتر */}
+              <div className="mb-4 bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border-2 border-blue-300">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">💡</span>
+                  <div>
+                    <p className="text-sm text-blue-900 font-bold mb-1">
+                      ملاحظة مهمة: البيع بالمتر المربع
+                    </p>
+                    <p className="text-xs text-blue-800 leading-relaxed">
+                      • للأصناف التي وحدتها "صندوق": البيع يتم <strong>بالمتر المربع</strong><br/>
+                      • سيتم <strong>التقريب للأعلى</strong> لعدد الصناديق (مثال: 4.5 صندوق → 5 صناديق)<br/>
+                      • سيحصل العميل على <strong>عدد الأمتار الكامل</strong> للصناديق المباعة<br/>
+                      • <strong>لا يوجد بيع لنصف صندوق</strong> - دائماً صناديق كاملة
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* تنبيه إذا لم تكن هناك أصناف */}
@@ -901,16 +1003,31 @@ const SalesPage = () => {
                                 const productId = Number(e.target.value);
                                 const product = productsData?.data?.products?.find(p => p.id === productId);
                                 
-                                // التحقق من أن الصنف ينتمي للشركة المختارة
-                                if (product && selectedCompanyId && product.createdByCompanyId !== selectedCompanyId) {
+                                // التحقق من أن الصنف ينتمي للشركة المستهدفة
+                                const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
+                                if (product && targetCompanyId && product.createdByCompanyId !== targetCompanyId) {
                                   const otherCompany = companiesData?.data?.companies?.find(
                                     c => c.id === product.createdByCompanyId
                                   );
-                                  error(
-                                    'خطأ في الاختيار',
-                                    `الصنف "${product.name}" لا ينتمي للشركة المختارة.\n` +
-                                    `هذا الصنف تابع لـ: ${otherCompany?.name || 'شركة أخرى'}`
+                                  const currentCompany = companiesData?.data?.companies?.find(
+                                    c => c.id === targetCompanyId
                                   );
+                                  
+                                  if (user?.isSystemUser) {
+                                    error(
+                                      'خطأ في الاختيار',
+                                      `الصنف "${product.name}" لا ينتمي للشركة المختارة.\n\n` +
+                                      `هذا الصنف تابع لـ: ${otherCompany?.name || 'شركة أخرى'}\n` +
+                                      `الشركة المختارة: ${currentCompany?.name || 'غير محددة'}`
+                                    );
+                                  } else {
+                                    error(
+                                      'خطأ في الاختيار',
+                                      `الصنف "${product.name}" لا ينتمي لشركتك.\n\n` +
+                                      `هذا الصنف تابع لـ: ${otherCompany?.name || 'شركة أخرى'}\n` +
+                                      `يمكنك فقط بيع الأصناف التابعة لشركتك.`
+                                    );
+                                  }
                                   return;
                                 }
                                 
@@ -936,13 +1053,14 @@ const SalesPage = () => {
                                   {selectedProduct.unitsPerBox && ` | ${formatArabicNumber(selectedProduct.unitsPerBox)} ${selectedProduct.unit || 'وحدة'}/صندوق`}
                                 </div>
                                 {selectedProduct.stock && (
-                                  <div className="text-green-600 font-medium">
-                                    {selectedProduct.unit === 'صندوق' ? (
-                                      <>✅ المخزون: {formatArabicQuantity(selectedProduct.stock.boxes)} صندوق</>
-                                    ) : selectedProduct.unitsPerBox ? (
-                                      <>✅ المخزون: {formatArabicQuantity(Number(selectedProduct.stock.boxes) * Number(selectedProduct.unitsPerBox))} {selectedProduct.unit || 'وحدة'}</>
+                                  <div className="text-green-600 font-medium space-y-1">
+                                    {selectedProduct.unitsPerBox ? (
+                                      <>
+                                        <div>✅ المخزون: {formatArabicQuantity(Number(selectedProduct.stock.boxes) * Number(selectedProduct.unitsPerBox))} {selectedProduct.unit || 'متر مربع'}</div>
+                                        <div className="text-xs text-gray-600">📦 ({formatArabicQuantity(selectedProduct.stock.boxes)} صندوق)</div>
+                                      </>
                                     ) : (
-                                      <>✅ المخزون: {formatArabicQuantity(selectedProduct.stock.boxes)} {selectedProduct.unit || 'وحدة'}</>
+                                      <div>✅ المخزون: {formatArabicQuantity(selectedProduct.stock.boxes)} {selectedProduct.unit || 'متر مربع'}</div>
                                     )}
                                   </div>
                                 )}
@@ -952,7 +1070,7 @@ const SalesPage = () => {
                           
                           <div className="col-span-2">
                             <label className="block text-xs font-medium text-gray-700 mb-1">
-                              {selectedProduct?.unit === 'صندوق' ? 'الصناديق' : `الكمية (${selectedProduct?.unit || 'وحدة'})`}
+                              الكمية ({selectedProduct?.unit || 'متر مربع'})
                             </label>
                             <input
                               type="number"
@@ -963,30 +1081,43 @@ const SalesPage = () => {
                                   ? 'border-red-300 bg-red-50' 
                                   : 'border-gray-300'
                               }`}
-                              placeholder="0"
-                              min="1"
-                              step="1"
+                              placeholder={`أدخل الكمية بـ${selectedProduct?.unit || 'المتر المربع'}`}
+                              min="0.01"
+                              step="0.01"
                               required
                             />
-                            {selectedProduct?.stock && line.qty > Number(selectedProduct.stock.boxes) && (
+                            {selectedProduct?.unitsPerBox && line.qty > 0 && (
+                              <div className="text-xs text-blue-600 mt-1 font-medium">
+                                📦 سيتم خصم {Math.ceil(line.qty / Number(selectedProduct.unitsPerBox))} صندوق من المخزون
+                                {line.qty % Number(selectedProduct.unitsPerBox) !== 0 && (
+                                  <span className="text-orange-600">
+                                    {" "}(تقريب للأعلى من {formatArabicQuantity(line.qty / Number(selectedProduct.unitsPerBox))})
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {selectedProduct?.stock && selectedProduct?.unitsPerBox && line.qty > (Number(selectedProduct.stock.boxes) * Number(selectedProduct.unitsPerBox)) && (
                               <div className="text-xs text-red-600 mt-1 font-medium">
-                                ⚠️ الكمية أكبر من المخزون!
+                                ⚠️ الكمية المطلوبة أكبر من المخزون المتاح ({formatArabicQuantity(Number(selectedProduct.stock.boxes) * Number(selectedProduct.unitsPerBox))} {selectedProduct.unit})
                               </div>
                             )}
                           </div>
                           
                           <div className="col-span-2">
                             <label className="block text-xs font-medium text-gray-700 mb-1">
-                              {selectedProduct?.unit === 'متر' ? 'إجمالي م²' : 'الإجمالي'}
+                              الكمية الإجمالية
                             </label>
-                            <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-md">
-                              <span className="text-sm font-bold text-blue-700 block text-center">
-                                {totalUnits > 0 ? formatArabicArea(totalUnits) : '0.00'}
+                            <div className="px-3 py-2 bg-purple-50 border border-purple-200 rounded-md">
+                              <span className="text-sm font-bold text-purple-700 block text-center">
+                                {line.qty > 0 ? `${formatArabicArea(line.qty)} ${selectedProduct?.unit || 'متر مربع'}` : '0'}
                               </span>
                             </div>
                             {selectedProduct?.unitsPerBox && line.qty > 0 && (
-                              <div className="text-xs text-blue-600 mt-1 font-medium">
-                                📐 {formatArabicQuantity(line.qty)} × {formatArabicNumber(selectedProduct.unitsPerBox)} = {formatArabicArea(totalUnits)}
+                              <div className="text-xs text-purple-600 mt-1 font-medium">
+                                📦 عدد الصناديق: {Math.ceil(line.qty / Number(selectedProduct.unitsPerBox))} صندوق
+                                {line.qty % Number(selectedProduct.unitsPerBox) !== 0 && (
+                                  <span className="text-orange-600"> (مقرب للأعلى)</span>
+                                )}
                               </div>
                             )}
                           </div>
@@ -1208,22 +1339,24 @@ const SalesPage = () => {
                         <tr>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">كود الصنف</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الصنف</th>
-                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الصناديق</th>
-                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">إجمالي الوحدات</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الكمية</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">عدد الصناديق</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">سعر الوحدة</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">المجموع</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
                         {selectedSale.lines.map((line, index) => {
-                          const totalUnits = line.product?.unitsPerBox ? line.qty * Number(line.product.unitsPerBox) : line.qty;
+                          const boxesCount = line.product?.unitsPerBox ? Math.ceil(line.qty / Number(line.product.unitsPerBox)) : line.qty;
                           return (
                             <tr key={index}>
                               <td className="px-4 py-2 text-sm font-mono text-gray-600">{line.product?.sku}</td>
                               <td className="px-4 py-2 text-sm">{line.product?.name}</td>
-                              <td className="px-4 py-2 text-sm">{formatArabicQuantity(line.qty)} صندوق</td>
                               <td className="px-4 py-2 text-sm">
-                                {formatArabicArea(totalUnits)} {line.product?.unit || 'وحدة'}
+                                {formatArabicArea(line.qty)} {line.product?.unit || 'متر مربع'}
+                              </td>
+                              <td className="px-4 py-2 text-sm">
+                                {formatArabicQuantity(boxesCount)} صندوق
                               </td>
                               <td className="px-4 py-2 text-sm">{formatArabicCurrency(line.unitPrice)}</td>
                               <td className="px-4 py-2 text-sm font-medium">{formatArabicCurrency(line.subTotal)}</td>

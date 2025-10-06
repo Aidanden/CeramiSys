@@ -67,11 +67,41 @@ export class SalesService {
           ? product.stocks.find(s => s.companyId === userCompanyId)
           : product.stocks[0];
         
+        // حساب الصناديق المطلوبة:
+        // - إذا كان الصنف بالصندوق: line.qty هي بالأمتار، نحولها لصناديق ونقرب للأعلى
+        // - إذا كان الصنف بوحدة أخرى: line.qty هي عدد الصناديق مباشرة
+        let requiredBoxes = line.qty;
+        let actualMetersToSell = line.qty; // الأمتار الفعلية التي سيحصل عليها العميل
+        
+        if (product.unit === 'صندوق' && product.unitsPerBox && Number(product.unitsPerBox) > 0) {
+          // البيع بالمتر المربع: line.qty = عدد الأمتار المطلوبة
+          const requestedMeters = line.qty;
+          const unitsPerBox = Number(product.unitsPerBox);
+          
+          // حساب عدد الصناديق (التقريب للأعلى)
+          requiredBoxes = Math.ceil(requestedMeters / unitsPerBox);
+          
+          // حساب الأمتار الفعلية (الصناديق الكاملة × الوحدات في الصندوق)
+          actualMetersToSell = requiredBoxes * unitsPerBox;
+          
+          // Debug logging
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('📐 Meter Calculation:', {
+              productName: product.name,
+              requestedMeters,
+              unitsPerBox,
+              requiredBoxes,
+              actualMetersToSell
+            });
+          }
+        }
+        
         // Debug logging
         if (process.env.NODE_ENV !== 'production') {
           console.log('📦 Stock Check Debug:', {
             productId: product.id,
             productName: product.name,
+            unit: product.unit,
             isSystemUser,
             userCompanyId,
             stocksFound: product.stocks.length,
@@ -79,21 +109,28 @@ export class SalesService {
             selectedStock: stock ? {
               companyId: stock.companyId,
               boxes: Number(stock.boxes)
-            } : 'NO_STOCK'
+            } : 'NO_STOCK',
+            requiredBoxes
           });
         }
-        
-        // الكمية المطلوبة هي دائماً بالصناديق (line.qty = عدد الصناديق)
-        const requiredBoxes = line.qty;
         
         if (!stock || Number(stock.boxes) < requiredBoxes) {
           // عرض الكمية المتوفرة بالوحدة المناسبة
           const availableBoxes = Number(stock?.boxes || 0);
-          const availableUnits = product.unit === 'صندوق' 
-            ? `${availableBoxes} صندوق`
-            : `${availableBoxes} صندوق (${(availableBoxes * Number(product.unitsPerBox || 1)).toFixed(2)} ${product.unit || 'وحدة'})`;
+          let availableUnits = '';
           
-          throw new Error(`المخزون غير كافي للصنف: ${product.name}. المتوفر: ${availableUnits}، المطلوب: ${requiredBoxes} صندوق`);
+          if (product.unit === 'صندوق' && product.unitsPerBox) {
+            const availableMeters = availableBoxes * Number(product.unitsPerBox);
+            availableUnits = `${availableMeters.toFixed(2)} ${product.unit || 'متر مربع'} (${availableBoxes} صندوق)`;
+          } else {
+            availableUnits = `${availableBoxes} صندوق`;
+          }
+          
+          const requestedUnits = product.unit === 'صندوق' && product.unitsPerBox
+            ? `${actualMetersToSell.toFixed(2)} ${product.unit || 'متر مربع'} (${requiredBoxes} صندوق)`
+            : `${requiredBoxes} صندوق`;
+          
+          throw new Error(`المخزون غير كافي للصنف: ${product.name}. المتوفر: ${availableUnits}، المطلوب: ${requestedUnits}`);
         }
       }
 
@@ -146,8 +183,22 @@ export class SalesService {
 
       // تحديث المخزون
       for (const line of data.lines) {
-        // الكمية المطلوبة هي دائماً بالصناديق (line.qty = عدد الصناديق)
-        const boxesToDecrement = line.qty;
+        const product = products.find(p => p.id === line.productId);
+        if (!product) continue;
+        
+        // حساب الصناديق المطلوبة:
+        // - إذا كان الصنف بالصندوق: line.qty هي بالأمتار، نحولها لصناديق ونقرب للأعلى
+        // - إذا كان الصنف بوحدة أخرى: line.qty هي عدد الصناديق مباشرة
+        let boxesToDecrement = line.qty;
+        
+        if (product.unit === 'صندوق' && product.unitsPerBox && Number(product.unitsPerBox) > 0) {
+          // البيع بالمتر المربع: line.qty = عدد الأمتار المطلوبة
+          const requestedMeters = line.qty;
+          const unitsPerBox = Number(product.unitsPerBox);
+          
+          // حساب عدد الصناديق (التقريب للأعلى)
+          boxesToDecrement = Math.ceil(requestedMeters / unitsPerBox);
+        }
         
         await this.prisma.stock.update({
           where: {
@@ -389,8 +440,20 @@ export class SalesService {
         });
         
         for (const line of existingSale.lines) {
-          // الكمية المخزنة هي دائماً بالصناديق (line.qty = عدد الصناديق)
-          const boxesToIncrement = Number(line.qty);
+          const oldProduct = oldProducts.find(p => p.id === line.productId);
+          if (!oldProduct) continue;
+          
+          // حساب الصناديق المطلوبة:
+          let boxesToIncrement = Number(line.qty);
+          
+          if (oldProduct.unit === 'صندوق' && oldProduct.unitsPerBox && Number(oldProduct.unitsPerBox) > 0) {
+            // البيع كان بالمتر المربع: line.qty = عدد الأمتار المباعة
+            const soldMeters = Number(line.qty);
+            const unitsPerBox = Number(oldProduct.unitsPerBox);
+            
+            // حساب عدد الصناديق (التقريب للأعلى)
+            boxesToIncrement = Math.ceil(soldMeters / unitsPerBox);
+          }
           
           await this.prisma.stock.update({
             where: {
@@ -429,15 +492,39 @@ export class SalesService {
           const stock = isSystemUser 
             ? product.stocks.find(s => s.companyId === userCompanyId)
             : product.stocks[0];
-          // الكمية المطلوبة هي دائماً بالصناديق (line.qty = عدد الصناديق)
-          const requiredBoxes = line.qty;
+          
+          // حساب الصناديق المطلوبة:
+          let requiredBoxes = line.qty;
+          let actualMetersToSell = line.qty;
+          
+          if (product.unit === 'صندوق' && product.unitsPerBox && Number(product.unitsPerBox) > 0) {
+            // البيع بالمتر المربع: line.qty = عدد الأمتار المطلوبة
+            const requestedMeters = line.qty;
+            const unitsPerBox = Number(product.unitsPerBox);
+            
+            // حساب عدد الصناديق (التقريب للأعلى)
+            requiredBoxes = Math.ceil(requestedMeters / unitsPerBox);
+            
+            // حساب الأمتار الفعلية (الصناديق الكاملة × الوحدات في الصندوق)
+            actualMetersToSell = requiredBoxes * unitsPerBox;
+          }
           
           if (!stock || Number(stock.boxes) < requiredBoxes) {
             const availableBoxes = Number(stock?.boxes || 0);
-            const availableUnits = product.unit === 'صندوق' 
-              ? `${availableBoxes} صندوق`
-              : `${availableBoxes} صندوق (${(availableBoxes * Number(product.unitsPerBox || 1)).toFixed(2)} ${product.unit || 'وحدة'})`;
-            throw new Error(`المخزون غير كافي للصنف: ${product.name}. المتوفر: ${availableUnits}، المطلوب: ${requiredBoxes} صندوق`);
+            let availableUnits = '';
+            
+            if (product.unit === 'صندوق' && product.unitsPerBox) {
+              const availableMeters = availableBoxes * Number(product.unitsPerBox);
+              availableUnits = `${availableMeters.toFixed(2)} ${product.unit || 'متر مربع'} (${availableBoxes} صندوق)`;
+            } else {
+              availableUnits = `${availableBoxes} صندوق`;
+            }
+            
+            const requestedUnits = product.unit === 'صندوق' && product.unitsPerBox
+              ? `${actualMetersToSell.toFixed(2)} ${product.unit || 'متر مربع'} (${requiredBoxes} صندوق)`
+              : `${requiredBoxes} صندوق`;
+            
+            throw new Error(`المخزون غير كافي للصنف: ${product.name}. المتوفر: ${availableUnits}، المطلوب: ${requestedUnits}`);
           }
         }
 
@@ -493,9 +580,34 @@ export class SalesService {
 
       // تحديث المخزون للبنود الجديدة
       if (data.lines) {
+        // الحصول على بيانات الأصناف للبنود الجديدة
+        const newProductIds = data.lines.map(line => line.productId);
+        const newProducts = await this.prisma.product.findMany({
+          where: {
+            id: { in: newProductIds }
+          },
+          select: {
+            id: true,
+            unit: true,
+            unitsPerBox: true
+          }
+        });
+        
         for (const line of data.lines) {
-          // الكمية المطلوبة هي دائماً بالصناديق (line.qty = عدد الصناديق)
-          const boxesToDecrement = line.qty;
+          const product = newProducts.find((p: any) => p.id === line.productId);
+          if (!product) continue;
+          
+          // حساب الصناديق المطلوبة:
+          let boxesToDecrement = line.qty;
+          
+          if (product.unit === 'صندوق' && product.unitsPerBox && Number(product.unitsPerBox) > 0) {
+            // البيع بالمتر المربع: line.qty = عدد الأمتار المطلوبة
+            const requestedMeters = line.qty;
+            const unitsPerBox = Number(product.unitsPerBox);
+            
+            // حساب عدد الصناديق (التقريب للأعلى)
+            boxesToDecrement = Math.ceil(requestedMeters / unitsPerBox);
+          }
           
           await this.prisma.stock.update({
             where: {
@@ -560,9 +672,34 @@ export class SalesService {
       }
 
       // إرجاع المخزون
+      // الحصول على بيانات الأصناف للبنود
+      const productIds = existingSale.lines.map(line => line.productId);
+      const products = await this.prisma.product.findMany({
+        where: {
+          id: { in: productIds }
+        },
+        select: {
+          id: true,
+          unit: true,
+          unitsPerBox: true
+        }
+      });
+      
       for (const line of existingSale.lines) {
-        // الكمية المخزنة هي دائماً بالصناديق (line.qty = عدد الصناديق)
-        const boxesToIncrement = Number(line.qty);
+        const product = products.find(p => p.id === line.productId);
+        if (!product) continue;
+        
+        // حساب الصناديق المطلوبة:
+        let boxesToIncrement = Number(line.qty);
+        
+        if (product.unit === 'صندوق' && product.unitsPerBox && Number(product.unitsPerBox) > 0) {
+          // البيع كان بالمتر المربع: line.qty = عدد الأمتار المباعة
+          const soldMeters = Number(line.qty);
+          const unitsPerBox = Number(product.unitsPerBox);
+          
+          // حساب عدد الصناديق (التقريب للأعلى)
+          boxesToIncrement = Math.ceil(soldMeters / unitsPerBox);
+        }
         
         await this.prisma.stock.update({
           where: {
@@ -641,6 +778,76 @@ export class SalesService {
       };
     } catch (error) {
       console.error('خطأ في جلب إحصائيات المبيعات:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * الحصول على بيانات المبيعات اليومية للرسم البياني
+   * @param days - عدد الأيام (افتراضي: 30 يوم)
+   */
+  async getDailySalesChart(userCompanyId: number, isSystemUser: boolean = false, days: number = 30) {
+    try {
+      const where: any = {
+        ...(isSystemUser !== true && { companyId: userCompanyId })
+      };
+
+      const today = new Date();
+      const startDate = new Date(today);
+      startDate.setDate(today.getDate() - days);
+      startDate.setHours(0, 0, 0, 0);
+
+      // جلب جميع المبيعات في الفترة المحددة
+      const sales = await this.prisma.sale.findMany({
+        where: {
+          ...where,
+          createdAt: { gte: startDate }
+        },
+        select: {
+          createdAt: true,
+          total: true
+        },
+        orderBy: { createdAt: 'asc' }
+      });
+
+      // تجميع المبيعات حسب اليوم
+      const dailyData: { [key: string]: { date: string; revenue: number; count: number } } = {};
+
+      // إنشاء جميع الأيام في الفترة
+      for (let i = 0; i < days; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+        const dateKey = date.toISOString().split('T')[0] || '';
+        if (dateKey) {
+          dailyData[dateKey] = {
+            date: dateKey,
+            revenue: 0,
+            count: 0
+          };
+        }
+      }
+
+      // ملء البيانات من المبيعات
+      sales.forEach(sale => {
+        const dateKey = sale.createdAt.toISOString().split('T')[0] || '';
+        if (dateKey && dailyData[dateKey]) {
+          dailyData[dateKey].revenue += Number(sale.total);
+          dailyData[dateKey].count += 1;
+        }
+      });
+
+      // تحويل إلى مصفوفة مرتبة
+      const chartData = Object.values(dailyData).sort((a, b) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+
+      return {
+        success: true,
+        message: 'تم جلب بيانات الرسم البياني بنجاح',
+        data: chartData
+      };
+    } catch (error) {
+      console.error('خطأ في جلب بيانات الرسم البياني:', error);
       throw error;
     }
   }

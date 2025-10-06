@@ -205,7 +205,7 @@ npm run dev
 
 ### الخطوة 4: الوصول
 ```
-http://localhost:3000/credit-sales
+http://localhost:3030/credit-sales
 ```
 
 ---

@@ -37,3 +37,5 @@ router.post('/:parentSaleId/settle', (req, res) => complexInterCompanySaleContro
 router.get('/stats', (req, res) => complexInterCompanySaleController.getComplexInterCompanyStats(req, res));
 
 export default router;
+
+

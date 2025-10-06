@@ -75,7 +75,7 @@ npm run dev
 ```
 
 ### في المتصفح:
-1. افتح `http://localhost:3000/credit-sales`
+1. افتح `http://localhost:3030/credit-sales`
 2. يجب أن تظهر الصفحة بدون أخطاء
 3. جرب إنشاء فاتورة آجلة وإضافة دفعة
 

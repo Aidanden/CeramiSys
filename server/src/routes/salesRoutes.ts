@@ -36,6 +36,13 @@ router.post('/', salesController.createSale.bind(salesController));
  */
 router.get('/stats', salesController.getSalesStats.bind(salesController));
 
+/**
+ * @route   GET /api/sales/chart/daily
+ * @desc    الحصول على بيانات الرسم البياني للمبيعات اليومية
+ * @access  Private
+ */
+router.get('/chart/daily', salesController.getDailySalesChart.bind(salesController));
+
 // ============== مسارات العملاء ==============
 
 /**

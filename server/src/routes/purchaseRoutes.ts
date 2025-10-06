@@ -10,27 +10,27 @@ router.use(authenticateToken);
 
 // Purchase routes
 router.post('/purchases', 
-  authorizeRoles(['admin', 'manager', 'purchase_manager']), 
+  authorizeRoles(['admin', 'manager', 'cashier']), 
   PurchaseController.createPurchase
 );
 
 router.get('/purchases', 
-  authorizeRoles(['admin', 'manager', 'purchase_manager', 'viewer']), 
+  authorizeRoles(['admin', 'manager', 'cashier', 'accountant']), 
   PurchaseController.getPurchases
 );
 
 router.get('/purchases/stats', 
-  authorizeRoles(['admin', 'manager', 'purchase_manager', 'viewer']), 
+  authorizeRoles(['admin', 'manager', 'cashier', 'accountant']), 
   PurchaseController.getPurchaseStats
 );
 
 router.get('/purchases/:id', 
-  authorizeRoles(['admin', 'manager', 'purchase_manager', 'viewer']), 
+  authorizeRoles(['admin', 'manager', 'cashier', 'accountant']), 
   PurchaseController.getPurchaseById
 );
 
 router.put('/purchases/:id', 
-  authorizeRoles(['admin', 'manager', 'purchase_manager']), 
+  authorizeRoles(['admin', 'manager', 'cashier']), 
   PurchaseController.updatePurchase
 );
 
@@ -41,28 +41,28 @@ router.delete('/purchases/:id',
 
 // Purchase payment routes
 router.post('/purchases/payments', 
-  authorizeRoles(['admin', 'manager', 'purchase_manager']), 
+  authorizeRoles(['admin', 'manager', 'cashier']), 
   PurchaseController.addPayment
 );
 
 // Supplier routes
 router.post('/suppliers', 
-  authorizeRoles(['admin', 'manager', 'purchase_manager']), 
+  authorizeRoles(['admin', 'manager', 'cashier']), 
   PurchaseController.createSupplier
 );
 
 router.get('/suppliers', 
-  authorizeRoles(['admin', 'manager', 'purchase_manager', 'viewer']), 
+  authorizeRoles(['admin', 'manager', 'cashier', 'accountant']), 
   PurchaseController.getSuppliers
 );
 
 router.get('/suppliers/:id', 
-  authorizeRoles(['admin', 'manager', 'purchase_manager', 'viewer']), 
+  authorizeRoles(['admin', 'manager', 'cashier', 'accountant']), 
   PurchaseController.getSupplierById
 );
 
 router.put('/suppliers/:id', 
-  authorizeRoles(['admin', 'manager', 'purchase_manager']), 
+  authorizeRoles(['admin', 'manager', 'cashier']), 
   PurchaseController.updateSupplier
 );
 

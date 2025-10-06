@@ -4,7 +4,7 @@ const testApiConnection = async () => {
     console.log('🔍 Testing API connection...');
     
     // اختبار الاتصال الأساسي
-    const response = await fetch('http://localhost:8000/api/users/users', {
+    const response = await fetch('http://localhost:4000/api/users/users', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -39,8 +39,8 @@ testApiConnection();
 // اختبار مع مسارات مختلفة
 const testDifferentPaths = async () => {
   const paths = [
-    'http://localhost:8000/api/users/users',
-    'http://localhost:8000/api/users',
+    'http://localhost:4000/api/users/users',
+    'http://localhost:4000/api/users',
     'http://localhost:3001/api/users/users',
     'http://localhost:3001/api/users',
     '/api/users/users',

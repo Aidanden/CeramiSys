@@ -105,6 +105,12 @@ export interface SalesStats {
   yearRevenue: number;
 }
 
+export interface DailySalesData {
+  date: string;
+  revenue: number;
+  count: number;
+}
+
 // Types للعملاء
 export interface Customer {
   id: number;

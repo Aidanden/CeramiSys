@@ -283,7 +283,7 @@ model Supplier {
 }
 
 /////////////////////////////////////////////////
-//       Purchases from Parent & Receipts
+//       Purchases from Parent & Receipts      //
 /////////////////////////////////////////////////
 
 model PurchaseFromParent {

@@ -94,23 +94,6 @@ const UsersPage = () => {
   // استخدام البيانات مباشرة من API بدلاً من local state
   const users = usersData?.data?.users || [];
   
-  // Debug: Log data for troubleshooting
-  console.log('🔍 Users Debug:', {
-    hasUsersData: !!usersData,
-    success: usersData?.success,
-    usersCount: users?.length,
-    isLoading: isLoadingUsers,
-    error: usersError,
-    showSystemUsers,
-    users: users?.map(u => ({
-      id: u.id,
-      username: u.username,
-      fullName: u.fullName,
-      isSystemUser: u.isSystemUser,
-      isActive: u.isActive,
-      companyName: u.companyName
-    }))
-  });
 
   const [roles] = useState<UserRole[]>([
     {
@@ -232,17 +215,12 @@ const UsersPage = () => {
         isActive: newUser.isActive
       };
       
-      // Debug: Log the data being sent
-      console.log('🔍 User data being sent:', userData);
       
       const result = await createUser(userData).unwrap();
       // console.log('✅ User created successfully:', result);
       
       if (result.success) {
-        toast.success('تم إضافة المستخدم بنجاح', {
-          duration: 3000,
-          position: 'top-center',
-        });
+        toast.success('تم إضافة المستخدم بنجاح');
         setNewUser({
           username: "",
           fullName: "",
@@ -257,18 +235,12 @@ const UsersPage = () => {
         setShowAddModal(false);
         // Optimistic update سيتولى التحديث تلقائياً
       } else {
-        toast.error(result.message || 'خطأ في إضافة المستخدم', {
-          duration: 4000,
-          position: 'top-center',
-        });
+        toast.error(result.message || 'خطأ في إضافة المستخدم');
       }
     } catch (error) {
       // console.error('❌ Error in handleAddUser:', error);
       const errorMessage = (error as { data?: { message?: string } })?.data?.message || 'خطأ في إضافة المستخدم';
-      toast.error(errorMessage, {
-        duration: 5000,
-        position: 'top-center',
-      });
+      toast.error(errorMessage);
     }
   };
 
@@ -298,25 +270,16 @@ const UsersPage = () => {
       }).unwrap();
       
       if (result.success) {
-        toast.success('تم تحديث المستخدم بنجاح', {
-          duration: 3000,
-          position: 'top-center',
-        });
+        toast.success('تم تحديث المستخدم بنجاح');
         setShowEditModal(false);
         // Optimistic update سيتولى التحديث تلقائياً
       } else {
-        toast.error(result.message || 'خطأ في تحديث المستخدم', {
-          duration: 4000,
-          position: 'top-center',
-        });
+        toast.error(result.message || 'خطأ في تحديث المستخدم');
       }
     } catch (error) {
       // console.error('❌ Error in handleUpdateUser:', error);
       const errorMessage = (error as { data?: { message?: string } })?.data?.message || 'خطأ في تحديث المستخدم';
-      toast.error(errorMessage, {
-        duration: 5000,
-        position: 'top-center',
-      });
+      toast.error(errorMessage);
     }
   };
 

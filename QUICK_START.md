@@ -15,7 +15,7 @@ npm run dev
 
 ### 3️⃣ افتح الصفحة
 ```
-http://localhost:3000/credit-sales
+http://localhost:3030/credit-sales
 ```
 
 ---

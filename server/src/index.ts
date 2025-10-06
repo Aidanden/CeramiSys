@@ -14,6 +14,7 @@ import interCompanySaleRoutes from "./routes/interCompanySaleRoutes";
 import purchaseRoutes from "./routes/purchaseRoutes";
 import activityRoutes from "./routes/activityRoutes";
 import complexInterCompanySaleRoutes from "./routes/complexInterCompanySaleRoutes";
+import reportsRoute from "./routes/reportsRoute";
 
 
 /*CONFIGRATION*/
@@ -27,7 +28,7 @@ app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 app.use(morgan("common"));
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+  origin: process.env.CORS_ORIGIN || "http://localhost:3030",
   credentials: true
 }));
 
@@ -60,6 +61,7 @@ app.use('/api/inter-company-sales', interCompanySaleRoutes);
 app.use('/api', purchaseRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/complex-inter-company-sales', complexInterCompanySaleRoutes);
+app.use('/api/reports', reportsRoute);
 
 
 // Health check endpoint
