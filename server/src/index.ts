@@ -15,6 +15,7 @@ import purchaseRoutes from "./routes/purchaseRoutes";
 import activityRoutes from "./routes/activityRoutes";
 import complexInterCompanySaleRoutes from "./routes/complexInterCompanySaleRoutes";
 import reportsRoute from "./routes/reportsRoute";
+import notificationRoutes from "./routes/notificationRoutes";
 
 
 /*CONFIGRATION*/
@@ -62,6 +63,7 @@ app.use('/api', purchaseRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/complex-inter-company-sales', complexInterCompanySaleRoutes);
 app.use('/api/reports', reportsRoute);
+app.use('/api/notifications', notificationRoutes);
 
 
 // Health check endpoint

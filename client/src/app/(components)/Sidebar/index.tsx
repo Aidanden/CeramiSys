@@ -22,6 +22,7 @@ import {
   ShoppingBag,
   ArrowRightLeft,
   BarChart3,
+  Bell,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -138,6 +139,12 @@ const Sidebar = () => {
             href="/products"
             icon={ShoppingBag}
             label="الأصناف والمخزن"
+            isCollapsed={isSidebarCollapsed}
+          />
+          <SidebarLink
+            href="/notifications"
+            icon={Bell}
+            label="الإشعارات"
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink

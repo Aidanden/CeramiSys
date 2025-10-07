@@ -1,7 +1,6 @@
 "use client";
 import React, { useState } from "react";
 import { 
-  Bell, 
   Menu, 
   Settings, 
   Sun, 
@@ -9,7 +8,6 @@ import {
   Users, 
   LogOut, 
   Search,
-  ChevronUp,
   User
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/app/redux";
@@ -18,6 +16,7 @@ import { logout } from "@/state/authSlice";
 import { useLogoutMutation } from "@/state/authApi";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import NotificationDropdown from "@/components/NotificationDropdown";
 
 const Navbar = () => {
   const dispatch = useAppDispatch();
@@ -55,7 +54,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white border-b border-slate-200 shadow-sm relative z-30">
+    <nav className="bg-background-primary border-b border-border-primary shadow-sm relative z-30 transition-all duration-300">
       <div className="px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Right Side - Menu & Search */}
@@ -63,20 +62,20 @@ const Navbar = () => {
             {/* Mobile Menu Toggle */}
             <button
               onClick={toggleSidebar}
-              className="p-2 rounded-lg hover:bg-slate-100 transition-colors md:hidden"
+              className="p-2 rounded-lg hover:bg-background-hover transition-all duration-200 md:hidden"
             >
-              <Menu className="w-5 h-5 text-slate-600" />
+              <Menu className="w-5 h-5 text-text-secondary" />
             </button>
 
             {/* Search Bar */}
             <div className="relative hidden sm:block">
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-slate-400" />
+                <Search className="h-5 w-5 text-text-tertiary" />
               </div>
               <input
                 type="text"
                 placeholder="البحث..."
-                className="w-64 pr-10 pl-4 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                className="w-64 pr-10 pl-4 py-2 border border-border-primary rounded-lg text-sm text-text-primary placeholder-text-muted bg-background-secondary focus:outline-none focus:ring-2 focus:ring-border-focus focus:border-transparent transition-all duration-200"
                 dir="rtl"
               />
             </div>
@@ -87,73 +86,82 @@ const Navbar = () => {
             {/* Dark Mode Toggle */}
             <button
               onClick={toggleDarkMode}
-              className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+              className="relative p-2 rounded-lg hover:bg-background-hover transition-all duration-200 group"
               title={isDarkMode ? "التبديل للوضع المضيء" : "التبديل للوضع المظلم"}
             >
-              {isDarkMode ? (
-                <Sun className="w-5 h-5 text-slate-600" />
-              ) : (
-                <Moon className="w-5 h-5 text-slate-600" />
-              )}
+              <div className="relative w-5 h-5">
+                {isDarkMode ? (
+                  <Sun className="w-5 h-5 text-text-secondary group-hover:text-warning-500 transition-colors duration-200" />
+                ) : (
+                  <Moon className="w-5 h-5 text-text-secondary group-hover:text-primary-500 transition-colors duration-200" />
+                )}
+              </div>
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-text-inverse bg-surface-elevated rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+                {isDarkMode ? "الوضع المضيء" : "الوضع المظلم"}
+              </div>
             </button>
 
             {/* Notifications */}
-            <button className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors">
-              <Bell className="w-5 h-5 text-slate-600" />
-              <span className="absolute top-1 left-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
+            <NotificationDropdown />
 
             {/* Settings */}
             <Link href="/settings">
-              <button className="p-2 rounded-lg hover:bg-slate-100 transition-colors">
-                <Settings className="w-5 h-5 text-slate-600" />
+              <button className="p-2 rounded-lg hover:bg-background-hover transition-all duration-200 group">
+                <Settings className="w-5 h-5 text-text-secondary group-hover:text-text-primary transition-colors duration-200" />
+                {/* Tooltip */}
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-text-inverse bg-surface-elevated rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+                  الإعدادات
+                </div>
               </button>
             </Link>
 
             {/* Divider */}
-            <div className="w-px h-6 bg-slate-300"></div>
+            <div className="w-px h-6 bg-border-secondary"></div>
 
             {/* User Menu */}
             <div className="relative">
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                className="flex items-center gap-3 p-2 rounded-lg hover:bg-background-hover transition-all duration-200"
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
+                  <div className="w-8 h-8 bg-gradient-to-r from-primary-600 to-primary-700 rounded-full flex items-center justify-center shadow-md">
                     <User className="w-4 h-4 text-white" />
                   </div>
                   <div className="hidden sm:block text-right">
-                    <p className="text-sm font-medium text-slate-900">
-                      {user?.name || "المستخدم"}
+                    <p className="text-sm font-medium text-text-primary">
+                      {user?.fullName || "المستخدم"}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-text-tertiary">
                       {user?.email}
                     </p>
                   </div>
                 </div>
-                <ChevronUp className={`w-4 h-4 text-slate-500 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                <div className={`w-4 h-4 text-text-tertiary transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`}>
+                  ▼
+                </div>
               </button>
 
               {/* User Dropdown Menu */}
               {isUserMenuOpen && (
-                <div className="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+                <div className="absolute left-0 mt-2 w-48 bg-surface-primary rounded-lg shadow-xl border border-border-primary py-2 z-50 animate-in slide-in-from-top-2 duration-200">
                   <Link href="/profile">
-                    <div className="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                    <div className="flex items-center gap-3 px-4 py-2 text-sm text-text-secondary hover:bg-background-hover hover:text-text-primary transition-all duration-200">
                       <User className="w-4 h-4" />
                       الملف الشخصي
                     </div>
                   </Link>
                   <Link href="/settings">
-                    <div className="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                    <div className="flex items-center gap-3 px-4 py-2 text-sm text-text-secondary hover:bg-background-hover hover:text-text-primary transition-all duration-200">
                       <Settings className="w-4 h-4" />
                       الإعدادات
                     </div>
                   </Link>
-                  <div className="border-t border-slate-100 my-1"></div>
+                  <div className="border-t border-border-primary my-1"></div>
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-error-600 hover:bg-error-50 dark:hover:bg-error-900/20 transition-all duration-200"
                   >
                     <LogOut className="w-4 h-4" />
                     تسجيل الخروج
@@ -169,12 +177,12 @@ const Navbar = () => {
       <div className="sm:hidden px-6 pb-4">
         <div className="relative">
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-slate-400" />
+            <Search className="h-5 w-5 text-text-tertiary" />
           </div>
           <input
             type="text"
             placeholder="البحث..."
-            className="w-full pr-10 pl-4 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            className="w-full pr-10 pl-4 py-2 border border-border-primary rounded-lg text-sm text-text-primary placeholder-text-muted bg-background-secondary focus:outline-none focus:ring-2 focus:ring-border-focus focus:border-transparent transition-all duration-200"
             dir="rtl"
           />
         </div>

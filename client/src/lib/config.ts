@@ -63,6 +63,15 @@ export const API_CACHE_CONFIG = {
     refetchOnFocus: false,
     refetchOnReconnect: true,
   },
+  // إعدادات الإشعارات - كاش قصير لأنها تتغير بسرعة
+  notifications: {
+    keepUnusedDataFor: 60, // 1 minute
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+    // إضافة polling للتحديث التلقائي للإشعارات
+    pollingInterval: 30000, // 30 ثانية
+  },
 };
 
 

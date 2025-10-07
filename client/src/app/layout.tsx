@@ -7,6 +7,7 @@ import AuthProvider from "@/components/AuthProvider";
 import StoreProvider from "./redux";
 import { SessionTimeoutProvider } from "@/components/SessionTimeoutProvider";
 import { ToastProvider } from "@/components/ui/Toast";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -27,13 +28,15 @@ export default function RootLayout({
     <html lang="ar" dir="rtl">
       <body className={`${inter.variable} antialiased`}>
         <StoreProvider>
-          <AuthProvider>
-            <SessionTimeoutProvider>
-              <ToastProvider>
-                <DashboardWrapper>{children}</DashboardWrapper>
-              </ToastProvider>
-            </SessionTimeoutProvider>
-          </AuthProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <SessionTimeoutProvider>
+                <ToastProvider>
+                  <DashboardWrapper>{children}</DashboardWrapper>
+                </ToastProvider>
+              </SessionTimeoutProvider>
+            </AuthProvider>
+          </ThemeProvider>
         </StoreProvider>
       </body>
     </html>

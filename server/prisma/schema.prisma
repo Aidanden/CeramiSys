@@ -41,6 +41,7 @@ model Company {
   receivedPayments    Receipt[]             @relation("CompanyReceipts")
   // Back relation for optional branchCompany on Receipt
   branchReceipts      Receipt[]             @relation("BranchCompanyReceipts")
+  notifications       Notification[]        // إشعارات الشركة
 }
 
 model Product {
@@ -110,9 +111,10 @@ model Users {
   UpdatedAt         DateTime  @updatedAt
 
   // Relations
-  Role     UserRoles      @relation(fields: [RoleID], references: [RoleID])
-  Company  Company        @relation(fields: [CompanyID], references: [id])
-  Sessions UserSessions[]
+  Role          UserRoles      @relation(fields: [RoleID], references: [RoleID])
+  Company       Company        @relation(fields: [CompanyID], references: [id])
+  Sessions      UserSessions[]
+  notifications Notification[] // إشعارات المستخدم
 }
 
 model UserRoles {
@@ -353,4 +355,42 @@ enum PaymentMethod {
 enum PurchaseType {
   CASH // نقدي
   CREDIT // آجل
+}
+
+/////////////////////////////////////////////////
+//                 Notifications
+/////////////////////////////////////////////////
+
+model Notification {
+  id          Int                @id @default(autoincrement())
+  title       String             // عنوان الإشعار
+  message     String?            // نص الإشعار
+  type        NotificationType   @default(INFO)
+  isRead      Boolean            @default(false)
+  userId      String             // المستخدم المستهدف
+  user        Users              @relation(fields: [userId], references: [UserID])
+  companyId   Int?               // الشركة (اختياري للإشعارات العامة)
+  company     Company?           @relation(fields: [companyId], references: [id])
+  
+  // معلومات إضافية
+  entityType  String?            // نوع الكيان المرتبط (sale, product, user, etc.)
+  entityId    String?            // معرف الكيان المرتبط
+  actionUrl   String?            // رابط الإجراء (اختياري)
+  
+  // تواريخ
+  createdAt   DateTime           @default(now())
+  readAt      DateTime?          // تاريخ القراءة
+  
+  @@map("notifications")
+}
+
+enum NotificationType {
+  INFO      // معلومات عامة
+  SUCCESS   // نجاح عملية
+  WARNING   // تحذير
+  ERROR     // خطأ
+  SALE      // إشعار مبيعات
+  STOCK     // إشعار مخزون
+  USER      // إشعار مستخدمين
+  SYSTEM    // إشعار نظام
 }

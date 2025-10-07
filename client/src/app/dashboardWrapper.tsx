@@ -17,15 +17,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const publicRoutes = ['/login', '/unauthorized'];
   const isPublicRoute = publicRoutes.includes(pathname);
 
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-      document.documentElement.classList.remove("light");
-    } else {
-      document.documentElement.classList.add("light");
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDarkMode]);
+  // ThemeProvider يتولى تطبيق الثيم الآن، لذا لا نحتاج هذا useEffect
 
   useEffect(() => {
     // Only redirect if we're not authenticated and not on a public route
@@ -60,7 +52,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div
       dir="rtl"
-      className="bg-slate-50 text-slate-900 w-full min-h-screen"
+      className="bg-background-primary text-text-primary w-full min-h-screen transition-all duration-300 ease-in-out"
     >
       <Sidebar />
       <div
@@ -69,8 +61,10 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
         }`}
       >
         <Navbar />
-        <main className="p-6">
-          {children}
+        <main className="p-6 bg-background-secondary min-h-screen transition-all duration-300">
+          <div className="max-w-full">
+            {children}
+          </div>
         </main>
       </div>
     </div>

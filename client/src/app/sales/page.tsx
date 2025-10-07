@@ -341,14 +341,14 @@ const SalesPage = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 text-green-600">
+            <div className="w-8 h-8 text-success-600">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
               </svg>
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">إدارة المبيعات</h1>
-              <p className="text-gray-600">إدارة فواتير المبيعات والعملاء</p>
+              <h1 className="text-3xl font-bold text-text-primary">إدارة المبيعات</h1>
+              <p className="text-text-secondary">إدارة فواتير المبيعات والعملاء</p>
             </div>
           </div>
           <button
@@ -361,10 +361,10 @@ const SalesPage = () => {
               setShowCreateSaleModal(true);
             }}
             disabled={user?.isSystemUser ? !selectedCompanyId : !user?.companyId}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
               (user?.isSystemUser ? selectedCompanyId : user?.companyId)
-                ? 'bg-green-600 hover:bg-green-700 text-white' 
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                ? 'bg-success-600 hover:bg-success-700 text-white shadow-md hover:shadow-lg' 
+                : 'bg-background-tertiary text-text-muted cursor-not-allowed'
             }`}
             title={(user?.isSystemUser ? !selectedCompanyId : !user?.companyId) ? 'يجب اختيار الشركة أولاً' : 'إنشاء فاتورة جديدة'}
           >
@@ -378,46 +378,46 @@ const SalesPage = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-sm">إجمالي المبيعات</p>
-              <p className="text-2xl font-bold text-gray-900">{formatArabicNumber(salesData?.data?.pagination?.total || 0)}</p>
+              <p className="text-text-secondary text-sm">إجمالي المبيعات</p>
+              <p className="text-2xl font-bold text-text-primary">{formatArabicNumber(salesData?.data?.pagination?.total || 0)}</p>
             </div>
-            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-8 h-8 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-sm">المبيعات النقدية</p>
-              <p className="text-2xl font-bold text-green-600">{formatArabicNumber(salesData?.data?.sales?.filter((sale: any) => sale.saleType === 'CASH').length || 0)}</p>
+              <p className="text-text-secondary text-sm">المبيعات النقدية</p>
+              <p className="text-2xl font-bold text-success-600">{formatArabicNumber(salesData?.data?.sales?.filter((sale: any) => sale.saleType === 'CASH').length || 0)}</p>
             </div>
-            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-8 h-8 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
             </svg>
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-sm">المبيعات الآجلة</p>
-              <p className="text-2xl font-bold text-orange-600">{formatArabicNumber(salesData?.data?.sales?.filter((sale: any) => sale.saleType === 'CREDIT').length || 0)}</p>
+              <p className="text-text-secondary text-sm">المبيعات الآجلة</p>
+              <p className="text-2xl font-bold text-warning-600">{formatArabicNumber(salesData?.data?.sales?.filter((sale: any) => sale.saleType === 'CREDIT').length || 0)}</p>
             </div>
-            <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-8 h-8 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-sm">إجمالي القيمة</p>
+              <p className="text-text-secondary text-sm">إجمالي القيمة</p>
               <p className="text-2xl font-bold text-purple-600">{formatArabicCurrency(salesData?.data?.sales?.reduce((sum: number, sale: any) => sum + sale.total, 0) || 0)}</p>
             </div>
             <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -52,28 +52,28 @@ interface StatCardProps {
 
 const StatCard = ({ title, value, change, changeType, icon: Icon, color }: StatCardProps) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
+    <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6 hover:shadow-lg hover:border-border-secondary transition-all duration-300">
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-slate-600 mb-2">{title}</p>
-          <p className="text-2xl font-bold text-slate-900 mb-2">{value}</p>
+          <p className="text-sm font-medium text-text-secondary mb-2">{title}</p>
+          <p className="text-2xl font-bold text-text-primary mb-2">{value}</p>
           <div className="flex items-center gap-1">
             {changeType === "increase" ? (
-              <ArrowUpRight className="w-4 h-4 text-green-500" />
+              <ArrowUpRight className="w-4 h-4 text-success-500" />
             ) : (
-              <ArrowDownRight className="w-4 h-4 text-red-500" />
+              <ArrowDownRight className="w-4 h-4 text-error-500" />
             )}
             <span
               className={`text-sm font-medium ${
-                changeType === "increase" ? "text-green-600" : "text-red-600"
+                changeType === "increase" ? "text-success-600" : "text-error-600"
               }`}
             >
               {change}
             </span>
-            <span className="text-sm text-slate-500">من الشهر الماضي</span>
+            <span className="text-sm text-text-tertiary">من الشهر الماضي</span>
           </div>
         </div>
-        <div className={`w-12 h-12 ${color} rounded-xl flex items-center justify-center`}>
+        <div className={`w-12 h-12 ${color} rounded-xl flex items-center justify-center shadow-md`}>
           <Icon className="w-6 h-6 text-white" />
         </div>
       </div>
@@ -95,10 +95,10 @@ const ActivityFeed = () => {
   
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-slate-900">الأنشطة الأخيرة</h3>
-          <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+          <h3 className="text-lg font-semibold text-text-primary">الأنشطة الأخيرة</h3>
+          <button className="text-primary-600 hover:text-primary-700 font-medium text-sm transition-colors duration-200">
             عرض الكل
           </button>
         </div>
@@ -106,11 +106,11 @@ const ActivityFeed = () => {
           {[...Array(4)].map((_, i) => (
             <div key={`activity-skeleton-${i}`} className="animate-pulse">
               <div className="flex items-start gap-3 p-3 rounded-lg">
-                <div className="w-8 h-8 bg-slate-200 rounded-lg"></div>
+                <div className="w-8 h-8 bg-background-tertiary rounded-lg"></div>
                 <div className="flex-1">
-                  <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-slate-200 rounded w-1/2 mb-1"></div>
-                  <div className="h-3 bg-slate-200 rounded w-1/4"></div>
+                  <div className="h-4 bg-background-tertiary rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-background-tertiary rounded w-1/2 mb-1"></div>
+                  <div className="h-3 bg-background-tertiary rounded w-1/4"></div>
                 </div>
               </div>
             </div>
@@ -140,29 +140,29 @@ const ActivityFeed = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-slate-900">الأنشطة الأخيرة</h3>
-        <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+        <h3 className="text-lg font-semibold text-text-primary">الأنشطة الأخيرة</h3>
+        <button className="text-primary-600 hover:text-primary-700 font-medium text-sm transition-colors duration-200">
           عرض الكل
         </button>
       </div>
       <div className="space-y-4">
         {activities.length > 0 ? (
           activities.map((activity) => (
-          <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors">
-            <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-background-hover transition-all duration-200">
+            <div className="w-8 h-8 bg-background-secondary rounded-lg flex items-center justify-center flex-shrink-0">
               {getActivityIcon(activity.type)}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-900">{activity.title}</p>
-              <p className="text-sm text-slate-600">{activity.description}</p>
-              <p className="text-xs text-slate-500 mt-1">{activity.time}</p>
+              <p className="text-sm font-medium text-text-primary">{activity.title}</p>
+              <p className="text-sm text-text-secondary">{activity.description}</p>
+              <p className="text-xs text-text-tertiary mt-1">{activity.time}</p>
             </div>
             {activity.amount && (
               <span
                 className={`text-sm font-medium ${
-                  activity.amount.startsWith("+") ? "text-green-600" : "text-red-600"
+                  activity.amount.startsWith("+") ? "text-success-600" : "text-error-600"
                 }`}
               >
                 {convertToArabicNumbers(activity.amount)}
@@ -172,8 +172,8 @@ const ActivityFeed = () => {
           ))
         ) : (
           <div className="text-center py-8">
-            <Activity className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-            <p className="text-slate-600">لا توجد أنشطة حديثة</p>
+            <Activity className="w-12 h-12 text-text-muted mx-auto mb-3" />
+            <p className="text-text-secondary">لا توجد أنشطة حديثة</p>
           </div>
         )}
       </div>
@@ -187,13 +187,13 @@ const TopSellingProducts = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-6">الأصناف الأكثر مبيعاً</h3>
+      <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6">
+        <h3 className="text-lg font-semibold text-text-primary mb-6">الأصناف الأكثر مبيعاً</h3>
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
             <div key={`top-products-skeleton-${i}`} className="animate-pulse">
-              <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+              <div className="h-4 bg-background-tertiary rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-background-tertiary rounded w-1/2"></div>
             </div>
           ))}
         </div>
@@ -204,34 +204,34 @@ const TopSellingProducts = () => {
   const topProducts = topProductsData?.data || [];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-slate-900">الأصناف الأكثر مبيعاً</h3>
-        <Star className="w-5 h-5 text-yellow-500" />
+        <h3 className="text-lg font-semibold text-text-primary">الأصناف الأكثر مبيعاً</h3>
+        <Star className="w-5 h-5 text-warning-500" />
       </div>
       <div className="space-y-4">
         {topProducts.length > 0 ? (
           topProducts.map((product, index) => (
-            <div key={`top-product-${product.productId}-${index}`} className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
+            <div key={`top-product-${product.productId}-${index}`} className="flex items-center justify-between p-3 rounded-lg bg-background-secondary hover:bg-background-hover transition-all duration-200">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                  <span className="text-sm font-bold text-yellow-600">#{index + 1}</span>
+                <div className="w-8 h-8 bg-warning-100 dark:bg-warning-900/30 rounded-lg flex items-center justify-center">
+                  <span className="text-sm font-bold text-warning-600">#{index + 1}</span>
                 </div>
                 <div>
-                  <p className="font-medium text-slate-900">{product.productName}</p>
-                  <p className="text-sm text-slate-600">{product.sku}</p>
+                  <p className="font-medium text-text-primary">{product.productName}</p>
+                  <p className="text-sm text-text-secondary">{product.sku}</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="font-semibold text-slate-900">{formatArabicNumber(product.totalQuantitySold)} {product.unit}</p>
-                <p className="text-sm text-green-600">{formatArabicCurrency(product.totalRevenue)}</p>
+                <p className="font-semibold text-text-primary">{formatArabicNumber(product.totalQuantitySold)} {product.unit}</p>
+                <p className="text-sm text-success-600">{formatArabicCurrency(product.totalRevenue)}</p>
               </div>
             </div>
           ))
         ) : (
           <div className="text-center py-8">
-            <BarChart3 className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-            <p className="text-slate-600">لا توجد بيانات مبيعات</p>
+            <BarChart3 className="w-12 h-12 text-text-muted mx-auto mb-3" />
+            <p className="text-text-secondary">لا توجد بيانات مبيعات</p>
           </div>
         )}
       </div>
@@ -245,13 +245,13 @@ const LowStockProducts = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-6">الأصناف التي ستنتهي قريباً</h3>
+      <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6">
+        <h3 className="text-lg font-semibold text-text-primary mb-6">الأصناف التي ستنتهي قريباً</h3>
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
             <div key={`low-stock-skeleton-${i}`} className="animate-pulse">
-              <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+              <div className="h-4 bg-background-tertiary rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-background-tertiary rounded w-1/2"></div>
             </div>
           ))}
         </div>
@@ -288,28 +288,28 @@ const LowStockProducts = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-slate-900">الأصناف التي ستنتهي قريباً</h3>
-        <AlertTriangle className="w-5 h-5 text-orange-500" />
+        <h3 className="text-lg font-semibold text-text-primary">الأصناف التي ستنتهي قريباً</h3>
+        <AlertTriangle className="w-5 h-5 text-warning-500" />
       </div>
       <div className="space-y-4">
         {lowStockProducts.length > 0 ? (
           lowStockProducts.map((product, index) => (
-            <div key={`low-stock-product-${product.productId}-${index}`} className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
+            <div key={`low-stock-product-${product.productId}-${index}`} className="flex items-center justify-between p-3 rounded-lg bg-background-secondary hover:bg-background-hover transition-all duration-200">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <AlertTriangle className="w-4 h-4 text-orange-600" />
+                <div className="w-8 h-8 bg-warning-100 dark:bg-warning-900/30 rounded-lg flex items-center justify-center">
+                  <AlertTriangle className="w-4 h-4 text-warning-600" />
                 </div>
                 <div>
-                  <p className="font-medium text-slate-900">{product.productName}</p>
-                  <p className="text-sm text-slate-600">{product.sku}</p>
+                  <p className="font-medium text-text-primary">{product.productName}</p>
+                  <p className="text-sm text-text-secondary">{product.sku}</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="font-semibold text-slate-900">{formatArabicNumber(product.currentStock)} {product.unit}</p>
+                <p className="font-semibold text-text-primary">{formatArabicNumber(product.currentStock)} {product.unit}</p>
                 {product.unit !== 'صندوق' && product.unitsPerBox > 1 && (
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-text-tertiary">
                     ({formatArabicNumber(product.totalUnits)} {product.unit})
                   </p>
                 )}
@@ -321,8 +321,8 @@ const LowStockProducts = () => {
           ))
         ) : (
           <div className="text-center py-8">
-            <Package className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-            <p className="text-slate-600">جميع الأصناف متوفرة</p>
+            <Package className="w-12 h-12 text-text-muted mx-auto mb-3" />
+            <p className="text-text-secondary">جميع الأصناف متوفرة</p>
           </div>
         )}
       </div>
@@ -332,25 +332,25 @@ const LowStockProducts = () => {
 
 const QuickActions = () => {
   const actions = [
-    { title: "عملية بيع جديدة", icon: ShoppingCart, color: "bg-green-500", href: "/sales/new" },
-    { title: "إضافة عميل", icon: Users, color: "bg-blue-500", href: "/customers/new" },
-    { title: "إدخال مصروف", icon: TrendingDown, color: "bg-red-500", href: "/expenses/new" },
-    { title: "حركة خزينة", icon: DollarSign, color: "bg-emerald-500", href: "/treasury/new" }
+    { title: "عملية بيع جديدة", icon: ShoppingCart, color: "bg-success-500", href: "/sales/new" },
+    { title: "إضافة عميل", icon: Users, color: "bg-primary-500", href: "/customers/new" },
+    { title: "إدخال مصروف", icon: TrendingDown, color: "bg-error-500", href: "/expenses/new" },
+    { title: "حركة خزينة", icon: DollarSign, color: "bg-info-500", href: "/treasury/new" }
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <h3 className="text-lg font-semibold text-slate-900 mb-6">الإجراءات السريعة</h3>
+    <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6">
+      <h3 className="text-lg font-semibold text-text-primary mb-6">الإجراءات السريعة</h3>
       <div className="grid grid-cols-2 gap-4">
         {actions.map((action, index) => (
           <button
             key={index}
-            className="flex items-center gap-3 p-4 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all group"
+            className="flex items-center gap-3 p-4 rounded-lg border border-border-primary hover:border-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all duration-200 group"
           >
-            <div className={`w-10 h-10 ${action.color} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform`}>
+            <div className={`w-10 h-10 ${action.color} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-md`}>
               <action.icon className="w-5 h-5 text-white" />
             </div>
-            <span className="text-sm font-medium text-slate-700 group-hover:text-blue-700">
+            <span className="text-sm font-medium text-text-secondary group-hover:text-primary-700 transition-colors duration-200">
               {action.title}
             </span>
           </button>
@@ -371,21 +371,21 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 dark:from-primary-700 dark:to-primary-800 rounded-xl p-6 text-white shadow-lg">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold mb-2">
               مرحباً، {user?.name || "المستخدم"}
             </h1>
-            <p className="text-blue-100">
+            <p className="text-primary-100 dark:text-primary-200">
               إليك ملخص أنشطة اليوم في نظام إدارة السيراميك والبورسلين
             </p>
           </div>
-          <div className="hidden md:flex items-center gap-4 text-blue-100">
+          <div className="hidden md:flex items-center gap-4 text-primary-100 dark:text-primary-200">
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5" />
               <span className="text-sm">
-                {new Date().toLocaleDateString("en-US", {
+                {new Date().toLocaleDateString("ar-LY", {
                   weekday: "long",
                   year: "numeric",
                   month: "long",
@@ -396,7 +396,7 @@ const Dashboard = () => {
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5" />
               <span className="text-sm">
-                {new Date().toLocaleTimeString("en-US", {
+                {new Date().toLocaleTimeString("ar-LY", {
                   hour: "2-digit",
                   minute: "2-digit"
                 })}
@@ -504,35 +504,35 @@ const Dashboard = () => {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Sales Chart Placeholder */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-slate-900">مبيعات الشهر</h3>
-            <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-              <MoreVertical className="w-5 h-5 text-slate-600" />
+            <h3 className="text-lg font-semibold text-text-primary">مبيعات الشهر</h3>
+            <button className="p-2 hover:bg-background-hover rounded-lg transition-all duration-200">
+              <MoreVertical className="w-5 h-5 text-text-secondary" />
             </button>
           </div>
-          <div className="h-64 bg-slate-50 rounded-lg flex items-center justify-center">
+          <div className="h-64 bg-background-secondary rounded-lg flex items-center justify-center">
             <div className="text-center">
-              <TrendingUp className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-              <p className="text-slate-600">رسم بياني للمبيعات</p>
-              <p className="text-sm text-slate-500">سيتم إضافة الرسوم البيانية قريباً</p>
+              <TrendingUp className="w-12 h-12 text-text-muted mx-auto mb-3" />
+              <p className="text-text-secondary">رسم بياني للمبيعات</p>
+              <p className="text-sm text-text-tertiary">سيتم إضافة الرسوم البيانية قريباً</p>
             </div>
           </div>
         </div>
 
         {/* Revenue Chart Placeholder */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-slate-900">الإيرادات الشهرية</h3>
-            <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-              <Eye className="w-5 h-5 text-slate-600" />
+            <h3 className="text-lg font-semibold text-text-primary">الإيرادات الشهرية</h3>
+            <button className="p-2 hover:bg-background-hover rounded-lg transition-all duration-200">
+              <Eye className="w-5 h-5 text-text-secondary" />
             </button>
           </div>
-          <div className="h-64 bg-slate-50 rounded-lg flex items-center justify-center">
+          <div className="h-64 bg-background-secondary rounded-lg flex items-center justify-center">
             <div className="text-center">
-              <DollarSign className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-              <p className="text-slate-600">رسم بياني للإيرادات</p>
-              <p className="text-sm text-slate-500">سيتم إضافة الرسوم البيانية قريباً</p>
+              <DollarSign className="w-12 h-12 text-text-muted mx-auto mb-3" />
+              <p className="text-text-secondary">رسم بياني للإيرادات</p>
+              <p className="text-sm text-text-tertiary">سيتم إضافة الرسوم البيانية قريباً</p>
             </div>
           </div>
         </div>

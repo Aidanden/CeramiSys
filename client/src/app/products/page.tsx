@@ -182,15 +182,15 @@ const ProductsPage = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <ShoppingBag className="w-8 h-8 text-blue-600" />
+            <ShoppingBag className="w-8 h-8 text-primary-600" />
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">إدارة الأصناف والمخزن</h1>
-              <p className="text-gray-600">إدارة أصناف المنتجات والمخزون والأسعار الخاصة بشركتك</p>
+              <h1 className="text-3xl font-bold text-text-primary">إدارة الأصناف والمخزن</h1>
+              <p className="text-text-secondary">إدارة أصناف المنتجات والمخزون والأسعار الخاصة بشركتك</p>
             </div>
           </div>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-all duration-200 shadow-md hover:shadow-lg"
           >
             <Plus className="w-5 h-5" />
             إضافة صنف جديد
@@ -201,52 +201,52 @@ const ProductsPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           {isLoadingStats ? (
             Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="bg-white p-6 rounded-lg shadow-sm border animate-pulse">
+              <div key={index} className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary animate-pulse">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
-                    <div className="h-8 bg-gray-200 rounded w-16"></div>
+                    <div className="h-4 bg-background-tertiary rounded w-20 mb-2"></div>
+                    <div className="h-8 bg-background-tertiary rounded w-16"></div>
                   </div>
-                  <div className="w-8 h-8 bg-gray-200 rounded"></div>
+                  <div className="w-8 h-8 bg-background-tertiary rounded"></div>
                 </div>
               </div>
             ))
           ) : statsData ? (
             <>
-              <div className="bg-white p-6 rounded-lg shadow-sm border">
+              <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm">إجمالي الأصناف</p>
-                    <p className="text-2xl font-bold text-gray-900">{statsData.data.totalProducts}</p>
+                    <p className="text-text-secondary text-sm">إجمالي الأصناف</p>
+                    <p className="text-2xl font-bold text-text-primary">{statsData.data.totalProducts}</p>
                   </div>
-                  <ShoppingBag className="w-8 h-8 text-blue-600" />
+                  <ShoppingBag className="w-8 h-8 text-primary-600" />
                 </div>
               </div>
               
-              <div className="bg-white p-6 rounded-lg shadow-sm border">
+              <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm">أصناف بمخزون</p>
-                    <p className="text-2xl font-bold text-green-600">{statsData.data.productsWithStock}</p>
+                    <p className="text-text-secondary text-sm">أصناف بمخزون</p>
+                    <p className="text-2xl font-bold text-success-600">{statsData.data.productsWithStock}</p>
                   </div>
-                  <TrendingUp className="w-8 h-8 text-green-600" />
+                  <TrendingUp className="w-8 h-8 text-success-600" />
                 </div>
               </div>
               
-              <div className="bg-white p-6 rounded-lg shadow-sm border">
+              <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm">أصناف بدون مخزون</p>
-                    <p className="text-2xl font-bold text-red-600">{Math.abs(statsData.data.productsWithoutStock)}</p>
+                    <p className="text-text-secondary text-sm">أصناف بدون مخزون</p>
+                    <p className="text-2xl font-bold text-error-600">{Math.abs(statsData.data.productsWithoutStock)}</p>
                   </div>
-                  <ShoppingBag className="w-8 h-8 text-red-600" />
+                  <ShoppingBag className="w-8 h-8 text-error-600" />
                 </div>
               </div>
               
-              <div className="bg-white p-6 rounded-lg shadow-sm border">
+              <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-600 text-sm">قيمة المخزون</p>
+                    <p className="text-text-secondary text-sm">قيمة المخزون</p>
                     <p className="text-2xl font-bold text-purple-600">
                       {formatArabicNumber(statsData.data.totalStockValue)} د.ل
                     </p>
@@ -260,27 +260,27 @@ const ProductsPage = () => {
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
+      <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search */}
           <div className="relative flex-1">
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-tertiary w-5 h-5" />
             <input
               type="text"
               placeholder="البحث عن الأصناف..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pr-10 pl-4 py-2 border border-border-primary rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200"
             />
           </div>
 
           {/* Unit Filter */}
           <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-400" />
+            <Filter className="w-5 h-5 text-text-tertiary" />
             <select
               value={selectedUnit}
               onChange={(e) => setSelectedUnit(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="px-4 py-2 border border-border-primary rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary transition-all duration-200"
             >
               <option value="">جميع الوحدات</option>
               <option value="قطعة">قطعة</option>
@@ -291,7 +291,7 @@ const ProductsPage = () => {
           </div>
 
           {/* Export */}
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+          <button className="flex items-center gap-2 px-4 py-2 border border-border-primary rounded-lg hover:bg-background-hover transition-all duration-200 text-text-secondary hover:text-text-primary">
             <Download className="w-5 h-5" />
             تصدير
           </button>
@@ -299,50 +299,50 @@ const ProductsPage = () => {
       </div>
 
       {/* Products Table */}
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+      <div className="bg-surface-primary rounded-lg shadow-sm border border-border-primary overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-background-secondary">
               <tr>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
                   الصنف
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
                   الرمز
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
                   الوحدة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
                   المخزون (صناديق)
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
                   الكمية (متر مربع)
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
                   السعر
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
                   الشركة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
                   الإجراءات
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-surface-primary divide-y divide-border-primary">
               {isLoadingProducts ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={8} className="px-6 py-12 text-center text-text-secondary">
                     جاري التحميل...
                   </td>
                 </tr>
               ) : productsError ? (
                 <tr>
                   <td colSpan={8} className="px-6 py-12 text-center">
-                    <div className="text-red-500 mb-4">
+                    <div className="text-error-500 mb-4">
                       <p className="text-lg font-semibold mb-2">خطأ في تحميل البيانات</p>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-text-secondary">
                         {(productsError as any)?.status === 401 
                           ? 'انتهت صلاحية جلستك، يرجى تسجيل الدخول مرة أخرى'
                           : 'حدث خطأ أثناء تحميل قائمة الأصناف'}
@@ -350,7 +350,7 @@ const ProductsPage = () => {
                     </div>
                     <button 
                       onClick={() => refetch()}
-                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 transition-all duration-200"
                     >
                       إعادة المحاولة
                     </button>
@@ -358,16 +358,16 @@ const ProductsPage = () => {
                 </tr>
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={8} className="px-6 py-12 text-center text-text-secondary">
                     <div className="flex flex-col items-center gap-3">
-                      <ShoppingBag className="w-12 h-12 text-gray-300" />
+                      <ShoppingBag className="w-12 h-12 text-text-muted" />
                       <div>
-                        <p className="text-lg font-medium text-gray-600">لا توجد أصناف في مخزن شركتك</p>
-                        <p className="text-sm text-gray-500">ابدأ بإضافة أول صنف لشركتك</p>
+                        <p className="text-lg font-medium text-text-secondary">لا توجد أصناف في مخزن شركتك</p>
+                        <p className="text-sm text-text-tertiary">ابدأ بإضافة أول صنف لشركتك</p>
                       </div>
                       <button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="mt-2 flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                        className="mt-2 flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-all duration-200"
                       >
                         <Plus className="w-4 h-4" />
                         إضافة صنف جديد
@@ -377,34 +377,34 @@ const ProductsPage = () => {
                 </tr>
               ) : (
                 products.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50">
+                  <tr key={product.id} className="hover:bg-background-hover transition-all duration-200">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                          <div className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 flex items-center justify-center">
                             <ShoppingBag className="w-5 h-5" />
                           </div>
                         </div>
                         <div className="mr-4">
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-text-primary">
                             {product.name}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
+                      <code className="bg-background-tertiary px-2 py-1 rounded text-xs">
                         {product.sku}
                       </code>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
                       {product.unit || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                         (product.stock?.boxes || 0) > 0 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
+                          ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-200' 
+                          : 'bg-error-100 dark:bg-error-900/30 text-error-800 dark:text-error-200'
                       }`}>
                         {formatArabicQuantity(product.stock?.boxes || 0)} {product.unit === 'صندوق' ? 'صندوق' : (product.unit || 'وحدة')}
                       </span>
