@@ -15,14 +15,16 @@ import {
 import { useGetProductsQuery } from '@/state/productsApi';
 import { useGetCompaniesQuery } from '@/state/companyApi';
 import { useGetCurrentUserQuery } from '@/state/authApi';
-import { useToast } from '@/components/ui/Toast';
 import { formatArabicNumber, formatArabicCurrency, formatArabicQuantity, formatArabicArea } from '@/utils/formatArabicNumbers';
 import { PrintModal } from '@/components/sales/PrintModal';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/app/redux';
+import useNotifications from '@/hooks/useNotifications';
+import { useToast } from '@/components/ui/Toast';
 
 const SalesPage = () => {
-  const { success, error, warning, info, confirm } = useToast();
+  const notifications = useNotifications();
+  const { confirm } = useToast();
   
   // Get current user info
   const currentUser = useSelector((state: RootState) => state.auth.user);
@@ -98,23 +100,23 @@ const SalesPage = () => {
     const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
     
     if (!targetCompanyId) {
-      error('خطأ', user?.isSystemUser ? 'يجب اختيار الشركة أولاً' : 'لا يمكن تحديد شركتك');
+      notifications.custom.error('خطأ', user?.isSystemUser ? 'يجب اختيار الشركة أولاً' : 'لا يمكن تحديد شركتك');
       return;
     }
     
     // التحقق من أن المستخدم العادي لا يمكنه إنشاء فاتورة لشركة أخرى
     if (!user?.isSystemUser && selectedCompanyId && selectedCompanyId !== user?.companyId) {
-      error('خطأ', 'لا يمكنك إنشاء فاتورة لشركة أخرى غير شركتك');
+      notifications.custom.error('خطأ', 'لا يمكنك إنشاء فاتورة لشركة أخرى غير شركتك');
       return;
     }
     
     if (!saleForm.customerId) {
-      error('خطأ', 'يجب اختيار عميل للمتابعة');
+      notifications.custom.error('خطأ', 'يجب اختيار عميل للمتابعة');
       return;
     }
     
     if (saleForm.lines.length === 0) {
-      error('خطأ', 'يجب إضافة بند واحد على الأقل');
+      notifications.custom.error('خطأ', 'يجب إضافة بند واحد على الأقل');
       return;
     }
 
@@ -125,7 +127,7 @@ const SalesPage = () => {
     });
 
     if (invalidLines.length > 0) {
-      error('خطأ', 'بعض الأصناف المختارة لا تنتمي للشركة المستهدفة. يرجى التحقق من البنود.');
+      notifications.custom.error('خطأ', 'بعض الأصناف المختارة لا تنتمي للشركة المستهدفة. يرجى التحقق من البنود.');
       return;
     }
 
@@ -137,7 +139,7 @@ const SalesPage = () => {
       };
       
       await createSale(saleRequest).unwrap();
-      success('تم بنجاح', 'تم إنشاء فاتورة المبيعات بنجاح');
+      notifications.custom.success('تم بنجاح', 'تم إنشاء فاتورة المبيعات بنجاح');
       setShowCreateSaleModal(false);
       setSaleForm({
         customerId: undefined,
@@ -153,7 +155,7 @@ const SalesPage = () => {
       }
       refetchSales();
     } catch (err: any) {
-      error('خطأ', err.data?.message || 'حدث خطأ أثناء إنشاء الفاتورة');
+      notifications.custom.error('خطأ', err.data?.message || 'حدث خطأ أثناء إنشاء الفاتورة');
     }
   };
 
@@ -167,10 +169,10 @@ const SalesPage = () => {
     if (confirmed) {
       try {
         await deleteSale(sale.id).unwrap();
-        success('تم بنجاح', 'تم حذف الفاتورة بنجاح');
+        notifications.custom.success('تم بنجاح', 'تم حذف الفاتورة بنجاح');
         refetchSales();
       } catch (err: any) {
-        error('خطأ', err.data?.message || 'حدث خطأ أثناء حذف الفاتورة');
+        notifications.custom.error('خطأ', err.data?.message || 'حدث خطأ أثناء حذف الفاتورة');
       }
     }
   };
@@ -255,7 +257,7 @@ const SalesPage = () => {
       
       if (!productsData?.data?.products || !targetCompanyId) {
         if (code && !targetCompanyId) {
-          error('خطأ', user?.isSystemUser 
+          notifications.custom.error('خطأ', user?.isSystemUser 
             ? 'يجب اختيار الشركة أولاً قبل البحث عن الأصناف'
             : 'لا يمكن تحديد شركتك للبحث عن الأصناف'
           );
@@ -272,7 +274,7 @@ const SalesPage = () => {
       if (exactMatch) {
         // التحقق من أن العميل تم اختياره
         if (!saleForm.customerId) {
-          warning('تنبيه', 'يجب اختيار العميل أولاً قبل إضافة البنود');
+          notifications.custom.warning('تنبيه', 'يجب اختيار العميل أولاً قبل إضافة البنود');
           return;
         }
         
@@ -285,7 +287,7 @@ const SalesPage = () => {
           updateSaleLine(newLineIndex, 'unitPrice', Number(exactMatch.price.sellPrice));
         }
         setProductCodeSearch(''); // Clear search after selection
-        success('تم بنجاح', `تم إضافة الصنف: ${exactMatch.name}`);
+        notifications.custom.success('تم بنجاح', `تم إضافة الصنف: ${exactMatch.name}`);
       } else {
         // الصنف غير موجود في مخزن الشركة المختارة
         const productExistsInOtherCompany = productsData.data.products.find(
@@ -301,7 +303,7 @@ const SalesPage = () => {
           );
           
           if (user?.isSystemUser) {
-            error(
+            notifications.custom.error(
               'الصنف غير متاح', 
               `الصنف "${code}" (${productExistsInOtherCompany.name}) غير موجود في مخزن الشركة المختارة.\n\n` +
               `هذا الصنف تابع لـ: ${otherCompany?.name || 'شركة أخرى'}\n` +
@@ -309,7 +311,7 @@ const SalesPage = () => {
               `يرجى اختيار صنف من مخزن الشركة المختارة فقط.`
             );
           } else {
-            error(
+            notifications.custom.error(
               'الصنف غير متاح', 
               `الصنف "${code}" (${productExistsInOtherCompany.name}) غير موجود في مخزن شركتك.\n\n` +
               `هذا الصنف تابع لـ: ${otherCompany?.name || 'شركة أخرى'}\n\n` +
@@ -317,7 +319,7 @@ const SalesPage = () => {
             );
           }
         } else {
-          warning('غير موجود', `الصنف بالكود "${code}" غير موجود في النظام.`);
+          notifications.custom.warning('غير موجود', `الصنف بالكود "${code}" غير موجود في النظام.`);
         }
       }
       
@@ -355,7 +357,7 @@ const SalesPage = () => {
             onClick={() => {
               const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
               if (!targetCompanyId) {
-                error('تنبيه', user?.isSystemUser ? 'يجب اختيار الشركة أولاً' : 'لا يمكن تحديد شركتك');
+                notifications.custom.error('تنبيه', user?.isSystemUser ? 'يجب اختيار الشركة أولاً' : 'لا يمكن تحديد شركتك');
                 return;
               }
               setShowCreateSaleModal(true);
@@ -1014,14 +1016,14 @@ const SalesPage = () => {
                                   );
                                   
                                   if (user?.isSystemUser) {
-                                    error(
+                                    notifications.custom.error(
                                       'خطأ في الاختيار',
                                       `الصنف "${product.name}" لا ينتمي للشركة المختارة.\n\n` +
                                       `هذا الصنف تابع لـ: ${otherCompany?.name || 'شركة أخرى'}\n` +
                                       `الشركة المختارة: ${currentCompany?.name || 'غير محددة'}`
                                     );
                                   } else {
-                                    error(
+                                    notifications.custom.error(
                                       'خطأ في الاختيار',
                                       `الصنف "${product.name}" لا ينتمي لشركتك.\n\n` +
                                       `هذا الصنف تابع لـ: ${otherCompany?.name || 'شركة أخرى'}\n` +
@@ -1233,10 +1235,10 @@ const SalesPage = () => {
 
                 try {
                   await createCustomer(customerData).unwrap();
-                  success('تم بنجاح', 'تم إضافة العميل بنجاح');
+                  notifications.custom.success('تم بنجاح', 'تم إضافة العميل بنجاح');
                   setShowCreateCustomerModal(false);
                 } catch (err: any) {
-                  error('خطأ', err.data?.message || 'حدث خطأ أثناء إضافة العميل');
+                  notifications.custom.error('خطأ', err.data?.message || 'حدث خطأ أثناء إضافة العميل');
                 }
               }} className="space-y-4">
                 <div>

@@ -29,11 +29,12 @@ import {
 import { useGetCompaniesQuery } from '@/state/companyApi';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/app/redux';
-import { toast } from 'react-hot-toast';
 import { formatArabicNumber, formatArabicCurrency, formatArabicQuantity, formatArabicArea } from '@/utils/formatArabicNumbers';
+import useNotifications from '@/hooks/useNotifications';
 
 const ProductsPage = () => {
   const router = useRouter();
+  const notifications = useNotifications();
   
   // Get current user info
   const currentUser = useSelector((state: RootState) => state.auth.user);
@@ -94,12 +95,12 @@ const ProductsPage = () => {
     try {
       const result = await createProduct(productData).unwrap();
       if (result.success) {
-        toast.success('تم إنشاء الصنف بنجاح');
+        notifications.products.createSuccess(productData.name);
         setIsCreateModalOpen(false);
         refetch(); // تحديث قائمة الأصناف
       }
     } catch (error: any) {
-      toast.error(error?.data?.message || 'خطأ في إنشاء الصنف');
+      notifications.products.createError(error?.data?.message);
     }
   };
 
@@ -113,12 +114,12 @@ const ProductsPage = () => {
         productData 
       }).unwrap();
       if (result.success) {
-        toast.success('تم تحديث الصنف بنجاح');
+        notifications.products.updateSuccess(selectedProduct.name);
         setIsEditModalOpen(false);
         setSelectedProduct(null);
       }
     } catch (error: any) {
-      toast.error(error?.data?.message || 'خطأ في تحديث الصنف');
+      notifications.products.updateError(error?.data?.message);
     }
   };
 
@@ -129,12 +130,12 @@ const ProductsPage = () => {
     try {
       const result = await deleteProduct(selectedProduct.id).unwrap();
       if (result.success) {
-        toast.success('تم حذف الصنف بنجاح');
+        notifications.products.deleteSuccess(selectedProduct.name);
         setIsDeleteModalOpen(false);
         setSelectedProduct(null);
       }
     } catch (error: any) {
-      toast.error(error?.data?.message || 'خطأ في حذف الصنف');
+      notifications.products.deleteError(error?.data?.message);
     }
   };
 
@@ -148,12 +149,12 @@ const ProductsPage = () => {
         productId: selectedProduct.id,
         quantity: boxes // سيتم تحديث هذا لاحقاً ليكون boxes
       }).unwrap();
-      toast.success('تم تحديث المخزون بنجاح');
+      notifications.products.stockUpdateSuccess(selectedProduct.name, boxes);
       setIsStockModalOpen(false);
       setSelectedProduct(null);
       refetch(); // Refresh the products list
     } catch (error: any) {
-      toast.error(error?.data?.message || 'خطأ في تحديث المخزون');
+      notifications.products.stockUpdateError(error?.data?.message);
     }
   };
 
@@ -167,12 +168,12 @@ const ProductsPage = () => {
         productId: selectedProduct.id,
         sellPrice
       }).unwrap();
-      toast.success('تم تحديث السعر بنجاح');
+      notifications.products.priceUpdateSuccess(selectedProduct.name, sellPrice);
       setIsPriceModalOpen(false);
       setSelectedProduct(null);
       refetch(); // Refresh the products list
     } catch (error: any) {
-      toast.error(error?.data?.message || 'خطأ في تحديث السعر');
+      notifications.products.priceUpdateError(error?.data?.message);
     }
   };
 
@@ -557,7 +558,7 @@ const ProductsPage = () => {
               
               // التحقق من تحميل الشركات
               if (isLoadingCompanies) {
-                toast.error('يرجى انتظار تحميل قائمة الشركات');
+                notifications.general.validationError('قائمة الشركات');
                 return;
               }
               
@@ -566,7 +567,7 @@ const ProductsPage = () => {
               
               // التحقق من اختيار الشركة
               if (!companyId) {
-                toast.error('يرجى اختيار الشركة');
+                notifications.general.validationError('الشركة');
                 return;
               }
               

@@ -1,6 +1,5 @@
 [
   {
-    "id": 1,
     "sku": "CER-001",
     "name": "بلاط سيراميك أبيض 60×60",
     "unit": "صندوق",
@@ -8,7 +7,6 @@
     "createdByCompanyId": 1
   },
   {
-    "id": 2,
     "sku": "CER-002", 
     "name": "بلاط سيراميك بيج 40×40",
     "unit": "صندوق",
@@ -16,7 +14,6 @@
     "createdByCompanyId": 1
   },
   {
-    "id": 3,
     "sku": "CER-003",
     "name": "بلاط سيراميك رمادي 80×80",
     "unit": "صندوق", 
@@ -24,14 +21,12 @@
     "createdByCompanyId": 1
   },
   {
-    "id": 4,
     "sku": "CER-004",
     "name": "بلاط سيراميك أزرق 30×30",
     "unit": "قطعة",
     "createdByCompanyId": 2
   },
   {
-    "id": 5,
     "sku": "CER-005",
     "name": "بلاط سيراميك أسود 50×50",
     "unit": "صندوق",

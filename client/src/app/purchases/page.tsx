@@ -7,16 +7,15 @@ import {
   useCreatePurchaseMutation, 
   useDeletePurchaseMutation,
   useGetSuppliersQuery,
-  useCreateSupplierMutation,
   Purchase,
   Supplier,
-  CreateSupplierRequest,
   CreatePurchaseRequest
 } from '@/state/purchaseApi';
 import { useGetProductsQuery } from '@/state/productsApi';
 import { useGetCompaniesQuery } from '@/state/companyApi';
 import { useToast } from '@/components/ui/Toast';
 import { formatArabicNumber, formatArabicCurrency, formatArabicQuantity, formatArabicArea } from '@/utils/formatArabicNumbers';
+import UnifiedSupplierModal from '@/components/shared/UnifiedSupplierModal';
 
 const PurchasesPage = () => {
   const { success, error, warning, info, confirm } = useToast();
@@ -26,7 +25,7 @@ const PurchasesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
   const [showCreatePurchaseModal, setShowCreatePurchaseModal] = useState(false);
-  const [showCreateSupplierModal, setShowCreateSupplierModal] = useState(false);
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
   const [showPurchaseDetailsModal, setShowPurchaseDetailsModal] = useState(false);
   
@@ -68,7 +67,6 @@ const PurchasesPage = () => {
   
   const [createPurchase, { isLoading: isCreating }] = useCreatePurchaseMutation();
   const [deletePurchase, { isLoading: isDeleting }] = useDeletePurchaseMutation();
-  const [createSupplier] = useCreateSupplierMutation();
 
   // Filter products by selected company
   const filteredProducts = productsData?.data?.products?.filter(product => 
@@ -178,7 +176,7 @@ const PurchasesPage = () => {
 
           {/* Add Supplier */}
           <button 
-            onClick={() => setShowCreateSupplierModal(true)}
+            onClick={() => setShowSupplierModal(true)}
             className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -843,123 +841,6 @@ const PurchasesPage = () => {
         </div>
       )}
 
-      {/* Simple Create Supplier Modal */}
-      {showCreateSupplierModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">إضافة مورد جديد</h2>
-                <button
-                  onClick={() => setShowCreateSupplierModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const supplierData: CreateSupplierRequest = {
-                  name: formData.get('name') as string,
-                  phone: formData.get('phone') as string,
-                  email: formData.get('email') as string,
-                  address: formData.get('address') as string,
-                  note: formData.get('contactPerson') as string, // استخدام note بدلاً من contactPerson
-                };
-                
-                try {
-                  await createSupplier(supplierData).unwrap();
-                  success('تم بنجاح!', 'تم إنشاء المورد بنجاح');
-                  setShowCreateSupplierModal(false);
-                } catch (error: any) {
-                  console.error('خطأ في إنشاء المورد:', error);
-                  if (error?.data?.message) {
-                    error('خطأ', error.data.message);
-                  } else {
-                    error('خطأ', 'حدث خطأ في إنشاء المورد');
-                  }
-                }
-              }} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    اسم المورد *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    اسم الشخص المسؤول
-                  </label>
-                  <input
-                    type="text"
-                    name="contactPerson"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    رقم الهاتف
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    البريد الإلكتروني
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    العنوان
-                  </label>
-                  <textarea
-                    name="address"
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateSupplierModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    إلغاء
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    حفظ المورد
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Purchase Details Modal */}
       {showPurchaseDetailsModal && selectedPurchase && (
@@ -1051,6 +932,16 @@ const PurchasesPage = () => {
           </div>
         </div>
       )}
+
+      {/* Unified Supplier Modal */}
+      <UnifiedSupplierModal
+        isOpen={showSupplierModal}
+        onClose={() => setShowSupplierModal(false)}
+        onSuccess={() => {
+          // Refresh suppliers list automatically via RTK Query
+        }}
+        mode="create"
+      />
     </div>
   );
 };

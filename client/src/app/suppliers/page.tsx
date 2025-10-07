@@ -4,14 +4,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   useGetSuppliersQuery, 
-  useCreateSupplierMutation,
-  useUpdateSupplierMutation,
   useDeleteSupplierMutation,
-  Supplier,
-  CreateSupplierRequest,
-  UpdateSupplierRequest
+  Supplier
 } from '@/state/purchaseApi';
 import { useToast } from '@/components/ui/Toast';
+import UnifiedSupplierModal from '@/components/shared/UnifiedSupplierModal';
 
 const SuppliersPage = () => {
   const { success, error, warning, info, confirm } = useToast();
@@ -20,20 +17,11 @@ const SuppliersPage = () => {
   // States
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(null);
-  
-  // Form states
-  const [formData, setFormData] = useState<CreateSupplierRequest>({
-    name: '',
-    phone: '',
-    email: '',
-    address: '',
-    note: ''
-  });
 
   // Search timeout
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -54,8 +42,6 @@ const SuppliersPage = () => {
     search: searchTerm
   });
 
-  const [createSupplier, { isLoading: isCreating }] = useCreateSupplierMutation();
-  const [updateSupplier, { isLoading: isUpdating }] = useUpdateSupplierMutation();
   const [deleteSupplier, { isLoading: isDeleting }] = useDeleteSupplierMutation();
 
   // Handle search with debounce
@@ -64,45 +50,23 @@ const SuppliersPage = () => {
     setCurrentPage(1);
   };
 
-  // Handle create supplier
-  const handleCreateSupplier = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.name.trim()) {
-      error('خطأ', 'اسم المورد مطلوب');
-      return;
-    }
-
-    try {
-      await createSupplier(formData).unwrap();
-      success('تم بنجاح!', 'تم إنشاء المورد بنجاح');
-      setShowCreateModal(false);
-      setFormData({ name: '', phone: '', email: '', address: '', note: '' });
-      refetchSuppliers();
-    } catch (error: any) {
-      error('خطأ', error.data?.message || 'حدث خطأ في إنشاء المورد');
-    }
+  // Handle supplier modal success
+  const handleSupplierModalSuccess = () => {
+    refetchSuppliers();
   };
 
-  // Handle edit supplier
-  const handleEditSupplier = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!selectedSupplier || !formData.name.trim()) {
-      error('خطأ', 'اسم المورد مطلوب');
-      return;
-    }
+  // Open create modal
+  const openCreateModal = () => {
+    setSelectedSupplier(null);
+    setModalMode('create');
+    setShowSupplierModal(true);
+  };
 
-    try {
-      await updateSupplier({ id: selectedSupplier.id, data: formData }).unwrap();
-      success('تم بنجاح!', 'تم تحديث المورد بنجاح');
-      setShowEditModal(false);
-      setSelectedSupplier(null);
-      setFormData({ name: '', phone: '', email: '', address: '', note: '' });
-      refetchSuppliers();
-    } catch (error: any) {
-      error('خطأ', error.data?.message || 'حدث خطأ في تحديث المورد');
-    }
+  // Open edit modal
+  const openEditModal = (supplier: Supplier) => {
+    setSelectedSupplier(supplier);
+    setModalMode('edit');
+    setShowSupplierModal(true);
   };
 
   // Handle delete supplier
@@ -120,18 +84,6 @@ const SuppliersPage = () => {
     }
   };
 
-  // Open edit modal
-  const openEditModal = (supplier: Supplier) => {
-    setSelectedSupplier(supplier);
-    setFormData({
-      name: supplier.name,
-      phone: supplier.phone || '',
-      email: supplier.email || '',
-      address: supplier.address || '',
-      note: supplier.note || ''
-    });
-    setShowEditModal(true);
-  };
 
   // Open delete confirm
   const openDeleteConfirm = (supplier: Supplier) => {
@@ -139,11 +91,6 @@ const SuppliersPage = () => {
     setShowDeleteConfirm(true);
   };
 
-  // Reset form
-  const resetForm = () => {
-    setFormData({ name: '', phone: '', email: '', address: '', note: '' });
-    setSelectedSupplier(null);
-  };
 
   if (suppliersLoading) {
     return (
@@ -164,7 +111,7 @@ const SuppliersPage = () => {
               <p className="text-gray-600 mt-2">إدارة قائمة الموردين</p>
             </div>
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={openCreateModal}
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -361,199 +308,14 @@ const SuppliersPage = () => {
           )}
         </div>
 
-        {/* Create Modal */}
-        {showCreateModal && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-              <div className="mt-3">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">إضافة مورد جديد</h3>
-                  <button
-                    onClick={() => {
-                      setShowCreateModal(false);
-                      resetForm();
-                    }}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-
-                <form onSubmit={handleCreateSupplier} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">اسم المورد *</label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">الهاتف</label>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">البريد الإلكتروني</label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">العنوان</label>
-                    <textarea
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">ملاحظات</label>
-                    <textarea
-                      value={formData.note}
-                      onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                      rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="flex justify-end gap-3 pt-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowCreateModal(false);
-                        resetForm();
-                      }}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
-                    >
-                      إلغاء
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isCreating}
-                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      {isCreating ? 'جاري الحفظ...' : 'حفظ'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Edit Modal */}
-        {showEditModal && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-              <div className="mt-3">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">تعديل المورد</h3>
-                  <button
-                    onClick={() => {
-                      setShowEditModal(false);
-                      resetForm();
-                    }}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-
-                <form onSubmit={handleEditSupplier} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">اسم المورد *</label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">الهاتف</label>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">البريد الإلكتروني</label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">العنوان</label>
-                    <textarea
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">ملاحظات</label>
-                    <textarea
-                      value={formData.note}
-                      onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                      rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="flex justify-end gap-3 pt-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowEditModal(false);
-                        resetForm();
-                      }}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
-                    >
-                      إلغاء
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isUpdating}
-                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      {isUpdating ? 'جاري التحديث...' : 'تحديث'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Unified Supplier Modal */}
+        <UnifiedSupplierModal
+          isOpen={showSupplierModal}
+          onClose={() => setShowSupplierModal(false)}
+          onSuccess={handleSupplierModalSuccess}
+          supplier={selectedSupplier}
+          mode={modalMode}
+        />
 
         {/* Delete Confirmation Modal */}
         {showDeleteConfirm && (
