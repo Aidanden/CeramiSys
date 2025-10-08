@@ -103,7 +103,7 @@ export class ProvisionalSalesService {
 
   // ============== تحديث فاتورة مبدئية ==============
 
-  async updateProvisionalSale(id: number, data: UpdateProvisionalSaleDto): Promise<ProvisionalSaleResponseDto> {
+  async updateProvisionalSale(id: number, data: UpdateProvisionalSaleDto, userCompanyId?: number, isSystemUser?: boolean): Promise<ProvisionalSaleResponseDto> {
     try {
       // التحقق من وجود الفاتورة المبدئية
       const existingProvisionalSale = await prisma.provisionalSale.findUnique({
@@ -113,6 +113,11 @@ export class ProvisionalSalesService {
 
       if (!existingProvisionalSale) {
         throw new Error('الفاتورة المبدئية غير موجودة');
+      }
+
+      // التحقق من ملكية الفاتورة للمستخدمين العاديين
+      if (!isSystemUser && userCompanyId && existingProvisionalSale.companyId !== userCompanyId) {
+        throw new Error('ليس لديك صلاحية لتعديل هذه الفاتورة المبدئية');
       }
 
       // التحقق من أن الفاتورة لم يتم ترحيلها بعد
@@ -320,7 +325,7 @@ export class ProvisionalSalesService {
 
   // ============== حذف فاتورة مبدئية ==============
 
-  async deleteProvisionalSale(id: number): Promise<void> {
+  async deleteProvisionalSale(id: number, userCompanyId?: number, isSystemUser?: boolean): Promise<void> {
     try {
       const provisionalSale = await prisma.provisionalSale.findUnique({
         where: { id }
@@ -328,6 +333,11 @@ export class ProvisionalSalesService {
 
       if (!provisionalSale) {
         throw new Error('الفاتورة المبدئية غير موجودة');
+      }
+
+      // التحقق من ملكية الفاتورة للمستخدمين العاديين
+      if (!isSystemUser && userCompanyId && provisionalSale.companyId !== userCompanyId) {
+        throw new Error('ليس لديك صلاحية لحذف هذه الفاتورة المبدئية');
       }
 
       if (provisionalSale.isConverted) {

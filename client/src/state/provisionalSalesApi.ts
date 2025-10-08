@@ -91,12 +91,14 @@ export interface GetProvisionalSalesRequest {
 }
 
 export interface ProvisionalSalesResponse {
-  provisionalSales: ProvisionalSale[];
+  success: boolean;
+  message: string;
+  data: ProvisionalSale[];
   pagination: {
     page: number;
     limit: number;
     total: number;
-    totalPages: number;
+    pages: number;
   };
 }
 
@@ -139,12 +141,16 @@ export interface GetCustomersRequest {
 }
 
 export interface CustomersResponse {
-  customers: Customer[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
+  success: boolean;
+  message: string;
+  data: {
+    customers: Customer[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
   };
 }
 
@@ -152,6 +158,11 @@ export const provisionalSalesApi = createApi({
   reducerPath: "provisionalSalesApi",
   baseQuery: baseQueryWithAuthInterceptor,
   tagTypes: ["ProvisionalSale", "Customer"],
+  // إعدادات الكاش للتحديث السريع
+  keepUnusedDataFor: 30, // 30 ثانية فقط
+  refetchOnMountOrArgChange: true,
+  refetchOnFocus: true,
+  refetchOnReconnect: true,
   endpoints: (builder) => ({
     // ============== إدارة الفواتير المبدئية ==============
 
@@ -162,7 +173,13 @@ export const provisionalSalesApi = createApi({
         method: "GET",
         params,
       }),
-      providesTags: ["ProvisionalSale"],
+      providesTags: (result) => 
+        result
+          ? [
+              ...result.data.map(({ id }) => ({ type: 'ProvisionalSale' as const, id })),
+              { type: 'ProvisionalSale', id: 'LIST' },
+            ]
+          : [{ type: 'ProvisionalSale', id: 'LIST' }],
     }),
 
     // الحصول على فاتورة مبدئية واحدة
@@ -181,7 +198,7 @@ export const provisionalSalesApi = createApi({
         method: "POST",
         body: data,
       }),
-      invalidatesTags: ["ProvisionalSale"],
+      invalidatesTags: [{ type: 'ProvisionalSale', id: 'LIST' }],
     }),
 
     // تحديث فاتورة مبدئية
@@ -193,7 +210,7 @@ export const provisionalSalesApi = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: "ProvisionalSale", id },
-        "ProvisionalSale",
+        { type: "ProvisionalSale", id: "LIST" },
       ],
     }),
 
@@ -205,7 +222,7 @@ export const provisionalSalesApi = createApi({
       }),
       invalidatesTags: (result, error, id) => [
         { type: "ProvisionalSale", id },
-        "ProvisionalSale",
+        { type: "ProvisionalSale", id: "LIST" },
       ],
     }),
 
@@ -220,7 +237,7 @@ export const provisionalSalesApi = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: "ProvisionalSale", id },
-        "ProvisionalSale",
+        { type: "ProvisionalSale", id: "LIST" },
       ],
     }),
 
@@ -233,7 +250,7 @@ export const provisionalSalesApi = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: "ProvisionalSale", id },
-        "ProvisionalSale",
+        { type: "ProvisionalSale", id: "LIST" },
       ],
     }),
 

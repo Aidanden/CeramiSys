@@ -38,7 +38,15 @@ export class ProvisionalSalesController {
         return;
       }
 
-      const provisionalSale = await this.provisionalSalesService.createProvisionalSale(validationResult.data);
+      // تطبيق عزل الشركات للمستخدمين العاديين
+      const createData = { ...validationResult.data };
+      
+      // إذا لم يكن مستخدم نظام، فرض companyId الخاص به
+      if (!req.user?.isSystemUser && req.user?.companyId) {
+        createData.companyId = req.user.companyId;
+      }
+
+      const provisionalSale = await this.provisionalSalesService.createProvisionalSale(createData);
 
       res.status(201).json({
         success: true,
@@ -92,7 +100,12 @@ export class ProvisionalSalesController {
         return;
       }
 
-      const provisionalSale = await this.provisionalSalesService.updateProvisionalSale(id, validationResult.data);
+      const provisionalSale = await this.provisionalSalesService.updateProvisionalSale(
+        id, 
+        validationResult.data,
+        req.user?.companyId,
+        req.user?.isSystemUser
+      );
 
       res.json({
         success: true,
@@ -136,7 +149,15 @@ export class ProvisionalSalesController {
         return;
       }
 
-      const result = await this.provisionalSalesService.getProvisionalSales(validationResult.data);
+      // تطبيق عزل الشركات للمستخدمين العاديين
+      const queryData = { ...validationResult.data };
+      
+      // إذا لم يكن مستخدم نظام، فرض companyId الخاص به
+      if (!req.user?.isSystemUser && req.user?.companyId) {
+        queryData.companyId = req.user.companyId;
+      }
+
+      const result = await this.provisionalSalesService.getProvisionalSales(queryData);
 
       res.json({
         success: true,
@@ -224,7 +245,11 @@ export class ProvisionalSalesController {
         return;
       }
 
-      await this.provisionalSalesService.deleteProvisionalSale(id);
+      await this.provisionalSalesService.deleteProvisionalSale(
+        id,
+        req.user?.companyId,
+        req.user?.isSystemUser
+      );
 
       res.json({
         success: true,

@@ -5,9 +5,13 @@
 
 import { Router } from 'express';
 import { ProvisionalSalesController } from '../controllers/ProvisionalSalesController';
+import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 const provisionalSalesController = new ProvisionalSalesController();
+
+// تطبيق middleware المصادقة على جميع المسارات
+router.use(authenticateToken);
 
 // ============== مسارات الفواتير المبدئية ==============
 

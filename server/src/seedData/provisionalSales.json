@@ -1,0 +1,81 @@
+[
+  {
+    "id": 1,
+    "companyId": 1,
+    "customerId": 1,
+    "invoiceNumber": "PROV-2024-001",
+    "saleType": "CASH",
+    "paymentMethod": "CASH",
+    "status": "DRAFT",
+    "isConverted": false,
+    "subtotal": 150.00,
+    "taxAmount": 0.00,
+    "discountAmount": 0.00,
+    "total": 150.00,
+    "notes": "فاتورة مبدئية تجريبية",
+    "createdAt": "2024-01-15T10:00:00.000Z",
+    "updatedAt": "2024-01-15T10:00:00.000Z",
+    "lines": [
+      {
+        "id": 1,
+        "productId": 1,
+        "qty": 25.0,
+        "unitPrice": 6.00,
+        "total": 150.00
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "companyId": 1,
+    "customerId": 2,
+    "invoiceNumber": "PROV-2024-002",
+    "saleType": "CREDIT",
+    "paymentMethod": "TRANSFER",
+    "status": "APPROVED",
+    "isConverted": false,
+    "subtotal": 300.00,
+    "taxAmount": 0.00,
+    "discountAmount": 10.00,
+    "total": 290.00,
+    "notes": "فاتورة مبدئية معتمدة",
+    "createdAt": "2024-01-16T14:30:00.000Z",
+    "updatedAt": "2024-01-16T15:00:00.000Z",
+    "lines": [
+      {
+        "id": 2,
+        "productId": 2,
+        "qty": 50.0,
+        "unitPrice": 6.00,
+        "total": 300.00
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "companyId": 2,
+    "customerId": 3,
+    "invoiceNumber": "PROV-2024-003",
+    "saleType": "CASH",
+    "paymentMethod": "CARD",
+    "status": "CONVERTED",
+    "isConverted": true,
+    "convertedSaleId": 1,
+    "subtotal": 180.00,
+    "taxAmount": 0.00,
+    "discountAmount": 0.00,
+    "total": 180.00,
+    "notes": "فاتورة مبدئية مرحلة",
+    "createdAt": "2024-01-17T09:15:00.000Z",
+    "updatedAt": "2024-01-17T16:45:00.000Z",
+    "lines": [
+      {
+        "id": 3,
+        "productId": 3,
+        "qty": 30.0,
+        "unitPrice": 6.00,
+        "total": 180.00
+      }
+    ]
+  }
+]

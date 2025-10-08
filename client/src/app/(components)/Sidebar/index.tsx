@@ -128,24 +128,14 @@ const Sidebar = () => {
             label="إدارة الشركات"
             isCollapsed={isSidebarCollapsed}
           />
-          <SidebarLink
-            href="/users"
-            icon={UsersRound}
-            label="إدارة المستخدمين"
-            isCollapsed={isSidebarCollapsed}
-          />
+         
           <SidebarLink
             href="/products"
             icon={ShoppingBag}
             label="الأصناف والمخزن"
             isCollapsed={isSidebarCollapsed}
           />
-          <SidebarLink
-            href="/notifications"
-            icon={Bell}
-            label="الإشعارات"
-            isCollapsed={isSidebarCollapsed}
-          />
+          
           <SidebarLink
             href="/sales"
             icon={ShoppingCart}
@@ -212,6 +202,18 @@ const Sidebar = () => {
               الإعدادات
             </h3>
           </div>
+          <SidebarLink
+            href="/users"
+            icon={UsersRound}
+            label="إدارة المستخدمين"
+            isCollapsed={isSidebarCollapsed}
+          />
+           <SidebarLink
+            href="/notifications"
+            icon={Bell}
+            label="الإشعارات"
+            isCollapsed={isSidebarCollapsed}
+          />
           <SidebarLink
             href="/settings"
             icon={Shield}
