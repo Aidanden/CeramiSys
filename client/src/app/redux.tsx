@@ -27,6 +27,7 @@ import { activityApi } from "@/state/activityApi"; // إضافة activityApi
 import { complexInterCompanySalesApi } from "@/state/complexInterCompanySalesApi"; // إضافة complexInterCompanySalesApi
 import { reportsApi } from "@/state/reportsApi"; // إضافة reportsApi
 import { notificationsApi } from "@/state/notificationsApi"; // إضافة notificationsApi
+import { provisionalSalesApi } from "@/state/provisionalSalesApi"; // إضافة provisionalSalesApi
 import { setupListeners } from "@reduxjs/toolkit/query";
 import {
   persistStore,
@@ -66,33 +67,6 @@ const persistConfig = {
   key: "root",
   storage,
   whitelist: ["global", "auth", "users", "permissions", "company", "complexInterCompanySales"], // إضافة المصادقة والعملات إلى القائمة البيضاء
-  transforms: [
-    // إزالة حالات التحميل من الحفظ
-    {
-      in: (inboundState: any, key: string) => {
-        if (key === 'auth') {
-          return {
-            ...inboundState,
-            isLoading: false,
-            isInitializing: false,
-            error: null
-          };
-        }
-        return inboundState;
-      },
-      out: (outboundState: any, key: string) => {
-        if (key === 'auth') {
-          return {
-            ...outboundState,
-            isLoading: false,
-            isInitializing: false,
-            error: null
-          };
-        }
-        return outboundState;
-      }
-    }
-  ]
 };
 
 /* ROOT REDUCER */
@@ -117,6 +91,7 @@ const rootReducer = combineReducers({
   [complexInterCompanySalesApi.reducerPath]: complexInterCompanySalesApi.reducer, // إضافة complexInterCompanySalesApi.reducer
   [reportsApi.reducerPath]: reportsApi.reducer, // إضافة reportsApi.reducer
   [notificationsApi.reducerPath]: notificationsApi.reducer, // إضافة notificationsApi.reducer
+  [provisionalSalesApi.reducerPath]: provisionalSalesApi.reducer, // إضافة provisionalSalesApi.reducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -130,7 +105,7 @@ export const makeStore = () => {
         serializableCheck: {
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
-      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware, notificationsApi.middleware), // إضافة middleware الخاص بـ APIs
+      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware, notificationsApi.middleware, provisionalSalesApi.middleware), // إضافة middleware الخاص بـ APIs
   });
 };
 

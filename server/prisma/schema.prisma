@@ -42,6 +42,7 @@ model Company {
   // Back relation for optional branchCompany on Receipt
   branchReceipts      Receipt[]             @relation("BranchCompanyReceipts")
   notifications       Notification[]        // إشعارات الشركة
+  provisionalSales    ProvisionalSale[]     // الفواتير المبدئية
 }
 
 model Product {
@@ -61,6 +62,7 @@ model Product {
   saleLines     SaleLine[]
   purchaseLines PurchaseFromParentLine[]
   purchaseLineItems PurchaseLine[]
+  provisionalSaleLines ProvisionalSaleLine[]
 }
 
 model Stock {
@@ -158,6 +160,7 @@ model Customer {
   createdAt DateTime @default(now())
 
   sales Sale[]
+  provisionalSales ProvisionalSale[]
 }
 
 model Sale {
@@ -176,6 +179,7 @@ model Sale {
   createdAt     DateTime       @default(now())
   lines         SaleLine[]
   payments      SalePayment[] // الدفعات
+  provisionalSaleConverted ProvisionalSale[] // الفواتير المبدئية المرحلة إلى هذه الفاتورة
 
   @@index([companyId])
   @@index([customerId])
@@ -212,6 +216,44 @@ model SalePayment {
   @@index([saleId])
   @@index([companyId])
   @@index([paymentDate])
+}
+
+/////////////////////////////////////////////////
+//           Provisional Sales (فواتير مبدئية)
+/////////////////////////////////////////////////
+
+model ProvisionalSale {
+  id                Int                    @id @default(autoincrement())
+  company           Company                @relation(fields: [companyId], references: [id]) // البائع - الفرع
+  companyId         Int
+  customer          Customer?              @relation(fields: [customerId], references: [id])
+  customerId        Int?
+  invoiceNumber     String?
+  total             Decimal                @default(0) @db.Decimal(18, 4)
+  status            ProvisionalSaleStatus  @default(DRAFT) // حالة الفاتورة المبدئية
+  isConverted       Boolean                @default(false) // هل تم ترحيلها لفاتورة عادية؟
+  convertedSaleId   Int?                   // معرف الفاتورة العادية المرحلة إليها
+  convertedSale     Sale?                  @relation(fields: [convertedSaleId], references: [id])
+  notes             String?                // ملاحظات
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  convertedAt       DateTime?              // تاريخ الترحيل
+  lines             ProvisionalSaleLine[]
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([isConverted])
+}
+
+model ProvisionalSaleLine {
+  id                  Int             @id @default(autoincrement())
+  provisionalSale     ProvisionalSale @relation(fields: [provisionalSaleId], references: [id])
+  provisionalSaleId   Int
+  product             Product         @relation(fields: [productId], references: [id])
+  productId           Int
+  qty                 Decimal         @db.Decimal(20, 4)
+  unitPrice           Decimal         @db.Decimal(18, 4)
+  subTotal            Decimal         @db.Decimal(18, 4)
 }
 
 /////////////////////////////////////////////////
@@ -355,6 +397,14 @@ enum PaymentMethod {
 enum PurchaseType {
   CASH // نقدي
   CREDIT // آجل
+}
+
+enum ProvisionalSaleStatus {
+  DRAFT     // مسودة
+  PENDING   // معلقة
+  APPROVED  // معتمدة
+  CONVERTED // مرحلة
+  CANCELLED // ملغية
 }
 
 /////////////////////////////////////////////////

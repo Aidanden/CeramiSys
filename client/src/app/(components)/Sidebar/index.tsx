@@ -15,7 +15,6 @@ import {
   TrendingDown,
   CreditCard,
   FileText,
-  Wallet,
   Shield,
   Home,
   Building2,
@@ -23,11 +22,11 @@ import {
   ArrowRightLeft,
   BarChart3,
   Bell,
+  Wallet,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React from "react";
 import Link from "next/link";
-
 interface SidebarLinkProps {
   href: string;
   icon: LucideIcon;
@@ -151,6 +150,12 @@ const Sidebar = () => {
             href="/sales"
             icon={ShoppingCart}
             label="المبيعات"
+            isCollapsed={isSidebarCollapsed}
+          />
+          <SidebarLink
+            href="/provisional-sales"
+            icon={Wallet}
+            label="الفواتير المبدئية"
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink
