@@ -187,18 +187,9 @@ export class SalesService {
         if (!product) continue;
         
         // حساب الصناديق المطلوبة:
-        // - إذا كان الصنف بالصندوق: line.qty هي بالأمتار، نحولها لصناديق ونقرب للأعلى
-        // - إذا كان الصنف بوحدة أخرى: line.qty هي عدد الصناديق مباشرة
-        let boxesToDecrement = line.qty;
-        
-        if (product.unit === 'صندوق' && product.unitsPerBox && Number(product.unitsPerBox) > 0) {
-          // البيع بالمتر المربع: line.qty = عدد الأمتار المطلوبة
-          const requestedMeters = line.qty;
-          const unitsPerBox = Number(product.unitsPerBox);
-          
-          // حساب عدد الصناديق (التقريب للأعلى)
-          boxesToDecrement = Math.ceil(requestedMeters / unitsPerBox);
-        }
+        // للأصناف بوحدة "صندوق": line.qty = عدد الصناديق مباشرة (من الواجهة الأمامية)
+        // للأصناف الأخرى: line.qty = الكمية بالوحدة
+        let boxesToDecrement = Number(line.qty);
         
         await this.prisma.stock.update({
           where: {
@@ -444,16 +435,9 @@ export class SalesService {
           if (!oldProduct) continue;
           
           // حساب الصناديق المطلوبة:
+          // للأصناف بوحدة "صندوق": line.qty = عدد الصناديق مباشرة
+          // للأصناف الأخرى: line.qty = الكمية بالوحدة
           let boxesToIncrement = Number(line.qty);
-          
-          if (oldProduct.unit === 'صندوق' && oldProduct.unitsPerBox && Number(oldProduct.unitsPerBox) > 0) {
-            // البيع كان بالمتر المربع: line.qty = عدد الأمتار المباعة
-            const soldMeters = Number(line.qty);
-            const unitsPerBox = Number(oldProduct.unitsPerBox);
-            
-            // حساب عدد الصناديق (التقريب للأعلى)
-            boxesToIncrement = Math.ceil(soldMeters / unitsPerBox);
-          }
           
           await this.prisma.stock.update({
             where: {
@@ -598,16 +582,9 @@ export class SalesService {
           if (!product) continue;
           
           // حساب الصناديق المطلوبة:
-          let boxesToDecrement = line.qty;
-          
-          if (product.unit === 'صندوق' && product.unitsPerBox && Number(product.unitsPerBox) > 0) {
-            // البيع بالمتر المربع: line.qty = عدد الأمتار المطلوبة
-            const requestedMeters = line.qty;
-            const unitsPerBox = Number(product.unitsPerBox);
-            
-            // حساب عدد الصناديق (التقريب للأعلى)
-            boxesToDecrement = Math.ceil(requestedMeters / unitsPerBox);
-          }
+          // للأصناف بوحدة "صندوق": line.qty = عدد الصناديق مباشرة
+          // للأصناف الأخرى: line.qty = الكمية بالوحدة
+          let boxesToDecrement = Number(line.qty);
           
           await this.prisma.stock.update({
             where: {
@@ -689,17 +666,12 @@ export class SalesService {
         const product = products.find(p => p.id === line.productId);
         if (!product) continue;
         
-        // حساب الصناديق المطلوبة:
+        // حساب الصناديق المطلوبة للإرجاع:
+        // للأصناف بوحدة "صندوق": line.qty = عدد الصناديق مباشرة
+        // للأصناف الأخرى: line.qty = الكمية بالوحدة
         let boxesToIncrement = Number(line.qty);
         
-        if (product.unit === 'صندوق' && product.unitsPerBox && Number(product.unitsPerBox) > 0) {
-          // البيع كان بالمتر المربع: line.qty = عدد الأمتار المباعة
-          const soldMeters = Number(line.qty);
-          const unitsPerBox = Number(product.unitsPerBox);
-          
-          // حساب عدد الصناديق (التقريب للأعلى)
-          boxesToIncrement = Math.ceil(soldMeters / unitsPerBox);
-        }
+        console.log(`إرجاع المخزون - الصنف ${line.productId}: ${boxesToIncrement} صندوق`);
         
         await this.prisma.stock.update({
           where: {
@@ -716,7 +688,17 @@ export class SalesService {
         });
       }
 
-      // حذف الفاتورة (سيتم حذف البنود تلقائياً بسبب cascade)
+      // حذف البنود أولاً
+      await this.prisma.saleLine.deleteMany({
+        where: { saleId: id }
+      });
+
+      // حذف إيصالات القبض المرتبطة بالفاتورة (إن وجدت)
+      await this.prisma.salePayment.deleteMany({
+        where: { saleId: id }
+      });
+
+      // حذف الفاتورة
       await this.prisma.sale.delete({
         where: { id }
       });

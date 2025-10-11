@@ -14,16 +14,17 @@ import {
   CreateProvisionalSaleRequest,
   CreateCustomerRequest
 } from '@/state/provisionalSalesApi';
-import { useGetProductsQuery } from '@/state/productsApi';
+import { useGetProductsQuery, productsApi } from '@/state/productsApi';
 import { useGetCompaniesQuery } from '@/state/companyApi';
 import { useGetCurrentUserQuery } from '@/state/authApi';
 import { formatArabicNumber, formatArabicCurrency, formatArabicQuantity, formatArabicArea } from '@/utils/formatArabicNumbers';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/app/redux';
 import { useToast } from '@/components/ui/Toast';
 
 const ProvisionalSalesPage = () => {
   const { success, error, confirm } = useToast();
+  const dispatch = useDispatch();
   
   // Get current user info
   const currentUser = useSelector((state: RootState) => state.auth.user);
@@ -104,7 +105,7 @@ const ProvisionalSalesPage = () => {
         isSystemUser: user?.isSystemUser,
         userCompanyId: user?.companyId,
         selectedCompanyId,
-        salesDataCount: salesData?.data?.length || 0,
+        salesDataCount: salesData?.data?.provisionalSales?.length || 0,
         salesLoading,
         salesError: salesError ? 'exists' : 'null',
         querySkipped: !user || (!user.isSystemUser && !user.companyId)
@@ -165,10 +166,12 @@ const ProvisionalSalesPage = () => {
       };
       
       const result = await createSale(saleRequest).unwrap();
-      success('تم إنشاء الفاتورة المبدئية بنجاح');
+      success('تم إنشاء الفاتورة المبدئية بنجاح وخصم الكميات من المخزن');
       
       // إعادة جلب البيانات فوراً
       await refetchSales();
+      // تحديث بيانات الأصناف لأن المخزون تغير
+      dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
       
       setShowCreateModal(false);
       resetForm();
@@ -206,9 +209,11 @@ const ProvisionalSalesPage = () => {
     if (confirmed) {
       try {
         await deleteSale(sale.id).unwrap();
-        success('تم حذف الفاتورة المبدئية بنجاح');
+        success('تم حذف الفاتورة المبدئية بنجاح وإرجاع الكميات للمخزن');
         // إعادة جلب البيانات فوراً
         await refetchSales();
+        // تحديث بيانات الأصناف لأن المخزون تغير
+        dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
       } catch (err: any) {
         error(err.data?.message || 'حدث خطأ أثناء حذف الفاتورة');
       }
@@ -234,6 +239,8 @@ const ProvisionalSalesPage = () => {
         success('تم ترحيل الفاتورة المبدئية بنجاح');
         // إعادة جلب البيانات فوراً
         await refetchSales();
+        // تحديث بيانات الأصناف لأن المخزون قد يتغير
+        dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
       } catch (err: any) {
         error(err.data?.message || 'حدث خطأ في ترحيل الفاتورة');
       }
@@ -267,32 +274,36 @@ const ProvisionalSalesPage = () => {
   };
 
   // Filter products based on search and selected company
-  const filteredProducts = productsData?.data?.products?.filter(product => {
-    // للمستخدمين العاديين: عرض أصناف شركتهم فقط
-    // لمستخدمي النظام: عرض أصناف الشركة المختارة
-    const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
+  const filteredProducts = React.useMemo(() => {
+    const products = productsData?.data?.products?.filter(product => {
+      // للمستخدمين العاديين: عرض أصناف شركتهم فقط
+      // لمستخدمي النظام: عرض أصناف الشركة المختارة
+      const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
+      
+      if (!targetCompanyId) {
+        return false; // لا تعرض أي أصناف إذا لم يتم تحديد الشركة
+      }
+      
+      // التأكد من أن الصنف ينتمي للشركة المستهدفة فقط
+      if (product.createdByCompanyId !== targetCompanyId) {
+        return false;
+      }
+      
+      const matchesName = product.name.toLowerCase().includes(productSearchTerm.toLowerCase());
+      const matchesCode = product.sku.toLowerCase().includes(productCodeSearch.toLowerCase());
+      
+      if (productSearchTerm && productCodeSearch) {
+        return matchesName && matchesCode;
+      } else if (productSearchTerm) {
+        return matchesName;
+      } else if (productCodeSearch) {
+        return matchesCode;
+      }
+      return true;
+    }) || [];
     
-    if (!targetCompanyId) {
-      return false; // لا تعرض أي أصناف إذا لم يتم تحديد الشركة
-    }
-    
-    // التأكد من أن الصنف ينتمي للشركة المستهدفة فقط
-    if (product.createdByCompanyId !== targetCompanyId) {
-      return false;
-    }
-    
-    const matchesName = product.name.toLowerCase().includes(productSearchTerm.toLowerCase());
-    const matchesCode = product.sku.toLowerCase().includes(productCodeSearch.toLowerCase());
-    
-    if (productSearchTerm && productCodeSearch) {
-      return matchesName && matchesCode;
-    } else if (productSearchTerm) {
-      return matchesName;
-    } else if (productCodeSearch) {
-      return matchesCode;
-    }
-    return true;
-  }) || [];
+    return products;
+  }, [productsData, productSearchTerm, productCodeSearch, selectedCompanyId, user]);
 
   // Auto-select product when exact code match is found (with debounce)
   const handleProductCodeSearch = (code: string) => {
@@ -434,7 +445,7 @@ const ProvisionalSalesPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-text-secondary text-sm">إجمالي الفواتير المبدئية</p>
-              <p className="text-2xl font-bold text-text-primary">{formatArabicNumber(salesData?.pagination?.total || 0)}</p>
+              <p className="text-2xl font-bold text-text-primary">{formatArabicNumber(salesData?.data?.pagination?.total || 0)}</p>
             </div>
             <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -446,7 +457,7 @@ const ProvisionalSalesPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-text-secondary text-sm">المسودات</p>
-              <p className="text-2xl font-bold text-gray-600">{formatArabicNumber(salesData?.data?.filter((sale: any) => sale.status === 'DRAFT').length || 0)}</p>
+              <p className="text-2xl font-bold text-gray-600">{formatArabicNumber(salesData?.data?.provisionalSales?.filter((sale: any) => sale.status === 'DRAFT').length || 0)}</p>
             </div>
             <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -458,7 +469,7 @@ const ProvisionalSalesPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-text-secondary text-sm">المعتمدة</p>
-              <p className="text-2xl font-bold text-green-600">{formatArabicNumber(salesData?.data?.filter((sale: any) => sale.status === 'APPROVED').length || 0)}</p>
+              <p className="text-2xl font-bold text-green-600">{formatArabicNumber(salesData?.data?.provisionalSales?.filter((sale: any) => sale.status === 'APPROVED').length || 0)}</p>
             </div>
             <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -470,7 +481,7 @@ const ProvisionalSalesPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-text-secondary text-sm">إجمالي القيمة</p>
-              <p className="text-2xl font-bold text-purple-600">{formatArabicCurrency(salesData?.data?.reduce((sum: number, sale: any) => sum + (sale.total || 0), 0) || 0)}</p>
+              <p className="text-2xl font-bold text-purple-600">{formatArabicCurrency(salesData?.data?.provisionalSales?.reduce((sum: number, sale: any) => sum + (sale.total || 0), 0) || 0)}</p>
             </div>
             <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -655,7 +666,7 @@ const ProvisionalSalesPage = () => {
                     </div>
                   </td>
                 </tr>
-              ) : !salesData?.data || salesData?.data?.length === 0 ? (
+              ) : !salesData?.data?.provisionalSales || salesData?.data?.provisionalSales?.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                     <div className="flex flex-col items-center gap-2">
@@ -683,7 +694,7 @@ const ProvisionalSalesPage = () => {
                   </td>
                 </tr>
               ) : (
-                salesData?.data?.map((sale) => (
+                salesData?.data?.provisionalSales?.map((sale: ProvisionalSale) => (
                   <tr key={sale.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {sale.invoiceNumber || `PROV-${formatArabicNumber(sale.id)}`}
@@ -753,7 +764,7 @@ const ProvisionalSalesPage = () => {
         </div>
 
         {/* Pagination */}
-        {salesData?.pagination && salesData.pagination.pages > 1 && (
+        {salesData?.data?.pagination && salesData.data.pagination.pages > 1 && (
           <div className="mt-6 flex justify-center">
             <div className="flex space-x-2 space-x-reverse">
               <button
@@ -765,12 +776,12 @@ const ProvisionalSalesPage = () => {
               </button>
               
               <span className="px-3 py-2 text-sm text-gray-700">
-                صفحة {formatArabicNumber(currentPage)} من {formatArabicNumber(salesData.pagination.pages)}
+                صفحة {formatArabicNumber(currentPage)} من {formatArabicNumber(salesData.data.pagination.pages)}
               </span>
               
               <button
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, salesData.pagination.pages))}
-                disabled={currentPage === salesData.pagination.pages}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, salesData.data.pagination.pages))}
+                disabled={currentPage === salesData.data.pagination.pages}
                 className="px-3 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 التالي
@@ -841,8 +852,9 @@ const ProvisionalSalesPage = () => {
                         customerId: e.target.value ? Number(e.target.value) : undefined
                       }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      required
                     >
-                      <option value="">عميل نقدي</option>
+                      <option value="">اختر عميل</option>
                       {customersLoading ? (
                         <option disabled>جاري تحميل العملاء...</option>
                       ) : customersError ? (
@@ -850,11 +862,13 @@ const ProvisionalSalesPage = () => {
                       ) : customersData?.data?.customers?.length === 0 ? (
                         <option disabled>لا توجد عملاء</option>
                       ) : (
-                        customersData?.data?.customers?.map((customer: Customer) => (
-                          <option key={customer.id} value={customer.id}>
-                            {customer.name}
-                          </option>
-                        ))
+                        customersData?.data?.customers
+                          ?.filter((customer: Customer) => !customer.phone?.includes('BRANCH'))
+                          ?.map((customer: Customer) => (
+                            <option key={customer.id} value={customer.id}>
+                              {customer.name}
+                            </option>
+                          ))
                       )}
                     </select>
                   </div>
@@ -907,6 +921,63 @@ const ProvisionalSalesPage = () => {
                     </div>
                   </div>
 
+                  {/* حقول البحث */}
+                  <div className="mb-4">
+                    <div className="grid grid-cols-2 gap-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          البحث بالاسم
+                        </label>
+                        <input
+                          type="text"
+                          value={productSearchTerm}
+                          onChange={(e) => setProductSearchTerm(e.target.value)}
+                          placeholder="ابحث بالاسم..."
+                          className="w-full px-3 py-2 border-2 border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          البحث بالكود
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={productCodeSearch}
+                            onChange={(e) => handleProductCodeSearch(e.target.value)}
+                            placeholder="أدخل كود الصنف للإضافة التلقائية..."
+                            className="w-full px-3 py-2 border-2 border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                          />
+                          {isSearching && (
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-purple-500 font-medium animate-pulse">
+                              ⏳ جاري البحث...
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          💡 سيتم البحث تلقائياً بعد التوقف عن الكتابة (من مخزن الشركة فقط)
+                        </p>
+                      </div>
+                    </div>
+                    {(productSearchTerm || productCodeSearch) && (
+                      <div className="mt-3 flex justify-between items-center p-2 bg-white rounded-md border border-purple-200">
+                        <div className="text-xs font-medium text-gray-600">
+                          📊 عرض {filteredProducts.length} منتج من أصل {productsData?.data?.products?.length || 0}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProductSearchTerm('');
+                            setProductCodeSearch('');
+                          }}
+                          className="text-xs text-purple-600 hover:text-purple-800 font-medium px-2 py-1 hover:bg-purple-50 rounded transition-colors"
+                        >
+                          ✖️ مسح البحث
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="space-y-3 max-h-96 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                     {saleForm.lines.length === 0 ? (
                       <div className="text-center py-12 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg">
@@ -946,12 +1017,23 @@ const ProvisionalSalesPage = () => {
                             {line.productId > 0 && selectedProduct && (
                               <div className="text-xs mt-1 space-y-0.5">
                                 <div className="text-gray-600">
-                                  📦 {selectedProduct.sku} | {selectedProduct.unit || 'وحدة'}
-                                  {selectedProduct.unitsPerBox && ` | ${formatArabicNumber(selectedProduct.unitsPerBox)} ${selectedProduct.unit || 'وحدة'}/صندوق`}
+                                  📦 الكود: {selectedProduct.sku}
                                 </div>
-                                {selectedProduct.stock && (
+                                {selectedProduct.unitsPerBox && (
                                   <div className="text-blue-600 font-medium">
-                                    💡 المخزون: {formatArabicQuantity(Number(selectedProduct.stock.boxes) * Number(selectedProduct.unitsPerBox || 1))} {selectedProduct.unit || 'وحدة'}
+                                    📏 الصندوق به: {formatArabicNumber(selectedProduct.unitsPerBox)} متر
+                                  </div>
+                                )}
+                                {selectedProduct.stock && (
+                                  <div className="text-green-600 font-medium space-y-1">
+                                    {selectedProduct.unitsPerBox ? (
+                                      <>
+                                        <div>✅ الكمية بالمخزن بالمتر: {formatArabicQuantity(Number(selectedProduct.stock.boxes) * Number(selectedProduct.unitsPerBox))} متر</div>
+                                        <div className="text-xs text-gray-600">📦 عدد الصناديق بالمخزن: {formatArabicQuantity(selectedProduct.stock.boxes)} صندوق</div>
+                                      </>
+                                    ) : (
+                                      <div>✅ الكمية بالمخزن: {formatArabicQuantity(selectedProduct.stock.boxes)} {selectedProduct.unit || 'وحدة'}</div>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -960,29 +1042,57 @@ const ProvisionalSalesPage = () => {
                           
                           <div className="col-span-2">
                             <label className="block text-xs font-medium text-gray-700 mb-1">
-                              الكمية ({selectedProduct?.unit || 'وحدة'})
+                              {
+                                selectedProduct?.unit === 'صندوق'
+                                  ? 'عدد الصناديق'
+                                  : `الكمية (${selectedProduct?.unit || 'وحدة'})`
+                              }
                             </label>
                             <input
                               type="number"
                               value={line.qty || ''}
                               onChange={(e) => updateSaleLine(index, 'qty', Number(e.target.value) || 0)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                              placeholder={`أدخل الكمية بـ${selectedProduct?.unit || 'الوحدة'}`}
+                              placeholder={
+                                selectedProduct?.unit === 'صندوق'
+                                  ? 'أدخل عدد الصناديق'
+                                  : `أدخل الكمية بـ${selectedProduct?.unit || 'الوحدة'}`
+                              }
                               min="0.01"
                               step="0.01"
                               required
                             />
+                            {selectedProduct?.unit === 'صندوق' && selectedProduct?.stock && line.qty > Number(selectedProduct.stock.boxes) && (
+                              <div className="text-xs text-red-600 mt-1 font-medium">
+                                ⚠️ عدد الصناديق المطلوبة أكبر من المخزون ({formatArabicQuantity(selectedProduct.stock.boxes)} صندوق)
+                              </div>
+                            )}
                           </div>
                           
                           <div className="col-span-2">
                             <label className="block text-xs font-medium text-gray-700 mb-1">
-                              الكمية الإجمالية
+                              {
+                                selectedProduct?.unit === 'صندوق' 
+                                  ? 'الكمية الإجمالية بالمتر'
+                                  : selectedProduct?.unit === 'قطعة'
+                                    ? 'إجمالي القطع'
+                                    : 'الكمية الإجمالية'
+                              }
                             </label>
                             <div className="px-3 py-2 bg-purple-50 border border-purple-200 rounded-md">
                               <span className="text-sm font-bold text-purple-700 block text-center">
-                                {line.qty > 0 ? `${formatArabicArea(line.qty)} ${selectedProduct?.unit || 'وحدة'}` : '0'}
+                                {line.qty > 0 ? (
+                                  selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox
+                                    ? `${formatArabicArea(line.qty * Number(selectedProduct.unitsPerBox))} متر`
+                                    : `${formatArabicArea(line.qty)} ${selectedProduct?.unit || 'وحدة'}`
+                                ) : '0'}
                               </span>
                             </div>
+                            {selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox && line.qty > 0 && (
+                              <div className="text-xs text-blue-600 mt-1 font-medium">
+                                📊 {formatArabicQuantity(line.qty)} صندوق × {formatArabicNumber(selectedProduct.unitsPerBox)} متر/صندوق = {formatArabicArea(line.qty * Number(selectedProduct.unitsPerBox))} متر
+                              </div>
+                            )}
                           </div>
                           
                           <div className="col-span-2">
@@ -1006,8 +1116,8 @@ const ProvisionalSalesPage = () => {
                           
                           <div className="col-span-1">
                             <label className="block text-xs font-medium text-gray-700 mb-1">المجموع</label>
-                            <div className="px-2 py-2 bg-green-50 border border-green-200 rounded-md">
-                              <span className="text-sm font-bold text-green-700 block text-center">
+                            <div className="px-1 py-2 bg-green-50 border border-green-200 rounded-md overflow-hidden">
+                              <span className="text-xs font-bold text-green-700 block text-center break-words leading-tight">
                                 {formatArabicCurrency(line.qty * line.unitPrice)}
                               </span>
                             </div>

@@ -44,12 +44,15 @@ export const UpdateSaleDtoSchema = z.object({
 export const GetSalesQueryDtoSchema = z.object({
   page: z.string().optional().default('1').transform(Number).pipe(z.number().int().positive()),
   limit: z.string().optional().default('10').transform(Number).pipe(z.number().int().positive().max(1000)),
-  search: z.string().optional(),
-  customerId: z.string().optional().transform(Number).pipe(z.number().int().positive()).optional(),
-  saleType: z.nativeEnum(SaleType).optional(),
-  paymentMethod: z.nativeEnum(PaymentMethod).optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional()
+  search: z.string().transform(val => val === '' ? undefined : val).optional(),
+  customerId: z.union([
+    z.string().transform(val => val === '' ? undefined : Number(val)).pipe(z.number().int().positive()),
+    z.literal('').transform(() => undefined)
+  ]).optional(),
+  saleType: z.union([z.nativeEnum(SaleType), z.literal('').transform(() => undefined)]).optional(),
+  paymentMethod: z.union([z.nativeEnum(PaymentMethod), z.literal('').transform(() => undefined)]).optional(),
+  startDate: z.string().transform(val => val === '' ? undefined : val).optional(),
+  endDate: z.string().transform(val => val === '' ? undefined : val).optional()
 });
 
 // Customer DTOs

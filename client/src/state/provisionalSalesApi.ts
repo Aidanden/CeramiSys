@@ -93,12 +93,14 @@ export interface GetProvisionalSalesRequest {
 export interface ProvisionalSalesResponse {
   success: boolean;
   message: string;
-  data: ProvisionalSale[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
+  data: {
+    provisionalSales: ProvisionalSale[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
   };
 }
 
@@ -174,9 +176,9 @@ export const provisionalSalesApi = createApi({
         params,
       }),
       providesTags: (result) => 
-        result
+        result?.data?.provisionalSales
           ? [
-              ...result.data.map(({ id }) => ({ type: 'ProvisionalSale' as const, id })),
+              ...result.data.provisionalSales.map(({ id }) => ({ type: 'ProvisionalSale' as const, id })),
               { type: 'ProvisionalSale', id: 'LIST' },
             ]
           : [{ type: 'ProvisionalSale', id: 'LIST' }],

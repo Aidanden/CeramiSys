@@ -134,10 +134,13 @@ export class ProvisionalSalesController {
 
   async getProvisionalSales(req: Request, res: Response): Promise<void> {
     try {
+      console.log('📋 Provisional Sales Query Params:', req.query);
+      
       // التحقق من صحة معاملات الاستعلام
       const validationResult = GetProvisionalSalesQueryDtoSchema.safeParse(req.query);
       
       if (!validationResult.success) {
+        console.error('❌ Validation Error:', validationResult.error.issues);
         res.status(400).json({
           success: false,
           message: 'معاملات الاستعلام غير صحيحة',

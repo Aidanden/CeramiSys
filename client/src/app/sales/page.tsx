@@ -12,12 +12,12 @@ import {
   CreateSaleRequest,
   CreateCustomerRequest
 } from '@/state/salesApi';
-import { useGetProductsQuery } from '@/state/productsApi';
+import { useGetProductsQuery, productsApi } from '@/state/productsApi';
 import { useGetCompaniesQuery } from '@/state/companyApi';
 import { useGetCurrentUserQuery } from '@/state/authApi';
 import { formatArabicNumber, formatArabicCurrency, formatArabicQuantity, formatArabicArea } from '@/utils/formatArabicNumbers';
 import { PrintModal } from '@/components/sales/PrintModal';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/app/redux';
 import useNotifications from '@/hooks/useNotifications';
 import { useToast } from '@/components/ui/Toast';
@@ -25,6 +25,7 @@ import { useToast } from '@/components/ui/Toast';
 const SalesPage = () => {
   const notifications = useNotifications();
   const { confirm } = useToast();
+  const dispatch = useDispatch();
   
   // Get current user info
   const currentUser = useSelector((state: RootState) => state.auth.user);
@@ -139,7 +140,7 @@ const SalesPage = () => {
       };
       
       await createSale(saleRequest).unwrap();
-      notifications.custom.success('تم بنجاح', 'تم إنشاء فاتورة المبيعات بنجاح');
+      notifications.custom.success('تم بنجاح', 'تم إنشاء فاتورة المبيعات بنجاح وخصم الكميات من المخزن');
       setShowCreateSaleModal(false);
       setSaleForm({
         customerId: undefined,
@@ -154,6 +155,8 @@ const SalesPage = () => {
         setSelectedCompanyId(null);
       }
       refetchSales();
+      // تحديث بيانات الأصناف لأن المخزون تغير
+      dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
     } catch (err: any) {
       notifications.custom.error('خطأ', err.data?.message || 'حدث خطأ أثناء إنشاء الفاتورة');
     }
@@ -169,8 +172,10 @@ const SalesPage = () => {
     if (confirmed) {
       try {
         await deleteSale(sale.id).unwrap();
-        notifications.custom.success('تم بنجاح', 'تم حذف الفاتورة بنجاح');
+        notifications.custom.success('تم بنجاح', 'تم حذف الفاتورة بنجاح وإرجاع الكميات للمخزن');
         refetchSales();
+        // تحديث بيانات الأصناف لأن المخزون تغير
+        dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
       } catch (err: any) {
         notifications.custom.error('خطأ', err.data?.message || 'حدث خطأ أثناء حذف الفاتورة');
       }
@@ -1051,18 +1056,22 @@ const SalesPage = () => {
                             {line.productId > 0 && selectedProduct && (
                               <div className="text-xs mt-1 space-y-0.5">
                                 <div className="text-gray-600">
-                                  📦 {selectedProduct.sku} | {selectedProduct.unit || 'وحدة'}
-                                  {selectedProduct.unitsPerBox && ` | ${formatArabicNumber(selectedProduct.unitsPerBox)} ${selectedProduct.unit || 'وحدة'}/صندوق`}
+                                  📦 الكود: {selectedProduct.sku}
                                 </div>
+                                {selectedProduct.unitsPerBox && (
+                                  <div className="text-blue-600 font-medium">
+                                    📏 الصندوق به: {formatArabicNumber(selectedProduct.unitsPerBox)} متر
+                                  </div>
+                                )}
                                 {selectedProduct.stock && (
                                   <div className="text-green-600 font-medium space-y-1">
                                     {selectedProduct.unitsPerBox ? (
                                       <>
-                                        <div>✅ المخزون: {formatArabicQuantity(Number(selectedProduct.stock.boxes) * Number(selectedProduct.unitsPerBox))} {selectedProduct.unit || 'متر مربع'}</div>
-                                        <div className="text-xs text-gray-600">📦 ({formatArabicQuantity(selectedProduct.stock.boxes)} صندوق)</div>
+                                        <div>✅ الكمية بالمخزن بالمتر: {formatArabicQuantity(Number(selectedProduct.stock.boxes) * Number(selectedProduct.unitsPerBox))} متر</div>
+                                        <div className="text-xs text-gray-600">📦 عدد الصناديق بالمخزن: {formatArabicQuantity(selectedProduct.stock.boxes)} صندوق</div>
                                       </>
                                     ) : (
-                                      <div>✅ المخزون: {formatArabicQuantity(selectedProduct.stock.boxes)} {selectedProduct.unit || 'متر مربع'}</div>
+                                      <div>✅ الكمية بالمخزن: {formatArabicQuantity(selectedProduct.stock.boxes)} {selectedProduct.unit || 'وحدة'}</div>
                                     )}
                                   </div>
                                 )}
@@ -1072,7 +1081,11 @@ const SalesPage = () => {
                           
                           <div className="col-span-2">
                             <label className="block text-xs font-medium text-gray-700 mb-1">
-                              الكمية ({selectedProduct?.unit || 'متر مربع'})
+                              {
+                                selectedProduct?.unit === 'صندوق'
+                                  ? 'عدد الصناديق'
+                                  : `الكمية (${selectedProduct?.unit || 'وحدة'})`
+                              }
                             </label>
                             <input
                               type="number"
@@ -1083,43 +1096,44 @@ const SalesPage = () => {
                                   ? 'border-red-300 bg-red-50' 
                                   : 'border-gray-300'
                               }`}
-                              placeholder={`أدخل الكمية بـ${selectedProduct?.unit || 'المتر المربع'}`}
+                              placeholder={
+                                selectedProduct?.unit === 'صندوق'
+                                  ? 'أدخل عدد الصناديق'
+                                  : `أدخل الكمية بـ${selectedProduct?.unit || 'الوحدة'}`
+                              }
                               min="0.01"
                               step="0.01"
                               required
                             />
-                            {selectedProduct?.unitsPerBox && line.qty > 0 && (
-                              <div className="text-xs text-blue-600 mt-1 font-medium">
-                                📦 سيتم خصم {Math.ceil(line.qty / Number(selectedProduct.unitsPerBox))} صندوق من المخزون
-                                {line.qty % Number(selectedProduct.unitsPerBox) !== 0 && (
-                                  <span className="text-orange-600">
-                                    {" "}(تقريب للأعلى من {formatArabicQuantity(line.qty / Number(selectedProduct.unitsPerBox))})
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                            {selectedProduct?.stock && selectedProduct?.unitsPerBox && line.qty > (Number(selectedProduct.stock.boxes) * Number(selectedProduct.unitsPerBox)) && (
+                            {selectedProduct?.unit === 'صندوق' && selectedProduct?.stock && line.qty > Number(selectedProduct.stock.boxes) && (
                               <div className="text-xs text-red-600 mt-1 font-medium">
-                                ⚠️ الكمية المطلوبة أكبر من المخزون المتاح ({formatArabicQuantity(Number(selectedProduct.stock.boxes) * Number(selectedProduct.unitsPerBox))} {selectedProduct.unit})
+                                ⚠️ عدد الصناديق المطلوبة أكبر من المخزون ({formatArabicQuantity(selectedProduct.stock.boxes)} صندوق)
                               </div>
                             )}
                           </div>
                           
                           <div className="col-span-2">
                             <label className="block text-xs font-medium text-gray-700 mb-1">
-                              الكمية الإجمالية
+                              {
+                                selectedProduct?.unit === 'صندوق' 
+                                  ? 'الكمية الإجمالية بالمتر'
+                                  : selectedProduct?.unit === 'قطعة'
+                                    ? 'إجمالي القطع'
+                                    : 'الكمية الإجمالية'
+                              }
                             </label>
                             <div className="px-3 py-2 bg-purple-50 border border-purple-200 rounded-md">
                               <span className="text-sm font-bold text-purple-700 block text-center">
-                                {line.qty > 0 ? `${formatArabicArea(line.qty)} ${selectedProduct?.unit || 'متر مربع'}` : '0'}
+                                {line.qty > 0 ? (
+                                  selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox
+                                    ? `${formatArabicArea(line.qty * Number(selectedProduct.unitsPerBox))} متر`
+                                    : `${formatArabicArea(line.qty)} ${selectedProduct?.unit || 'وحدة'}`
+                                ) : '0'}
                               </span>
                             </div>
-                            {selectedProduct?.unitsPerBox && line.qty > 0 && (
-                              <div className="text-xs text-purple-600 mt-1 font-medium">
-                                📦 عدد الصناديق: {Math.ceil(line.qty / Number(selectedProduct.unitsPerBox))} صندوق
-                                {line.qty % Number(selectedProduct.unitsPerBox) !== 0 && (
-                                  <span className="text-orange-600"> (مقرب للأعلى)</span>
-                                )}
+                            {selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox && line.qty > 0 && (
+                              <div className="text-xs text-blue-600 mt-1 font-medium">
+                                📊 {formatArabicQuantity(line.qty)} صندوق × {formatArabicNumber(selectedProduct.unitsPerBox)} متر/صندوق = {formatArabicArea(line.qty * Number(selectedProduct.unitsPerBox))} متر
                               </div>
                             )}
                           </div>
@@ -1145,8 +1159,8 @@ const SalesPage = () => {
                           
                           <div className="col-span-1">
                             <label className="block text-xs font-medium text-gray-700 mb-1">المجموع</label>
-                            <div className="px-2 py-2 bg-green-50 border border-green-200 rounded-md">
-                              <span className="text-sm font-bold text-green-700 block text-center">
+                            <div className="px-1 py-2 bg-green-50 border border-green-200 rounded-md overflow-hidden">
+                              <span className="text-xs font-bold text-green-700 block text-center break-words leading-tight">
                                 {formatArabicCurrency(line.qty * line.unitPrice)}
                               </span>
                             </div>

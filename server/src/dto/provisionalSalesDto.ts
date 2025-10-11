@@ -57,11 +57,11 @@ export const UpdateProvisionalSaleDto = z.object({
 export const GetProvisionalSalesQueryDto = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
-  companyId: z.coerce.number().int().positive().optional(),
-  customerId: z.coerce.number().int().positive().optional(),
-  status: ProvisionalSaleStatusEnum.optional(),
-  isConverted: z.coerce.boolean().optional(),
-  search: z.string().optional(),
+  companyId: z.union([z.coerce.number().int().positive(), z.literal('').transform(() => undefined)]).optional(),
+  customerId: z.union([z.coerce.number().int().positive(), z.literal('').transform(() => undefined)]).optional(),
+  status: z.union([ProvisionalSaleStatusEnum, z.literal('').transform(() => undefined)]).optional(),
+  isConverted: z.union([z.coerce.boolean(), z.literal('').transform(() => undefined)]).optional(),
+  search: z.string().transform(val => val === '' ? undefined : val).optional(),
   sortBy: z.enum(['createdAt', 'updatedAt', 'total', 'invoiceNumber']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc')
 });
