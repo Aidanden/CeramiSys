@@ -41,6 +41,15 @@ const ProvisionalSalesPage = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateCustomerModal, setShowCreateCustomerModal] = useState(false);
   const [selectedSale, setSelectedSale] = useState<ProvisionalSale | null>(null);
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  const [saleToConvert, setSaleToConvert] = useState<ProvisionalSale | null>(null);
+  const [convertForm, setConvertForm] = useState<{
+    saleType: 'CASH' | 'CREDIT';
+    paymentMethod?: 'CASH' | 'BANK' | 'CARD';
+  }>({
+    saleType: 'CASH',
+    paymentMethod: 'CASH'
+  });
   
   // Form states
   const [saleForm, setSaleForm] = useState<CreateProvisionalSaleRequest>({
@@ -199,12 +208,10 @@ const ProvisionalSalesPage = () => {
 
   // Handle delete sale
   const handleDeleteSale = async (sale: ProvisionalSale) => {
-    const confirmed = await confirm({
-      title: 'تأكيد الحذف',
-      message: `هل أنت متأكد من حذف الفاتورة المبدئية رقم ${sale.invoiceNumber || sale.id}؟`,
-      confirmText: 'حذف',
-      cancelText: 'إلغاء'
-    });
+    const confirmed = await confirm(
+      'تأكيد الحذف',
+      `هل أنت متأكد من حذف الفاتورة المبدئية رقم ${sale.invoiceNumber || sale.id}؟`
+    );
 
     if (confirmed) {
       try {
@@ -220,31 +227,321 @@ const ProvisionalSalesPage = () => {
     }
   };
 
-  // Handle convert to sale
-  const handleConvertToSale = async (saleId: number) => {
-    const confirmed = await confirm({
-      title: 'تأكيد الترحيل',
-      message: 'هل أنت متأكد من ترحيل هذه الفاتورة المبدئية إلى فاتورة مبيعات؟ سيتم خصم الكميات من المخزون.',
-      confirmText: 'ترحيل',
-      cancelText: 'إلغاء'
+  // Handle convert to sale - open modal
+  const handleOpenConvertModal = (sale: ProvisionalSale) => {
+    setSaleToConvert(sale);
+    setConvertForm({
+      saleType: 'CASH',
+      paymentMethod: 'CASH'
     });
+    setShowConvertModal(true);
+  };
 
-    if (confirmed) {
-      try {
-        await convertToSale({
-          id: saleId,
-          data: { saleType: 'CREDIT' }
-        }).unwrap();
-        
-        success('تم ترحيل الفاتورة المبدئية بنجاح');
-        // إعادة جلب البيانات فوراً
-        await refetchSales();
-        // تحديث بيانات الأصناف لأن المخزون قد يتغير
-        dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
-      } catch (err: any) {
-        error(err.data?.message || 'حدث خطأ في ترحيل الفاتورة');
-      }
+  // Handle convert to sale - submit
+  const handleConvertToSale = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!saleToConvert) return;
+
+    try {
+      await convertToSale({
+        id: saleToConvert.id,
+        data: {
+          saleType: convertForm.saleType,
+          paymentMethod: convertForm.paymentMethod
+        }
+      }).unwrap();
+      
+      success('تم ترحيل الفاتورة المبدئية بنجاح');
+      setShowConvertModal(false);
+      setSaleToConvert(null);
+      // إعادة جلب البيانات فوراً
+      await refetchSales();
+      // تحديث بيانات الأصناف لأن المخزون قد يتغير
+      dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
+    } catch (err: any) {
+      error(err.data?.message || 'حدث خطأ في ترحيل الفاتورة');
     }
+  };
+
+  // Handle print provisional sale
+  const handlePrintProvisionalSale = (sale: ProvisionalSale) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      error('تعذر فتح نافذة الطباعة. يرجى السماح بالنوافذ المنبثقة.');
+      return;
+    }
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>فاتورة مبدئية - ${sale.invoiceNumber || `PROV-${sale.id}`}</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background: white;
+            color: #333;
+          }
+          .invoice-container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #8b5cf6;
+            border-radius: 10px;
+            overflow: hidden;
+          }
+          .invoice-header {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+          }
+          .invoice-header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+          }
+          .invoice-header p {
+            font-size: 14px;
+            opacity: 0.9;
+          }
+          .invoice-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+            background: #f9fafb;
+            border-bottom: 2px solid #e5e7eb;
+          }
+          .info-section {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+          }
+          .info-section h3 {
+            color: #8b5cf6;
+            font-size: 14px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #8b5cf6;
+            padding-bottom: 5px;
+          }
+          .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 13px;
+          }
+          .info-label {
+            color: #6b7280;
+            font-weight: 500;
+          }
+          .info-value {
+            color: #111827;
+            font-weight: 600;
+          }
+          .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+          }
+          .items-table thead {
+            background: #8b5cf6;
+            color: white;
+          }
+          .items-table th {
+            padding: 12px;
+            text-align: right;
+            font-size: 13px;
+            font-weight: 600;
+          }
+          .items-table td {
+            padding: 12px;
+            text-align: right;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 13px;
+          }
+          .items-table tbody tr:hover {
+            background: #f9fafb;
+          }
+          .items-table tbody tr:last-child td {
+            border-bottom: 2px solid #8b5cf6;
+          }
+          .total-section {
+            padding: 20px 30px;
+            background: #f9fafb;
+          }
+          .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            font-size: 16px;
+          }
+          .total-row.grand-total {
+            border-top: 2px solid #8b5cf6;
+            margin-top: 10px;
+            padding-top: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #8b5cf6;
+          }
+          .footer {
+            padding: 20px 30px;
+            text-align: center;
+            background: #f9fafb;
+            border-top: 2px solid #e5e7eb;
+            font-size: 12px;
+            color: #6b7280;
+          }
+          .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+          }
+          .status-draft { background: #f3f4f6; color: #374151; }
+          .status-pending { background: #fef3c7; color: #92400e; }
+          .status-approved { background: #d1fae5; color: #065f46; }
+          .status-converted { background: #dbeafe; color: #1e40af; }
+          .status-cancelled { background: #fee2e2; color: #991b1b; }
+          .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 100px;
+            color: rgba(139, 92, 246, 0.05);
+            font-weight: bold;
+            z-index: -1;
+            white-space: nowrap;
+          }
+          @media print {
+            body { padding: 0; }
+            .invoice-container { border: none; }
+            .watermark { color: rgba(139, 92, 246, 0.03); }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="watermark">فاتورة مبدئية</div>
+        <div class="invoice-container">
+          <div class="invoice-header">
+            <h1>فاتورة مبدئية</h1>
+            <p>PROVISIONAL INVOICE</p>
+          </div>
+          
+          <div class="invoice-info">
+            <div class="info-section">
+              <h3>معلومات الفاتورة</h3>
+              <div class="info-row">
+                <span class="info-label">رقم الفاتورة:</span>
+                <span class="info-value">${sale.invoiceNumber || `PROV-${sale.id}`}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">التاريخ:</span>
+                <span class="info-value">${new Date(sale.createdAt).toLocaleDateString('ar-LY', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">الحالة:</span>
+                <span class="info-value">
+                  <span class="status-badge status-${sale.status.toLowerCase()}">
+                    ${sale.status === 'DRAFT' ? 'مسودة' : sale.status === 'PENDING' ? 'معلقة' : sale.status === 'APPROVED' ? 'معتمدة' : sale.status === 'CONVERTED' ? 'مرحلة' : 'ملغية'}
+                  </span>
+                </span>
+              </div>
+            </div>
+            
+            <div class="info-section">
+              <h3>معلومات الشركة والعميل</h3>
+              <div class="info-row">
+                <span class="info-label">الشركة:</span>
+                <span class="info-value">${sale.company?.name || '-'}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">كود الشركة:</span>
+                <span class="info-value">${sale.company?.code || '-'}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">العميل:</span>
+                <span class="info-value">${sale.customer?.name || 'عميل نقدي'}</span>
+              </div>
+              ${sale.customer?.phone ? `
+              <div class="info-row">
+                <span class="info-label">الهاتف:</span>
+                <span class="info-value">${sale.customer.phone}</span>
+              </div>
+              ` : ''}
+            </div>
+          </div>
+          
+          <div style="padding: 0 30px;">
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th style="width: 60px;">#</th>
+                  <th style="width: 120px;">الكود</th>
+                  <th>اسم الصنف</th>
+                  <th style="width: 100px;">الكمية</th>
+                  <th style="width: 120px;">السعر</th>
+                  <th style="width: 120px;">المجموع</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${sale.lines.map((line, index) => `
+                  <tr>
+                    <td>${index + 1}</td>
+                    <td style="font-family: monospace; font-weight: 600;">${line.product?.sku || '-'}</td>
+                    <td style="font-weight: 600;">${line.product?.name || '-'}</td>
+                    <td>${formatArabicArea(line.qty)} ${line.product?.unit || 'وحدة'}</td>
+                    <td>${formatArabicCurrency(line.unitPrice)}</td>
+                    <td style="font-weight: 700; color: #8b5cf6;">${formatArabicCurrency(line.subTotal)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="total-section">
+            <div class="total-row grand-total">
+              <span>المجموع الإجمالي:</span>
+              <span>${formatArabicCurrency(sale.total || 0)}</span>
+            </div>
+          </div>
+          
+          ${sale.notes ? `
+          <div style="padding: 20px 30px; background: #fffbeb; border-top: 2px solid #fbbf24;">
+            <h4 style="color: #92400e; margin-bottom: 10px; font-size: 14px;">ملاحظات:</h4>
+            <p style="color: #78350f; font-size: 13px; line-height: 1.6;">${sale.notes}</p>
+          </div>
+          ` : ''}
+          
+          <div class="footer">
+            <p style="margin-bottom: 5px;">⚠️ هذه فاتورة مبدئية - لا تعتبر فاتورة نهائية</p>
+            <p>تم الطباعة في: ${new Date().toLocaleString('ar-LY')}</p>
+          </div>
+        </div>
+        
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 250);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
   };
 
   // Add line to sale
@@ -723,17 +1020,28 @@ const ProvisionalSalesPage = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
-                        {sale.status === 'APPROVED' && !sale.isConverted && (
+                        {/* زر الترحيل - يظهر لجميع الحالات ما عدا المرحلة والملغية */}
+                        {!sale.isConverted && sale.status !== 'CANCELLED' && sale.status !== 'CONVERTED' && (
                           <button
-                            onClick={() => handleConvertToSale(sale.id)}
-                            className="text-blue-600 hover:text-blue-900 p-1 rounded"
+                            onClick={() => handleOpenConvertModal(sale)}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors shadow-sm"
                             title="ترحيل إلى فاتورة مبيعات"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                             </svg>
+                            ترحيل
                           </button>
                         )}
+                        <button
+                          onClick={() => handlePrintProvisionalSale(sale)}
+                          className="text-purple-600 hover:text-purple-900 p-1 rounded"
+                          title="طباعة الفاتورة"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                          </svg>
+                        </button>
                         <button
                           onClick={() => setSelectedSale(sale)}
                           className="text-green-600 hover:text-green-900 p-1 rounded"
@@ -863,7 +1171,7 @@ const ProvisionalSalesPage = () => {
                         <option disabled>لا توجد عملاء</option>
                       ) : (
                         customersData?.data?.customers
-                          ?.filter((customer: Customer) => !customer.phone?.includes('BRANCH'))
+                          ?.filter((customer: Customer) => !customer.phone?.startsWith('BRANCH'))
                           ?.map((customer: Customer) => (
                             <option key={customer.id} value={customer.id}>
                               {customer.name}
@@ -1341,7 +1649,16 @@ const ProvisionalSalesPage = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-4">
+                <div className="flex justify-end gap-3 pt-4">
+                  <button
+                    onClick={() => handlePrintProvisionalSale(selectedSale)}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    طباعة
+                  </button>
                   <button
                     onClick={() => setSelectedSale(null)}
                     className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
@@ -1350,6 +1667,248 @@ const ProvisionalSalesPage = () => {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Convert to Sale Modal */}
+      {showConvertModal && saleToConvert && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                  ترحيل الفاتورة المبدئية إلى فاتورة مبيعات
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowConvertModal(false);
+                    setSaleToConvert(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* معلومات الفاتورة المبدئية */}
+              <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h4 className="text-sm font-bold text-blue-900 mb-3">معلومات الفاتورة المبدئية</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-blue-700 font-medium">رقم الفاتورة:</span>
+                    <span className="mr-2 text-blue-900 font-semibold">
+                      {saleToConvert.invoiceNumber || `PROV-${saleToConvert.id}`}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700 font-medium">الشركة:</span>
+                    <span className="mr-2 text-blue-900 font-semibold">{saleToConvert.company?.name}</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700 font-medium">العميل:</span>
+                    <span className="mr-2 text-blue-900 font-semibold">
+                      {saleToConvert.customer?.name || 'عميل نقدي'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-blue-700 font-medium">المجموع:</span>
+                    <span className="mr-2 text-blue-900 font-bold">
+                      {formatArabicCurrency(saleToConvert.total || 0)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* تحذير */}
+              <div className="mb-6 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                <div className="flex items-start gap-3">
+                  <svg className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-bold text-yellow-900 mb-1">تنبيه هام</p>
+                    <p className="text-sm text-yellow-800">
+                      سيتم ترحيل هذه الفاتورة المبدئية إلى فاتورة مبيعات نهائية وخصم الكميات من المخزون. 
+                      هذا الإجراء لا يمكن التراجع عنه.
+                    </p>
+                    {saleToConvert.status !== 'APPROVED' && (
+                      <p className="text-sm text-yellow-800 mt-2">
+                        📝 ملاحظة: سيتم اعتماد الفاتورة تلقائياً عند الترحيل.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <form onSubmit={handleConvertToSale} className="space-y-6">
+                {/* نوع الفاتورة */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-3">
+                    نوع الفاتورة <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <label className={`relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      convertForm.saleType === 'CASH' 
+                        ? 'border-green-500 bg-green-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="saleType"
+                        value="CASH"
+                        checked={convertForm.saleType === 'CASH'}
+                        onChange={(e) => setConvertForm(prev => ({
+                          ...prev,
+                          saleType: e.target.value as 'CASH' | 'CREDIT'
+                        }))}
+                        className="w-4 h-4 text-green-600"
+                      />
+                      <div className="mr-3">
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                          <span className="font-bold text-gray-900">نقدي</span>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1">الدفع فوري ومباشر</p>
+                      </div>
+                    </label>
+
+                    <label className={`relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      convertForm.saleType === 'CREDIT' 
+                        ? 'border-orange-500 bg-orange-50' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="saleType"
+                        value="CREDIT"
+                        checked={convertForm.saleType === 'CREDIT'}
+                        onChange={(e) => setConvertForm(prev => ({
+                          ...prev,
+                          saleType: e.target.value as 'CASH' | 'CREDIT'
+                        }))}
+                        className="w-4 h-4 text-orange-600"
+                      />
+                      <div className="mr-3">
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="font-bold text-gray-900">آجل</span>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1">الدفع لاحقاً</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* طريقة الدفع - فقط للنقدي */}
+                {convertForm.saleType === 'CASH' && (
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-3">
+                      طريقة الدفع <span className="text-red-500">*</span>
+                    </label>
+                    <div className="grid grid-cols-3 gap-3">
+                      <label className={`relative flex flex-col items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                        convertForm.paymentMethod === 'CASH' 
+                          ? 'border-green-500 bg-green-50' 
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="CASH"
+                          checked={convertForm.paymentMethod === 'CASH'}
+                          onChange={(e) => setConvertForm(prev => ({
+                            ...prev,
+                            paymentMethod: e.target.value as 'CASH' | 'BANK' | 'CARD'
+                          }))}
+                          className="sr-only"
+                        />
+                        <svg className="w-8 h-8 text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span className="font-bold text-sm text-gray-900">نقداً</span>
+                      </label>
+
+                      <label className={`relative flex flex-col items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                        convertForm.paymentMethod === 'BANK' 
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="BANK"
+                          checked={convertForm.paymentMethod === 'BANK'}
+                          onChange={(e) => setConvertForm(prev => ({
+                            ...prev,
+                            paymentMethod: e.target.value as 'CASH' | 'BANK' | 'CARD'
+                          }))}
+                          className="sr-only"
+                        />
+                        <svg className="w-8 h-8 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                        </svg>
+                        <span className="font-bold text-sm text-gray-900">بنك</span>
+                      </label>
+
+                      <label className={`relative flex flex-col items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                        convertForm.paymentMethod === 'CARD' 
+                          ? 'border-purple-500 bg-purple-50' 
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="CARD"
+                          checked={convertForm.paymentMethod === 'CARD'}
+                          onChange={(e) => setConvertForm(prev => ({
+                            ...prev,
+                            paymentMethod: e.target.value as 'CASH' | 'BANK' | 'CARD'
+                          }))}
+                          className="sr-only"
+                        />
+                        <svg className="w-8 h-8 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                        <span className="font-bold text-sm text-gray-900">بطاقة</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {/* الأزرار */}
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowConvertModal(false);
+                      setSaleToConvert(null);
+                    }}
+                    className="px-6 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium transition-colors"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    تأكيد الترحيل
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

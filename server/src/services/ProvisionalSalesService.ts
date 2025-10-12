@@ -383,8 +383,16 @@ export class ProvisionalSalesService {
         throw new Error('الفاتورة المبدئية تم ترحيلها مسبقاً');
       }
 
+      if (provisionalSale.status === 'CANCELLED') {
+        throw new Error('لا يمكن ترحيل فاتورة ملغية');
+      }
+
+      // اعتماد الفاتورة تلقائياً عند الترحيل إذا لم تكن معتمدة
       if (provisionalSale.status !== 'APPROVED') {
-        throw new Error('يجب اعتماد الفاتورة المبدئية قبل الترحيل');
+        await prisma.provisionalSale.update({
+          where: { id },
+          data: { status: 'APPROVED' }
+        });
       }
 
       // إنشاء فاتورة مبيعات عادية

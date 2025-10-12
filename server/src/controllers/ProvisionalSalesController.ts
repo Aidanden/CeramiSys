@@ -162,11 +162,19 @@ export class ProvisionalSalesController {
 
       const result = await this.provisionalSalesService.getProvisionalSales(queryData);
 
+      console.log('✅ Provisional Sales Result:', {
+        count: result.provisionalSales.length,
+        total: result.pagination.total,
+        queryData
+      });
+
       res.json({
         success: true,
         message: 'تم الحصول على الفواتير المبدئية بنجاح',
-        data: result.provisionalSales,
-        pagination: result.pagination
+        data: {
+          provisionalSales: result.provisionalSales,
+          pagination: result.pagination
+        }
       });
     } catch (error: any) {
       console.error('خطأ في الحصول على الفواتير المبدئية:', error);

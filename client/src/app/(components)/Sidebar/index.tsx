@@ -163,6 +163,7 @@ const Sidebar = () => {
           
           <SidebarLink
             href="/complex-inter-company-sales"
+            //href="/inter-company-sales"
             icon={ArrowRightLeft}
             label="المبيعات من الشركة الام"
             isCollapsed={isSidebarCollapsed}
@@ -212,12 +213,6 @@ const Sidebar = () => {
             href="/notifications"
             icon={Bell}
             label="الإشعارات"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
-            href="/settings"
-            icon={Shield}
-            label="الإعدادات"
             isCollapsed={isSidebarCollapsed}
           />
         </div>

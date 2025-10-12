@@ -809,11 +809,13 @@ const SalesPage = () => {
                       ) : customersData?.data?.customers?.length === 0 ? (
                         <option disabled>لا توجد عملاء</option>
                       ) : (
-                        customersData?.data?.customers?.map((customer) => (
-                          <option key={customer.id} value={customer.id}>
-                            {customer.name}
-                          </option>
-                        ))
+                        customersData?.data?.customers
+                          ?.filter((customer: Customer) => !customer.phone?.startsWith('BRANCH'))
+                          ?.map((customer: Customer) => (
+                            <option key={customer.id} value={customer.id}>
+                              {customer.name}
+                            </option>
+                          ))
                       )}
                     </select>
                     <p className="text-xs text-gray-500 mt-1">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   useGetInterCompanySalesQuery,
   useGetInterCompanySalesStatsQuery,
@@ -10,7 +10,10 @@ import {
 import { useGetProductsQuery } from '@/state/productsApi';
 import { useGetCustomersQuery } from '@/state/salesApi';
 import { useToast } from '@/components/ui/Toast';
-import { formatArabicNumber, formatArabicCurrency } from '@/utils/formatArabicNumbers';
+import { formatArabicNumber, formatArabicCurrency, formatArabicArea } from '@/utils/formatArabicNumbers';
+
+// Alias for consistency
+const formatArabicQuantity = formatArabicArea;
 
 const InterCompanySalesPage = () => {
   const { success, error } = useToast();
@@ -28,6 +31,12 @@ const InterCompanySalesPage = () => {
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'BANK' | 'CARD'>('CASH');
   const [lines, setLines] = useState<InterCompanySaleLine[]>([]);
   
+  // Product search states
+  const [productSearchTerm, setProductSearchTerm] = useState('');
+  const [productCodeSearch, setProductCodeSearch] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  
   // API calls
   const { data: salesData, isLoading: salesLoading, refetch } = useGetInterCompanySalesQuery({
     page: currentPage,
@@ -39,6 +48,75 @@ const InterCompanySalesPage = () => {
   const { data: productsData } = useGetProductsQuery({ limit: 1000 });
   const { data: customersData } = useGetCustomersQuery({ limit: 1000 });
   const [createSale, { isLoading: isCreating }] = useCreateInterCompanySaleMutation();
+  
+  // Filter products based on search
+  const filteredProducts = useMemo(() => {
+    const products = productsData?.data?.products || [];
+    return products.filter((product: any) => {
+      const matchesName = !productSearchTerm || product.name?.toLowerCase().includes(productSearchTerm.toLowerCase());
+      const matchesCode = !productCodeSearch || product.sku?.toLowerCase().includes(productCodeSearch.toLowerCase());
+      return matchesName && matchesCode;
+    });
+  }, [productsData, productSearchTerm, productCodeSearch]);
+  
+  // Auto-select product when exact code match is found (with debounce)
+  const handleProductCodeSearch = (code: string) => {
+    setProductCodeSearch(code);
+    
+    // إلغاء أي timeout سابق
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
+    
+    // إذا كان الحقل فارغاً، لا نفعل شيء
+    if (!code || code.trim() === '') {
+      setIsSearching(false);
+      return;
+    }
+    
+    // تفعيل مؤشر البحث
+    setIsSearching(true);
+    
+    // الانتظار 800ms بعد توقف المستخدم عن الكتابة
+    searchTimeoutRef.current = setTimeout(() => {
+      if (!productsData?.data?.products) {
+        setIsSearching(false);
+        return;
+      }
+
+      // البحث عن الصنف بالكود
+      const exactMatch = productsData.data.products.find(
+        (product: any) => product.sku.toLowerCase() === code.toLowerCase()
+      );
+      
+      if (exactMatch) {
+        // Auto-add the product to the sale lines
+        handleAddLine();
+        const newLineIndex = lines.length;
+        setTimeout(() => {
+          handleUpdateLine(newLineIndex, 'productId', exactMatch.id);
+        }, 100);
+        setProductCodeSearch(''); // Clear search after selection
+        success('تم بنجاح', `تم إضافة الصنف: ${exactMatch.name}`);
+      } else {
+        error('غير موجود', `الصنف بالكود "${code}" غير موجود`);
+      }
+      
+      setIsSearching(false);
+    }, 800);
+  };
+  
+  // Calculate total area in square meters
+  const calculateTotalArea = () => {
+    return lines.reduce((total, line) => {
+      const product = productsData?.data?.products?.find((p: any) => p.id === line.productId);
+      if (product?.unit === 'm²' || product?.unit === 'متر مربع') {
+        return total + line.qty;
+      }
+      return total;
+    }, 0);
+  };
   
   // Add line to invoice
   const handleAddLine = () => {
@@ -350,9 +428,11 @@ const InterCompanySalesPage = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">عميل نقدي</option>
-                    {customersData?.data?.customers?.map((customer: any) => (
-                      <option key={customer.id} value={customer.id}>{customer.name}</option>
-                    ))}
+                    {customersData?.data?.customers
+                      ?.filter((customer: any) => !customer.phone?.startsWith('BRANCH'))
+                      ?.map((customer: any) => (
+                        <option key={customer.id} value={customer.id}>{customer.name}</option>
+                      ))}
                   </select>
                 </div>
                 
@@ -368,139 +448,311 @@ const InterCompanySalesPage = () => {
                   </select>
                 </div>
                 
-                {saleType === 'CASH' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">طريقة الدفع *</label>
-                    <select
-                      value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value as 'CASH' | 'BANK' | 'CARD')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="CASH">💵 كاش</option>
-                      <option value="BANK">🏦 حوالة بنكية</option>
-                      <option value="CARD">💳 بطاقة</option>
-                    </select>
-                  </div>
-                )}
-              </div>
-              
-              {/* Lines Table */}
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="font-semibold text-lg">الأصناف</h3>
-                  <button
-                    onClick={handleAddLine}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all flex items-center gap-2"
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    طريقة الدفع {saleType !== 'CREDIT' && '*'}
+                  </label>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value as 'CASH' | 'BANK' | 'CARD')}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 ${
+                      saleType === 'CREDIT' ? 'bg-gray-100 cursor-not-allowed' : ''
+                    }`}
+                    required={saleType !== 'CREDIT'}
+                    disabled={saleType === 'CREDIT'}
                   >
-                    <span>➕</span>
-                    إضافة صنف
-                  </button>
-                </div>
-                
-                <div className="overflow-x-auto border rounded-lg">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">#</th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الصنف</th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الكمية</th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">سعر الأم</th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">سعر الفرع</th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الإجمالي</th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">إجراءات</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {lines.map((line, index) => (
-                        <tr key={index}>
-                          <td className="px-4 py-2 text-sm">{formatArabicNumber(index + 1)}</td>
-                          <td className="px-4 py-2">
-                            <select
-                              value={line.productId}
-                              onChange={(e) => handleUpdateLine(index, 'productId', Number(e.target.value))}
-                              className="w-full px-2 py-1 border rounded text-sm"
-                            >
-                              <option value={0}>اختر الصنف</option>
-                              {productsData?.data?.products?.map((product: any) => (
-                                <option key={product.id} value={product.id}>
-                                  {product.name} ({product.sku})
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-                          <td className="px-4 py-2">
-                            <input
-                              type="number"
-                              value={line.qty}
-                              onChange={(e) => handleUpdateLine(index, 'qty', Number(e.target.value))}
-                              className="w-20 px-2 py-1 border rounded text-sm"
-                              min="0.01"
-                              step="0.01"
-                            />
-                          </td>
-                          <td className="px-4 py-2">
-                            <input
-                              type="number"
-                              value={line.parentUnitPrice}
-                              readOnly
-                              className="w-24 px-2 py-1 border rounded text-sm bg-gray-50"
-                            />
-                          </td>
-                          <td className="px-4 py-2">
-                            <input
-                              type="number"
-                              value={line.branchUnitPrice}
-                              onChange={(e) => handleUpdateLine(index, 'branchUnitPrice', Number(e.target.value))}
-                              className="w-24 px-2 py-1 border rounded text-sm"
-                              min="0.01"
-                              step="0.01"
-                            />
-                          </td>
-                          <td className="px-4 py-2 text-sm font-semibold text-green-600">
-                            {formatArabicCurrency(line.subTotal)}
-                          </td>
-                          <td className="px-4 py-2">
-                            <button
-                              onClick={() => handleRemoveLine(index)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              🗑️
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  
-                  {lines.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      اضغط "إضافة صنف" لبدء الفاتورة
-                    </div>
+                    <option value="">اختر طريقة الدفع</option>
+                    <option value="CASH">💵 كاش</option>
+                    <option value="BANK">🏦 حوالة بنكية</option>
+                    <option value="CARD">💳 بطاقة</option>
+                  </select>
+                  {saleType === 'CREDIT' && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      💡 لا يلزم تحديد طريقة الدفع للبيع الآجل
+                    </p>
                   )}
                 </div>
               </div>
               
-              {/* Totals */}
-              {lines.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="text-center">
-                    <div className="text-sm text-gray-600">الإيرادات</div>
-                    <div className="text-xl font-bold text-green-600">{formatArabicCurrency(totals.revenue)}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-sm text-gray-600">التكلفة</div>
-                    <div className="text-xl font-bold text-orange-600">{formatArabicCurrency(totals.cost)}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-sm text-gray-600">الربح</div>
-                    <div className="text-xl font-bold text-purple-600">{formatArabicCurrency(totals.profit)}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-sm text-gray-600">هامش الربح</div>
-                    <div className="text-xl font-bold text-blue-600">{totals.profitMargin.toFixed(2)}%</div>
+              {/* Product Search Filters */}
+              <div className="mb-4 p-4 bg-gradient-to-r from-gray-50 to-blue-50 border-2 border-gray-200 rounded-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🔍</span>
+                    <h4 className="text-sm font-bold text-gray-700">البحث عن المنتجات</h4>
                   </div>
                 </div>
-              )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      البحث بالاسم
+                    </label>
+                    <input
+                      type="text"
+                      value={productSearchTerm}
+                      onChange={(e) => setProductSearchTerm(e.target.value)}
+                      placeholder="ابحث بالاسم..."
+                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      البحث بالكود
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={productCodeSearch}
+                        onChange={(e) => handleProductCodeSearch(e.target.value)}
+                        placeholder="أدخل كود الصنف للإضافة التلقائية..."
+                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      />
+                      {isSearching && (
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-blue-500 font-medium animate-pulse">
+                          ⏳ جاري البحث...
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      💡 سيتم البحث تلقائياً بعد التوقف عن الكتابة
+                    </p>
+                  </div>
+                </div>
+                {(productSearchTerm || productCodeSearch) && (
+                  <div className="mt-3 flex justify-between items-center p-2 bg-white rounded-md border border-blue-200">
+                    <div className="text-xs font-medium text-gray-600">
+                      📊 عرض {filteredProducts.length} منتج من أصل {productsData?.data?.products?.length || 0}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProductSearchTerm('');
+                        setProductCodeSearch('');
+                      }}
+                      className="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 hover:bg-blue-50 rounded transition-colors"
+                    >
+                      ✖️ مسح البحث
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              {/* Sale Lines */}
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <label className="block text-base font-bold text-gray-800">
+                    📋 بنود الفاتورة *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddLine}
+                    disabled={filteredProducts.length === 0}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow-md transition-all duration-200 font-medium ${
+                      filteredProducts.length > 0
+                        ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white hover:shadow-lg' 
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <span className="text-lg">➕</span>
+                    <span>إضافة بند</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3 max-h-96 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                  {lines.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg">
+                      <div className="text-6xl mb-3">📝</div>
+                      <p className="text-gray-600 font-medium mb-2">لا توجد بنود في الفاتورة</p>
+                      <p className="text-sm text-gray-500">اضغط على "إضافة بند" لبدء إنشاء الفاتورة</p>
+                    </div>
+                  ) : (
+                    lines.map((line, index) => {
+                      const selectedProduct = productsData?.data?.products?.find((p: any) => p.id === line.productId);
+                      const totalUnits = selectedProduct?.unitsPerBox && line.qty 
+                        ? Number(line.qty) * Number(selectedProduct.unitsPerBox) 
+                        : 0;
+                      
+                      const lineProfit = line.subTotal - (line.qty * line.parentUnitPrice);
+                      const lineProfitMargin = line.subTotal > 0 ? ((lineProfit / line.subTotal) * 100) : 0;
+                      
+                      return (
+                        <div key={index} className="grid grid-cols-12 gap-3 items-start p-3 bg-white border-2 border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
+                          <div className="col-span-3">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">الصنف</label>
+                            <select
+                              value={line.productId}
+                              onChange={(e) => handleUpdateLine(index, 'productId', Number(e.target.value))}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              required
+                            >
+                              <option value={0}>-- اختر الصنف --</option>
+                              {filteredProducts.map((product: any) => (
+                                <option key={product.id} value={product.id}>
+                                  {product.sku} - {product.name}
+                                </option>
+                              ))}
+                            </select>
+                            {line.productId > 0 && selectedProduct && (
+                              <div className="text-xs mt-1 space-y-0.5">
+                                <div className="text-gray-600">
+                                  📦 الكود: {selectedProduct.sku}
+                                </div>
+                                {selectedProduct.unitsPerBox && (
+                                  <div className="text-blue-600 font-medium">
+                                    📏 الصندوق به: {formatArabicNumber(selectedProduct.unitsPerBox)} متر
+                                  </div>
+                                )}
+                                {selectedProduct.stock && (
+                                  <div className="text-green-600 font-medium space-y-1">
+                                    {selectedProduct.unitsPerBox ? (
+                                      <>
+                                        <div>✅ المخزن: {formatArabicArea(Number(selectedProduct.stock.boxes) * Number(selectedProduct.unitsPerBox))} متر</div>
+                                        <div className="text-xs text-gray-600">📦 الصناديق: {formatArabicArea(selectedProduct.stock.boxes)}</div>
+                                      </>
+                                    ) : (
+                                      <div>✅ المخزن: {formatArabicArea(selectedProduct.stock.boxes)} {selectedProduct.unit || 'وحدة'}</div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="col-span-1">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              {selectedProduct?.unit === 'صندوق' ? 'الصناديق' : `الكمية`}
+                            </label>
+                            <input
+                              type="number"
+                              value={line.qty || ''}
+                              onChange={(e) => handleUpdateLine(index, 'qty', Number(e.target.value) || 0)}
+                              className={`w-full px-3 py-2 border rounded-md text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                                selectedProduct?.stock && line.qty > Number(selectedProduct.stock.boxes)
+                                  ? 'border-red-300 bg-red-50' 
+                                  : 'border-gray-300'
+                              }`}
+                              placeholder="0"
+                              min="0.01"
+                              step="0.01"
+                              required
+                            />
+                            {selectedProduct?.unit === 'صندوق' && selectedProduct?.stock && line.qty > Number(selectedProduct.stock.boxes) && (
+                              <div className="text-xs text-red-600 mt-1 font-medium">
+                                ⚠️ أكبر من المخزون
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="col-span-1">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              {selectedProduct?.unit === 'صندوق' ? 'إجمالي المتر' : 'الإجمالي'}
+                            </label>
+                            <div className="px-2 py-2 bg-purple-50 border border-purple-200 rounded-md">
+                              <span className="text-xs font-bold text-purple-700 block text-center">
+                                {line.qty > 0 ? (
+                                  selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox
+                                    ? `${formatArabicArea(line.qty * Number(selectedProduct.unitsPerBox))}`
+                                    : `${formatArabicArea(line.qty)}`
+                                ) : '0'}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">💰 سعر الأم</label>
+                            <input
+                              type="number"
+                              value={line.parentUnitPrice || ''}
+                              readOnly
+                              className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm font-medium bg-gray-50 text-gray-600"
+                              placeholder="0"
+                            />
+                            <div className="text-xs text-gray-500 mt-0.5">
+                              تكلفة: {formatArabicCurrency(line.qty * line.parentUnitPrice)}
+                            </div>
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">💵 سعر الفرع</label>
+                            <input
+                              type="number"
+                              value={line.branchUnitPrice || ''}
+                              onChange={(e) => handleUpdateLine(index, 'branchUnitPrice', Number(e.target.value) || 0)}
+                              className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="0"
+                              min="0"
+                              step="0.01"
+                              required
+                            />
+                            <div className="text-xs text-green-600 mt-0.5 font-medium">
+                              إيراد: {formatArabicCurrency(line.subTotal)}
+                            </div>
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">📈 الربح</label>
+                            <div className="px-2 py-2 bg-orange-50 border border-orange-200 rounded-md">
+                              <span className="text-sm font-bold text-orange-700 block text-center">
+                                {formatArabicCurrency(lineProfit)}
+                              </span>
+                            </div>
+                            <div className="text-xs text-blue-600 mt-0.5 font-medium text-center">
+                              هامش: {formatArabicNumber(lineProfitMargin.toFixed(1))}%
+                            </div>
+                          </div>
+                          
+                          <div className="col-span-1">
+                            <label className="block text-xs font-medium text-gray-700 mb-1 opacity-0">حذف</label>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveLine(index)}
+                              className="w-full h-[42px] flex items-center justify-center bg-red-50 hover:bg-red-500 text-red-600 hover:text-white border-2 border-red-200 hover:border-red-500 rounded-md transition-all duration-200 font-medium"
+                              title="حذف البند"
+                            >
+                              <span className="text-lg">🗑️</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {lines.length > 0 && (
+                  <div className="mt-4 space-y-3">
+                    {/* Financial Summary */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border-2 border-blue-200">
+                        <div className="text-xs text-blue-700 font-medium mb-1">💰 تكلفة الشركة الأم</div>
+                        <div className="text-xl font-bold text-blue-700">
+                          {formatArabicCurrency(calculateTotals().cost)}
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border-2 border-green-200">
+                        <div className="text-xs text-green-700 font-medium mb-1">💵 إيرادات الفرع</div>
+                        <div className="text-xl font-bold text-green-700">
+                          {formatArabicCurrency(calculateTotals().revenue)}
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border-2 border-orange-200">
+                        <div className="text-xs text-orange-700 font-medium mb-1">📈 صافي الربح</div>
+                        <div className="text-xl font-bold text-orange-700">
+                          {formatArabicCurrency(calculateTotals().profit)}
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border-2 border-purple-200">
+                        <div className="text-xs text-purple-700 font-medium mb-1">📊 هامش الربح</div>
+                        <div className="text-xl font-bold text-purple-700">
+                          {formatArabicNumber(calculateTotals().profitMargin.toFixed(1))}%
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             
             <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">
