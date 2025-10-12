@@ -23,6 +23,7 @@ import {
   BarChart3,
   Bell,
   Wallet,
+  TrendingDown as Returns,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -166,6 +167,12 @@ const Sidebar = () => {
             //href="/inter-company-sales"
             icon={ArrowRightLeft}
             label="المبيعات من الشركة الام"
+            isCollapsed={isSidebarCollapsed}
+          />
+          <SidebarLink
+            href="/sale-returns"
+            icon={Returns}
+            label="المرتجعات"
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink

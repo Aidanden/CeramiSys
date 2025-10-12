@@ -33,6 +33,7 @@ model Company {
   products            Product[]             @relation("ProductsCreated")
   sales               Sale[]
   salePayments        SalePayment[] // إيصالات قبض المبيعات
+  saleReturns         SaleReturn[] // المرتجعات
   purchases           Purchase[] // المشتريات
   purchasePayments    PurchasePayment[] // إيصالات دفع المشتريات
   purchasesFromParent PurchaseFromParent[]  @relation("BranchPurchases")
@@ -60,6 +61,7 @@ model Product {
   stocks        Stock[]
   prices        CompanyProductPrice[]
   saleLines     SaleLine[]
+  saleReturnLines SaleReturnLine[]
   purchaseLines PurchaseFromParentLine[]
   purchaseLineItems PurchaseLine[]
   provisionalSaleLines ProvisionalSaleLine[]
@@ -160,6 +162,7 @@ model Customer {
   createdAt DateTime @default(now())
 
   sales Sale[]
+  saleReturns SaleReturn[]
   provisionalSales ProvisionalSale[]
 }
 
@@ -180,6 +183,7 @@ model Sale {
   lines         SaleLine[]
   payments      SalePayment[] // الدفعات
   provisionalSaleConverted ProvisionalSale[] // الفواتير المبدئية المرحلة إلى هذه الفاتورة
+  returns       SaleReturn[] // المرتجعات
 
   @@index([companyId])
   @@index([customerId])
@@ -216,6 +220,46 @@ model SalePayment {
   @@index([saleId])
   @@index([companyId])
   @@index([paymentDate])
+}
+
+/////////////////////////////////////////////////
+//              Sale Returns (المرتجعات)
+/////////////////////////////////////////////////
+
+model SaleReturn {
+  id              Int              @id @default(autoincrement())
+  sale            Sale             @relation(fields: [saleId], references: [id]) // الفاتورة الأصلية
+  saleId          Int
+  company         Company          @relation(fields: [companyId], references: [id])
+  companyId       Int
+  customer        Customer?        @relation(fields: [customerId], references: [id])
+  customerId      Int?
+  returnNumber    String?          // رقم فاتورة المرتجع
+  total           Decimal          @default(0) @db.Decimal(18, 4) // إجمالي المرتجع
+  refundAmount    Decimal          @default(0) @db.Decimal(18, 4) // المبلغ المسترد
+  refundMethod    PaymentMethod?   // طريقة الاسترداد
+  status          ReturnStatus     @default(PENDING) // حالة المرتجع
+  reason          String?          // سبب المرتجع
+  notes           String?          // ملاحظات
+  createdAt       DateTime         @default(now())
+  processedAt     DateTime?        // تاريخ معالجة المرتجع
+  lines           SaleReturnLine[]
+
+  @@index([saleId])
+  @@index([companyId])
+  @@index([customerId])
+  @@index([status])
+}
+
+model SaleReturnLine {
+  id            Int        @id @default(autoincrement())
+  saleReturn    SaleReturn @relation(fields: [saleReturnId], references: [id])
+  saleReturnId  Int
+  product       Product    @relation(fields: [productId], references: [id])
+  productId     Int
+  qty           Decimal    @db.Decimal(20, 4) // الكمية المرتجعة
+  unitPrice     Decimal    @db.Decimal(18, 4) // السعر الأصلي
+  subTotal      Decimal    @db.Decimal(18, 4) // الإجمالي
 }
 
 /////////////////////////////////////////////////
@@ -405,6 +449,13 @@ enum ProvisionalSaleStatus {
   APPROVED  // معتمدة
   CONVERTED // مرحلة
   CANCELLED // ملغية
+}
+
+enum ReturnStatus {
+  PENDING   // قيد الانتظار
+  APPROVED  // معتمد
+  REJECTED  // مرفوض
+  PROCESSED // تمت المعالجة
 }
 
 /////////////////////////////////////////////////

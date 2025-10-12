@@ -13,6 +13,7 @@ import authReducer from "@/state/authSlice";
 import companyReducer from "@/state/companySlice";
 import usersReducer from "@/state/usersSlice";
 import complexInterCompanySalesReducer from "@/state/complexInterCompanySalesSlice";
+import saleReturnsReducer from "@/state/saleReturnsSlice";
 
 import { authApi } from "@/state/authApi"; // إضافة authApi
 import { usersApi } from "@/state/usersApi"; // إضافة usersApi
@@ -28,6 +29,7 @@ import { complexInterCompanySalesApi } from "@/state/complexInterCompanySalesApi
 import { reportsApi } from "@/state/reportsApi"; // إضافة reportsApi
 import { notificationsApi } from "@/state/notificationsApi"; // إضافة notificationsApi
 import { provisionalSalesApi } from "@/state/provisionalSalesApi"; // إضافة provisionalSalesApi
+import { saleReturnsApi } from "@/state/saleReturnsApi"; // إضافة saleReturnsApi
 import { setupListeners } from "@reduxjs/toolkit/query";
 import {
   persistStore,
@@ -66,7 +68,7 @@ const storage =
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["global", "auth", "users", "permissions", "company", "complexInterCompanySales"], // إضافة المصادقة والعملات إلى القائمة البيضاء
+  whitelist: ["global", "auth", "users", "permissions", "company", "complexInterCompanySales", "saleReturns"], // إضافة المصادقة والعملات إلى القائمة البيضاء
 };
 
 /* ROOT REDUCER */
@@ -76,6 +78,7 @@ const rootReducer = combineReducers({
   company: companyReducer, // إضافة companyReducer
   users: usersReducer, // إضافة usersReducer
   complexInterCompanySales: complexInterCompanySalesReducer, // إضافة complexInterCompanySalesReducer
+  saleReturns: saleReturnsReducer, // إضافة saleReturnsReducer
   
   /*categories: categoriesReducer,  // إضافة reducer جديد */
   [authApi.reducerPath]: authApi.reducer, // إضافة authApi.reducer
@@ -92,6 +95,7 @@ const rootReducer = combineReducers({
   [reportsApi.reducerPath]: reportsApi.reducer, // إضافة reportsApi.reducer
   [notificationsApi.reducerPath]: notificationsApi.reducer, // إضافة notificationsApi.reducer
   [provisionalSalesApi.reducerPath]: provisionalSalesApi.reducer, // إضافة provisionalSalesApi.reducer
+  [saleReturnsApi.reducerPath]: saleReturnsApi.reducer, // إضافة saleReturnsApi.reducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -105,7 +109,7 @@ export const makeStore = () => {
         serializableCheck: {
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
-      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware, notificationsApi.middleware, provisionalSalesApi.middleware), // إضافة middleware الخاص بـ APIs
+      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware, notificationsApi.middleware, provisionalSalesApi.middleware, saleReturnsApi.middleware), // إضافة middleware الخاص بـ APIs
   });
 };
 

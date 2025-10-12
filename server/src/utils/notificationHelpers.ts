@@ -4,6 +4,16 @@ import { CreateNotificationRequest } from '../dto/notificationDto';
 const notificationService = new NotificationService();
 
 /**
+ * تنسيق العملة بالدينار الليبي
+ */
+const formatCurrency = (amount: number): string => {
+  return `${amount.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })} د.ل`;
+};
+
+/**
  * Helper functions لإنشاء إشعارات مختلفة
  */
 
@@ -20,7 +30,7 @@ export const createSaleNotifications = {
     try {
       await notificationService.createNotification({
         title: 'فاتورة مبيعات جديدة',
-        message: `تم إنشاء فاتورة مبيعات جديدة للعميل ${customerName} بقيمة ${total.toLocaleString('ar-SA')} د.ل`,
+        message: `تم إنشاء فاتورة مبيعات جديدة للعميل ${customerName} بقيمة ${formatCurrency(total)}`,
         type: 'SALE',
         userId,
         companyId,
@@ -66,7 +76,7 @@ export const createSaleNotifications = {
     try {
       await notificationService.createNotification({
         title: 'حذف فاتورة مبيعات',
-        message: `تم حذف فاتورة مبيعات العميل ${customerName} بقيمة ${total.toLocaleString('ar-SA')} د.ل`,
+        message: `تم حذف فاتورة مبيعات العميل ${customerName} بقيمة ${formatCurrency(total)}`,
         type: 'WARNING',
         userId,
         companyId,

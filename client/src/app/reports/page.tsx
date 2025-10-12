@@ -34,6 +34,18 @@ export default function ReportsPage() {
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle: `تقرير_${activeReport}_${new Date().toLocaleDateString("ar-LY")}`,
+    pageStyle: `
+      @page {
+        size: A4;
+        margin: 20mm;
+      }
+      @media print {
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+    `,
   });
 
   // استدعاء التقارير
@@ -245,7 +257,7 @@ export default function ReportsPage() {
       {!isLoading && (
         <div className="mb-4 flex justify-end">
           <button
-            onClick={handlePrint}
+            onClick={() => handlePrint()}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <FileText className="w-5 h-5" />
