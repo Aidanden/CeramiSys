@@ -841,17 +841,50 @@ export class SalesService {
    */
   async createCustomer(data: CreateCustomerDto) {
     try {
+      // التأكد من عدم إرسال id في البيانات
+      const customerData: any = {
+        name: data.name,
+        phone: data.phone || null,
+        note: data.note || null
+      };
+
       const customer = await this.prisma.customer.create({
-        data: {
-          name: data.name,
-          phone: data.phone,
-          note: data.note
-        }
+        data: customerData
       });
 
       return customer;
-    } catch (error) {
+    } catch (error: any) {
       console.error('خطأ في إنشاء العميل:', error);
+      
+      // إذا كانت المشكلة في الـ unique constraint على id
+      if (error.code === 'P2002' && error.meta?.target?.includes('id')) {
+        // محاولة إصلاح المشكلة بإعادة المحاولة
+        try {
+          // الحصول على أعلى ID موجود
+          const lastCustomer = await this.prisma.customer.findFirst({
+            orderBy: { id: 'desc' }
+          });
+          
+          // إعادة المحاولة مع تحديد ID يدوياً
+          const newId = (lastCustomer?.id || 0) + 1;
+          const retryCustomerData = {
+            id: newId,
+            name: data.name,
+            phone: data.phone || null,
+            note: data.note || null
+          };
+          
+          const customer = await this.prisma.customer.create({
+            data: retryCustomerData
+          });
+          
+          return customer;
+        } catch (retryError) {
+          console.error('فشلت إعادة المحاولة:', retryError);
+          throw new Error('فشل في إنشاء العميل. يرجى المحاولة مرة أخرى.');
+        }
+      }
+      
       throw error;
     }
   }

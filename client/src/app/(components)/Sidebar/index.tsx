@@ -136,17 +136,16 @@ const Sidebar = () => {
             label="الأصناف والمخزن"
             isCollapsed={isSidebarCollapsed}
           />
-          
-          <SidebarLink
-            href="/sales"
-            icon={ShoppingCart}
-            label="المبيعات"
-            isCollapsed={isSidebarCollapsed}
-          />
           <SidebarLink
             href="/provisional-sales"
             icon={Wallet}
             label="الفواتير المبدئية"
+            isCollapsed={isSidebarCollapsed}
+          />
+          <SidebarLink
+            href="/sales"
+            icon={ShoppingCart}
+            label="المبيعات"
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink

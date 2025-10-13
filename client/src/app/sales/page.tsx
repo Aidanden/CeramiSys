@@ -74,7 +74,7 @@ const SalesPage = () => {
     search: searchTerm
   });
 
-  const { data: customersData, isLoading: customersLoading, error: customersError } = useGetCustomersQuery({ limit: 1000 });
+  const { data: customersData, isLoading: customersLoading, error: customersError, refetch: refetchCustomers } = useGetCustomersQuery({ limit: 1000 });
   const { data: companiesData, isLoading: companiesLoading } = useGetCompaniesQuery({ limit: 1000 });
 
   // Auto-select company for non-system users
@@ -1250,9 +1250,17 @@ const SalesPage = () => {
                 };
 
                 try {
-                  await createCustomer(customerData).unwrap();
+                  const result = await createCustomer(customerData).unwrap();
                   notifications.custom.success('تم بنجاح', 'تم إضافة العميل بنجاح');
                   setShowCreateCustomerModal(false);
+                  
+                  // تحديث قائمة العملاء
+                  await refetchCustomers();
+                  
+                  // تحديد العميل الجديد تلقائياً في النموذج
+                  if (result.data?.id) {
+                    setSaleForm({ ...saleForm, customerId: result.data.id });
+                  }
                 } catch (err: any) {
                   notifications.custom.error('خطأ', err.data?.message || 'حدث خطأ أثناء إضافة العميل');
                 }
