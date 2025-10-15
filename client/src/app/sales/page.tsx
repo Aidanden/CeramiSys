@@ -261,12 +261,6 @@ const SalesPage = () => {
       const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
       
       if (!productsData?.data?.products || !targetCompanyId) {
-        if (code && !targetCompanyId) {
-          notifications.custom.error('خطأ', user?.isSystemUser 
-            ? 'يجب اختيار الشركة أولاً قبل البحث عن الأصناف'
-            : 'لا يمكن تحديد شركتك للبحث عن الأصناف'
-          );
-        }
         return;
       }
 
@@ -277,12 +271,6 @@ const SalesPage = () => {
       );
       
       if (exactMatch) {
-        // التحقق من أن العميل تم اختياره
-        if (!saleForm.customerId) {
-          notifications.custom.warning('تنبيه', 'يجب اختيار العميل أولاً قبل إضافة البنود');
-          return;
-        }
-        
         // Auto-add the product to the sale lines
         addSaleLine();
         const newLineIndex = saleForm.lines.length;
@@ -897,25 +885,11 @@ const SalesPage = () => {
                       <button
                         type="button"
                         onClick={addSaleLine}
-                        disabled={!saleForm.customerId || filteredProducts.length === 0}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow-md transition-all duration-200 font-medium ${
-                          saleForm.customerId && filteredProducts.length > 0
-                            ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white hover:shadow-lg' 
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg shadow-md transition-all duration-200 font-medium bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white hover:shadow-lg"
                       >
                         <span className="text-lg">➕</span>
                         <span>إضافة بند</span>
                       </button>
-                      {!saleForm.customerId ? (
-                        <span className="text-xs text-red-600 font-medium">
-                          اختر العميل أولاً
-                        </span>
-                      ) : filteredProducts.length === 0 ? (
-                        <span className="text-xs text-red-600 font-medium">
-                          لا توجد أصناف متاحة لهذه الشركة
-                        </span>
-                      ) : null}
                     </div>
                   </div>
 

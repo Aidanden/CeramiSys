@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   useGetProvisionalSalesQuery, 
   useCreateProvisionalSaleMutation, 
+  useUpdateProvisionalSaleMutation,
   useDeleteProvisionalSaleMutation,
   useUpdateProvisionalSaleStatusMutation,
   useConvertProvisionalSaleToSaleMutation,
@@ -12,7 +13,8 @@ import {
   ProvisionalSale,
   Customer,
   CreateProvisionalSaleRequest,
-  CreateCustomerRequest
+  CreateCustomerRequest,
+  provisionalSalesApi
 } from '@/state/provisionalSalesApi';
 import { useGetProductsQuery, productsApi } from '@/state/productsApi';
 import { useGetCompaniesQuery } from '@/state/companyApi';
@@ -42,7 +44,9 @@ const ProvisionalSalesPage = () => {
   const [showCreateCustomerModal, setShowCreateCustomerModal] = useState(false);
   const [selectedSale, setSelectedSale] = useState<ProvisionalSale | null>(null);
   const [showConvertModal, setShowConvertModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [saleToConvert, setSaleToConvert] = useState<ProvisionalSale | null>(null);
+  const [saleToEdit, setSaleToEdit] = useState<ProvisionalSale | null>(null);
   const [convertForm, setConvertForm] = useState<{
     saleType: 'CASH' | 'CREDIT';
     paymentMethod?: 'CASH' | 'BANK' | 'CARD';
@@ -122,12 +126,22 @@ const ProvisionalSalesPage = () => {
     }
   }, [user, selectedCompanyId, salesData, salesLoading, salesError]);
 
+  // Debug: مراقبة تغييرات البنود
+  useEffect(() => {
+    console.log('🔧 تغيير في البنود:', {
+      linesCount: saleForm.lines.length,
+      lines: saleForm.lines,
+      buttonShouldBeDisabled: saleForm.lines.length === 0
+    });
+  }, [saleForm.lines]);
+
   // جلب جميع الأصناف ثم الفلترة في الواجهة الأمامية حسب الشركة المختارة
   const { data: productsData, isLoading: productsLoading } = useGetProductsQuery({ 
     limit: 1000
   });
   
   const [createSale, { isLoading: isCreating }] = useCreateProvisionalSaleMutation();
+  const [updateSale, { isLoading: isUpdating }] = useUpdateProvisionalSaleMutation();
   const [deleteSale, { isLoading: isDeleting }] = useDeleteProvisionalSaleMutation();
   const [updateStatus] = useUpdateProvisionalSaleStatusMutation();
   const [convertToSale] = useConvertProvisionalSaleToSaleMutation();
@@ -151,10 +165,17 @@ const ProvisionalSalesPage = () => {
       return;
     }
     
+    // التحقق من اختيار العميل أولاً
+    if (!saleForm.customerId) {
+      error('يجب اختيار العميل أولاً قبل إضافة البنود');
+      return;
+    }
+    
     if (saleForm.lines.length === 0) {
       error('يجب إضافة بند واحد على الأقل');
       return;
     }
+
 
     // التحقق من أن جميع الأصناف في البنود تنتمي للشركة المستهدفة
     const invalidLines = saleForm.lines.filter(line => {
@@ -167,27 +188,48 @@ const ProvisionalSalesPage = () => {
       return;
     }
 
+    // التحقق من توفر الكمية في المخزون
+    const insufficientStockLines = saleForm.lines.filter(line => {
+      const product = productsData?.data?.products?.find(p => p.id === line.productId);
+      if (!product || !product.stock) return true; // لا يوجد مخزون
+      
+      const availableQty = Number(product.stock.boxes);
+      return line.qty > availableQty;
+    });
+
+    if (insufficientStockLines.length > 0) {
+      const errorMessages = insufficientStockLines.map(line => {
+        const product = productsData?.data?.products?.find(p => p.id === line.productId);
+        const availableQty = product?.stock ? Number(product.stock.boxes) : 0;
+        return `• ${product?.name || 'صنف'}: مطلوب ${formatArabicQuantity(line.qty)} ${product?.unit || 'وحدة'} - متوفر ${formatArabicQuantity(availableQty)} ${product?.unit || 'وحدة'}`;
+      }).join('\n');
+      
+      error(`الكمية المطلوبة غير متوفرة في المخزون:\n\n${errorMessages}`);
+      return;
+    }
+
     try {
       // إضافة companyId للطلب
-      const saleRequest = {
+      const saleRequest: any = {
         ...saleForm,
         companyId: targetCompanyId
       };
       
       const result = await createSale(saleRequest).unwrap();
-      success('تم إنشاء الفاتورة المبدئية بنجاح وخصم الكميات من المخزن');
+      success('تم إنشاء الفاتورة المبدئية بنجاح');
       
-      // إعادة جلب البيانات فوراً
-      await refetchSales();
-      // تحديث بيانات الأصناف لأن المخزون تغير
+      // تحديث الكاش للفواتير المبدئية
+      dispatch(provisionalSalesApi.util.invalidateTags(['ProvisionalSale']));
+      // تحديث بيانات الأصناف
       dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
       
       setShowCreateModal(false);
       resetForm();
-      // للمستخدمين العاديين: الاحتفاظ بالشركة، لمستخدمي النظام: إعادة تعيين
-      if (user?.isSystemUser) {
-        setSelectedCompanyId(null);
-      }
+      // للمستخدمين العاديين: الاحتفاظ بالشركة
+      // لمستخدمي النظام: الاحتفاظ بالشركة لعرض الفواتير الجديدة
+      // if (user?.isSystemUser) {
+      //   setSelectedCompanyId(null);
+      // }
       
       console.log('✅ تم إنشاء الفاتورة المبدئية:', result);
     } catch (err: any) {
@@ -206,6 +248,68 @@ const ProvisionalSalesPage = () => {
     setProductCodeSearch('');
   };
 
+  // Handle update sale
+  const handleUpdateSale = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!saleToEdit) return;
+    
+    // تحديد الشركة المستهدفة
+    const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
+    
+    if (!targetCompanyId) {
+      error(user?.isSystemUser ? 'يجب اختيار الشركة أولاً' : 'لا يمكن تحديد شركتك');
+      return;
+    }
+    
+    if (saleForm.lines.length === 0) {
+      error('يجب إضافة بند واحد على الأقل');
+      return;
+    }
+
+    // التحقق من توفر الكمية في المخزون
+    const insufficientStockLines = saleForm.lines.filter(line => {
+      const product = productsData?.data?.products?.find(p => p.id === line.productId);
+      if (!product || !product.stock) return true; // لا يوجد مخزون
+      
+      const availableQty = Number(product.stock.boxes);
+      return line.qty > availableQty;
+    });
+
+    if (insufficientStockLines.length > 0) {
+      const errorMessages = insufficientStockLines.map(line => {
+        const product = productsData?.data?.products?.find(p => p.id === line.productId);
+        const availableQty = product?.stock ? Number(product.stock.boxes) : 0;
+        return `• ${product?.name || 'صنف'}: مطلوب ${formatArabicQuantity(line.qty)} ${product?.unit || 'وحدة'} - متوفر ${formatArabicQuantity(availableQty)} ${product?.unit || 'وحدة'}`;
+      }).join('\n');
+      
+      error(`الكمية المطلوبة غير متوفرة في المخزون:\n\n${errorMessages}`);
+      return;
+    }
+
+    try {
+      await updateSale({
+        id: saleToEdit.id,
+        data: {
+          customerId: saleForm.customerId,
+          status: saleForm.status,
+          lines: saleForm.lines
+        }
+      }).unwrap();
+      
+      success('تم تحديث الفاتورة المبدئية بنجاح');
+      setShowEditModal(false);
+      setSaleToEdit(null);
+      resetForm();
+      // تحديث الكاش
+      dispatch(provisionalSalesApi.util.invalidateTags(['ProvisionalSale']));
+      dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
+    } catch (err: any) {
+      console.error('❌ خطأ في تحديث الفاتورة المبدئية:', err);
+      error(err.data?.message || 'حدث خطأ أثناء تحديث الفاتورة');
+    }
+  };
+
   // Handle delete sale
   const handleDeleteSale = async (sale: ProvisionalSale) => {
     const confirmed = await confirm(
@@ -216,10 +320,9 @@ const ProvisionalSalesPage = () => {
     if (confirmed) {
       try {
         await deleteSale(sale.id).unwrap();
-        success('تم حذف الفاتورة المبدئية بنجاح وإرجاع الكميات للمخزن');
-        // إعادة جلب البيانات فوراً
-        await refetchSales();
-        // تحديث بيانات الأصناف لأن المخزون تغير
+        success('تم حذف الفاتورة المبدئية بنجاح');
+        // تحديث الكاش
+        dispatch(provisionalSalesApi.util.invalidateTags(['ProvisionalSale']));
         dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
       } catch (err: any) {
         error(err.data?.message || 'حدث خطأ أثناء حذف الفاتورة');
@@ -228,7 +331,48 @@ const ProvisionalSalesPage = () => {
   };
 
   // Handle convert to sale - open modal
-  const handleOpenConvertModal = (sale: ProvisionalSale) => {
+  const handleOpenConvertModal = async (sale: ProvisionalSale) => {
+    // التحقق من توفر الكميات في المخزون
+    const insufficientStockLines = sale.lines.filter(line => {
+      const product = productsData?.data?.products?.find(p => p.id === line.productId);
+      if (!product || !product.stock) return true; // لا يوجد مخزون
+      
+      const availableQty = Number(product.stock.boxes);
+      return line.qty > availableQty;
+    });
+
+    if (insufficientStockLines.length > 0) {
+      // عرض رسالة تفصيلية عن الأصناف غير المتوفرة
+      const errorMessages = insufficientStockLines.map(line => {
+        const product = productsData?.data?.products?.find(p => p.id === line.productId);
+        const availableQty = product?.stock ? Number(product.stock.boxes) : 0;
+        return `• ${product?.name || 'صنف'}: مطلوب ${formatArabicQuantity(line.qty)} ${product?.unit || 'وحدة'} - متوفر ${formatArabicQuantity(availableQty)} ${product?.unit || 'وحدة'}`;
+      }).join('\n');
+      
+      const confirmed = await confirm(
+        'الكميات غير متوفرة في المخزون',
+        `الكميات التالية غير متوفرة:\n\n${errorMessages}\n\nهل تريد تعديل الفاتورة المبدئية؟`
+      );
+
+      if (confirmed) {
+        // فتح نافذة التعديل
+        setSaleToEdit(sale);
+        setSelectedCompanyId(sale.companyId); // تعيين الشركة
+        setSaleForm({
+          customerId: sale.customerId,
+          status: sale.status,
+          lines: sale.lines.map(line => ({
+            productId: line.productId,
+            qty: line.qty,
+            unitPrice: line.unitPrice
+          }))
+        });
+        setShowEditModal(true);
+      }
+      return;
+    }
+
+    // إذا كانت الكميات متوفرة، فتح نافذة الترحيل
     setSaleToConvert(sale);
     setConvertForm({
       saleType: 'CASH',
@@ -255,9 +399,8 @@ const ProvisionalSalesPage = () => {
       success('تم ترحيل الفاتورة المبدئية بنجاح');
       setShowConvertModal(false);
       setSaleToConvert(null);
-      // إعادة جلب البيانات فوراً
-      await refetchSales();
-      // تحديث بيانات الأصناف لأن المخزون قد يتغير
+      // تحديث الكاش
+      dispatch(provisionalSalesApi.util.invalidateTags(['ProvisionalSale']));
       dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
     } catch (err: any) {
       error(err.data?.message || 'حدث خطأ في ترحيل الفاتورة');
@@ -305,12 +448,14 @@ const ProvisionalSalesPage = () => {
             text-align: center;
           }
           .invoice-header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
+            font-size: 32px;
+            margin-bottom: 5px;
+            font-weight: bold;
           }
           .invoice-header p {
-            font-size: 14px;
+            font-size: 16px;
             opacity: 0.9;
+            margin-top: 5px;
           }
           .invoice-info {
             display: grid;
@@ -434,8 +579,8 @@ const ProvisionalSalesPage = () => {
         <div class="watermark">فاتورة مبدئية</div>
         <div class="invoice-container">
           <div class="invoice-header">
-            <h1>فاتورة مبدئية</h1>
-            <p>PROVISIONAL INVOICE</p>
+            <h1>${sale.company?.name || 'الشركة'}</h1>
+            <p>فاتورة مبدئية</p>
           </div>
           
           <div class="invoice-info">
@@ -448,14 +593,6 @@ const ProvisionalSalesPage = () => {
               <div class="info-row">
                 <span class="info-label">التاريخ:</span>
                 <span class="info-value">${new Date(sale.createdAt).toLocaleDateString('ar-LY', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">الحالة:</span>
-                <span class="info-value">
-                  <span class="status-badge status-${sale.status.toLowerCase()}">
-                    ${sale.status === 'DRAFT' ? 'مسودة' : sale.status === 'PENDING' ? 'معلقة' : sale.status === 'APPROVED' ? 'معتمدة' : sale.status === 'CONVERTED' ? 'مرحلة' : 'ملغية'}
-                  </span>
-                </span>
               </div>
             </div>
             
@@ -546,10 +683,15 @@ const ProvisionalSalesPage = () => {
 
   // Add line to sale
   const addSaleLine = () => {
-    setSaleForm(prev => ({
-      ...prev,
-      lines: [...prev.lines, { productId: 0, qty: 1, unitPrice: 0 }]
-    }));
+    console.log('🔧 إضافة بند جديد - البنود الحالية:', saleForm.lines.length);
+    setSaleForm(prev => {
+      const newLines = [...prev.lines, { productId: 0, qty: 1, unitPrice: 0 }];
+      console.log('🔧 البنود بعد الإضافة:', newLines.length);
+      return {
+        ...prev,
+        lines: newLines
+      };
+    });
   };
 
   // Remove line from sale
@@ -708,7 +850,7 @@ const ProvisionalSalesPage = () => {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-text-primary">إدارة الفواتير المبدئية</h1>
-              <p className="text-text-secondary">إدارة الفواتير المبدئية والعروض - لا يتم خصم من المخزون</p>
+              <p className="text-text-secondary">إدارة الفواتير المبدئية والعروض</p>
             </div>
           </div>
           <button
@@ -1151,7 +1293,7 @@ const ProvisionalSalesPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      العميل
+                      العميل *
                     </label>
                     <select
                       value={saleForm.customerId || ''}
@@ -1159,10 +1301,12 @@ const ProvisionalSalesPage = () => {
                         ...prev,
                         customerId: e.target.value ? Number(e.target.value) : undefined
                       }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                        !saleForm.customerId ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                      }`}
                       required
                     >
-                      <option value="">اختر عميل</option>
+                      <option value="">-- يجب اختيار العميل أولاً --</option>
                       {customersLoading ? (
                         <option disabled>جاري تحميل العملاء...</option>
                       ) : customersError ? (
@@ -1179,6 +1323,11 @@ const ProvisionalSalesPage = () => {
                           ))
                       )}
                     </select>
+                    {!saleForm.customerId && (
+                      <p className="text-xs text-red-600 mt-1 font-medium">
+                        ⚠️ يجب اختيار العميل قبل إضافة البنود
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -1211,21 +1360,11 @@ const ProvisionalSalesPage = () => {
                       <button
                         type="button"
                         onClick={addSaleLine}
-                        disabled={filteredProducts.length === 0}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow-md transition-all duration-200 font-medium ${
-                          filteredProducts.length > 0
-                            ? 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white hover:shadow-lg' 
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg shadow-md transition-all duration-200 font-medium bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white hover:shadow-lg"
                       >
                         <span className="text-lg">➕</span>
                         <span>إضافة بند</span>
                       </button>
-                      {filteredProducts.length === 0 && (
-                        <span className="text-xs text-red-600 font-medium">
-                          لا توجد أصناف متاحة لهذه الشركة
-                        </span>
-                      )}
                     </div>
                   </div>
 
@@ -1370,9 +1509,14 @@ const ProvisionalSalesPage = () => {
                               step="0.01"
                               required
                             />
-                            {selectedProduct?.unit === 'صندوق' && selectedProduct?.stock && line.qty > Number(selectedProduct.stock.boxes) && (
-                              <div className="text-xs text-red-600 mt-1 font-medium">
-                                ⚠️ عدد الصناديق المطلوبة أكبر من المخزون ({formatArabicQuantity(selectedProduct.stock.boxes)} صندوق)
+                            {selectedProduct?.stock && line.qty > Number(selectedProduct.stock.boxes) && (
+                              <div className="text-xs text-red-600 mt-1 font-medium bg-red-50 px-2 py-1 rounded border border-red-200">
+                                ⚠️ الكمية المطلوبة ({formatArabicQuantity(line.qty)} {selectedProduct?.unit || 'وحدة'}) أكبر من المخزون المتاح ({formatArabicQuantity(selectedProduct.stock.boxes)} {selectedProduct?.unit || 'وحدة'})
+                              </div>
+                            )}
+                            {selectedProduct && !selectedProduct.stock && (
+                              <div className="text-xs text-red-600 mt-1 font-medium bg-red-50 px-2 py-1 rounded border border-red-200">
+                                ⚠️ لا يوجد مخزون لهذا الصنف
                               </div>
                             )}
                           </div>
@@ -1460,6 +1604,7 @@ const ProvisionalSalesPage = () => {
                   )}
                 </div>
 
+
                 <div className="flex justify-end gap-3 pt-6 border-t-2 border-gray-200 mt-4">
                   <button
                     type="button"
@@ -1474,18 +1619,27 @@ const ProvisionalSalesPage = () => {
                   </button>
                   <button
                     type="submit"
-                    disabled={isCreating || saleForm.lines.length === 0}
+                    disabled={isCreating || !saleForm.customerId || saleForm.lines.length === 0}
                     className={`flex items-center gap-2 px-6 py-2.5 rounded-lg shadow-md transition-all duration-200 font-medium ${
-                      saleForm.lines.length === 0
+                      !saleForm.customerId || saleForm.lines.length === 0
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         : 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white hover:shadow-lg'
                     } ${isCreating ? 'opacity-50' : ''}`}
+                    title={
+                      !saleForm.customerId 
+                        ? 'يجب اختيار العميل أولاً' 
+                        : saleForm.lines.length === 0 
+                          ? 'يجب إضافة بند واحد على الأقل' 
+                          : ''
+                    }
                   >
                     <span>{isCreating ? '⏳' : '💾'}</span>
                     <span>
-                      {saleForm.lines.length === 0
-                        ? 'أضف بند واحد على الأقل' 
-                        : isCreating ? 'جاري الحفظ...' : 'حفظ الفاتورة المبدئية'}
+                      {!saleForm.customerId
+                        ? 'اختر العميل أولاً'
+                        : saleForm.lines.length === 0
+                          ? 'أضف بند واحد على الأقل'
+                          : isCreating ? 'جاري الحفظ...' : 'حفظ الفاتورة المبدئية'}
                     </span>
                   </button>
                 </div>
@@ -1906,6 +2060,235 @@ const ProvisionalSalesPage = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     تأكيد الترحيل
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && saleToEdit && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">تعديل الفاتورة المبدئية</h3>
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSaleToEdit(null);
+                    resetForm();
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* عرض معلومات الفاتورة */}
+              <div className="mb-4 bg-orange-50 p-3 rounded-lg border border-orange-200">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-orange-900">📝 تعديل الفاتورة رقم:</span>
+                  <span className="text-sm font-semibold text-orange-700">
+                    {saleToEdit.invoiceNumber || `PROV-${saleToEdit.id}`}
+                  </span>
+                </div>
+                <p className="text-xs text-orange-600 mt-1">
+                  💡 يرجى تعديل الكميات لتتناسب مع المخزون المتاح
+                </p>
+              </div>
+              
+              <form onSubmit={handleUpdateSale} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      العميل *
+                    </label>
+                    <select
+                      value={saleForm.customerId || ''}
+                      onChange={(e) => setSaleForm(prev => ({
+                        ...prev,
+                        customerId: e.target.value ? Number(e.target.value) : undefined
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      required
+                    >
+                      <option value="">-- اختر العميل --</option>
+                      {customersData?.data?.customers
+                        ?.filter((customer: Customer) => !customer.phone?.startsWith('BRANCH'))
+                        ?.map((customer: Customer) => (
+                          <option key={customer.id} value={customer.id}>
+                            {customer.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      الحالة *
+                    </label>
+                    <select
+                      value={saleForm.status}
+                      onChange={(e) => setSaleForm(prev => ({ 
+                        ...prev, 
+                        status: e.target.value as any
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      required
+                    >
+                      <option value="DRAFT">مسودة</option>
+                      <option value="PENDING">معلقة</option>
+                      <option value="APPROVED">معتمدة</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Sale Lines */}
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="block text-base font-bold text-gray-800">
+                      📋 بنود الفاتورة *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={addSaleLine}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg shadow-md transition-all duration-200 font-medium bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white hover:shadow-lg"
+                    >
+                      <span className="text-lg">➕</span>
+                      <span>إضافة بند</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                    {saleForm.lines.map((line, index) => {
+                      const selectedProduct = productsData?.data?.products?.find(p => p.id === line.productId);
+                      
+                      return (
+                        <div key={index} className="grid grid-cols-12 gap-3 items-start p-3 bg-white border-2 border-gray-200 rounded-lg">
+                          <div className="col-span-4">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">الصنف</label>
+                            <select
+                              value={line.productId}
+                              onChange={(e) => {
+                                const productId = Number(e.target.value);
+                                const product = productsData?.data?.products?.find(p => p.id === productId);
+                                
+                                updateSaleLine(index, 'productId', productId);
+                                if (product?.price?.sellPrice) {
+                                  updateSaleLine(index, 'unitPrice', Number(product.price.sellPrice));
+                                }
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                              required
+                            >
+                              <option value={0}>-- اختر الصنف --</option>
+                              {filteredProducts.map((product) => (
+                                <option key={product.id} value={product.id}>
+                                  {product.sku} - {product.name}
+                                </option>
+                              ))}
+                            </select>
+                            {selectedProduct?.stock && (
+                              <div className="text-xs text-green-600 mt-1">
+                                ✅ متوفر: {formatArabicQuantity(selectedProduct.stock.boxes)} {selectedProduct.unit || 'وحدة'}
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">الكمية</label>
+                            <input
+                              type="number"
+                              value={line.qty || ''}
+                              onChange={(e) => updateSaleLine(index, 'qty', Number(e.target.value) || 0)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                              min="0.01"
+                              step="0.01"
+                              required
+                            />
+                            {selectedProduct?.stock && line.qty > Number(selectedProduct.stock.boxes) && (
+                              <div className="text-xs text-red-600 mt-1 font-medium">
+                                ⚠️ أكبر من المخزون
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">السعر</label>
+                            <input
+                              type="number"
+                              value={line.unitPrice || ''}
+                              onChange={(e) => updateSaleLine(index, 'unitPrice', Number(e.target.value) || 0)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                              min="0"
+                              step="0.01"
+                              required
+                            />
+                          </div>
+                          
+                          <div className="col-span-3">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">المجموع</label>
+                            <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md">
+                              <span className="text-sm font-bold text-gray-700">
+                                {formatArabicCurrency((line.qty || 0) * (line.unitPrice || 0))}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="col-span-1 flex items-end">
+                            <button
+                              type="button"
+                              onClick={() => removeSaleLine(index)}
+                              className="w-full px-2 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors"
+                              title="حذف البند"
+                            >
+                              <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* الأزرار */}
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setSaleToEdit(null);
+                      resetForm();
+                    }}
+                    className="px-6 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium transition-colors"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUpdating || saleForm.lines.length === 0}
+                    className="px-6 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-medium transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {isUpdating ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        جاري الحفظ...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        حفظ التعديلات
+                      </>
+                    )}
                   </button>
                 </div>
               </form>

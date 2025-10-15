@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار منطق الزر</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .button { padding: 10px 20px; margin: 10px; border: none; border-radius: 5px; cursor: pointer; }
+        .enabled { background-color: #8b5cf6; color: white; }
+        .disabled { background-color: #d1d5db; color: #6b7280; cursor: not-allowed; }
+        .lines { margin: 20px 0; }
+        .line { padding: 10px; margin: 5px 0; background: #f3f4f6; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>اختبار منطق زر الحفظ</h1>
+    
+    <div>
+        <button class="button" onclick="addLine()">إضافة بند</button>
+        <button class="button" onclick="clearLines()">مسح البنود</button>
+    </div>
+    
+    <div class="lines" id="lines">
+        <p>لا توجد بنود</p>
+    </div>
+    
+    <div>
+        <p>عدد البنود: <span id="count">0</span></p>
+        <p>حالة الزر: <span id="status">معطل</span></p>
+    </div>
+    
+    <button class="button disabled" id="saveButton" disabled>
+        حفظ الفاتورة المبدئية
+    </button>
+
+    <script>
+        let lines = [];
+        
+        function updateUI() {
+            const linesDiv = document.getElementById('lines');
+            const countSpan = document.getElementById('count');
+            const statusSpan = document.getElementById('status');
+            const saveButton = document.getElementById('saveButton');
+            
+            // تحديث عرض البنود
+            if (lines.length === 0) {
+                linesDiv.innerHTML = '<p>لا توجد بنود</p>';
+            } else {
+                linesDiv.innerHTML = lines.map((line, index) => 
+                    `<div class="line">بند ${index + 1}: ${line.name}</div>`
+                ).join('');
+            }
+            
+            // تحديث العداد
+            countSpan.textContent = lines.length;
+            
+            // تحديث حالة الزر (نفس المنطق المستخدم في الكود)
+            const isDisabled = lines.length === 0;
+            
+            if (isDisabled) {
+                saveButton.disabled = true;
+                saveButton.className = 'button disabled';
+                saveButton.textContent = 'أضف بند واحد على الأقل';
+                statusSpan.textContent = 'معطل';
+                statusSpan.style.color = 'red';
+            } else {
+                saveButton.disabled = false;
+                saveButton.className = 'button enabled';
+                saveButton.textContent = 'حفظ الفاتورة المبدئية';
+                statusSpan.textContent = 'مفعل';
+                statusSpan.style.color = 'green';
+            }
+        }
+        
+        function addLine() {
+            lines.push({ name: `صنف ${lines.length + 1}` });
+            updateUI();
+        }
+        
+        function clearLines() {
+            lines = [];
+            updateUI();
+        }
+        
+        // تحديث أولي
+        updateUI();
+    </script>
+</body>
+</html>

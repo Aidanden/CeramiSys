@@ -70,7 +70,12 @@ const CreateProvisionalSaleModal: React.FC<CreateProvisionalSaleModalProps> = ({
     e.preventDefault();
     
     if (formData.lines.length === 0) {
-      notifications.error('يرجى إضافة منتج واحد على الأقل');
+      notifications.custom.error('خطأ', 'يرجى إضافة منتج واحد على الأقل');
+      return;
+    }
+
+    if (!formData.customerId) {
+      notifications.custom.error('خطأ', 'يجب اختيار العميل لإتمام الفاتورة');
       return;
     }
 
@@ -133,7 +138,7 @@ const CreateProvisionalSaleModal: React.FC<CreateProvisionalSaleModalProps> = ({
     e.preventDefault();
     
     if (!newCustomer.name.trim()) {
-      notifications.error('يرجى إدخال اسم العميل');
+      notifications.custom.error('خطأ', 'يرجى إدخال اسم العميل');
       return;
     }
 
@@ -142,9 +147,9 @@ const CreateProvisionalSaleModal: React.FC<CreateProvisionalSaleModalProps> = ({
       setFormData(prev => ({ ...prev, customerId: result.data.id }));
       setShowCreateCustomerModal(false);
       setNewCustomer({ name: '', phone: '', note: '' });
-      notifications.success('تم إضافة العميل بنجاح');
+      notifications.custom.success('نجح', 'تم إضافة العميل بنجاح');
     } catch (error: any) {
-      notifications.error(error?.data?.message || 'حدث خطأ في إضافة العميل');
+      notifications.custom.error('خطأ', error?.data?.message || 'حدث خطأ في إضافة العميل');
     }
   };
 
@@ -185,7 +190,9 @@ const CreateProvisionalSaleModal: React.FC<CreateProvisionalSaleModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             {/* Customer Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">العميل</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                العميل {!formData.customerId && <span className="text-red-600 font-bold">*</span>}
+              </label>
               <div className="flex space-x-2 space-x-reverse">
                 <select
                   value={formData.customerId || ''}
@@ -193,9 +200,13 @@ const CreateProvisionalSaleModal: React.FC<CreateProvisionalSaleModalProps> = ({
                     ...prev, 
                     customerId: e.target.value ? Number(e.target.value) : undefined 
                   }))}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    !formData.customerId && formData.lines.length > 0
+                      ? 'border-red-300 bg-red-50'
+                      : 'border-gray-300'
+                  }`}
                 >
-                  <option value="">عميل نقدي</option>
+                  <option value="">اختر عميل</option>
                   {customersData?.data?.map((customer) => (
                     <option key={customer.id} value={customer.id}>
                       {customer.name} {customer.phone && `- ${customer.phone}`}
@@ -210,6 +221,12 @@ const CreateProvisionalSaleModal: React.FC<CreateProvisionalSaleModalProps> = ({
                   إضافة عميل
                 </button>
               </div>
+              {!formData.customerId && formData.lines.length > 0 && (
+                <p className="text-xs text-red-600 mt-1 font-medium flex items-center gap-1">
+                  <span>⚠️</span>
+                  <span>يجب اختيار العميل لإتمام الفاتورة</span>
+                </p>
+              )}
             </div>
 
             {/* Invoice Number */}
@@ -367,6 +384,23 @@ const CreateProvisionalSaleModal: React.FC<CreateProvisionalSaleModalProps> = ({
             </div>
           )}
 
+          {/* تنبيه إذا لم يتم اختيار العميل */}
+          {!formData.customerId && formData.lines.length > 0 && (
+            <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">⚠️</span>
+                <div>
+                  <p className="text-sm text-yellow-900 font-bold mb-1">
+                    يجب اختيار العميل لإتمام الفاتورة
+                  </p>
+                  <p className="text-xs text-yellow-800">
+                    يمكنك إضافة البنود الآن، لكن لا يمكن حفظ الفاتورة إلا بعد اختيار العميل من القائمة أعلاه.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Form Actions */}
           <div className="flex justify-end space-x-4 space-x-reverse">
             <button
@@ -378,10 +412,15 @@ const CreateProvisionalSaleModal: React.FC<CreateProvisionalSaleModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isLoading || formData.lines.length === 0}
+              disabled={isLoading || formData.lines.length === 0 || !formData.customerId}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              title={!formData.customerId ? 'يجب اختيار العميل أولاً' : ''}
             >
-              {isLoading ? 'جاري الحفظ...' : 'حفظ الفاتورة المبدئية'}
+              {formData.lines.length === 0
+                ? 'أضف بند واحد على الأقل'
+                : !formData.customerId
+                ? 'يجب اختيار العميل لإتمام الفاتورة'
+                : isLoading ? 'جاري الحفظ...' : 'حفظ الفاتورة المبدئية'}
             </button>
           </div>
         </form>
