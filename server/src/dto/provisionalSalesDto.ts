@@ -63,7 +63,8 @@ export const GetProvisionalSalesQueryDto = z.object({
   isConverted: z.union([z.coerce.boolean(), z.literal('').transform(() => undefined)]).optional(),
   search: z.string().transform(val => val === '' ? undefined : val).optional(),
   sortBy: z.enum(['createdAt', 'updatedAt', 'total', 'invoiceNumber']).default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).default('desc')
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  todayOnly: z.union([z.coerce.boolean(), z.literal('').transform(() => undefined)]).optional()
 });
 
 export const ConvertToSaleDto = z.object({

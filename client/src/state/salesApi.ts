@@ -78,6 +78,8 @@ export interface SalesQueryParams {
   paymentMethod?: "CASH" | "BANK" | "CARD";
   startDate?: string;
   endDate?: string;
+  receiptIssued?: boolean; // فلتر حسب إصدار إيصال القبض
+  todayOnly?: boolean; // فلتر حسب اليوم الحالي
 }
 
 export interface SalesResponse {
@@ -245,6 +247,46 @@ export const salesApi = createApi({
       providesTags: [{ type: "SalesStats", id: "STATS" }],
     }),
 
+    /**
+     * الحصول على الفواتير النقدية (للمحاسب)
+     */
+    getCashSales: builder.query<SalesResponse, SalesQueryParams>({
+      query: (params = {}) => {
+        const searchParams = new URLSearchParams();
+        // إضافة saleType=CASH تلقائياً
+        searchParams.append('saleType', 'CASH');
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== "") {
+            searchParams.append(key, value.toString());
+          }
+        });
+        return `sales?${searchParams.toString()}`;
+      },
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.data.sales.map(({ id }) => ({ type: "Sale" as const, id })),
+              { type: "Sales", id: "CASH_LIST" },
+            ]
+          : [{ type: "Sales", id: "CASH_LIST" }],
+    }),
+
+    /**
+     * إصدار إيصال قبض لفاتورة نقدية
+     */
+    issueReceipt: builder.mutation<{ success: boolean; message: string; data: Sale }, number>({
+      query: (saleId) => ({
+        url: `sales/${saleId}/issue-receipt`,
+        method: "POST",
+      }),
+      invalidatesTags: (result, error, saleId) => [
+        { type: "Sale", id: saleId },
+        { type: "Sales", id: "LIST" },
+        { type: "Sales", id: "CASH_LIST" },
+        { type: "SalesStats", id: "STATS" },
+      ],
+    }),
+
     // ============== العملاء ==============
 
     /**
@@ -329,6 +371,8 @@ export const {
   useUpdateSaleMutation,
   useDeleteSaleMutation,
   useGetSalesStatsQuery,
+  useGetCashSalesQuery,
+  useIssueReceiptMutation,
   // العملاء
   useGetCustomersQuery,
   useGetCustomerQuery,

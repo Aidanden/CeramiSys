@@ -55,6 +55,9 @@ const ProvisionalSalesPage = () => {
     paymentMethod: 'CASH'
   });
   
+  // State لتتبع الفواتير المرحلة محلياً (للتحديث الفوري)
+  const [convertedSaleIds, setConvertedSaleIds] = useState<Set<number>>(new Set());
+  
   // Form states
   const [saleForm, setSaleForm] = useState<CreateProvisionalSaleRequest>({
     customerId: undefined,
@@ -88,7 +91,8 @@ const ProvisionalSalesPage = () => {
     limit: 10,
     search: searchTerm,
     status: statusFilter as "DRAFT" | "PENDING" | "APPROVED" | "CONVERTED" | "CANCELLED" | undefined,
-    companyId: selectedCompanyId || undefined
+    companyId: selectedCompanyId || undefined,
+    todayOnly: true // عرض فواتير اليوم الحالي فقط
   }, {
     // إعادة جلب البيانات عند تغيير المعاملات
     refetchOnMountOrArgChange: true,
@@ -165,12 +169,6 @@ const ProvisionalSalesPage = () => {
       return;
     }
     
-    // التحقق من اختيار العميل أولاً
-    if (!saleForm.customerId) {
-      error('يجب اختيار العميل أولاً قبل إضافة البنود');
-      return;
-    }
-    
     if (saleForm.lines.length === 0) {
       error('يجب إضافة بند واحد على الأقل');
       return;
@@ -209,22 +207,29 @@ const ProvisionalSalesPage = () => {
     }
 
     try {
-      // إضافة companyId للطلب
+      // إعداد البيانات - إزالة customerId إذا لم يكن محدداً
       const saleRequest: any = {
-        ...saleForm,
+        status: saleForm.status,
+        lines: saleForm.lines,
         companyId: targetCompanyId
       };
+      
+      // إضافة customerId فقط إذا كان محدداً
+      if (saleForm.customerId) {
+        saleRequest.customerId = saleForm.customerId;
+      }
       
       const result = await createSale(saleRequest).unwrap();
       success('تم إنشاء الفاتورة المبدئية بنجاح');
       
-      // تحديث الكاش للفواتير المبدئية
-      dispatch(provisionalSalesApi.util.invalidateTags(['ProvisionalSale']));
-      // تحديث بيانات الأصناف
-      dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
-      
       setShowCreateModal(false);
       resetForm();
+      
+      // إعادة جلب البيانات فوراً لتحديث الجدول
+      await refetchSales();
+      
+      // تحديث الكاش للمنتجات
+      dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
       // للمستخدمين العاديين: الاحتفاظ بالشركة
       // لمستخدمي النظام: الاحتفاظ بالشركة لعرض الفواتير الجديدة
       // if (user?.isSystemUser) {
@@ -288,25 +293,50 @@ const ProvisionalSalesPage = () => {
     }
 
     try {
-      await updateSale({
+      // إعداد البيانات - إزالة customerId إذا لم يكن محدداً
+      const updateData: any = {
+        status: saleForm.status,
+        lines: saleForm.lines
+      };
+      
+      // إضافة customerId فقط إذا كان محدداً
+      if (saleForm.customerId) {
+        updateData.customerId = saleForm.customerId;
+      }
+      
+      console.log('🔧 بيانات التحديث:', {
         id: saleToEdit.id,
-        data: {
-          customerId: saleForm.customerId,
-          status: saleForm.status,
-          lines: saleForm.lines
-        }
+        updateData,
+        customerId: saleForm.customerId,
+        linesCount: saleForm.lines.length
+      });
+      
+      const result = await updateSale({
+        id: saleToEdit.id,
+        data: updateData
       }).unwrap();
+      
+      console.log('✅ نجح التحديث:', result);
       
       success('تم تحديث الفاتورة المبدئية بنجاح');
       setShowEditModal(false);
       setSaleToEdit(null);
       resetForm();
-      // تحديث الكاش
-      dispatch(provisionalSalesApi.util.invalidateTags(['ProvisionalSale']));
+      
+      // إعادة جلب البيانات فوراً لتحديث الجدول
+      await refetchSales();
+      
+      // تحديث الكاش للمنتجات
       dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
     } catch (err: any) {
-      console.error('❌ خطأ في تحديث الفاتورة المبدئية:', err);
-      error(err.data?.message || 'حدث خطأ أثناء تحديث الفاتورة');
+      console.error('❌ خطأ في تحديث الفاتورة المبدئية:', {
+        error: err,
+        message: err?.message,
+        data: err?.data,
+        status: err?.status,
+        originalStatus: err?.originalStatus
+      });
+      error(err?.data?.message || err?.message || 'حدث خطأ أثناء تحديث الفاتورة');
     }
   };
 
@@ -321,8 +351,11 @@ const ProvisionalSalesPage = () => {
       try {
         await deleteSale(sale.id).unwrap();
         success('تم حذف الفاتورة المبدئية بنجاح');
-        // تحديث الكاش
-        dispatch(provisionalSalesApi.util.invalidateTags(['ProvisionalSale']));
+        
+        // إعادة جلب البيانات فوراً لتحديث الجدول
+        await refetchSales();
+        
+        // تحديث الكاش للمنتجات
         dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
       } catch (err: any) {
         error(err.data?.message || 'حدث خطأ أثناء حذف الفاتورة');
@@ -362,6 +395,7 @@ const ProvisionalSalesPage = () => {
           customerId: sale.customerId,
           status: sale.status,
           lines: sale.lines.map(line => ({
+            id: line.id, // إضافة id للسطر (مطلوب للتحديث)
             productId: line.productId,
             qty: line.qty,
             unitPrice: line.unitPrice
@@ -388,7 +422,10 @@ const ProvisionalSalesPage = () => {
     if (!saleToConvert) return;
 
     try {
-      await convertToSale({
+      // إضافة الفاتورة للقائمة المحلية فوراً (للتحديث الفوري)
+      setConvertedSaleIds(prev => new Set(prev).add(saleToConvert.id));
+      
+      const result = await convertToSale({
         id: saleToConvert.id,
         data: {
           saleType: convertForm.saleType,
@@ -399,10 +436,19 @@ const ProvisionalSalesPage = () => {
       success('تم ترحيل الفاتورة المبدئية بنجاح');
       setShowConvertModal(false);
       setSaleToConvert(null);
-      // تحديث الكاش
-      dispatch(provisionalSalesApi.util.invalidateTags(['ProvisionalSale']));
+      
+      // إعادة جلب البيانات فوراً لتحديث الجدول
+      await refetchSales();
+      
+      // تحديث الكاش للمنتجات
       dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
     } catch (err: any) {
+      // في حالة الفشل، إزالة الفاتورة من القائمة المحلية
+      setConvertedSaleIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(saleToConvert.id);
+        return newSet;
+      });
       error(err.data?.message || 'حدث خطأ في ترحيل الفاتورة');
     }
   };
@@ -1153,8 +1199,10 @@ const ProvisionalSalesPage = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(sale.status)}`}>
-                        {getStatusText(sale.status)}
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        convertedSaleIds.has(sale.id) ? 'bg-blue-100 text-blue-800' : getStatusBadgeColor(sale.status)
+                      }`}>
+                        {convertedSaleIds.has(sale.id) ? 'مرحلة' : getStatusText(sale.status)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -1163,7 +1211,7 @@ const ProvisionalSalesPage = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
                         {/* زر الترحيل - يظهر لجميع الحالات ما عدا المرحلة والملغية */}
-                        {!sale.isConverted && sale.status !== 'CANCELLED' && sale.status !== 'CONVERTED' && (
+                        {!sale.isConverted && !convertedSaleIds.has(sale.id) && sale.status !== 'CANCELLED' && sale.status !== 'CONVERTED' && (
                           <button
                             onClick={() => handleOpenConvertModal(sale)}
                             className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors shadow-sm"

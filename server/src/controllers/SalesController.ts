@@ -313,6 +313,43 @@ export class SalesController {
   }
 
   /**
+   * إصدار إيصال قبض لفاتورة نقدية
+   */
+  async issueReceipt(req: Request, res: Response): Promise<void> {
+    try {
+      const saleId = parseInt(req.params.id!);
+
+      if (isNaN(saleId)) {
+        res.status(400).json({
+          success: false,
+          message: 'معرف الفاتورة غير صالح',
+        });
+        return;
+      }
+
+      const userName = (req as any).user?.fullName || (req as any).user?.userName || 'غير معروف';
+
+      const result = await this.salesService.issueReceipt(saleId, userName);
+
+      res.status(200).json(result);
+    } catch (error: any) {
+      console.error('خطأ في إصدار إيصال القبض:', error);
+
+      if (error.message.includes('غير موجودة') || error.message.includes('لا يمكن') || error.message.includes('تم إصدار')) {
+        res.status(400).json({
+          success: false,
+          message: error.message,
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: 'خطأ في الخادم الداخلي',
+        });
+      }
+    }
+  }
+
+  /**
    * الحصول على إحصائيات المبيعات
    */
   async getSalesStats(req: Request, res: Response): Promise<void> {

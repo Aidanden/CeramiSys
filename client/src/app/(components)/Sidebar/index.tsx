@@ -149,6 +149,12 @@ const Sidebar = () => {
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink
+            href="/cashier-receipts"
+            icon={CreditCard}
+            label="إيصالات القبض - المحاسب"
+            isCollapsed={isSidebarCollapsed}
+          />
+          <SidebarLink
             href="/credit-sales"
             icon={FileText}
             label="المبيعات الآجلة"

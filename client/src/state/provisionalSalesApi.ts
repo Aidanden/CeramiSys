@@ -71,7 +71,7 @@ export interface UpdateProvisionalSaleRequest {
   status?: "DRAFT" | "PENDING" | "APPROVED" | "CANCELLED";
   notes?: string;
   lines?: {
-    id?: number;
+    id: number; // مطلوب للتحديث (حسب DTO في الباك إند)
     productId: number;
     qty: number;
     unitPrice: number;
@@ -88,6 +88,7 @@ export interface GetProvisionalSalesRequest {
   search?: string;
   sortBy?: "createdAt" | "updatedAt" | "total" | "invoiceNumber";
   sortOrder?: "asc" | "desc";
+  todayOnly?: boolean;
 }
 
 export interface ProvisionalSalesResponse {

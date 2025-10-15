@@ -83,6 +83,13 @@ router.delete('/customers/:id', salesController.deleteCustomer.bind(salesControl
 // ============== مسارات المبيعات بـ ID ==============
 
 /**
+ * @route   POST /api/sales/:id/issue-receipt
+ * @desc    إصدار إيصال قبض لفاتورة نقدية
+ * @access  Private
+ */
+router.post('/:id/issue-receipt', salesController.issueReceipt.bind(salesController));
+
+/**
  * @route   GET /api/sales/:id
  * @desc    الحصول على فاتورة مبيعات واحدة
  * @access  Private

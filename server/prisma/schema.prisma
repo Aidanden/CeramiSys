@@ -179,6 +179,9 @@ model Sale {
   saleType      SaleType       @default(CREDIT) // نقدي أو آجل
   paymentMethod PaymentMethod? // كاش، حوالة، بطاقة - اختياري للبيع الآجل
   isFullyPaid   Boolean        @default(false) // هل تم السداد بالكامل؟
+  receiptIssued Boolean        @default(false) // هل تم إصدار إيصال قبض؟ (للفواتير النقدية)
+  receiptIssuedAt DateTime?    // تاريخ إصدار إيصال القبض
+  receiptIssuedBy String?      // المحاسب الذي أصدر الإيصال
   createdAt     DateTime       @default(now())
   lines         SaleLine[]
   payments      SalePayment[] // الدفعات
@@ -189,6 +192,7 @@ model Sale {
   @@index([customerId])
   @@index([saleType])
   @@index([isFullyPaid])
+  @@index([receiptIssued])
 }
 
 model SaleLine {

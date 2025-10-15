@@ -275,6 +275,25 @@ export class SalesService {
         }
       }
 
+      // فلتر حسب إصدار إيصال القبض
+      if (query.receiptIssued !== undefined) {
+        where.receiptIssued = query.receiptIssued;
+      }
+
+      // فلتر حسب اليوم الحالي فقط
+      if (query.todayOnly) {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        where.createdAt = {
+          gte: startOfDay,
+          lte: endOfDay
+        };
+      }
+
       // الحصول على المبيعات
       const [sales, total] = await Promise.all([
         this.prisma.sale.findMany({
@@ -706,6 +725,93 @@ export class SalesService {
       return { message: 'تم حذف الفاتورة بنجاح' };
     } catch (error) {
       console.error('خطأ في حذف الفاتورة:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * إصدار إيصال قبض لفاتورة نقدية
+   */
+  async issueReceipt(saleId: number, userName: string) {
+    try {
+      // التحقق من وجود الفاتورة
+      const sale = await this.prisma.sale.findUnique({
+        where: { id: saleId },
+        include: {
+          customer: true,
+          company: true,
+          lines: {
+            include: {
+              product: true
+            }
+          }
+        }
+      });
+
+      if (!sale) {
+        throw new Error('الفاتورة غير موجودة');
+      }
+
+      // التحقق من أن الفاتورة نقدية
+      if (sale.saleType !== 'CASH') {
+        throw new Error('لا يمكن إصدار إيصال قبض إلا للفواتير النقدية');
+      }
+
+      // التحقق من أنه لم يتم إصدار إيصال قبض مسبقاً
+      if (sale.receiptIssued) {
+        throw new Error('تم إصدار إيصال قبض لهذه الفاتورة مسبقاً');
+      }
+
+      // تحديث الفاتورة
+      const updatedSale = await this.prisma.sale.update({
+        where: { id: saleId },
+        data: {
+          receiptIssued: true,
+          receiptIssuedAt: new Date(),
+          receiptIssuedBy: userName
+        },
+        include: {
+          customer: true,
+          company: true,
+          lines: {
+            include: {
+              product: true
+            }
+          }
+        }
+      });
+
+      console.log(`✅ تم إصدار إيصال قبض للفاتورة #${saleId} بواسطة ${userName}`);
+
+      return {
+        success: true,
+        message: 'تم إصدار إيصال القبض بنجاح',
+        data: {
+          id: updatedSale.id,
+          companyId: updatedSale.companyId,
+          company: updatedSale.company,
+          customerId: updatedSale.customerId,
+          customer: updatedSale.customer,
+          invoiceNumber: updatedSale.invoiceNumber,
+          total: Number(updatedSale.total),
+          saleType: updatedSale.saleType,
+          paymentMethod: updatedSale.paymentMethod,
+          receiptIssued: updatedSale.receiptIssued,
+          receiptIssuedAt: updatedSale.receiptIssuedAt,
+          receiptIssuedBy: updatedSale.receiptIssuedBy,
+          createdAt: updatedSale.createdAt,
+          lines: updatedSale.lines.map(line => ({
+            id: line.id,
+            productId: line.productId,
+            product: line.product,
+            qty: Number(line.qty),
+            unitPrice: Number(line.unitPrice),
+            subTotal: Number(line.subTotal)
+          }))
+        }
+      };
+    } catch (error) {
+      console.error('خطأ في إصدار إيصال القبض:', error);
       throw error;
     }
   }

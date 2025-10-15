@@ -6,7 +6,6 @@
 import React, { useRef } from 'react';
 import { Sale } from '@/state/salesApi';
 import { InvoicePrint } from './InvoicePrint';
-import { ReceiptPrint } from './ReceiptPrint';
 
 interface PrintModalProps {
   sale: Sale | null;
@@ -126,10 +125,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({ sale, isOpen, onClose })
                   <ul className="text-sm text-blue-800 space-y-1">
                     <li>✓ فاتورة المبيعات مع تفاصيل الأصناف والأمتار</li>
                     {isCashSale && (
-                      <li>✓ إيصال قبض نقدي (لأن الفاتورة نقدية)</li>
-                    )}
-                    {!isCashSale && (
-                      <li className="text-amber-600">⚠ إيصال القبض متاح فقط للفواتير النقدية</li>
+                      <li className="text-amber-600">ℹ️ إيصال القبض يتم إصداره من شاشة المحاسب</li>
                     )}
                   </ul>
                 </div>
@@ -148,11 +144,8 @@ export const PrintModal: React.FC<PrintModalProps> = ({ sale, isOpen, onClose })
                   margin: '0 auto'
                 }}
               >
-                {/* الفاتورة */}
+                {/* الفاتورة فقط - إيصال القبض يتم إصداره من شاشة المحاسب */}
                 <InvoicePrint sale={sale} />
-                
-                {/* إيصال القبض - فقط للفواتير النقدية */}
-                {isCashSale && <ReceiptPrint sale={sale} />}
               </div>
             </div>
           </div>

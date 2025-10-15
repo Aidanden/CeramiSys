@@ -52,7 +52,15 @@ export const GetSalesQueryDtoSchema = z.object({
   saleType: z.union([z.nativeEnum(SaleType), z.literal('').transform(() => undefined)]).optional(),
   paymentMethod: z.union([z.nativeEnum(PaymentMethod), z.literal('').transform(() => undefined)]).optional(),
   startDate: z.string().transform(val => val === '' ? undefined : val).optional(),
-  endDate: z.string().transform(val => val === '' ? undefined : val).optional()
+  endDate: z.string().transform(val => val === '' ? undefined : val).optional(),
+  receiptIssued: z.union([
+    z.string().transform(val => val === 'true' ? true : val === 'false' ? false : undefined),
+    z.boolean()
+  ]).optional(),
+  todayOnly: z.union([
+    z.string().transform(val => val === 'true' ? true : val === 'false' ? false : undefined),
+    z.boolean()
+  ]).optional()
 });
 
 // Customer DTOs
