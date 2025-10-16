@@ -5,9 +5,21 @@ import { useGetCashSalesQuery, useIssueReceiptMutation, Sale } from '@/state/sal
 import { useGetCurrentUserQuery } from '@/state/authApi';
 import { useToast } from '@/components/ui/Toast';
 import { ReceiptPrint } from '@/components/sales/ReceiptPrint';
+import { Search, Filter, X } from 'lucide-react';
 
 export default function CashierReceiptsPage() {
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [receiptFilter, setReceiptFilter] = useState<'all' | 'issued' | 'pending'>('pending');
+  
+  // تعيين تاريخ اليوم كـ default
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0]; // YYYY-MM-DD
+  };
+  
+  const [startDate, setStartDate] = useState(getTodayDate());
+  const [endDate, setEndDate] = useState(getTodayDate());
   const [issuedReceipts, setIssuedReceipts] = useState<Set<number>>(new Set());
   const [currentSaleToPrint, setCurrentSaleToPrint] = useState<Sale | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
@@ -15,16 +27,65 @@ export default function CashierReceiptsPage() {
   const user = userData?.data;
   const { success, error: showError } = useToast();
   
+  // تحديد قيمة receiptIssued حسب الفلتر
+  const getReceiptIssuedFilter = () => {
+    if (receiptFilter === 'issued') return true;
+    if (receiptFilter === 'pending') return false;
+    return undefined; // all
+  };
+  
   const { 
     data: salesData, 
     isLoading, 
+    isFetching,
     refetch 
-  } = useGetCashSalesQuery({
-    page: currentPage,
-    limit: 20,
-    receiptIssued: false,
-    todayOnly: true
-  });
+  } = useGetCashSalesQuery(
+    {
+      page: currentPage,
+      limit: 20,
+      search: searchTerm || undefined,
+      receiptIssued: getReceiptIssuedFilter(),
+      startDate: startDate || undefined,
+      endDate: endDate || undefined
+    },
+    {
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true
+    }
+  );
+  
+  // جلب الفواتير المعلقة للإحصائيات
+  const { data: pendingData, refetch: refetchPending } = useGetCashSalesQuery(
+    {
+      page: 1,
+      limit: 1000, // جلب جميع الفواتير للحساب
+      receiptIssued: false,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined
+    },
+    {
+      refetchOnMountOrArgChange: 5, // إعادة جلب البيانات كل 5 ثواني
+      refetchOnFocus: true,
+      refetchOnReconnect: true
+    }
+  );
+  
+  // جلب الفواتير المصدرة للإحصائيات
+  const { data: issuedData, refetch: refetchIssued } = useGetCashSalesQuery(
+    {
+      page: 1,
+      limit: 1000, // جلب جميع الفواتير للحساب
+      receiptIssued: true,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined
+    },
+    {
+      refetchOnMountOrArgChange: 5, // إعادة جلب البيانات كل 5 ثواني
+      refetchOnFocus: true,
+      refetchOnReconnect: true
+    }
+  );
 
   const [issueReceipt, { isLoading: isIssuing }] = useIssueReceiptMutation();
 
@@ -80,35 +141,187 @@ export default function CashierReceiptsPage() {
   };
 
   const handleIssueReceipt = async (sale: Sale) => {
+    if (sale.receiptIssued) {
+      showError('تم إصدار إيصال قبض لهذه الفاتورة مسبقاً');
+      return;
+    }
+    
     try {
       await issueReceipt(sale.id).unwrap();
       setIssuedReceipts(prev => new Set(prev).add(sale.id));
       success(`تم إصدار إيصال القبض للفاتورة ${sale.invoiceNumber || sale.id}`);
-      printReceipt(sale);
-      setTimeout(() => refetch(), 2000);
+      printReceipt({ ...sale, receiptIssued: true });
+      
+      // إعادة جلب جميع البيانات بعد إصدار الإيصال
+      setTimeout(() => {
+        refetch();
+        refetchPending();
+        refetchIssued();
+      }, 500);
     } catch (err: any) {
       showError(err?.data?.message || 'حدث خطأ أثناء إصدار إيصال القبض');
     }
   };
+  
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+  
+  const handleFilterChange = (filter: 'all' | 'issued' | 'pending') => {
+    setReceiptFilter(filter);
+    setCurrentPage(1);
+  };
+  
+  const clearFilters = () => {
+    setSearchTerm('');
+    setReceiptFilter('pending');
+    setStartDate(getTodayDate());
+    setEndDate(getTodayDate());
+    setCurrentPage(1);
+  };
 
   const sales = salesData?.data?.sales || [];
   const pagination = salesData?.data?.pagination;
+  
+  // حساب الأعداد والمبالغ من البيانات الكاملة
+  const pendingSales = pendingData?.data?.sales || [];
+  const issuedSales = issuedData?.data?.sales || [];
+  
+  const pendingCount = pendingData?.data?.pagination?.total || 0;
+  const issuedCount = issuedData?.data?.pagination?.total || 0;
+  const totalCount = pendingCount + issuedCount;
+  
+  // حساب المبالغ
+  const pendingTotal = pendingSales.reduce((sum, sale) => sum + sale.total, 0);
+  const issuedTotal = issuedSales.reduce((sum, sale) => sum + sale.total, 0);
+  const grandTotal = pendingTotal + issuedTotal;
+  
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">إيصالات القبض - المحاسب</h1>
-        <p className="text-gray-600 mt-1">الفواتير النقدية المعلقة (اليوم)</p>
+        <p className="text-gray-600 mt-1">إدارة إيصالات القبض للفواتير النقدية</p>
+      </div>
+      
+      {/* Filters */}
+      <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          {/* Search */}
+          <div className="relative md:col-span-3">
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="بحث برقم الفاتورة، اسم العميل، أو رقم الهاتف..."
+              className="block w-full pr-10 pl-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+          
+          {/* Date Filters */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">من تاريخ</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => {
+                setStartDate(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">إلى تاريخ</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => {
+                setEndDate(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
+          
+          <div className="flex items-end">
+            <button
+              onClick={() => {
+                setStartDate('');
+                setEndDate('');
+                setCurrentPage(1);
+              }}
+              className="w-full px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+            >
+              جميع التواريخ
+            </button>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          {/* Receipt Status Filter */}
+          <div className="flex items-center gap-2">
+            <Filter className="h-5 w-5 text-gray-400" />
+            <div className="flex gap-2 flex-1">
+              <button
+                onClick={() => handleFilterChange('pending')}
+                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  receiptFilter === 'pending'
+                    ? 'bg-orange-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                معلقة ({pendingCount})
+              </button>
+              <button
+                onClick={() => handleFilterChange('issued')}
+                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  receiptFilter === 'issued'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                مصدرة ({issuedCount})
+              </button>
+              <button
+                onClick={() => handleFilterChange('all')}
+                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  receiptFilter === 'all'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                الكل ({totalCount})
+              </button>
+            </div>
+            {(searchTerm || receiptFilter !== 'pending' || startDate !== getTodayDate() || endDate !== getTodayDate()) && (
+              <button
+                onClick={clearFilters}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                title="مسح الفلاتر"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">فواتير معلقة</p>
-              <p className="text-2xl font-bold text-orange-600">{sales.length}</p>
+              <p className="text-2xl font-bold text-orange-600">{pendingCount}</p>
+              <p className="text-xs text-gray-500 mt-1">{pendingTotal.toFixed(2)} د.ل</p>
             </div>
             <svg className="h-10 w-10 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -119,9 +332,22 @@ export default function CashierReceiptsPage() {
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
+              <p className="text-sm text-gray-600">فواتير مصدرة</p>
+              <p className="text-2xl font-bold text-green-600">{issuedCount}</p>
+              <p className="text-xs text-gray-500 mt-1">{issuedTotal.toFixed(2)} د.ل</p>
+            </div>
+            <svg className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex items-center justify-between">
+            <div>
               <p className="text-sm text-gray-600">إجمالي المبالغ</p>
               <p className="text-2xl font-bold text-blue-600">
-                {sales.reduce((sum: number, sale: any) => sum + sale.total, 0).toFixed(2)} د.ل
+                {grandTotal.toFixed(2)} د.ل
               </p>
             </div>
             <svg className="h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -136,8 +362,8 @@ export default function CashierReceiptsPage() {
               <p className="text-sm text-gray-600">المحاسب</p>
               <p className="text-lg font-bold text-gray-900">{user?.fullName || 'غير معروف'}</p>
             </div>
-            <svg className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg className="h-10 w-10 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
         </div>
@@ -153,7 +379,7 @@ export default function CashierReceiptsPage() {
                   رقم الفاتورة
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                  العميل
+                  العميل / الهاتف
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                   المبلغ
@@ -170,7 +396,7 @@ export default function CashierReceiptsPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {isLoading ? (
+              {isLoading || isFetching ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                     جاري التحميل...
@@ -179,7 +405,10 @@ export default function CashierReceiptsPage() {
               ) : sales.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                    لا توجد فواتير نقدية معلقة
+                    {searchTerm ? 'لا توجد نتائج للبحث' : 
+                     receiptFilter === 'pending' ? 'لا توجد فواتير معلقة' :
+                     receiptFilter === 'issued' ? 'لا توجد فواتير مصدرة' :
+                     'لا توجد فواتير'}
                   </td>
                 </tr>
               ) : (
@@ -188,8 +417,13 @@ export default function CashierReceiptsPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {sale.invoiceNumber || `#${sale.id}`}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {sale.customer?.name || 'عميل نقدي'}
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      <div>
+                        <div className="font-medium">{sale.customer?.name || 'عميل نقدي'}</div>
+                        {sale.customer?.phone && (
+                          <div className="text-gray-500 text-xs">{sale.customer.phone}</div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
                       {sale.total.toFixed(2)} د.ل
@@ -200,15 +434,29 @@ export default function CashierReceiptsPage() {
                       {sale.paymentMethod === 'CARD' && 'بطاقة'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(sale.createdAt).toLocaleDateString('ar-LY')}
+                      <div>
+                        <div>{new Date(sale.createdAt).toLocaleDateString('ar-LY')}</div>
+                        <div className="text-xs">{new Date(sale.createdAt).toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' })}</div>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {issuedReceipts.has(sale.id) ? (
-                        <div className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600">
-                          <svg className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          تم إصدار إيصال القبض
+                      {sale.receiptIssued || issuedReceipts.has(sale.id) ? (
+                        <div className="flex items-center gap-2">
+                          <div className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600">
+                            <svg className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            تم الإصدار
+                          </div>
+                          <button
+                            onClick={() => printReceipt(sale)}
+                            className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                            title="إعادة طباعة الإيصال"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            </svg>
+                          </button>
                         </div>
                       ) : (
                         <button

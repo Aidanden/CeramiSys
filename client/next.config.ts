@@ -13,11 +13,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  // Fix webpack.js file access errors by writing dev bundles to disk
-  webpackDevMiddleware: (config: any) => {
-    config.writeToDisk = true;
-    return config;
-  },
 };
 
 export default nextConfig;

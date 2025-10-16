@@ -123,6 +123,8 @@ export class SalesController {
         paymentMethod: req.query.paymentMethod as any,
         startDate: req.query.startDate as string,
         endDate: req.query.endDate as string,
+        receiptIssued: req.query.receiptIssued === 'true' ? true : req.query.receiptIssued === 'false' ? false : undefined,
+        todayOnly: req.query.todayOnly === 'true' ? true : req.query.todayOnly === 'false' ? false : undefined,
       };
 
       const userCompanyId = (req as any).user?.companyId;

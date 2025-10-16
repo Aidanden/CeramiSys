@@ -40,6 +40,9 @@ export interface Sale {
   total: number;
   saleType: "CASH" | "CREDIT";
   paymentMethod?: "CASH" | "BANK" | "CARD"; // اختياري للبيع الآجل
+  receiptIssued?: boolean; // حالة إصدار إيصال القبض
+  receiptIssuedAt?: string; // تاريخ إصدار الإيصال
+  receiptIssuedBy?: string; // المحاسب الذي أصدر الإيصال
   createdAt: string;
   lines: SaleLine[];
 }
@@ -159,9 +162,9 @@ export const salesApi = createApi({
   reducerPath: "salesApi",
   baseQuery: baseQueryWithAuthInterceptor,
   tagTypes: ["Sales", "Sale", "SalesStats", "Customers", "Customer"],
-  keepUnusedDataFor: 300, // 5 minutes
+  keepUnusedDataFor: 10, // 10 seconds - تقليل وقت الـ cache
   refetchOnMountOrArgChange: true,
-  refetchOnFocus: false,
+  refetchOnFocus: true,
   refetchOnReconnect: true,
   endpoints: (builder) => ({
     // ============== المبيعات ==============

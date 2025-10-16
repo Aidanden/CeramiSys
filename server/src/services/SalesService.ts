@@ -249,7 +249,8 @@ export class SalesService {
       if (query.search) {
         where.OR = [
           { invoiceNumber: { contains: query.search, mode: 'insensitive' } },
-          { customer: { name: { contains: query.search, mode: 'insensitive' } } }
+          { customer: { name: { contains: query.search, mode: 'insensitive' } } },
+          { customer: { phone: { contains: query.search, mode: 'insensitive' } } }
         ];
       }
 
@@ -334,6 +335,9 @@ export class SalesService {
             total: Number(sale.total),
             saleType: sale.saleType,
             paymentMethod: sale.paymentMethod,
+            receiptIssued: sale.receiptIssued,
+            receiptIssuedAt: sale.receiptIssuedAt,
+            receiptIssuedBy: sale.receiptIssuedBy,
             createdAt: sale.createdAt,
             lines: sale.lines.map(line => ({
               id: line.id,
@@ -397,6 +401,9 @@ export class SalesService {
         total: Number(sale.total),
         saleType: sale.saleType,
         paymentMethod: sale.paymentMethod,
+        receiptIssued: sale.receiptIssued,
+        receiptIssuedAt: sale.receiptIssuedAt,
+        receiptIssuedBy: sale.receiptIssuedBy,
         createdAt: sale.createdAt,
         lines: sale.lines.map(line => ({
           id: line.id,
