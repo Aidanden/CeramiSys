@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { useGetCashSalesQuery, useIssueReceiptMutation, Sale } from '@/state/salesApi';
+import { useCreateDispatchOrderMutation } from '@/state/warehouseApi';
 import { useGetCurrentUserQuery } from '@/state/authApi';
 import { useToast } from '@/components/ui/Toast';
 import { ReceiptPrint } from '@/components/sales/ReceiptPrint';
@@ -10,7 +11,7 @@ import { Search, Filter, X } from 'lucide-react';
 export default function CashierReceiptsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const [receiptFilter, setReceiptFilter] = useState<'all' | 'issued' | 'pending'>('pending');
+  const [receiptFilter, setReceiptFilter] = useState<'all' | 'issued' | 'pending'>('all');
   
   // تعيين تاريخ اليوم كـ default
   const getTodayDate = () => {
@@ -18,8 +19,9 @@ export default function CashierReceiptsPage() {
     return today.toISOString().split('T')[0]; // YYYY-MM-DD
   };
   
-  const [startDate, setStartDate] = useState(getTodayDate());
-  const [endDate, setEndDate] = useState(getTodayDate());
+  // الوضع الافتراضي: عرض جميع الفواتير (بدون فلتر تاريخ)
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [issuedReceipts, setIssuedReceipts] = useState<Set<number>>(new Set());
   const [currentSaleToPrint, setCurrentSaleToPrint] = useState<Sale | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
@@ -88,6 +90,7 @@ export default function CashierReceiptsPage() {
   );
 
   const [issueReceipt, { isLoading: isIssuing }] = useIssueReceiptMutation();
+  const [createDispatchOrder, { isLoading: isCreatingDispatch }] = useCreateDispatchOrderMutation();
 
   const printReceipt = (sale: Sale) => {
     setCurrentSaleToPrint(sale);
@@ -160,6 +163,15 @@ export default function CashierReceiptsPage() {
       }, 500);
     } catch (err: any) {
       showError(err?.data?.message || 'حدث خطأ أثناء إصدار إيصال القبض');
+    }
+  };
+  
+  const handleCreateDispatchOrder = async (sale: Sale) => {
+    try {
+      await createDispatchOrder({ saleId: sale.id }).unwrap();
+      success(`تم إنشاء أمر صرف للفاتورة ${sale.invoiceNumber || sale.id}`);
+    } catch (err: any) {
+      showError(err?.data?.message || 'حدث خطأ أثناء إنشاء أمر الصرف');
     }
   };
   
@@ -442,10 +454,7 @@ export default function CashierReceiptsPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {sale.receiptIssued || issuedReceipts.has(sale.id) ? (
                         <div className="flex items-center gap-2">
-                          <div className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600">
-                            <svg className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                          <div className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-700 bg-green-100 rounded-md">
                             تم الإصدار
                           </div>
                           <button
@@ -456,6 +465,17 @@ export default function CashierReceiptsPage() {
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                             </svg>
+                          </button>
+                          <button
+                            onClick={() => handleCreateDispatchOrder(sale)}
+                            disabled={isCreatingDispatch}
+                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
+                            title="إنشاء أمر صرف من المخزن"
+                          >
+                            <svg className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
+                            أمر صرف
                           </button>
                         </div>
                       ) : (
