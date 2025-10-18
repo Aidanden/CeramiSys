@@ -106,7 +106,7 @@ const ProvisionalSalesPage = () => {
     skip: !user || (user.isSystemUser && !selectedCompanyId)
   });
 
-  const { data: customersData, isLoading: customersLoading, error: customersError } = useGetCustomersQuery({ limit: 1000 });
+  const { data: customersData, isLoading: customersLoading, error: customersError, refetch: refetchCustomers } = useGetCustomersQuery({ limit: 1000 });
   const { data: companiesData, isLoading: companiesLoading } = useGetCompaniesQuery({ limit: 1000 });
   
   // Auto-select company for non-system users and set default for system users
@@ -754,12 +754,32 @@ const ProvisionalSalesPage = () => {
 
   // Update sale line
   const updateSaleLine = (index: number, field: string, value: any) => {
-    setSaleForm(prev => ({
-      ...prev,
-      lines: prev.lines.map((line, i) => 
-        i === index ? { ...line, [field]: value } : line
-      )
-    }));
+    setSaleForm(prev => {
+      const updatedLines = prev.lines.map((line, i) => {
+        if (i !== index) return line;
+        
+        const updatedLine = { ...line, [field]: value };
+        
+        // إذا تم تحديث الكمية وكان الصنف بالصندوق، نحول الصناديق إلى أمتار
+        if (field === 'qty') {
+          const product = productsData?.data?.products?.find(p => p.id === updatedLine.productId);
+          
+          // إذا كان الصنف بالصندوق ولديه unitsPerBox، نحول الكمية المدخلة (صناديق) إلى أمتار
+          if (product?.unitsPerBox && Number(product.unitsPerBox) > 0) {
+            // الكمية المدخلة هي عدد الصناديق
+            // نحولها إلى أمتار: عدد الصناديق × عدد الأمتار في الصندوق
+            updatedLine.qty = value * Number(product.unitsPerBox);
+          }
+        }
+        
+        return updatedLine;
+      });
+      
+      return {
+        ...prev,
+        lines: updatedLines
+      };
+    });
   };
 
   // Filter products based on search and selected company
@@ -1132,17 +1152,6 @@ const ProvisionalSalesPage = () => {
             <option value="CANCELLED">ملغية</option>
           </select>
 
-          {/* Add Customer */}
-          <button 
-            onClick={() => setShowCreateCustomerModal(true)}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            عميل جديد
-          </button>
-
           {/* Clear Filters Button */}
           {(searchTerm || customerNameFilter || customerPhoneFilter || statusFilter) && (
             <button 
@@ -1452,34 +1461,47 @@ const ProvisionalSalesPage = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       العميل *
                     </label>
-                    <select
-                      value={saleForm.customerId || ''}
-                      onChange={(e) => setSaleForm(prev => ({
-                        ...prev,
-                        customerId: e.target.value ? Number(e.target.value) : undefined
-                      }))}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                        !saleForm.customerId ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                      }`}
-                      required
-                    >
-                      <option value="">-- يجب اختيار العميل أولاً --</option>
-                      {customersLoading ? (
-                        <option disabled>جاري تحميل العملاء...</option>
-                      ) : customersError ? (
-                        <option disabled>خطأ في تحميل العملاء</option>
-                      ) : customersData?.data?.customers?.length === 0 ? (
-                        <option disabled>لا توجد عملاء</option>
-                      ) : (
-                        customersData?.data?.customers
-                          ?.filter((customer: Customer) => !customer.phone?.startsWith('BRANCH'))
-                          ?.map((customer: Customer) => (
-                            <option key={customer.id} value={customer.id}>
-                              {customer.name}
-                            </option>
-                          ))
-                      )}
-                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        value={saleForm.customerId || ''}
+                        onChange={(e) => setSaleForm(prev => ({
+                          ...prev,
+                          customerId: e.target.value ? Number(e.target.value) : undefined
+                        }))}
+                        className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                          !saleForm.customerId ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                        }`}
+                        required
+                      >
+                        <option value="">-- يجب اختيار العميل أولاً --</option>
+                        {customersLoading ? (
+                          <option disabled>جاري تحميل العملاء...</option>
+                        ) : customersError ? (
+                          <option disabled>خطأ في تحميل العملاء</option>
+                        ) : customersData?.data?.customers?.length === 0 ? (
+                          <option disabled>لا توجد عملاء</option>
+                        ) : (
+                          customersData?.data?.customers
+                            ?.filter((customer: Customer) => !customer.phone?.startsWith('BRANCH'))
+                            ?.map((customer: Customer) => (
+                              <option key={customer.id} value={customer.id}>
+                                {customer.name}
+                              </option>
+                            ))
+                        )}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setShowCreateCustomerModal(true)}
+                        className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors flex items-center gap-1 whitespace-nowrap"
+                        title="إضافة عميل جديد"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span className="hidden sm:inline">عميل</span>
+                      </button>
+                    </div>
                     {!saleForm.customerId && (
                       <p className="text-xs text-red-600 mt-1 font-medium">
                         ⚠️ يجب اختيار العميل قبل إضافة البنود
@@ -1642,30 +1664,6 @@ const ProvisionalSalesPage = () => {
                                 )}
                               </div>
                             )}
-                          </div>
-                          
-                          <div className="col-span-2">
-                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                              {
-                                selectedProduct?.unit === 'صندوق'
-                                  ? 'عدد الصناديق'
-                                  : `الكمية (${selectedProduct?.unit || 'وحدة'})`
-                              }
-                            </label>
-                            <input
-                              type="number"
-                              value={line.qty || ''}
-                              onChange={(e) => updateSaleLine(index, 'qty', Number(e.target.value) || 0)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                              placeholder={
-                                selectedProduct?.unit === 'صندوق'
-                                  ? 'أدخل عدد الصناديق'
-                                  : `أدخل الكمية بـ${selectedProduct?.unit || 'الوحدة'}`
-                              }
-                              min="0.01"
-                              step="0.01"
-                              required
-                            />
                             {selectedProduct?.stock && line.qty > Number(selectedProduct.stock.boxes) && (
                               <div className="text-xs text-red-600 mt-1 font-medium bg-red-50 px-2 py-1 rounded border border-red-200">
                                 ⚠️ الكمية المطلوبة ({formatArabicQuantity(line.qty)} {selectedProduct?.unit || 'وحدة'}) أكبر من المخزون المتاح ({formatArabicQuantity(selectedProduct.stock.boxes)} {selectedProduct?.unit || 'وحدة'})
@@ -1680,26 +1678,16 @@ const ProvisionalSalesPage = () => {
                           
                           <div className="col-span-2">
                             <label className="block text-xs font-medium text-gray-700 mb-1">
-                              {
-                                selectedProduct?.unit === 'صندوق' 
-                                  ? 'الكمية الإجمالية بالمتر'
-                                  : selectedProduct?.unit === 'قطعة'
-                                    ? 'إجمالي القطع'
-                                    : 'الكمية الإجمالية'
-                              }
+                              إجمالي الأمتار/الوحدات (المحفوظ في الفاتورة)
                             </label>
                             <div className="px-3 py-2 bg-purple-50 border border-purple-200 rounded-md">
                               <span className="text-sm font-bold text-purple-700 block text-center">
-                                {line.qty > 0 ? (
-                                  selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox
-                                    ? `${formatArabicArea(line.qty * Number(selectedProduct.unitsPerBox))} متر`
-                                    : `${formatArabicArea(line.qty)} ${selectedProduct?.unit || 'وحدة'}`
-                                ) : '0'}
+                                {line.qty > 0 ? `${formatArabicArea(line.qty)} ${selectedProduct?.unit || 'وحدة'}` : '0'}
                               </span>
                             </div>
-                            {selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox && line.qty > 0 && (
-                              <div className="text-xs text-blue-600 mt-1 font-medium">
-                                📊 {formatArabicQuantity(line.qty)} صندوق × {formatArabicNumber(selectedProduct.unitsPerBox)} متر/صندوق = {formatArabicArea(line.qty * Number(selectedProduct.unitsPerBox))} متر
+                            {selectedProduct?.unitsPerBox && Number(selectedProduct.unitsPerBox) > 0 && line.qty > 0 && (
+                              <div className="text-xs text-blue-600 mt-1 font-medium bg-blue-50 px-2 py-1 rounded">
+                                📊 {formatArabicQuantity(line.qty / Number(selectedProduct.unitsPerBox))} صندوق × {formatArabicNumber(selectedProduct.unitsPerBox)} {selectedProduct?.unit}/صندوق = {formatArabicArea(line.qty)} {selectedProduct?.unit}
                               </div>
                             )}
                           </div>
@@ -1823,9 +1811,19 @@ const ProvisionalSalesPage = () => {
                 };
 
                 try {
-                  await createCustomer(customerData).unwrap();
-                  success('تم إضافة العميل بنجاح');
+                  const result = await createCustomer(customerData).unwrap();
+                  
+                  // تحديث قائمة العملاء أولاً
+                  await refetchCustomers();
+                  
+                  // تحديد العميل الجديد تلقائياً في النموذج
+                  if (result.data?.id) {
+                    setSaleForm(prev => ({ ...prev, customerId: result.data.id }));
+                  }
+                  
+                  // إغلاق المودال وإظهار رسالة النجاح
                   setShowCreateCustomerModal(false);
+                  success('تم إضافة العميل بنجاح واختياره تلقائياً');
                 } catch (err: any) {
                   error(err.data?.message || 'حدث خطأ أثناء إضافة العميل');
                 }

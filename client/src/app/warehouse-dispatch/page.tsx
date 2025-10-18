@@ -102,8 +102,37 @@ export default function WarehouseDispatchPage() {
     }
   };
 
+  // دالة لعرض الكمية بالصناديق (كما في الفاتورة)
+  const formatQuantityDisplay = (qty: number, product: any) => {
+    const isBox = product?.unit === 'صندوق';
+    const unitsPerBox = product?.unitsPerBox || 0;
+    
+    if (!isBox) {
+      // إذا لم تكن الوحدة صندوق، اعرض الكمية مباشرة
+      return `${formatArabicNumber(qty)} ${product?.unit || 'قطعة'}`;
+    }
+    
+    // الكمية في الفاتورة = عدد الصناديق
+    return `${formatArabicNumber(qty)} صندوق`;
+  };
+
+  // دالة لعرض إجمالي الوحدات بالمتر (كما في الفاتورة)
+  const formatTotalUnits = (qty: number, product: any) => {
+    const isBox = product?.unit === 'صندوق';
+    const unitsPerBox = product?.unitsPerBox || 0;
+    
+    if (isBox && unitsPerBox > 0) {
+      // حساب الأمتار المربعة: عدد الصناديق × الوحدات في الصندوق
+      const totalUnits = qty * unitsPerBox;
+      return `${formatArabicNumber(totalUnits)} م²`;
+    }
+    
+    // إذا لم تكن صندوق، اعرض الكمية بوحدتها
+    return `${formatArabicNumber(qty)} ${product?.unit || 'قطعة'}`;
+  };
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 w-full mx-auto">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
@@ -426,35 +455,45 @@ export default function WarehouseDispatchPage() {
 
             {/* Products List */}
             <div className="mb-6">
-              <h4 className="font-semibold mb-3">الأصناف المطلوبة:</h4>
-              <div className="border rounded-lg overflow-hidden">
+              <h4 className="font-semibold text-lg mb-4 text-gray-800">الأصناف المطلوبة:</h4>
+              <div className="border rounded-lg overflow-hidden shadow-sm">
                 <table className="w-full">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gradient-to-r from-orange-50 to-orange-100">
                     <tr>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الصنف</th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الكود</th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الكمية</th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">السعر</th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">المجموع</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">الصنف</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">الكود</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">الكمية بالصناديق</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">إجمالي الوحدات</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">السعر</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">المجموع</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {selectedOrder.sale?.lines?.map((line) => (
-                      <tr key={line.id}>
-                        <td className="px-4 py-2 text-sm">{line.product?.name}</td>
-                        <td className="px-4 py-2 text-sm">{line.product?.sku}</td>
-                        <td className="px-4 py-2 text-sm">{formatArabicNumber(line.qty)}</td>
-                        <td className="px-4 py-2 text-sm">{formatArabicCurrency(line.unitPrice)}</td>
-                        <td className="px-4 py-2 text-sm font-semibold">{formatArabicCurrency(line.subtotal)}</td>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {selectedOrder.sale?.lines?.map((line, idx) => (
+                      <tr key={line.id} className={`hover:bg-orange-50 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{line.product?.name}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600 font-mono">{line.product?.sku}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className="font-bold text-orange-600 text-base">
+                            {formatQuantityDisplay(line.qty, line.product)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className="font-semibold text-blue-600">
+                            {formatTotalUnits(line.qty, line.product)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{formatArabicCurrency(line.unitPrice)}</td>
+                        <td className="px-4 py-3 text-sm font-semibold text-green-600">{formatArabicCurrency(line.subtotal)}</td>
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-gray-50">
+                  <tfoot className="bg-gradient-to-r from-gray-50 to-gray-100">
                     <tr>
-                      <td colSpan={4} className="px-4 py-2 text-right font-semibold">
-                        الإجمالي:
+                      <td colSpan={5} className="px-4 py-4 text-right font-bold text-gray-800 text-base">
+                        الإجمالي الكلي:
                       </td>
-                      <td className="px-4 py-2 font-bold text-green-600">
+                      <td className="px-4 py-4 font-bold text-green-600 text-xl">
                         {formatArabicCurrency(selectedOrder.sale?.total || 0)}
                       </td>
                     </tr>

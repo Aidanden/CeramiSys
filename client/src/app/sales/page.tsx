@@ -552,25 +552,6 @@ const SalesPage = () => {
         </div>
 
         <div className="flex flex-col md:flex-row gap-4">
-          {/* Add Customer */}
-          <button 
-            onClick={() => setShowCreateCustomerModal(true)}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            عميل جديد
-          </button>
-
-          {/* Export */}
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            تصدير
-          </button>
-
           {/* Clear Filters Button */}
           {(searchTerm || customerNameFilter || customerPhoneFilter) && (
             <button 
@@ -880,32 +861,45 @@ const SalesPage = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       العميل *
                     </label>
-                    <select
-                      value={saleForm.customerId || ''}
-                      onChange={(e) => setSaleForm(prev => ({
-                        ...prev,
-                        customerId: e.target.value ? Number(e.target.value) : undefined
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      <option value="">اختر عميل</option>
-                      {customersLoading ? (
-                        <option disabled>جاري تحميل العملاء...</option>
-                      ) : customersError ? (
-                        <option disabled>خطأ في تحميل العملاء</option>
-                      ) : customersData?.data?.customers?.length === 0 ? (
-                        <option disabled>لا توجد عملاء</option>
-                      ) : (
-                        customersData?.data?.customers
-                          ?.filter((customer: Customer) => !customer.phone?.startsWith('BRANCH'))
-                          ?.map((customer: Customer) => (
-                            <option key={customer.id} value={customer.id}>
-                              {customer.name}
-                            </option>
-                          ))
-                      )}
-                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        value={saleForm.customerId || ''}
+                        onChange={(e) => setSaleForm(prev => ({
+                          ...prev,
+                          customerId: e.target.value ? Number(e.target.value) : undefined
+                        }))}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">اختر عميل</option>
+                        {customersLoading ? (
+                          <option disabled>جاري تحميل العملاء...</option>
+                        ) : customersError ? (
+                          <option disabled>خطأ في تحميل العملاء</option>
+                        ) : customersData?.data?.customers?.length === 0 ? (
+                          <option disabled>لا توجد عملاء</option>
+                        ) : (
+                          customersData?.data?.customers
+                            ?.filter((customer: Customer) => !customer.phone?.startsWith('BRANCH'))
+                            ?.map((customer: Customer) => (
+                              <option key={customer.id} value={customer.id}>
+                                {customer.name}
+                              </option>
+                            ))
+                        )}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setShowCreateCustomerModal(true)}
+                        className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors flex items-center gap-1 whitespace-nowrap"
+                        title="إضافة عميل جديد"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span className="hidden sm:inline">عميل</span>
+                      </button>
+                    </div>
                     <p className="text-xs text-gray-500 mt-1">
                       مطلوب - يجب اختيار عميل للمتابعة
                     </p>
@@ -1325,16 +1319,18 @@ const SalesPage = () => {
 
                 try {
                   const result = await createCustomer(customerData).unwrap();
-                  notifications.custom.success('تم بنجاح', 'تم إضافة العميل بنجاح');
-                  setShowCreateCustomerModal(false);
                   
-                  // تحديث قائمة العملاء
+                  // تحديث قائمة العملاء أولاً
                   await refetchCustomers();
                   
                   // تحديد العميل الجديد تلقائياً في النموذج
                   if (result.data?.id) {
-                    setSaleForm({ ...saleForm, customerId: result.data.id });
+                    setSaleForm(prev => ({ ...prev, customerId: result.data.id }));
                   }
+                  
+                  // إغلاق المودال وإظهار رسالة النجاح
+                  setShowCreateCustomerModal(false);
+                  notifications.custom.success('تم بنجاح', 'تم إضافة العميل بنجاح واختياره تلقائياً');
                 } catch (err: any) {
                   notifications.custom.error('خطأ', err.data?.message || 'حدث خطأ أثناء إضافة العميل');
                 }

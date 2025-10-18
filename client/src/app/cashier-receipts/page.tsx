@@ -6,7 +6,9 @@ import { useCreateDispatchOrderMutation } from '@/state/warehouseApi';
 import { useGetCurrentUserQuery } from '@/state/authApi';
 import { useToast } from '@/components/ui/Toast';
 import { ReceiptPrint } from '@/components/sales/ReceiptPrint';
+import { InvoicePrint } from '@/components/sales/InvoicePrint';
 import { Search, Filter, X } from 'lucide-react';
+import html2canvas from 'html2canvas';
 
 export default function CashierReceiptsPage() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -24,7 +26,9 @@ export default function CashierReceiptsPage() {
   const [endDate, setEndDate] = useState('');
   const [issuedReceipts, setIssuedReceipts] = useState<Set<number>>(new Set());
   const [currentSaleToPrint, setCurrentSaleToPrint] = useState<Sale | null>(null);
+  const [currentSaleForWhatsApp, setCurrentSaleForWhatsApp] = useState<Sale | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
+  const whatsappRef = useRef<HTMLDivElement>(null);
   const { data: userData } = useGetCurrentUserQuery();
   const user = userData?.data;
   const { success, error: showError } = useToast();
@@ -170,11 +174,157 @@ export default function CashierReceiptsPage() {
     try {
       await createDispatchOrder({ saleId: sale.id }).unwrap();
       success(`تم إنشاء أمر صرف للفاتورة ${sale.invoiceNumber || sale.id}`);
+      refetch();
     } catch (err: any) {
       showError(err?.data?.message || 'حدث خطأ أثناء إنشاء أمر الصرف');
     }
   };
-  
+
+  // دالة إرسال الفاتورة على الواتساب (مع صورة)
+  const handleSendWhatsApp = async (sale: Sale) => {
+    // الحصول على رقم الواتساب من localStorage
+    const whatsappNumber = localStorage.getItem('whatsappNumber');
+    
+    if (!whatsappNumber) {
+      showError('يرجى تحديد رقم الواتساب من صفحة الإعدادات أولاً');
+      return;
+    }
+
+    try {
+      // عرض رسالة تحميل
+      success('جاري تحضير الفاتورة...');
+
+      // عرض الفاتورة للواتساب
+      setCurrentSaleForWhatsApp(sale);
+      
+      // الانتظار حتى يتم render العنصر
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // الحصول على عنصر الفاتورة
+      const invoiceElement = whatsappRef.current;
+      
+      if (!invoiceElement) {
+        showError('فشل في تحميل الفاتورة');
+        setCurrentSaleForWhatsApp(null);
+        return;
+      }
+
+      await captureAndSend(invoiceElement, sale, whatsappNumber);
+
+    } catch (err: any) {
+      console.error('خطأ في إنشاء صورة الفاتورة:', err);
+      showError(`حدث خطأ: ${err.message || 'غير معروف'}`);
+      setCurrentSaleForWhatsApp(null);
+    }
+  };
+
+  // دالة مساعدة لالتقاط وإرسال الصورة
+  const captureAndSend = async (element: HTMLElement, sale: Sale, whatsappNumber: string) => {
+    try {
+      // تحويل الفاتورة إلى صورة
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        width: element.scrollWidth,
+        height: element.scrollHeight
+      });
+
+      // تحويل Canvas إلى Blob
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          showError('فشل في إنشاء الصورة');
+          setCurrentSaleForWhatsApp(null);
+          return;
+        }
+
+        // إنشاء رسالة تفاصيل الفاتورة
+        const invoiceNumber = sale.invoiceNumber || `${sale.id}`;
+        const customerName = sale.customer?.name || 'عميل نقدي';
+        const companyName = sale.company?.name || '';
+        const total = sale.total.toFixed(2);
+        const date = new Date(sale.createdAt).toLocaleDateString('ar-LY');
+        
+        // تفاصيل الأصناف
+        const itemsText = sale.lines?.map((line, index) => {
+          const productName = line.product?.name || 'صنف';
+          const qty = line.qty;
+          const unit = line.product?.unit || 'وحدة';
+          const unitPrice = line.unitPrice.toFixed(2);
+          const subtotal = line.subTotal.toFixed(2);
+          return `${index + 1}. *${productName}*\n   الكمية: ${qty} ${unit}\n   السعر: ${unitPrice} د.ل\n   المجموع: ${subtotal} د.ل`;
+        }).join('\n\n') || '';
+
+        const message = `
+🧾 *فاتورة رقم: ${invoiceNumber}*
+━━━━━━━━━━━━━━━━━━━━
+👤 *العميل:* ${customerName}
+🏢 *الشركة:* ${companyName}
+📅 *التاريخ:* ${date}
+━━━━━━━━━━━━━━━━━━━━
+
+📦 *تفاصيل الأصناف:*
+
+${itemsText}
+
+━━━━━━━━━━━━━━━━━━━━
+💰 *الإجمالي:* ${total} د.ل
+━━━━━━━━━━━━━━━━━━━━
+
+✅ تم إصدار إيصال القبض
+
+شكراً لتعاملكم معنا 🙏
+        `.trim();
+
+        try {
+          // نسخ الصورة إلى الحافظة (Clipboard)
+          const clipboardItem = new ClipboardItem({ 'image/png': blob });
+          await navigator.clipboard.write([clipboardItem]);
+          
+          // أيضاً تحميل الصورة كنسخة احتياطية
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = `فاتورة_${invoiceNumber}.png`;
+          link.href = url;
+          link.click();
+          URL.revokeObjectURL(url);
+
+          // فتح الواتساب مع الرسالة
+          const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+          window.open(whatsappUrl, '_blank');
+          
+          success('✅ تم نسخ صورة الفاتورة! اضغط Ctrl+V في الواتساب للصق الصورة وإرسالها.');
+          
+          // إخفاء الفاتورة بعد التحويل
+          setTimeout(() => setCurrentSaleForWhatsApp(null), 1000);
+        } catch (clipboardErr) {
+          // إذا فشل النسخ إلى الحافظة، نكمل بالطريقة العادية
+          console.warn('فشل النسخ إلى الحافظة:', clipboardErr);
+          
+          // تحميل الصورة
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = `فاتورة_${invoiceNumber}.png`;
+          link.href = url;
+          link.click();
+          URL.revokeObjectURL(url);
+
+          // فتح الواتساب مع الرسالة
+          const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+          window.open(whatsappUrl, '_blank');
+          
+          success('تم تحميل صورة الفاتورة وفتح الواتساب. يرجى إرفاق الصورة المحملة وإرسالها.');
+          
+          setTimeout(() => setCurrentSaleForWhatsApp(null), 1000);
+        }
+      }, 'image/png');
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
   const handleSearch = (value: string) => {
     setSearchTerm(value);
     setCurrentPage(1);
@@ -475,7 +625,17 @@ export default function CashierReceiptsPage() {
                             <svg className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                             </svg>
-                            أمر صرف
+                            ارسال أمر صرف
+                          </button>
+                          <button
+                            onClick={() => handleSendWhatsApp(sale)}
+                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                            title="إرسال الفاتورة على الواتساب"
+                          >
+                            <svg className="h-4 w-4 ml-2" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                            </svg>
+                            واتساب
                           </button>
                         </div>
                       ) : (
@@ -550,9 +710,36 @@ export default function CashierReceiptsPage() {
         )}
       </div>
 
-      {/* Hidden print container */}
-      <div ref={printRef} className="hidden">
+      {/* Hidden print container for receipts - positioned off-screen but visible for html2canvas */}
+      <div 
+        ref={printRef} 
+        className="fixed"
+        style={{ 
+          position: 'fixed',
+          left: '-9999px',
+          top: '0',
+          visibility: currentSaleToPrint ? 'visible' : 'hidden',
+          pointerEvents: 'none'
+        }}
+      >
         {currentSaleToPrint && <ReceiptPrint sale={currentSaleToPrint} />}
+      </div>
+
+      {/* Hidden container for WhatsApp invoice - positioned off-screen but visible for html2canvas */}
+      <div 
+        ref={whatsappRef} 
+        className="fixed"
+        style={{ 
+          position: 'fixed',
+          left: '-9999px',
+          top: '0',
+          visibility: currentSaleForWhatsApp ? 'visible' : 'hidden',
+          pointerEvents: 'none',
+          width: '210mm',
+          backgroundColor: 'white'
+        }}
+      >
+        {currentSaleForWhatsApp && <InvoicePrint sale={currentSaleForWhatsApp} />}
       </div>
     </div>
   );

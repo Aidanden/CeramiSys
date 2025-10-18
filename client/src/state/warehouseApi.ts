@@ -26,6 +26,8 @@ export interface DispatchOrder {
         id: number;
         name: string;
         sku: string;
+        unit?: string;
+        unitsPerBox?: number;
       };
       qty: number;
       unitPrice: number;

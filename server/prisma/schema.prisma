@@ -34,6 +34,7 @@ model Company {
   sales               Sale[]
   salePayments        SalePayment[] // إيصالات قبض المبيعات
   saleReturns         SaleReturn[] // المرتجعات
+  dispatchOrders      DispatchOrder[] // أوامر صرف المخزن
   purchases           Purchase[] // المشتريات
   purchasePayments    PurchasePayment[] // إيصالات دفع المشتريات
   purchasesFromParent PurchaseFromParent[]  @relation("BranchPurchases")
@@ -119,6 +120,7 @@ model Users {
   Company       Company        @relation(fields: [CompanyID], references: [id])
   Sessions      UserSessions[]
   notifications Notification[] // إشعارات المستخدم
+  completedDispatchOrders DispatchOrder[] // أوامر الصرف المكتملة
 }
 
 model UserRoles {
@@ -187,6 +189,7 @@ model Sale {
   payments      SalePayment[] // الدفعات
   provisionalSaleConverted ProvisionalSale[] // الفواتير المبدئية المرحلة إلى هذه الفاتورة
   returns       SaleReturn[] // المرتجعات
+  dispatchOrders DispatchOrder[] // أوامر صرف المخزن
 
   @@index([companyId])
   @@index([customerId])
@@ -460,6 +463,37 @@ enum ReturnStatus {
   APPROVED  // معتمد
   REJECTED  // مرفوض
   PROCESSED // تمت المعالجة
+}
+
+enum DispatchOrderStatus {
+  PENDING     // معلق
+  IN_PROGRESS // قيد المعالجة
+  COMPLETED   // مكتمل
+  CANCELLED   // ملغي
+}
+
+/////////////////////////////////////////////////
+//            Warehouse Dispatch Orders
+/////////////////////////////////////////////////
+
+model DispatchOrder {
+  id            Int                 @id @default(autoincrement())
+  sale          Sale                @relation(fields: [saleId], references: [id])
+  saleId        Int
+  company       Company             @relation(fields: [companyId], references: [id])
+  companyId     Int
+  status        DispatchOrderStatus @default(PENDING)
+  notes         String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  completedAt   DateTime?
+  completedBy   String?
+  completedByUser Users?            @relation(fields: [completedBy], references: [UserID])
+
+  @@index([saleId])
+  @@index([companyId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 /////////////////////////////////////////////////

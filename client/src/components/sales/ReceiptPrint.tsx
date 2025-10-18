@@ -100,30 +100,43 @@ export const ReceiptPrint: React.FC<ReceiptPrintProps> = ({ sale }) => {
   const amountInWords = numberToArabicWords(total);
 
   return (
-    <div className="print-receipt" style={{ 
+    <>
+      <style>{`
+        @media print {
+          .print-receipt {
+            page-break-after: avoid !important;
+            page-break-inside: avoid !important;
+          }
+          @page {
+            size: A4;
+            margin: 0;
+          }
+        }
+      `}</style>
+      <div className="print-receipt" style={{ 
       width: '210mm', 
-      minHeight: '148mm', // نصف صفحة A4
+      maxHeight: '297mm', // صفحة A4 كاملة
       padding: '15mm',
       backgroundColor: 'white',
       fontFamily: 'Arial, sans-serif',
       direction: 'rtl',
-      pageBreakAfter: 'always',
-      border: '3px double #333'
+      border: '3px double #333',
+      boxSizing: 'border-box'
     }}>
       {/* رأس الإيصال */}
-      <div style={{ textAlign: 'center', marginBottom: '25px', borderBottom: '2px solid #1e40af', paddingBottom: '15px' }}>
-        <h1 style={{ fontSize: '28px', margin: '0 0 8px 0', color: '#1e40af' }}>
+      <div style={{ textAlign: 'center', marginBottom: '15px', borderBottom: '2px solid #1e40af', paddingBottom: '10px' }}>
+        <h1 style={{ fontSize: '24px', margin: '0 0 5px 0', color: '#1e40af' }}>
           {sale.company.name}
         </h1>
-        <p style={{ fontSize: '13px', margin: '5px 0', color: '#666' }}>
+        <p style={{ fontSize: '12px', margin: '3px 0', color: '#666' }}>
           كود الشركة: {sale.company.code}
         </p>
         <h2 style={{ 
-          fontSize: '22px', 
-          margin: '12px 0 0 0', 
+          fontSize: '20px', 
+          margin: '8px 0 0 0', 
           color: 'white',
           backgroundColor: '#16a34a',
-          padding: '8px',
+          padding: '6px',
           borderRadius: '6px'
         }}>
           إيصال قبض نقدي
@@ -134,9 +147,9 @@ export const ReceiptPrint: React.FC<ReceiptPrintProps> = ({ sale }) => {
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: '1fr 1fr', 
-        gap: '15px',
-        marginBottom: '25px',
-        padding: '12px',
+        gap: '12px',
+        marginBottom: '15px',
+        padding: '10px',
         backgroundColor: '#f0fdf4',
         borderRadius: '6px',
         border: '1px solid #16a34a'
@@ -168,20 +181,20 @@ export const ReceiptPrint: React.FC<ReceiptPrintProps> = ({ sale }) => {
 
       {/* معلومات الدافع */}
       <div style={{ 
-        marginBottom: '25px',
-        padding: '15px',
+        marginBottom: '15px',
+        padding: '12px',
         backgroundColor: '#fef3c7',
         borderRadius: '6px',
         border: '1px solid #fbbf24'
       }}>
-        <p style={{ margin: '0 0 10px 0', fontSize: '15px', fontWeight: 'bold', color: '#92400e' }}>
+        <p style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 'bold', color: '#92400e' }}>
           استلمنا من السيد/ة:
         </p>
-        <p style={{ margin: '0', fontSize: '18px', fontWeight: 'bold', color: '#1e40af' }}>
+        <p style={{ margin: '0', fontSize: '16px', fontWeight: 'bold', color: '#1e40af' }}>
           {sale.customer?.name || 'عميل نقدي'}
         </p>
         {sale.customer?.phone && (
-          <p style={{ margin: '5px 0 0 0', fontSize: '13px', color: '#666' }}>
+          <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#666' }}>
             الهاتف: {sale.customer.phone}
           </p>
         )}
@@ -189,8 +202,8 @@ export const ReceiptPrint: React.FC<ReceiptPrintProps> = ({ sale }) => {
 
       {/* المبلغ */}
       <div style={{ 
-        marginBottom: '25px',
-        padding: '20px',
+        marginBottom: '15px',
+        padding: '15px',
         backgroundColor: '#dbeafe',
         borderRadius: '8px',
         border: '2px solid #1e40af',
@@ -222,13 +235,13 @@ export const ReceiptPrint: React.FC<ReceiptPrintProps> = ({ sale }) => {
 
       {/* السبب */}
       <div style={{ 
-        marginBottom: '25px',
-        padding: '12px',
+        marginBottom: '15px',
+        padding: '10px',
         backgroundColor: '#f9fafb',
         borderRadius: '6px',
         border: '1px solid #d1d5db'
       }}>
-        <p style={{ margin: '0', fontSize: '14px' }}>
+        <p style={{ margin: '0', fontSize: '13px' }}>
           <strong>وذلك عن:</strong> قيمة فاتورة مبيعات رقم {sale.invoiceNumber || sale.id}
         </p>
       </div>
@@ -237,9 +250,9 @@ export const ReceiptPrint: React.FC<ReceiptPrintProps> = ({ sale }) => {
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: '1fr 1fr', 
-        gap: '40px',
-        marginTop: '40px',
-        paddingTop: '15px',
+        gap: '30px',
+        marginTop: '20px',
+        paddingTop: '12px',
         borderTop: '1px solid #ddd'
       }}>
         <div style={{ textAlign: 'center' }}>
@@ -259,16 +272,17 @@ export const ReceiptPrint: React.FC<ReceiptPrintProps> = ({ sale }) => {
       {/* الختم */}
       <div style={{ 
         textAlign: 'center', 
-        marginTop: '25px', 
-        padding: '10px',
+        marginTop: '15px', 
+        padding: '8px',
         backgroundColor: '#f3f4f6',
         borderRadius: '6px',
-        fontSize: '11px', 
+        fontSize: '10px', 
         color: '#666' 
       }}>
-        <p style={{ margin: '3px 0' }}>✓ إيصال قبض نقدي صحيح</p>
-        <p style={{ margin: '3px 0' }}>تم الطباعة بتاريخ: {new Date().toLocaleDateString('ar-LY')} - {new Date().toLocaleTimeString('ar-LY')}</p>
+        <p style={{ margin: '2px 0' }}>✓ إيصال قبض نقدي صحيح</p>
+        <p style={{ margin: '2px 0' }}>تم الطباعة بتاريخ: {new Date().toLocaleDateString('ar-LY')} - {new Date().toLocaleTimeString('ar-LY')}</p>
       </div>
     </div>
+    </>
   );
 };
