@@ -80,80 +80,106 @@ const SalesPage = () => {
       console.log('🔍 بدء تحميل ماسح QR Code...');
       
       // انتظار قليلاً للتأكد من أن DOM جاهز
-      setTimeout(() => {
-        // Dynamic import لتجنب مشاكل SSR
-        import('html5-qrcode')
-          .then((module) => {
-            console.log('✅ تم تحميل المكتبة:', module);
+      setTimeout(async () => {
+        try {
+          // التحقق من وجود الـ div
+          const qrReaderElement = document.getElementById('qr-reader');
+          if (!qrReaderElement) {
+            console.error('❌ عنصر qr-reader غير موجود في DOM');
+            notifications.custom.error('خطأ', 'عنصر الماسح غير موجود. حاول مرة أخرى.');
+            return;
+          }
+          
+          console.log('✅ عنصر qr-reader موجود');
+          
+          // Dynamic import لتجنب مشاكل SSR
+          const { Html5Qrcode } = await import('html5-qrcode');
+          
+          console.log('✅ تم تحميل المكتبة Html5Qrcode');
+          
+          // إنشاء ماسح جديد
+          const html5QrCode = new Html5Qrcode('qr-reader');
+          
+          console.log('📷 طلب الوصول للكاميرا...');
+          
+          // الحصول على قائمة الكاميرات المتاحة
+          const devices = await Html5Qrcode.getCameras();
+          
+          if (devices && devices.length > 0) {
+            console.log('✅ تم العثور على كاميرات:', devices.length);
             
-            // الوصول الصحيح للـ class
-            const Html5QrcodeScanner = (module as any).Html5QrcodeScanner || module.default?.Html5QrcodeScanner;
+            // اختيار الكاميرا الخلفية إذا كانت متاحة
+            let cameraId = devices[0].id;
             
-            if (!Html5QrcodeScanner) {
-              console.error('❌ Html5QrcodeScanner not found in module');
-              notifications.custom.error('خطأ', 'فشل في تحميل ماسح QR Code');
-              return;
+            // البحث عن الكاميرا الخلفية
+            const backCamera = devices.find(device => 
+              device.label.toLowerCase().includes('back') || 
+              device.label.toLowerCase().includes('rear') ||
+              device.label.toLowerCase().includes('environment')
+            );
+            
+            if (backCamera) {
+              cameraId = backCamera.id;
+              console.log('📷 استخدام الكاميرا الخلفية:', backCamera.label);
+            } else {
+              console.log('📷 استخدام الكاميرا الافتراضية:', devices[0].label);
             }
             
-            console.log('📷 إنشاء ماسح QR Code...');
-            
-            // التحقق من وجود الـ div
-            const qrReaderElement = document.getElementById('qr-reader');
-            if (!qrReaderElement) {
-              console.error('❌ عنصر qr-reader غير موجود في DOM');
-              notifications.custom.error('خطأ', 'عنصر الماسح غير موجود. حاول مرة أخرى.');
-              return;
-            }
-            
-            console.log('✅ عنصر qr-reader موجود:', qrReaderElement);
-            
-            const scanner = new Html5QrcodeScanner(
-              'qr-reader',
-              { 
+            // بدء المسح
+            await html5QrCode.start(
+              cameraId,
+              {
                 fps: 10,
                 qrbox: { width: 250, height: 250 },
                 aspectRatio: 1.0,
-                // إعدادات محسّنة للموبايل والتابلت
-                rememberLastUsedCamera: true,
-                showTorchButtonIfSupported: true, // زر الفلاش للموبايل
-                // تفضيل الكاميرا الخلفية للموبايل
-                videoConstraints: {
-                  facingMode: { ideal: "environment" }
-                }
               },
-              false
-            );
-
-            console.log('🎬 بدء render الماسح...');
-            
-            scanner.render(
-              (decodedText: string) => {
+              (decodedText, decodedResult) => {
                 console.log('✅ تم مسح QR Code:', decodedText);
-                handleQRScan(decodedText);
-                scanner.clear().catch(() => {});
-                qrScannerRef.current = null;
-                setShowQRScanner(false);
+                
+                // إيقاف المسح
+                html5QrCode.stop().then(() => {
+                  console.log('⏹️ تم إيقاف الماسح');
+                  handleQRScan(decodedText);
+                  qrScannerRef.current = null;
+                  setShowQRScanner(false);
+                }).catch((err) => {
+                  console.error('خطأ في إيقاف الماسح:', err);
+                });
               },
-              (error: any) => {
-                // Ignore errors during scanning
-                console.log('⚠️ خطأ أثناء المسح (يتم تجاهله):', error);
+              (errorMessage) => {
+                // تجاهل أخطاء المسح العادية
               }
             );
-
-            qrScannerRef.current = scanner;
-            console.log('✅ تم تهيئة الماسح بنجاح');
-          })
-          .catch((error) => {
-            console.error('❌ Failed to load QR scanner:', error);
-            notifications.custom.error('خطأ', 'فشل في تحميل ماسح QR Code. تأكد من السماح بالوصول للكاميرا.');
-          });
-      }, 100); // انتظار 100ms للتأكد من أن DOM جاهز
+            
+            qrScannerRef.current = html5QrCode;
+            console.log('✅ تم تهيئة الماسح بنجاح وبدء المسح');
+            
+          } else {
+            console.error('❌ لم يتم العثور على كاميرات');
+            notifications.custom.error('خطأ', 'لم يتم العثور على كاميرا. تأكد من السماح بالوصول للكاميرا.');
+          }
+          
+        } catch (error: any) {
+          console.error('❌ خطأ في تهيئة الماسح:', error);
+          
+          if (error.name === 'NotAllowedError') {
+            notifications.custom.error(
+              'تم رفض الوصول للكاميرا',
+              'يجب السماح للمتصفح بالوصول إلى الكاميرا. اضغط على أيقونة القفل في شريط العنوان وامنح الإذن.'
+            );
+          } else if (error.name === 'NotFoundError') {
+            notifications.custom.error('خطأ', 'لم يتم العثور على كاميرا متصلة بالجهاز.');
+          } else {
+            notifications.custom.error('خطأ', `فشل في تشغيل الكاميرا: ${error.message || 'خطأ غير معروف'}`);
+          }
+        }
+      }, 100);
     }
 
     return () => {
       if (qrScannerRef.current) {
         console.log('🧹 تنظيف الماسح...');
-        qrScannerRef.current.clear().catch(() => {});
+        qrScannerRef.current.stop().catch(() => {});
         qrScannerRef.current = null;
       }
     };
