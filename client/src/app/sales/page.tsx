@@ -73,35 +73,50 @@ const SalesPage = () => {
 
   // Initialize QR Scanner
   useEffect(() => {
+    // التأكد من أننا في بيئة المتصفح
+    if (typeof window === 'undefined') return;
+    
     if (showQRScanner && !qrScannerRef.current) {
       // Dynamic import لتجنب مشاكل SSR
-      import('html5-qrcode').then(({ Html5QrcodeScanner }) => {
-        const scanner = new Html5QrcodeScanner(
-          'qr-reader',
-          { 
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0
-          },
-          false
-        );
+      import('html5-qrcode')
+        .then((module) => {
+          const Html5QrcodeScanner = module.Html5QrcodeScanner;
+          
+          const scanner = new Html5QrcodeScanner(
+            'qr-reader',
+            { 
+              fps: 10,
+              qrbox: { width: 250, height: 250 },
+              aspectRatio: 1.0,
+              // إعدادات محسّنة للموبايل والتابلت
+              rememberLastUsedCamera: true,
+              showTorchButtonIfSupported: true, // زر الفلاش للموبايل
+              // تفضيل الكاميرا الخلفية للموبايل
+              videoConstraints: {
+                facingMode: { ideal: "environment" }
+              }
+            },
+            false
+          );
 
-        scanner.render(
-          (decodedText: string) => {
-            handleQRScan(decodedText);
-            scanner.clear();
-            qrScannerRef.current = null;
-          },
-          (error: any) => {
-            // Ignore errors during scanning
-          }
-        );
+          scanner.render(
+            (decodedText: string) => {
+              handleQRScan(decodedText);
+              scanner.clear().catch(() => {});
+              qrScannerRef.current = null;
+              setShowQRScanner(false);
+            },
+            (error: any) => {
+              // Ignore errors during scanning
+            }
+          );
 
-        qrScannerRef.current = scanner;
-      }).catch((error) => {
-        console.error('Failed to load QR scanner:', error);
-        notifications.custom.error('خطأ', 'فشل في تحميل ماسح QR Code');
-      });
+          qrScannerRef.current = scanner;
+        })
+        .catch((error) => {
+          console.error('Failed to load QR scanner:', error);
+          notifications.custom.error('خطأ', 'فشل في تحميل ماسح QR Code. تأكد من السماح بالوصول للكاميرا.');
+        });
     }
 
     return () => {
@@ -1186,10 +1201,11 @@ const SalesPage = () => {
                           <div>
                             <p className="font-medium">💡 نصائح:</p>
                             <ul className="list-disc list-inside mt-1 space-y-0.5">
-                              <li>اسمح للمتصفح بالوصول إلى الكاميرا</li>
-                              <li>تأكد من إضاءة جيدة للحصول على أفضل نتيجة</li>
-                              <li>ضع QR Code في المربع المحدد</li>
-                              <li>سيتم إضافة الصنف تلقائياً عند المسح</li>
+                              <li>📱 <strong>اسمح للمتصفح بالوصول إلى الكاميرا</strong> (ضروري!)</li>
+                              <li>💡 تأكد من إضاءة جيدة - استخدم زر الفلاش إذا لزم الأمر</li>
+                              <li>🎯 ضع QR Code في المربع المحدد</li>
+                              <li>📷 على الموبايل: سيتم استخدام الكاميرا الخلفية تلقائياً</li>
+                              <li>✅ سيتم إضافة الصنف تلقائياً عند المسح الناجح</li>
                             </ul>
                           </div>
                         </div>
