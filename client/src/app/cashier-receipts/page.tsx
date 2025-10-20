@@ -9,11 +9,42 @@ import { ReceiptPrint } from '@/components/sales/ReceiptPrint';
 import { InvoicePrint } from '@/components/sales/InvoicePrint';
 import { Search, Filter, X } from 'lucide-react';
 import html2canvas from 'html2canvas';
+import { 
+  useGetCreditSalesQuery,
+  useGetCreditSalesStatsQuery,
+  useCreatePaymentMutation,
+  useDeletePaymentMutation,
+  CreditSale,
+  SalePayment
+} from '@/state/salePaymentApi';
+import { CreditPaymentReceiptPrint } from '@/components/sales/CreditPaymentReceiptPrint';
+import { PaymentsHistoryPrint } from '@/components/sales/PaymentsHistoryPrint';
+import { formatArabicNumber, formatArabicCurrency } from '@/utils/formatArabicNumbers';
+import { useGetCompaniesQuery } from '@/state/companyApi';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/app/redux';
+import { useEffect } from 'react';
 
 export default function CashierReceiptsPage() {
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'cash' | 'credit'>('cash');
+  
+  // Cash sales states
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [receiptFilter, setReceiptFilter] = useState<'all' | 'issued' | 'pending'>('all');
+  
+  // Credit sales states
+  const [creditCurrentPage, setCreditCurrentPage] = useState(1);
+  const [creditSearchTerm, setCreditSearchTerm] = useState('');
+  const [filterFullyPaid, setFilterFullyPaid] = useState<'all' | 'paid' | 'unpaid'>('all');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
+  const [selectedCreditSale, setSelectedCreditSale] = useState<CreditSale | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<SalePayment | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showPrintReceiptModal, setShowPrintReceiptModal] = useState(false);
+  const [showPrintHistoryModal, setShowPrintHistoryModal] = useState(false);
   
   // تعيين تاريخ اليوم كـ default
   const getTodayDate = () => {
@@ -95,6 +126,18 @@ export default function CashierReceiptsPage() {
 
   const [issueReceipt, { isLoading: isIssuing }] = useIssueReceiptMutation();
   const [createDispatchOrder, { isLoading: isCreatingDispatch }] = useCreateDispatchOrderMutation();
+  
+  // Credit sales API calls
+  const { data: creditSalesData, isLoading: creditSalesLoading, refetch: refetchCreditSales } = useGetCreditSalesQuery({
+    page: creditCurrentPage,
+    limit: 10,
+    search: creditSearchTerm,
+    isFullyPaid: filterFullyPaid === 'all' ? undefined : filterFullyPaid === 'paid'
+  });
+  const { data: creditStatsData } = useGetCreditSalesStatsQuery();
+  const [createPayment, { isLoading: isCreatingPayment }] = useCreatePaymentMutation();
+  const [deletePayment] = useDeletePaymentMutation();
+  const { data: companiesData } = useGetCompaniesQuery({ limit: 1000 });
 
   const printReceipt = (sale: Sale) => {
     setCurrentSaleToPrint(sale);
@@ -342,6 +385,159 @@ ${itemsText}
     setEndDate(getTodayDate());
     setCurrentPage(1);
   };
+  
+  // Credit sales functions
+  const currentUserFromRedux = useSelector((state: RootState) => state.auth.user);
+  
+  // Auto-select company for non-system users
+  useEffect(() => {
+    if (currentUserFromRedux && !currentUserFromRedux.isSystemUser && currentUserFromRedux.companyId) {
+      setSelectedCompanyId(currentUserFromRedux.companyId);
+    }
+  }, [currentUserFromRedux]);
+  
+  // Filter credit sales by selected company
+  const filteredCreditSales = creditSalesData?.data?.sales?.filter((sale: CreditSale) => {
+    if (!selectedCompanyId) return true;
+    return sale.companyId === selectedCompanyId;
+  }) || [];
+  
+  const handleCreatePayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCreditSale) return;
+
+    const formData = new FormData(e.target as HTMLFormElement);
+    const amount = Number(formData.get('amount'));
+    const paymentMethod = formData.get('paymentMethod') as "CASH" | "BANK" | "CARD";
+    const notes = formData.get('notes') as string;
+
+    if (amount <= 0) {
+      showError('المبلغ يجب أن يكون أكبر من صفر');
+      return;
+    }
+
+    if (amount > selectedCreditSale.remainingAmount) {
+      showError(`المبلغ يتجاوز المبلغ المتبقي (${formatArabicCurrency(selectedCreditSale.remainingAmount)})`);
+      return;
+    }
+
+    try {
+      const result = await createPayment({
+        saleId: selectedCreditSale.id,
+        amount,
+        paymentMethod,
+        notes: notes || undefined
+      }).unwrap();
+      
+      success('تم إنشاء إيصال القبض بنجاح');
+      await refetchCreditSales();
+      
+      const newPayment = result.data.payment;
+      const updatedSale = result.data.sale;
+      
+      setShowPaymentModal(false);
+      
+      setTimeout(() => {
+        setSelectedPayment(newPayment);
+        setSelectedCreditSale(updatedSale);
+        setShowPrintReceiptModal(true);
+      }, 300);
+    } catch (err: any) {
+      showError(err.data?.message || 'حدث خطأ أثناء إنشاء الدفعة');
+    }
+  };
+  
+  const handleDeletePayment = async (payment: SalePayment) => {
+    const confirmed = window.confirm(`هل أنت متأكد من حذف إيصال القبض رقم ${payment.receiptNumber}؟`);
+    if (confirmed) {
+      try {
+        await deletePayment(payment.id).unwrap();
+        success('تم حذف الدفعة بنجاح');
+        refetchCreditSales();
+      } catch (err: any) {
+        showError(err.data?.message || 'حدث خطأ أثناء حذف الدفعة');
+      }
+    }
+  };
+  
+  const printCreditReceipt = () => {
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      showError('يرجى السماح بفتح النوافذ المنبثقة للطباعة');
+      return;
+    }
+    
+    const printContent = document.getElementById('receipt-print-content');
+    if (!printContent) return;
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+      <head>
+        <meta charset="UTF-8">
+        <title>إيصال قبض</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; direction: rtl; }
+          @media print {
+            body { margin: 0; padding: 0; }
+            .print-receipt { page-break-after: always; }
+          }
+          @page { size: A4; margin: 0; }
+        </style>
+      </head>
+      <body>
+        ${printContent.innerHTML}
+        <script>
+          window.onload = function() {
+            window.print();
+            window.onafterprint = function() { window.close(); };
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+  
+  const printPaymentsHistory = () => {
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      showError('يرجى السماح بفتح النوافذ المنبثقة للطباعة');
+      return;
+    }
+    
+    const printContent = document.getElementById('history-print-content');
+    if (!printContent) return;
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+      <head>
+        <meta charset="UTF-8">
+        <title>سجل الدفعات</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; direction: rtl; }
+          @media print {
+            body { margin: 0; padding: 0; }
+          }
+          @page { size: A4; margin: 0; }
+        </style>
+      </head>
+      <body>
+        ${printContent.innerHTML}
+        <script>
+          window.onload = function() {
+            window.print();
+            window.onafterprint = function() { window.close(); };
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   const sales = salesData?.data?.sales || [];
   const pagination = salesData?.data?.pagination;
@@ -365,9 +561,46 @@ ${itemsText}
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">إيصالات القبض - المحاسب</h1>
-        <p className="text-gray-600 mt-1">إدارة إيصالات القبض للفواتير النقدية</p>
+        <p className="text-gray-600 mt-1">إدارة إيصالات القبض للفواتير النقدية والآجلة</p>
       </div>
       
+      {/* Tabs */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8 space-x-reverse" aria-label="Tabs">
+            <button
+              onClick={() => setActiveTab('cash')}
+              className={`${
+                activeTab === 'cash'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              المبيعات النقدية
+            </button>
+            <button
+              onClick={() => setActiveTab('credit')}
+              className={`${
+                activeTab === 'credit'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              المبيعات الآجلة
+            </button>
+          </nav>
+        </div>
+      </div>
+      
+      {/* Cash Sales Tab Content */}
+      {activeTab === 'cash' && (
+      <>
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -741,6 +974,19 @@ ${itemsText}
       >
         {currentSaleForWhatsApp && <InvoicePrint sale={currentSaleForWhatsApp} />}
       </div>
+      </>
+      )}
+      
+      {/* Credit Sales Tab Content */}
+      {activeTab === 'credit' && (
+        <div className="text-center py-12 bg-white rounded-lg shadow">
+          <svg className="mx-auto h-12 w-12 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          </svg>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">المبيعات الآجلة</h3>
+          <p className="mt-1 text-sm text-gray-500">قريباً... سيتم دمج شاشة المبيعات الآجلة هنا</p>
+        </div>
+      )}
     </div>
   );
 }

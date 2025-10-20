@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 import { 
   useGetSalesQuery, 
   useCreateSaleMutation, 
@@ -58,7 +59,9 @@ const SalesPage = () => {
   const [productSearchTerm, setProductSearchTerm] = useState('');
   const [productCodeSearch, setProductCodeSearch] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const qrScannerRef = useRef<Html5QrcodeScanner | null>(null);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -68,6 +71,94 @@ const SalesPage = () => {
       }
     };
   }, []);
+
+  // Initialize QR Scanner
+  useEffect(() => {
+    if (showQRScanner && !qrScannerRef.current) {
+      const scanner = new Html5QrcodeScanner(
+        'qr-reader',
+        { 
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0
+        },
+        false
+      );
+
+      scanner.render(
+        (decodedText) => {
+          handleQRScan(decodedText);
+          scanner.clear();
+          qrScannerRef.current = null;
+        },
+        (error) => {
+          // Ignore errors during scanning
+        }
+      );
+
+      qrScannerRef.current = scanner;
+    }
+
+    return () => {
+      if (qrScannerRef.current) {
+        qrScannerRef.current.clear().catch(() => {});
+        qrScannerRef.current = null;
+      }
+    };
+  }, [showQRScanner]);
+
+  // Handle QR Code scan
+  const handleQRScan = (qrData: string) => {
+    try {
+      const productData = JSON.parse(qrData);
+      
+      // البحث عن الصنف باستخدام ID أو SKU
+      const product = productsData?.data?.products?.find(
+        p => p.id === productData.id || p.sku === productData.sku
+      );
+
+      if (!product) {
+        notifications.custom.error('خطأ', 'الصنف غير موجود في النظام');
+        return;
+      }
+
+      // التحقق من أن الصنف ينتمي للشركة المستهدفة
+      const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
+      if (targetCompanyId && product.createdByCompanyId !== targetCompanyId) {
+        const otherCompany = companiesData?.data?.companies?.find(
+          c => c.id === product.createdByCompanyId
+        );
+        notifications.custom.error(
+          'الصنف غير متاح',
+          `الصنف "${product.name}" لا ينتمي للشركة المختارة.\n\n` +
+          `هذا الصنف تابع لـ: ${otherCompany?.name || 'شركة أخرى'}`
+        );
+        return;
+      }
+
+      // إضافة الصنف للفاتورة
+      addSaleLine();
+      const newIndex = saleForm.lines.length;
+      
+      // تحديث البند الجديد
+      setTimeout(() => {
+        updateSaleLine(newIndex, 'productId', product.id);
+        if (product.price?.sellPrice) {
+          updateSaleLine(newIndex, 'unitPrice', Number(product.price.sellPrice));
+        }
+        updateSaleLine(newIndex, 'qty', 1);
+        
+        notifications.custom.success(
+          'تم بنجاح',
+          `تمت إضافة الصنف "${product.name}" للفاتورة`
+        );
+      }, 100);
+
+      setShowQRScanner(false);
+    } catch (error) {
+      notifications.custom.error('خطأ', 'QR Code غير صالح');
+    }
+  };
 
   // API calls
   const { data: salesData, isLoading: salesLoading, refetch: refetchSales } = useGetSalesQuery({
@@ -1000,7 +1091,7 @@ const SalesPage = () => {
                         </span>
                       )}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           البحث بالاسم
@@ -1035,7 +1126,70 @@ const SalesPage = () => {
                           💡 سيتم البحث تلقائياً بعد التوقف عن الكتابة (من مخزن الشركة فقط)
                         </p>
                       </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          مسح QR Code
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowQRScanner(!showQRScanner);
+                          }}
+                          className="w-full px-3 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700 transition-all flex items-center justify-center gap-2"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                          </svg>
+                          {showQRScanner ? 'إغلاق الماسح' : 'مسح QR Code'}
+                        </button>
+                        <p className="text-xs text-gray-500 mt-1">
+                          📱 امسح الكود لإضافة الصنف تلقائياً
+                        </p>
+                      </div>
                     </div>
+                    
+                    {/* QR Scanner Camera */}
+                    {showQRScanner && (
+                      <div className="mt-3 p-4 bg-purple-50 border-2 border-purple-300 rounded-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <div>
+                              <h4 className="text-sm font-bold text-purple-900">📱 ماسح QR Code</h4>
+                              <p className="text-xs text-purple-700">وجّه الكاميرا نحو QR Code</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowQRScanner(false)}
+                            className="text-purple-600 hover:text-purple-800 font-bold text-xl"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        
+                        {/* Camera Preview */}
+                        <div id="qr-reader" className="rounded-lg overflow-hidden"></div>
+                        
+                        <div className="mt-3 flex items-start gap-2 text-xs text-purple-700 bg-white p-2 rounded">
+                          <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div>
+                            <p className="font-medium">💡 نصائح:</p>
+                            <ul className="list-disc list-inside mt-1 space-y-0.5">
+                              <li>اسمح للمتصفح بالوصول إلى الكاميرا</li>
+                              <li>تأكد من إضاءة جيدة للحصول على أفضل نتيجة</li>
+                              <li>ضع QR Code في المربع المحدد</li>
+                              <li>سيتم إضافة الصنف تلقائياً عند المسح</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     {(productSearchTerm || productCodeSearch) && (
                       <div className="mt-3 flex justify-between items-center p-2 bg-white rounded-md border border-blue-200">
                         <div className="text-xs font-medium text-gray-600">
@@ -1320,17 +1474,17 @@ const SalesPage = () => {
                 try {
                   const result = await createCustomer(customerData).unwrap();
                   
-                  // تحديث قائمة العملاء أولاً
-                  await refetchCustomers();
-                  
-                  // تحديد العميل الجديد تلقائياً في النموذج
-                  if (result.data?.id) {
-                    setSaleForm(prev => ({ ...prev, customerId: result.data.id }));
-                  }
-                  
-                  // إغلاق المودال وإظهار رسالة النجاح
+                  // إغلاق المودال أولاً
                   setShowCreateCustomerModal(false);
-                  notifications.custom.success('تم بنجاح', 'تم إضافة العميل بنجاح واختياره تلقائياً');
+                  
+                  // انتظار قصير جداً للتأكد من تحديث الـ cache
+                  setTimeout(() => {
+                    // تحديد العميل الجديد تلقائياً في النموذج
+                    if (result.data?.id) {
+                      setSaleForm(prev => ({ ...prev, customerId: result.data.id }));
+                    }
+                    notifications.custom.success('تم بنجاح', 'تم إضافة العميل بنجاح واختياره تلقائياً');
+                  }, 100);
                 } catch (err: any) {
                   notifications.custom.error('خطأ', err.data?.message || 'حدث خطأ أثناء إضافة العميل');
                 }

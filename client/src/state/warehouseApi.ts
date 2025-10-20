@@ -78,7 +78,7 @@ export interface DispatchOrdersResponse {
 export const warehouseApi = createApi({
   reducerPath: 'warehouseApi',
   baseQuery: baseQueryWithAuthInterceptor,
-  tagTypes: ['DispatchOrders'],
+  tagTypes: ['DispatchOrders', 'Sales'],
   endpoints: (builder) => ({
     // Get all dispatch orders
     getDispatchOrders: builder.query<{ data: DispatchOrdersResponse }, GetDispatchOrdersParams>({
@@ -102,7 +102,7 @@ export const warehouseApi = createApi({
         method: 'POST',
         body,
       }),
-      invalidatesTags: ['DispatchOrders'],
+      invalidatesTags: ['DispatchOrders', 'Sales'],
     }),
 
     // Update dispatch order status

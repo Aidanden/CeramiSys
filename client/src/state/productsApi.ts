@@ -14,6 +14,7 @@ export interface Product {
   name: string;
   unit?: string;
   unitsPerBox?: number; // عدد الوحدات في الصندوق الواحد
+  qrCode?: string; // QR Code كـ Data URL
   createdByCompanyId: number;
   createdByCompany: {
     id: number;

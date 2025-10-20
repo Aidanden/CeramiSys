@@ -53,6 +53,7 @@ model Product {
   name               String
   unit               String?  // وحدة القياس الأساسية (مثل: متر، قطعة، كيلو)
   unitsPerBox        Decimal? @db.Decimal(10, 4) // عدد الوحدات في الصندوق الواحد (مثل: 6 متر)
+  qrCode             String?  @db.Text // QR Code كـ Data URL
   createdByCompany   Company  @relation("ProductsCreated", fields: [createdByCompanyId], references: [id])
   createdByCompanyId Int // دائماً الشركة الأم
   createdAt          DateTime @default(now())

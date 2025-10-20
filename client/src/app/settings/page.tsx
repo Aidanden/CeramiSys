@@ -5,6 +5,7 @@ import { useToast } from '@/components/ui/Toast';
 
 export default function SettingsPage() {
   const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [lowStockThreshold, setLowStockThreshold] = useState('10');
   const [isSaving, setIsSaving] = useState(false);
   const { success, error } = useToast();
 
@@ -13,6 +14,11 @@ export default function SettingsPage() {
     const savedNumber = localStorage.getItem('whatsappNumber');
     if (savedNumber) {
       setWhatsappNumber(savedNumber);
+    }
+    
+    const savedThreshold = localStorage.getItem('lowStockThreshold');
+    if (savedThreshold) {
+      setLowStockThreshold(savedThreshold);
     }
   }, []);
 
@@ -30,11 +36,19 @@ export default function SettingsPage() {
       return;
     }
 
+    // التحقق من حد المخزون
+    const threshold = parseInt(lowStockThreshold);
+    if (isNaN(threshold) || threshold < 0) {
+      error('يرجى إدخال قيمة صحيحة لحد المخزون المنخفض');
+      return;
+    }
+
     setIsSaving(true);
     
     try {
       // حفظ في localStorage
       localStorage.setItem('whatsappNumber', cleanNumber);
+      localStorage.setItem('lowStockThreshold', threshold.toString());
       success('تم حفظ الإعدادات بنجاح');
     } catch (err) {
       error('حدث خطأ أثناء حفظ الإعدادات');
@@ -46,7 +60,9 @@ export default function SettingsPage() {
   // مسح الإعدادات
   const handleClear = () => {
     localStorage.removeItem('whatsappNumber');
+    localStorage.removeItem('lowStockThreshold');
     setWhatsappNumber('');
+    setLowStockThreshold('10');
     success('تم مسح الإعدادات');
   };
 
@@ -64,6 +80,47 @@ export default function SettingsPage() {
           <div>
             <h1 className="text-3xl font-bold text-text-primary">الإعدادات</h1>
             <p className="text-text-secondary">إدارة إعدادات النظام</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Inventory Settings Card */}
+      <div className="bg-white rounded-lg shadow-sm border border-border-primary p-6 mb-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+            <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-text-primary">إعدادات المخزون</h2>
+            <p className="text-sm text-text-secondary">تحديد حد المخزون المنخفض</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              حد المخزون المنخفض (عدد الصناديق)
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+              <input
+                type="number"
+                value={lowStockThreshold}
+                onChange={(e) => setLowStockThreshold(e.target.value)}
+                placeholder="10"
+                min="0"
+                className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-lg"
+              />
+            </div>
+            <p className="mt-2 text-sm text-gray-500">
+              💡 الأصناف التي يكون مخزونها أقل من أو يساوي هذا الحد ستظهر كـ "شارفت على الانتهاء"
+            </p>
           </div>
         </div>
       </div>

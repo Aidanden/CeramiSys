@@ -146,6 +146,7 @@ export interface ProductResponseDto {
   name: string;
   unit?: string;
   unitsPerBox?: number; // عدد الوحدات في الصندوق
+  qrCode?: string; // QR Code كـ Data URL
   createdByCompanyId: number;
   createdByCompany: {
     id: number;

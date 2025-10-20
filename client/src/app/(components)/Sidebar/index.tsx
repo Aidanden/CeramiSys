@@ -149,21 +149,15 @@ const Sidebar = () => {
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink
-            href="/cashier-receipts"
+            href="/accountant"
             icon={CreditCard}
-            label="إيصالات القبض "
+            label="مساحة عمل المحاسب"
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink
             href="/warehouse-dispatch"
             icon={Layout}
             label="أوامر صرف المخزن"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
-            href="/credit-sales"
-            icon={FileText}
-            label="المبيعات الآجلة"
             isCollapsed={isSidebarCollapsed}
           />
         {/*  <SidebarLink

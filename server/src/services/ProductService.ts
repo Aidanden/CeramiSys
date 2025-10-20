@@ -4,6 +4,7 @@
  */
 
 import { PrismaClient, Prisma } from '@prisma/client';
+import QRCode from 'qrcode';
 import { 
   CreateProductDto, 
   UpdateProductDto, 
@@ -84,6 +85,7 @@ export class ProductService {
         name: product.name,
         unit: product.unit ?? undefined,
         unitsPerBox: product.unitsPerBox ? Number(product.unitsPerBox) : undefined,
+        qrCode: product.qrCode ?? undefined,
         createdByCompanyId: product.createdByCompanyId,
         createdByCompany: product.createdByCompany,
         createdAt: product.createdAt,
@@ -157,6 +159,7 @@ export class ProductService {
         name: product.name,
         unit: product.unit ?? undefined,
         unitsPerBox: product.unitsPerBox ? Number(product.unitsPerBox) : undefined,
+        qrCode: product.qrCode ?? undefined,
         createdByCompanyId: product.createdByCompanyId,
         createdByCompany: product.createdByCompany,
         createdAt: product.createdAt,
@@ -202,7 +205,7 @@ export class ProductService {
         throw new Error('الشركة غير موجودة');
       }
 
-      // إنشاء الصنف
+      // إنشاء الصنف أولاً بدون QR Code
       const product = await this.prisma.product.create({
         data: {
           sku: data.sku,
@@ -217,6 +220,38 @@ export class ProductService {
           }
         }
       });
+
+      // توليد QR Code للصنف
+      try {
+        const productData = JSON.stringify({
+          id: product.id,
+          sku: product.sku,
+          name: product.name,
+          unit: product.unit,
+          unitsPerBox: product.unitsPerBox ? Number(product.unitsPerBox) : undefined
+        });
+
+        const qrCodeDataUrl = await QRCode.toDataURL(productData, {
+          width: 300,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
+
+        // تحديث الصنف بـ QR Code
+        await this.prisma.product.update({
+          where: { id: product.id },
+          data: { qrCode: qrCodeDataUrl }
+        });
+
+        // إضافة QR Code للـ product object
+        (product as any).qrCode = qrCodeDataUrl;
+      } catch (qrError) {
+        console.error('خطأ في توليد QR Code:', qrError);
+        // نستمر حتى لو فشل توليد QR Code
+      }
 
       // إنشاء السعر الأولي إذا تم تحديده
       if (data.sellPrice !== undefined) {

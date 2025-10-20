@@ -9,14 +9,11 @@ import {
   Trash2, 
   ShoppingBag, 
   DollarSign,
-  TrendingUp,
   Filter,
-  Download,
   Eye
 } from 'lucide-react';
 import { 
   useGetProductsQuery, 
-  useGetProductStatsQuery,
   useCreateProductMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
@@ -42,7 +39,11 @@ const ProductsPage = () => {
   // State للتصفية والبحث
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchSKU, setSearchSKU] = useState('');
   const [selectedUnit, setSelectedUnit] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState('');
+  const [stockFilter, setStockFilter] = useState<'all' | 'out' | 'low' | 'available'>('all');
+  const [lowStockThreshold, setLowStockThreshold] = useState(10);
   
   // State للمودالز
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -50,11 +51,21 @@ const ProductsPage = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
 
   // وحدة القياس في نماذج الإضافة والتعديل
   const [createUnit, setCreateUnit] = useState<'صندوق' | 'قطعة'>('صندوق');
   const [editUnit, setEditUnit] = useState<'صندوق' | 'قطعة'>('صندوق');
+
+  // تحميل حد المخزون من localStorage
+  useEffect(() => {
+    const savedThreshold = localStorage.getItem('lowStockThreshold');
+    if (savedThreshold) {
+      setLowStockThreshold(parseInt(savedThreshold));
+    }
+  }, []);
 
   // مزامنة قيمة الوحدة في نموذج التعديل عند فتح المودال
   useEffect(() => {
@@ -77,7 +88,6 @@ const ProductsPage = () => {
     refetchOnReconnect: true,
   });
 
-  const { data: statsData, isLoading: isLoadingStats } = useGetProductStatsQuery();
   const { data: companiesData, isLoading: isLoadingCompanies } = useGetCompaniesQuery({ limit: 100 });
   
   const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
@@ -87,8 +97,49 @@ const ProductsPage = () => {
   const [updatePrice] = useUpdatePriceMutation();
 
   // بيانات الأصناف
-  const products = productsData?.data?.products || [];
+  let products = productsData?.data?.products || [];
   const pagination = productsData?.data?.pagination;
+
+  // فلترة على جانب العميل
+  products = products.filter(product => {
+    // فلترة حسب اسم الصنف
+    if (searchTerm && !product.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+      return false;
+    }
+
+    // فلترة حسب كود الصنف
+    if (searchSKU && !product.sku.toLowerCase().includes(searchSKU.toLowerCase())) {
+      return false;
+    }
+
+    // فلترة حسب الشركة
+    if (selectedCompany && product.createdByCompanyId.toString() !== selectedCompany) {
+      return false;
+    }
+
+    // فلترة حسب حالة المخزون
+    const stockBoxes = product.stock?.boxes || 0;
+    if (stockFilter === 'out' && stockBoxes > 0) {
+      return false;
+    }
+    if (stockFilter === 'low' && (stockBoxes === 0 || stockBoxes > lowStockThreshold)) {
+      return false;
+    }
+    if (stockFilter === 'available' && stockBoxes === 0) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // حساب عدد الأصناف حسب الحالة
+  const allProducts = productsData?.data?.products || [];
+  const outOfStockCount = allProducts.filter(p => (p.stock?.boxes || 0) === 0).length;
+  const lowStockCount = allProducts.filter(p => {
+    const boxes = p.stock?.boxes || 0;
+    return boxes > 0 && boxes <= lowStockThreshold;
+  }).length;
+  const availableCount = allProducts.filter(p => (p.stock?.boxes || 0) > 0).length;
 
   // معالجة إنشاء صنف
   const handleCreateProduct = async (productData: CreateProductRequest) => {
@@ -177,6 +228,198 @@ const ProductsPage = () => {
     }
   };
 
+  // عرض QR Code المحفوظ للصنف
+  const handleGenerateQR = (product: Product) => {
+    if (product.qrCode) {
+      setQrCodeUrl(product.qrCode);
+      setSelectedProduct(product);
+      setIsQRModalOpen(true);
+    } else {
+      notifications.custom.error('خطأ', 'QR Code غير متوفر لهذا الصنف');
+    }
+  };
+
+  // طباعة QR Code مباشرة بدون فتح modal
+  const handlePrintQRDirect = (product: Product) => {
+    if (!product.qrCode) {
+      notifications.custom.error('خطأ', 'QR Code غير متوفر لهذا الصنف');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl">
+        <head>
+          <meta charset="UTF-8">
+          <title>QR Code - ${product.name}</title>
+          <style>
+            body {
+              font-family: 'Arial', sans-serif;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              margin: 0;
+              padding: 20px;
+            }
+            .qr-container {
+              text-align: center;
+              border: 2px solid #333;
+              padding: 30px;
+              border-radius: 10px;
+              background: white;
+            }
+            .product-info {
+              margin-bottom: 20px;
+            }
+            .product-name {
+              font-size: 24px;
+              font-weight: bold;
+              margin-bottom: 10px;
+              color: #333;
+            }
+            .product-sku {
+              font-size: 18px;
+              color: #666;
+              margin-bottom: 5px;
+            }
+            .product-details {
+              font-size: 14px;
+              color: #888;
+              margin-top: 10px;
+            }
+            img {
+              max-width: 300px;
+              height: auto;
+            }
+            @media print {
+              body {
+                padding: 0;
+              }
+              .qr-container {
+                border: 1px solid #333;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="qr-container">
+            <div class="product-info">
+              <div class="product-name">${product.name}</div>
+              <div class="product-sku">الكود: ${product.sku}</div>
+              ${product.unit ? `<div class="product-details">الوحدة: ${product.unit}</div>` : ''}
+              ${product.unitsPerBox ? `<div class="product-details">عدد الوحدات في الصندوق: ${product.unitsPerBox} م²</div>` : ''}
+              ${product.price?.sellPrice ? `<div class="product-details">السعر: ${product.price.sellPrice} د.ل</div>` : ''}
+            </div>
+            <img src="${product.qrCode}" alt="QR Code" />
+          </div>
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+              }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+  };
+
+  // طباعة QR Code
+  const handlePrintQR = () => {
+    if (!qrCodeUrl || !selectedProduct) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl">
+        <head>
+          <meta charset="UTF-8">
+          <title>QR Code - ${selectedProduct.name}</title>
+          <style>
+            body {
+              font-family: 'Arial', sans-serif;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              margin: 0;
+              padding: 20px;
+            }
+            .qr-container {
+              text-align: center;
+              border: 2px solid #333;
+              padding: 30px;
+              border-radius: 10px;
+              background: white;
+            }
+            .product-info {
+              margin-bottom: 20px;
+            }
+            .product-name {
+              font-size: 24px;
+              font-weight: bold;
+              margin-bottom: 10px;
+              color: #333;
+            }
+            .product-sku {
+              font-size: 18px;
+              color: #666;
+              margin-bottom: 5px;
+            }
+            .product-details {
+              font-size: 14px;
+              color: #888;
+              margin-top: 10px;
+            }
+            img {
+              max-width: 300px;
+              height: auto;
+            }
+            @media print {
+              body {
+                padding: 0;
+              }
+              .qr-container {
+                border: 1px solid #333;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="qr-container">
+            <div class="product-info">
+              <div class="product-name">${selectedProduct.name}</div>
+              <div class="product-sku">الكود: ${selectedProduct.sku}</div>
+              ${selectedProduct.unit ? `<div class="product-details">الوحدة: ${selectedProduct.unit}</div>` : ''}
+              ${selectedProduct.unitsPerBox ? `<div class="product-details">عدد الوحدات في الصندوق: ${selectedProduct.unitsPerBox}</div>` : ''}
+              ${selectedProduct.price?.sellPrice ? `<div class="product-details">السعر: ${selectedProduct.price.sellPrice} د.ل</div>` : ''}
+            </div>
+            <img src="${qrCodeUrl}" alt="QR Code" />
+          </div>
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+              }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto" dir="rtl">
       {/* Header */}
@@ -197,82 +440,107 @@ const ProductsPage = () => {
             إضافة صنف جديد
           </button>
         </div>
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          {isLoadingStats ? (
-            Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary animate-pulse">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="h-4 bg-background-tertiary rounded w-20 mb-2"></div>
-                    <div className="h-8 bg-background-tertiary rounded w-16"></div>
-                  </div>
-                  <div className="w-8 h-8 bg-background-tertiary rounded"></div>
-                </div>
-              </div>
-            ))
-          ) : statsData ? (
-            <>
-              <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-text-secondary text-sm">إجمالي الأصناف</p>
-                    <p className="text-2xl font-bold text-text-primary">{statsData.data.totalProducts}</p>
-                  </div>
-                  <ShoppingBag className="w-8 h-8 text-primary-600" />
-                </div>
-              </div>
-              
-              <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-text-secondary text-sm">أصناف بمخزون</p>
-                    <p className="text-2xl font-bold text-success-600">{statsData.data.productsWithStock}</p>
-                  </div>
-                  <TrendingUp className="w-8 h-8 text-success-600" />
-                </div>
-              </div>
-              
-              <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-text-secondary text-sm">أصناف بدون مخزون</p>
-                    <p className="text-2xl font-bold text-error-600">{Math.abs(statsData.data.productsWithoutStock)}</p>
-                  </div>
-                  <ShoppingBag className="w-8 h-8 text-error-600" />
-                </div>
-              </div>
-              
-              <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-text-secondary text-sm">قيمة المخزون</p>
-                    <p className="text-2xl font-bold text-purple-600">
-                      {formatArabicNumber(statsData.data.totalStockValue)} د.ل
-                    </p>
-                  </div>
-                  <DollarSign className="w-8 h-8 text-purple-600" />
-                </div>
-              </div>
-            </>
-          ) : null}
+      {/* Stock Status Filters */}
+      <div className="bg-surface-primary p-4 rounded-lg shadow-sm border border-border-primary mb-6">
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => setStockFilter('all')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+              stockFilter === 'all'
+                ? 'bg-primary-600 text-white shadow-md'
+                : 'bg-background-secondary text-text-secondary hover:bg-background-hover'
+            }`}
+          >
+            جميع الأصناف ({allProducts.length})
+          </button>
+          <button
+            onClick={() => setStockFilter('available')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+              stockFilter === 'available'
+                ? 'bg-success-600 text-white shadow-md'
+                : 'bg-background-secondary text-text-secondary hover:bg-background-hover'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            متوفرة بالمخزن ({availableCount})
+          </button>
+          <button
+            onClick={() => setStockFilter('out')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+              stockFilter === 'out'
+                ? 'bg-error-600 text-white shadow-md'
+                : 'bg-background-secondary text-text-secondary hover:bg-background-hover'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            منتهية من المخزن ({outOfStockCount})
+          </button>
+          <button
+            onClick={() => setStockFilter('low')}
+            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+              stockFilter === 'low'
+                ? 'bg-warning-600 text-white shadow-md'
+                : 'bg-background-secondary text-text-secondary hover:bg-background-hover'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h-2v-2h2v2zm0-4h-2V7h2v6zm-1-9C6.48 4 2 8.48 2 14s4.48 10 10 10 10-4.48 10-10S17.52 4 12 4z" />
+            </svg>
+            شارفت على الانتهاء ({lowStockCount})
+          </button>
         </div>
       </div>
 
       {/* Filters and Search */}
       <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
-          <div className="relative flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Search by Name */}
+          <div className="relative">
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-tertiary w-5 h-5" />
             <input
               type="text"
-              placeholder="البحث عن الأصناف..."
+              placeholder="البحث بالاسم..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pr-10 pl-4 py-2 border border-border-primary rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200"
             />
+          </div>
+
+          {/* Search by SKU */}
+          <div className="relative">
+            <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-tertiary w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+            </svg>
+            <input
+              type="text"
+              placeholder="البحث بالكود..."
+              value={searchSKU}
+              onChange={(e) => setSearchSKU(e.target.value)}
+              className="w-full pr-10 pl-4 py-2 border border-border-primary rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200"
+            />
+          </div>
+
+          {/* Company Filter */}
+          <div className="flex items-center gap-2">
+            <Filter className="w-5 h-5 text-text-tertiary" />
+            <select
+              value={selectedCompany}
+              onChange={(e) => setSelectedCompany(e.target.value)}
+              className="flex-1 px-4 py-2 border border-border-primary rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary transition-all duration-200"
+            >
+              <option value="">جميع الشركات</option>
+              {companiesData?.data?.companies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Unit Filter */}
@@ -281,22 +549,35 @@ const ProductsPage = () => {
             <select
               value={selectedUnit}
               onChange={(e) => setSelectedUnit(e.target.value)}
-              className="px-4 py-2 border border-border-primary rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary transition-all duration-200"
+              className="flex-1 px-4 py-2 border border-border-primary rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary transition-all duration-200"
             >
               <option value="">جميع الوحدات</option>
+              <option value="صندوق">صندوق</option>
               <option value="قطعة">قطعة</option>
-              <option value="متر">متر</option>
-              <option value="كيس">كيس</option>
-              <option value="علبة">علبة</option>
             </select>
           </div>
-
-          {/* Export */}
-          <button className="flex items-center gap-2 px-4 py-2 border border-border-primary rounded-lg hover:bg-background-hover transition-all duration-200 text-text-secondary hover:text-text-primary">
-            <Download className="w-5 h-5" />
-            تصدير
-          </button>
         </div>
+
+        {/* Clear Filters */}
+        {(searchTerm || searchSKU || selectedCompany || selectedUnit || stockFilter !== 'all') && (
+          <div className="mt-4 flex items-center justify-between">
+            <p className="text-sm text-text-secondary">
+              عرض {products.length} من {allProducts.length} صنف
+            </p>
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setSearchSKU('');
+                setSelectedCompany('');
+                setSelectedUnit('');
+                setStockFilter('all');
+              }}
+              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+            >
+              مسح الفلاتر
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Products Table */}
@@ -478,10 +759,23 @@ const ProductsPage = () => {
                           <DollarSign className="w-4 h-4" />
                         </button>
                         <button
-                          className="text-gray-600 hover:text-gray-900 p-1 rounded"
-                          title="عرض التفاصيل"
+                          onClick={() => handleGenerateQR(product)}
+                          className="text-indigo-600 hover:text-indigo-900 p-1 rounded"
+                          title="عرض QR Code"
                         >
-                          <Eye className="w-4 h-4" />
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handlePrintQRDirect(product)}
+                          className="text-blue-600 hover:text-blue-900 p-1 rounded"
+                          title="طباعة QR Code"
+                          disabled={!product.qrCode}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                          </svg>
                         </button>
                       </div>
                     </td>
@@ -1090,6 +1384,98 @@ const ProductsPage = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Modal */}
+      {isQRModalOpen && selectedProduct && qrCodeUrl && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                </svg>
+                QR Code - {selectedProduct.name}
+              </h3>
+              <button
+                onClick={() => {
+                  setIsQRModalOpen(false);
+                  setSelectedProduct(null);
+                  setQrCodeUrl('');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {/* معلومات الصنف */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">الكود:</span>
+                    <span className="font-medium text-gray-900">{selectedProduct.sku}</span>
+                  </div>
+                  {selectedProduct.unit && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">الوحدة:</span>
+                      <span className="font-medium text-gray-900">{selectedProduct.unit}</span>
+                    </div>
+                  )}
+                  {selectedProduct.unitsPerBox && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">وحدات/صندوق:</span>
+                      <span className="font-medium text-gray-900">{formatArabicArea(selectedProduct.unitsPerBox)} م²</span>
+                    </div>
+                  )}
+                  {selectedProduct.price?.sellPrice && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">السعر:</span>
+                      <span className="font-medium text-green-600">{formatArabicCurrency(selectedProduct.price.sellPrice)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* QR Code */}
+              <div className="flex justify-center bg-white p-4 border-2 border-gray-200 rounded-lg">
+                <img 
+                  src={qrCodeUrl} 
+                  alt="QR Code" 
+                  className="w-64 h-64"
+                />
+              </div>
+
+              {/* أزرار */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handlePrintQR}
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  طباعة
+                </button>
+                <button
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.download = `QR-${selectedProduct.sku}.png`;
+                    link.href = qrCodeUrl;
+                    link.click();
+                  }}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  تحميل
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

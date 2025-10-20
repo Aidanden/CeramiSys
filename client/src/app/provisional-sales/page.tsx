@@ -1813,17 +1813,17 @@ const ProvisionalSalesPage = () => {
                 try {
                   const result = await createCustomer(customerData).unwrap();
                   
-                  // تحديث قائمة العملاء أولاً
-                  await refetchCustomers();
-                  
-                  // تحديد العميل الجديد تلقائياً في النموذج
-                  if (result.data?.id) {
-                    setSaleForm(prev => ({ ...prev, customerId: result.data.id }));
-                  }
-                  
-                  // إغلاق المودال وإظهار رسالة النجاح
+                  // إغلاق المودال أولاً
                   setShowCreateCustomerModal(false);
-                  success('تم إضافة العميل بنجاح واختياره تلقائياً');
+                  
+                  // انتظار قصير جداً للتأكد من تحديث الـ cache
+                  setTimeout(() => {
+                    // تحديد العميل الجديد تلقائياً في النموذج
+                    if (result.data?.id) {
+                      setSaleForm(prev => ({ ...prev, customerId: result.data.id }));
+                    }
+                    success('تم إضافة العميل بنجاح واختياره تلقائياً');
+                  }, 100);
                 } catch (err: any) {
                   error(err.data?.message || 'حدث خطأ أثناء إضافة العميل');
                 }

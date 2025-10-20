@@ -313,6 +313,9 @@ export class SalesService {
                   select: { id: true, sku: true, name: true, unit: true, unitsPerBox: true }
                 }
               }
+            },
+            dispatchOrders: {
+              select: { id: true, status: true }
             }
           }
         }),
@@ -338,6 +341,7 @@ export class SalesService {
             receiptIssued: sale.receiptIssued,
             receiptIssuedAt: sale.receiptIssuedAt,
             receiptIssuedBy: sale.receiptIssuedBy,
+            dispatchOrders: sale.dispatchOrders,
             createdAt: sale.createdAt,
             lines: sale.lines.map(line => ({
               id: line.id,
@@ -383,6 +387,9 @@ export class SalesService {
                 select: { id: true, sku: true, name: true, unit: true, unitsPerBox: true }
               }
             }
+          },
+          dispatchOrders: {
+            select: { id: true, status: true }
           }
         }
       });
@@ -404,6 +411,7 @@ export class SalesService {
         receiptIssued: sale.receiptIssued,
         receiptIssuedAt: sale.receiptIssuedAt,
         receiptIssuedBy: sale.receiptIssuedBy,
+        dispatchOrders: sale.dispatchOrders,
         createdAt: sale.createdAt,
         lines: sale.lines.map(line => ({
           id: line.id,
@@ -953,14 +961,14 @@ export class SalesService {
    * إنشاء عميل جديد
    */
   async createCustomer(data: CreateCustomerDto) {
-    try {
-      // التأكد من عدم إرسال id في البيانات
-      const customerData: any = {
-        name: data.name,
-        phone: data.phone || null,
-        note: data.note || null
-      };
+    // التأكد من عدم إرسال id في البيانات
+    const customerData = {
+      name: data.name,
+      phone: data.phone || null,
+      note: data.note || null
+    };
 
+    try {
       const customer = await this.prisma.customer.create({
         data: customerData
       });
@@ -971,29 +979,34 @@ export class SalesService {
       
       // إذا كانت المشكلة في الـ unique constraint على id
       if (error.code === 'P2002' && error.meta?.target?.includes('id')) {
-        // محاولة إصلاح المشكلة بإعادة المحاولة
+        // إصلاح الـ sequence في قاعدة البيانات
         try {
+          console.log('🔧 محاولة إصلاح الـ sequence...');
+          
           // الحصول على أعلى ID موجود
           const lastCustomer = await this.prisma.customer.findFirst({
             orderBy: { id: 'desc' }
           });
           
-          // إعادة المحاولة مع تحديد ID يدوياً
-          const newId = (lastCustomer?.id || 0) + 1;
-          const retryCustomerData = {
-            id: newId,
-            name: data.name,
-            phone: data.phone || null,
-            note: data.note || null
-          };
+          const maxId = lastCustomer?.id || 0;
+          console.log(`📊 أعلى ID موجود: ${maxId}`);
           
+          // إصلاح الـ sequence
+          await this.prisma.$executeRawUnsafe(
+            `SELECT setval(pg_get_serial_sequence('"Customer"', 'id'), ${maxId}, true);`
+          );
+          
+          console.log('✅ تم إصلاح الـ sequence، إعادة المحاولة...');
+          
+          // إعادة المحاولة بدون تحديد ID
           const customer = await this.prisma.customer.create({
-            data: retryCustomerData
+            data: customerData
           });
           
+          console.log('✅ تم إنشاء العميل بنجاح بعد إصلاح الـ sequence');
           return customer;
         } catch (retryError) {
-          console.error('فشلت إعادة المحاولة:', retryError);
+          console.error('❌ فشلت إعادة المحاولة:', retryError);
           throw new Error('فشل في إنشاء العميل. يرجى المحاولة مرة أخرى.');
         }
       }

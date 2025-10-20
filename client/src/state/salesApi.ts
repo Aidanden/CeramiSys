@@ -43,6 +43,7 @@ export interface Sale {
   receiptIssued?: boolean; // حالة إصدار إيصال القبض
   receiptIssuedAt?: string; // تاريخ إصدار الإيصال
   receiptIssuedBy?: string; // المحاسب الذي أصدر الإيصال
+  dispatchOrders?: { id: number; status: string }[]; // أوامر صرف المخزن
   createdAt: string;
   lines: SaleLine[];
 }
@@ -162,8 +163,8 @@ export const salesApi = createApi({
   reducerPath: "salesApi",
   baseQuery: baseQueryWithAuthInterceptor,
   tagTypes: ["Sales", "Sale", "SalesStats", "Customers", "Customer"],
-  keepUnusedDataFor: 10, // 10 seconds - تقليل وقت الـ cache
-  refetchOnMountOrArgChange: true,
+  keepUnusedDataFor: 0, // لا cache - تحديث فوري
+  refetchOnMountOrArgChange: true, // إعادة الجلب دائماً
   refetchOnFocus: true,
   refetchOnReconnect: true,
   endpoints: (builder) => ({
@@ -332,6 +333,22 @@ export const salesApi = createApi({
         body: data,
       }),
       invalidatesTags: [{ type: "Customers", id: "LIST" }],
+      // تحديث optimistic للـ cache - إضافة العميل الجديد فوراً
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data: response } = await queryFulfilled;
+          const newCustomer = response.data;
+          
+          // تحديث الـ cache مباشرة بإضافة العميل الجديد
+          dispatch(
+            salesApi.util.updateQueryData('getCustomers', { limit: 1000 }, (draft) => {
+              if (draft?.data?.customers) {
+                draft.data.customers.unshift(newCustomer);
+              }
+            })
+          );
+        } catch {}
+      },
     }),
 
     /**
