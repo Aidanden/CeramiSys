@@ -3,7 +3,7 @@
 # -----------------------------
 # تحديث الـ Client
 # -----------------------------
-cd /home/CeramicSys/client || exit
+cd /home/CeramiSys/client || exit
 git reset --hard
 git pull origin main
 npm install
@@ -17,7 +17,7 @@ screen -dmS client_dev npm run dev
 # -----------------------------
 # تحديث الـ Server
 # -----------------------------
-cd /home/CeramicSys/server || exit
+cd /home/CeramiSys/server || exit
 git reset --hard
 git pull origin main
 npm install

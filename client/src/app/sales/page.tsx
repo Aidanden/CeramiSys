@@ -77,50 +77,82 @@ const SalesPage = () => {
     if (typeof window === 'undefined') return;
     
     if (showQRScanner && !qrScannerRef.current) {
-      // Dynamic import لتجنب مشاكل SSR
-      import('html5-qrcode')
-        .then((module) => {
-          const Html5QrcodeScanner = module.Html5QrcodeScanner;
-          
-          const scanner = new Html5QrcodeScanner(
-            'qr-reader',
-            { 
-              fps: 10,
-              qrbox: { width: 250, height: 250 },
-              aspectRatio: 1.0,
-              // إعدادات محسّنة للموبايل والتابلت
-              rememberLastUsedCamera: true,
-              showTorchButtonIfSupported: true, // زر الفلاش للموبايل
-              // تفضيل الكاميرا الخلفية للموبايل
-              videoConstraints: {
-                facingMode: { ideal: "environment" }
-              }
-            },
-            false
-          );
-
-          scanner.render(
-            (decodedText: string) => {
-              handleQRScan(decodedText);
-              scanner.clear().catch(() => {});
-              qrScannerRef.current = null;
-              setShowQRScanner(false);
-            },
-            (error: any) => {
-              // Ignore errors during scanning
+      console.log('🔍 بدء تحميل ماسح QR Code...');
+      
+      // انتظار قليلاً للتأكد من أن DOM جاهز
+      setTimeout(() => {
+        // Dynamic import لتجنب مشاكل SSR
+        import('html5-qrcode')
+          .then((module) => {
+            console.log('✅ تم تحميل المكتبة:', module);
+            
+            // الوصول الصحيح للـ class
+            const Html5QrcodeScanner = (module as any).Html5QrcodeScanner || module.default?.Html5QrcodeScanner;
+            
+            if (!Html5QrcodeScanner) {
+              console.error('❌ Html5QrcodeScanner not found in module');
+              notifications.custom.error('خطأ', 'فشل في تحميل ماسح QR Code');
+              return;
             }
-          );
+            
+            console.log('📷 إنشاء ماسح QR Code...');
+            
+            // التحقق من وجود الـ div
+            const qrReaderElement = document.getElementById('qr-reader');
+            if (!qrReaderElement) {
+              console.error('❌ عنصر qr-reader غير موجود في DOM');
+              notifications.custom.error('خطأ', 'عنصر الماسح غير موجود. حاول مرة أخرى.');
+              return;
+            }
+            
+            console.log('✅ عنصر qr-reader موجود:', qrReaderElement);
+            
+            const scanner = new Html5QrcodeScanner(
+              'qr-reader',
+              { 
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0,
+                // إعدادات محسّنة للموبايل والتابلت
+                rememberLastUsedCamera: true,
+                showTorchButtonIfSupported: true, // زر الفلاش للموبايل
+                // تفضيل الكاميرا الخلفية للموبايل
+                videoConstraints: {
+                  facingMode: { ideal: "environment" }
+                }
+              },
+              false
+            );
 
-          qrScannerRef.current = scanner;
-        })
-        .catch((error) => {
-          console.error('Failed to load QR scanner:', error);
-          notifications.custom.error('خطأ', 'فشل في تحميل ماسح QR Code. تأكد من السماح بالوصول للكاميرا.');
-        });
+            console.log('🎬 بدء render الماسح...');
+            
+            scanner.render(
+              (decodedText: string) => {
+                console.log('✅ تم مسح QR Code:', decodedText);
+                handleQRScan(decodedText);
+                scanner.clear().catch(() => {});
+                qrScannerRef.current = null;
+                setShowQRScanner(false);
+              },
+              (error: any) => {
+                // Ignore errors during scanning
+                console.log('⚠️ خطأ أثناء المسح (يتم تجاهله):', error);
+              }
+            );
+
+            qrScannerRef.current = scanner;
+            console.log('✅ تم تهيئة الماسح بنجاح');
+          })
+          .catch((error) => {
+            console.error('❌ Failed to load QR scanner:', error);
+            notifications.custom.error('خطأ', 'فشل في تحميل ماسح QR Code. تأكد من السماح بالوصول للكاميرا.');
+          });
+      }, 100); // انتظار 100ms للتأكد من أن DOM جاهز
     }
 
     return () => {
       if (qrScannerRef.current) {
+        console.log('🧹 تنظيف الماسح...');
         qrScannerRef.current.clear().catch(() => {});
         qrScannerRef.current = null;
       }
