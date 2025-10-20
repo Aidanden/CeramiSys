@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
 import { 
   useGetSalesQuery, 
   useCreateSaleMutation, 
@@ -61,7 +60,7 @@ const SalesPage = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const qrScannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const qrScannerRef = useRef<any>(null);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -75,28 +74,34 @@ const SalesPage = () => {
   // Initialize QR Scanner
   useEffect(() => {
     if (showQRScanner && !qrScannerRef.current) {
-      const scanner = new Html5QrcodeScanner(
-        'qr-reader',
-        { 
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0
-        },
-        false
-      );
+      // Dynamic import لتجنب مشاكل SSR
+      import('html5-qrcode').then(({ Html5QrcodeScanner }) => {
+        const scanner = new Html5QrcodeScanner(
+          'qr-reader',
+          { 
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+          },
+          false
+        );
 
-      scanner.render(
-        (decodedText) => {
-          handleQRScan(decodedText);
-          scanner.clear();
-          qrScannerRef.current = null;
-        },
-        (error) => {
-          // Ignore errors during scanning
-        }
-      );
+        scanner.render(
+          (decodedText: string) => {
+            handleQRScan(decodedText);
+            scanner.clear();
+            qrScannerRef.current = null;
+          },
+          (error: any) => {
+            // Ignore errors during scanning
+          }
+        );
 
-      qrScannerRef.current = scanner;
+        qrScannerRef.current = scanner;
+      }).catch((error) => {
+        console.error('Failed to load QR scanner:', error);
+        notifications.custom.error('خطأ', 'فشل في تحميل ماسح QR Code');
+      });
     }
 
     return () => {
