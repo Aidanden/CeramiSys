@@ -57,6 +57,7 @@ export class SalesService {
       }
 
       // التحقق من توفر المخزون
+      // ملاحظة: line.qty من Frontend يمثل عدد الصناديق مباشرة
       for (const line of data.lines) {
         const product = products.find(p => p.id === line.productId);
         if (!product) continue;
@@ -67,34 +68,7 @@ export class SalesService {
           ? product.stocks.find(s => s.companyId === userCompanyId)
           : product.stocks[0];
         
-        // حساب الصناديق المطلوبة:
-        // - إذا كان الصنف بالصندوق: line.qty هي بالأمتار، نحولها لصناديق ونقرب للأعلى
-        // - إذا كان الصنف بوحدة أخرى: line.qty هي عدد الصناديق مباشرة
-        let requiredBoxes = line.qty;
-        let actualMetersToSell = line.qty; // الأمتار الفعلية التي سيحصل عليها العميل
-        
-        if (product.unit === 'صندوق' && product.unitsPerBox && Number(product.unitsPerBox) > 0) {
-          // البيع بالمتر المربع: line.qty = عدد الأمتار المطلوبة
-          const requestedMeters = line.qty;
-          const unitsPerBox = Number(product.unitsPerBox);
-          
-          // حساب عدد الصناديق (التقريب للأعلى)
-          requiredBoxes = Math.ceil(requestedMeters / unitsPerBox);
-          
-          // حساب الأمتار الفعلية (الصناديق الكاملة × الوحدات في الصندوق)
-          actualMetersToSell = requiredBoxes * unitsPerBox;
-          
-          // Debug logging
-          if (process.env.NODE_ENV !== 'production') {
-            console.log('📐 Meter Calculation:', {
-              productName: product.name,
-              requestedMeters,
-              unitsPerBox,
-              requiredBoxes,
-              actualMetersToSell
-            });
-          }
-        }
+        const requiredBoxes = Number(line.qty); // عدد الصناديق المطلوبة
         
         // Debug logging
         if (process.env.NODE_ENV !== 'production') {
@@ -115,22 +89,8 @@ export class SalesService {
         }
         
         if (!stock || Number(stock.boxes) < requiredBoxes) {
-          // عرض الكمية المتوفرة بالوحدة المناسبة
           const availableBoxes = Number(stock?.boxes || 0);
-          let availableUnits = '';
-          
-          if (product.unit === 'صندوق' && product.unitsPerBox) {
-            const availableMeters = availableBoxes * Number(product.unitsPerBox);
-            availableUnits = `${availableMeters.toFixed(2)} ${product.unit || 'متر مربع'} (${availableBoxes} صندوق)`;
-          } else {
-            availableUnits = `${availableBoxes} صندوق`;
-          }
-          
-          const requestedUnits = product.unit === 'صندوق' && product.unitsPerBox
-            ? `${actualMetersToSell.toFixed(2)} ${product.unit || 'متر مربع'} (${requiredBoxes} صندوق)`
-            : `${requiredBoxes} صندوق`;
-          
-          throw new Error(`المخزون غير كافي للصنف: ${product.name}. المتوفر: ${availableUnits}، المطلوب: ${requestedUnits}`);
+          throw new Error(`المخزون غير كافي للصنف: ${product.name}. المتوفر: ${availableBoxes} صندوق، المطلوب: ${requiredBoxes} صندوق`);
         }
       }
 
@@ -182,14 +142,36 @@ export class SalesService {
       });
 
       // تحديث المخزون
+      // ملاحظة: line.qty من Frontend يمثل عدد الصناديق مباشرة لجميع الأصناف
+      console.log('🔄 بدء تحديث المخزون...');
       for (const line of data.lines) {
         const product = products.find(p => p.id === line.productId);
         if (!product) continue;
         
-        // حساب الصناديق المطلوبة:
-        // للأصناف بوحدة "صندوق": line.qty = عدد الصناديق مباشرة (من الواجهة الأمامية)
-        // للأصناف الأخرى: line.qty = الكمية بالوحدة
-        let boxesToDecrement = Number(line.qty);
+        // الحصول على المخزون الحالي قبل التحديث
+        const currentStock = await this.prisma.stock.findUnique({
+          where: {
+            companyId_productId: {
+              companyId: userCompanyId,
+              productId: line.productId
+            }
+          }
+        });
+        
+        const boxesToDecrement = Number(line.qty);
+        
+        // Debug logging مفصل
+        console.log('📦 Stock Update:', {
+          productId: product.id,
+          productName: product.name,
+          productUnit: product.unit,
+          qtyFromFrontend: line.qty,
+          qtyType: typeof line.qty,
+          boxesToDecrement,
+          boxesToDecrementType: typeof boxesToDecrement,
+          currentStockBoxes: currentStock?.boxes ? Number(currentStock.boxes) : 0,
+          afterUpdate: currentStock?.boxes ? Number(currentStock.boxes) - boxesToDecrement : 0
+        });
         
         await this.prisma.stock.update({
           where: {
@@ -204,7 +186,10 @@ export class SalesService {
             }
           }
         });
+        
+        console.log(`✅ تم خصم ${boxesToDecrement} من المخزون للصنف: ${product.name}`);
       }
+      console.log('✅ تم تحديث المخزون بنجاح');
 
       return {
         id: sale.id,
@@ -683,34 +668,35 @@ export class SalesService {
       }
 
       // إرجاع المخزون
-      // الحصول على بيانات الأصناف للبنود
-      const productIds = existingSale.lines.map(line => line.productId);
-      const products = await this.prisma.product.findMany({
-        where: {
-          id: { in: productIds }
-        },
-        select: {
-          id: true,
-          unit: true,
-          unitsPerBox: true
-        }
-      });
-      
+      // ملاحظة: line.qty يمثل عدد الصناديق المباعة، نرجعها كما هي
+      console.log('🔄 بدء إرجاع المخزون...');
       for (const line of existingSale.lines) {
-        const product = products.find(p => p.id === line.productId);
-        if (!product) continue;
+        // الحصول على المخزون الحالي قبل الإرجاع
+        const currentStock = await this.prisma.stock.findUnique({
+          where: {
+            companyId_productId: {
+              companyId: existingSale.companyId,
+              productId: line.productId
+            }
+          }
+        });
         
-        // حساب الصناديق المطلوبة للإرجاع:
-        // للأصناف بوحدة "صندوق": line.qty = عدد الصناديق مباشرة
-        // للأصناف الأخرى: line.qty = الكمية بالوحدة
-        let boxesToIncrement = Number(line.qty);
+        const boxesToIncrement = Number(line.qty);
         
-        console.log(`إرجاع المخزون - الصنف ${line.productId}: ${boxesToIncrement} صندوق`);
+        console.log('📦 Stock Return:', {
+          productId: line.productId,
+          qtyFromDB: line.qty,
+          qtyType: typeof line.qty,
+          boxesToIncrement,
+          boxesToIncrementType: typeof boxesToIncrement,
+          currentStockBoxes: currentStock?.boxes ? Number(currentStock.boxes) : 0,
+          afterReturn: currentStock?.boxes ? Number(currentStock.boxes) + boxesToIncrement : boxesToIncrement
+        });
         
         await this.prisma.stock.update({
           where: {
             companyId_productId: {
-              companyId: userCompanyId,
+              companyId: existingSale.companyId, // استخدام companyId من الفاتورة
               productId: line.productId
             }
           },
@@ -720,7 +706,10 @@ export class SalesService {
             }
           }
         });
+        
+        console.log(`✅ تم إرجاع ${boxesToIncrement} إلى المخزون للصنف: ${line.productId}`);
       }
+      console.log('✅ تم إرجاع المخزون بنجاح');
 
       // حذف البنود أولاً
       await this.prisma.saleLine.deleteMany({

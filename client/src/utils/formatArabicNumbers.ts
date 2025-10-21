@@ -98,3 +98,6 @@ export function convertToArabicNumbers(text: string): string {
   
   return result;
 }
+
+// ملاحظة: تم إنشاء ملف whatsappUtils.ts منفصل يحتوي على دوال الواتساب
+// يمكنك نسخه من: client/src/utils/whatsappUtils.ts

@@ -450,9 +450,9 @@ export class ProvisionalSalesService {
       console.log('🔄 بدء تحديث المخزون للفاتورة المبدئية:', id);
       
       for (const line of provisionalSale.lines) {
-        const qtyInBoxes = Number(line.qty); // الكمية بالصناديق مباشرة
+        const boxesToDecrement = Number(line.qty);
         
-        console.log(`📦 خصم من المخزون - المنتج: ${line.productId}, الكمية: ${qtyInBoxes} صندوق`);
+        console.log(`📦 خصم من المخزون - المنتج: ${line.productId}, الكمية: ${boxesToDecrement} صندوق`);
 
         // الحصول على المخزون الحالي قبل التحديث
         const currentStock = await prisma.stock.findUnique({
@@ -475,13 +475,13 @@ export class ProvisionalSalesService {
           },
           update: {
             boxes: {
-              decrement: qtyInBoxes
+              decrement: boxesToDecrement
             }
           },
           create: {
             companyId: provisionalSale.companyId,
             productId: line.productId,
-            boxes: -qtyInBoxes
+            boxes: -boxesToDecrement
           }
         });
         
