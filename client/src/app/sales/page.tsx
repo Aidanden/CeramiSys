@@ -79,8 +79,8 @@ const SalesPage = () => {
     if (showQRScanner && !qrScannerRef.current) {
       console.log('🔍 بدء تحميل ماسح QR Code...');
       
-      // انتظار قليلاً للتأكد من أن DOM جاهز
-      setTimeout(async () => {
+      // بدء التهيئة فوراً بدون تأخير
+      (async () => {
         try {
           // التحقق من وجود الـ div
           const qrReaderElement = document.getElementById('qr-reader');
@@ -169,11 +169,16 @@ const SalesPage = () => {
             );
           } else if (error.name === 'NotFoundError') {
             notifications.custom.error('خطأ', 'لم يتم العثور على كاميرا متصلة بالجهاز.');
+          } else if (error.message && error.message.includes('secure context')) {
+            notifications.custom.error(
+              '🔒 مطلوب اتصال آمن (HTTPS)',
+              'الكاميرا تعمل فقط مع HTTPS أو localhost. يجب تفعيل SSL على الخادم أو استخدام localhost للتطوير.'
+            );
           } else {
             notifications.custom.error('خطأ', `فشل في تشغيل الكاميرا: ${error.message || 'خطأ غير معروف'}`);
           }
         }
-      }, 100);
+      })();
     }
 
     return () => {
@@ -188,7 +193,9 @@ const SalesPage = () => {
   // Handle QR Code scan
   const handleQRScan = (qrData: string) => {
     try {
+      console.log('🔍 معالجة QR Code:', qrData);
       const productData = JSON.parse(qrData);
+      console.log('📦 بيانات الصنف:', productData);
       
       // البحث عن الصنف باستخدام ID أو SKU
       const product = productsData?.data?.products?.find(
@@ -196,9 +203,12 @@ const SalesPage = () => {
       );
 
       if (!product) {
+        console.error('❌ الصنف غير موجود');
         notifications.custom.error('خطأ', 'الصنف غير موجود في النظام');
         return;
       }
+
+      console.log('✅ تم العثور على الصنف:', product.name);
 
       // التحقق من أن الصنف ينتمي للشركة المستهدفة
       const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
@@ -206,6 +216,7 @@ const SalesPage = () => {
         const otherCompany = companiesData?.data?.companies?.find(
           c => c.id === product.createdByCompanyId
         );
+        console.error('❌ الصنف من شركة أخرى');
         notifications.custom.error(
           'الصنف غير متاح',
           `الصنف "${product.name}" لا ينتمي للشركة المختارة.\n\n` +
@@ -214,27 +225,41 @@ const SalesPage = () => {
         return;
       }
 
-      // إضافة الصنف للفاتورة
-      addSaleLine();
-      const newIndex = saleForm.lines.length;
+      console.log('➕ إضافة سطر جديد للفاتورة...');
       
-      // تحديث البند الجديد
-      setTimeout(() => {
-        updateSaleLine(newIndex, 'productId', product.id);
-        if (product.price?.sellPrice) {
-          updateSaleLine(newIndex, 'unitPrice', Number(product.price.sellPrice));
-        }
-        updateSaleLine(newIndex, 'qty', 1);
+      // إضافة سطر جديد أولاً
+      setSaleForm(prev => {
+        const newLines = [...prev.lines, { productId: 0, qty: 1, unitPrice: 0 }];
+        const newIndex = newLines.length - 1;
         
-        notifications.custom.success(
-          'تم بنجاح',
-          `تمت إضافة الصنف "${product.name}" للفاتورة`
-        );
-      }, 100);
+        console.log('✅ تم إضافة السطر، الفهرس:', newIndex);
+        
+        // تحديث السطر الجديد فوراً
+        setTimeout(() => {
+          console.log('🔄 تحديث بيانات السطر الجديد...');
+          updateSaleLine(newIndex, 'productId', product.id);
+          if (product.price?.sellPrice) {
+            updateSaleLine(newIndex, 'unitPrice', Number(product.price.sellPrice));
+          }
+          updateSaleLine(newIndex, 'qty', 1);
+          
+          console.log('✅ تم تحديث السطر بنجاح');
+          notifications.custom.success(
+            'تم بنجاح',
+            `تمت إضافة الصنف "${product.name}" للفاتورة`
+          );
+        }, 50);
+        
+        return {
+          ...prev,
+          lines: newLines
+        };
+      });
 
       setShowQRScanner(false);
     } catch (error) {
-      notifications.custom.error('خطأ', 'QR Code غير صالح');
+      console.error('❌ خطأ في معالجة QR Code:', error);
+      notifications.custom.error('خطأ', 'QR Code غير صالح أو تالف');
     }
   };
 

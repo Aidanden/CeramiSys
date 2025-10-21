@@ -15,7 +15,7 @@ fi
 screen -dmS client_dev npm run dev
 
 # -----------------------------
-# تحديث الـ Server
+# تحديث الـ Server              
 # -----------------------------
 cd /home/CeramiSys/server || exit
 git reset --hard

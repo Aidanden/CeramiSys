@@ -4,6 +4,9 @@ import QRCode from 'qrcode';
 const fs = require("fs");
 const path = require("path");
 
+// Map لحفظ الأصناف المُنشأة للاستخدام في Stock و CompanyProductPrice
+const createdProductsMap = new Map<number, number>(); // oldId -> newId
+
 
 async function deleteAllData() {
   // Delete in reverse order to handle foreign key constraints
@@ -106,6 +109,8 @@ async function main() {
     // معالجة خاصة للأصناف - توليد QR Code
     if (modelName === 'product') {
       let productCount = 0;
+      let oldId = 1; // عداد للـ IDs القديمة (1, 2, 3, ...)
+      
       for (const data of jsonData) {
         try {
           // توليد QR Code للصنف
@@ -132,6 +137,10 @@ async function main() {
             },
           });
 
+          // حفظ mapping بين الـ ID القديم والجديد
+          createdProductsMap.set(oldId, createdProduct.id);
+          oldId++;
+
           // تحديث QR Code ليشمل الـ ID الحقيقي
           const updatedQrData = {
             id: createdProduct.id,
@@ -155,12 +164,66 @@ async function main() {
           });
 
           productCount++;
-          console.log(`  ✅ [${productCount}/${jsonData.length}] تم إنشاء الصنف مع QR Code: ${createdProduct.name} (${createdProduct.sku})`);
+          console.log(`  ✅ [${productCount}/${jsonData.length}] تم إنشاء الصنف مع QR Code: ${createdProduct.name} (${createdProduct.sku}) - ID: ${createdProduct.id}`);
         } catch (error) {
           console.error(`  ❌ فشل في إنشاء الصنف: ${data.name}`, error);
         }
       }
       console.log(`\n🎉 تم إنشاء ${productCount} صنف مع QR Code بنجاح!\n`);
+    } else if (modelName === 'stock') {
+      // معالجة خاصة للمخزون - استخدام الـ IDs الجديدة
+      let stockCount = 0;
+      for (const data of jsonData) {
+        try {
+          // الحصول على الـ ID الجديد من الـ mapping
+          const newProductId = createdProductsMap.get(data.productId);
+          
+          if (!newProductId) {
+            console.error(`  ⚠️ تخطي Stock: productId ${data.productId} غير موجود في الأصناف المُنشأة`);
+            continue;
+          }
+
+          await model.create({
+            data: {
+              ...data,
+              productId: newProductId // استخدام الـ ID الجديد
+            },
+          });
+          
+          stockCount++;
+          console.log(`  ✅ [${stockCount}/${jsonData.length}] تم إنشاء Stock: Company ${data.companyId}, Product ${newProductId}, Boxes: ${data.boxes}`);
+        } catch (error) {
+          console.error(`  ❌ فشل في إنشاء Stock:`, error);
+        }
+      }
+      console.log(`✅ Seeded ${modelName} with ${stockCount} records from ${fileName}`);
+    } else if (modelName === 'companyProductPrice') {
+      // معالجة خاصة لأسعار الشركات - استخدام الـ IDs الجديدة
+      let priceCount = 0;
+      for (const data of jsonData) {
+        try {
+          // الحصول على الـ ID الجديد من الـ mapping
+          const newProductId = createdProductsMap.get(data.productId);
+          
+          if (!newProductId) {
+            console.error(`  ⚠️ تخطي CompanyProductPrice: productId ${data.productId} غير موجود في الأصناف المُنشأة`);
+            continue;
+          }
+
+          await model.create({
+            data: {
+              ...data,
+              productId: newProductId // استخدام الـ ID الجديد للصنف
+            },
+          });
+          
+          priceCount++;
+          console.log(`  ✅ [${priceCount}/${jsonData.length}] تم إنشاء السعر: الشركة ${data.companyId}, الصنف ${newProductId}, السعر: ${data.sellPrice}`);
+        } catch (error) {
+          console.error(`  ❌ فشل في إنشاء السعر:`, error);
+        }
+      }
+      console.log(`\n🎉 تم إنشاء ${priceCount} سعر بنجاح!\n`);
     } else {
       // معالجة عادية للجداول الأخرى
       for (const data of jsonData) {
