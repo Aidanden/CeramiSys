@@ -17,6 +17,12 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "نظام إدارة السيراميك - CeramiSys",
   description: "نظام إدارة شامل لشركات السيراميك والبورسلين",
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+    userScalable: true,
+  },
 };
 
 export default function RootLayout({
