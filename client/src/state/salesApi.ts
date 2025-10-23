@@ -163,10 +163,10 @@ export const salesApi = createApi({
   reducerPath: "salesApi",
   baseQuery: baseQueryWithAuthInterceptor,
   tagTypes: ["Sales", "Sale", "SalesStats", "Customers", "Customer"],
-  keepUnusedDataFor: 0, // لا cache - تحديث فوري
-  refetchOnMountOrArgChange: true, // إعادة الجلب دائماً
-  refetchOnFocus: true,
-  refetchOnReconnect: true,
+  keepUnusedDataFor: 300, // 5 دقائق cache - تحسين الأداء
+  refetchOnMountOrArgChange: 30, // إعادة الجلب بعد 30 ثانية فقط
+  refetchOnFocus: false, // لا إعادة جلب عند العودة للتبويب
+  refetchOnReconnect: true, // فقط عند إعادة الاتصال
   endpoints: (builder) => ({
     // ============== المبيعات ==============
     

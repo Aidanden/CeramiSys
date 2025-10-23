@@ -224,16 +224,15 @@ const ProvisionalSalesPage = () => {
       }
       
       const result = await createSale(saleRequest).unwrap();
-      success('تم إنشاء الفاتورة المبدئية بنجاح');
       
+      // إغلاق المودال وإعادة تعيين النموذج أولاً
       setShowCreateModal(false);
       resetForm();
       
-      // إعادة جلب البيانات فوراً لتحديث الجدول
-      await refetchSales();
+      // إجبار إعادة التحميل الكامل
+      window.location.reload();
       
-      // تحديث الكاش للمنتجات
-      dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
+      success('تم إنشاء الفاتورة المبدئية بنجاح');
       // للمستخدمين العاديين: الاحتفاظ بالشركة
       // لمستخدمي النظام: الاحتفاظ بالشركة لعرض الفواتير الجديدة
       // if (user?.isSystemUser) {
@@ -322,16 +321,14 @@ const ProvisionalSalesPage = () => {
       
       console.log('✅ نجح التحديث:', result);
       
-      success('تم تحديث الفاتورة المبدئية بنجاح');
       setShowEditModal(false);
       setSaleToEdit(null);
       resetForm();
       
-      // إعادة جلب البيانات فوراً لتحديث الجدول
-      await refetchSales();
+      // إجبار إعادة التحميل الكامل
+      window.location.reload();
       
-      // تحديث الكاش للمنتجات
-      dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
+      success('تم تحديث الفاتورة المبدئية بنجاح');
     } catch (err: any) {
       console.error('❌ خطأ في تحديث الفاتورة المبدئية:', {
         error: err,
@@ -354,13 +351,11 @@ const ProvisionalSalesPage = () => {
     if (confirmed) {
       try {
         await deleteSale(sale.id).unwrap();
+        
+        // إجبار إعادة التحميل الكامل
+        window.location.reload();
+        
         success('تم حذف الفاتورة المبدئية بنجاح');
-        
-        // إعادة جلب البيانات فوراً لتحديث الجدول
-        await refetchSales();
-        
-        // تحديث الكاش للمنتجات
-        dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
       } catch (err: any) {
         error(err.data?.message || 'حدث خطأ أثناء حذف الفاتورة');
       }
@@ -437,15 +432,13 @@ const ProvisionalSalesPage = () => {
         }
       }).unwrap();
       
-      success('تم ترحيل الفاتورة المبدئية بنجاح');
       setShowConvertModal(false);
       setSaleToConvert(null);
       
-      // إعادة جلب البيانات فوراً لتحديث الجدول
-      await refetchSales();
+      // إجبار إعادة التحميل الكامل
+      window.location.reload();
       
-      // تحديث الكاش للمنتجات
-      dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
+      success('تم ترحيل الفاتورة المبدئية بنجاح');
     } catch (err: any) {
       // في حالة الفشل، إزالة الفاتورة من القائمة المحلية
       setConvertedSaleIds(prev => {
@@ -759,18 +752,6 @@ const ProvisionalSalesPage = () => {
         if (i !== index) return line;
         
         const updatedLine = { ...line, [field]: value };
-        
-        // إذا تم تحديث الكمية وكان الصنف بالصندوق، نحول الصناديق إلى أمتار
-        if (field === 'qty') {
-          const product = productsData?.data?.products?.find(p => p.id === updatedLine.productId);
-          
-          // إذا كان الصنف بالصندوق ولديه unitsPerBox، نحول الكمية المدخلة (صناديق) إلى أمتار
-          if (product?.unitsPerBox && Number(product.unitsPerBox) > 0) {
-            // الكمية المدخلة هي عدد الصناديق
-            // نحولها إلى أمتار: عدد الصناديق × عدد الأمتار في الصندوق
-            updatedLine.qty = value * Number(product.unitsPerBox);
-          }
-        }
         
         return updatedLine;
       });
@@ -1616,7 +1597,7 @@ const ProvisionalSalesPage = () => {
                       const selectedProduct = productsData?.data?.products?.find(p => p.id === line.productId);
                       
                       return (
-                        <div key={index} className="grid grid-cols-12 gap-3 items-start p-3 bg-white border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-colors">
+                        <div key={index} className="grid grid-cols-12 gap-3 items-start p-3 bg-white border-2 border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
                           <div className="col-span-4">
                             <label className="block text-xs font-medium text-gray-700 mb-1">الصنف</label>
                             <select
@@ -1630,7 +1611,7 @@ const ProvisionalSalesPage = () => {
                                   updateSaleLine(index, 'unitPrice', Number(product.price.sellPrice));
                                 }
                               }}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                               required
                             >
                               <option value={0}>-- اختر الصنف --</option>
@@ -1664,30 +1645,66 @@ const ProvisionalSalesPage = () => {
                                 )}
                               </div>
                             )}
-                            {selectedProduct?.stock && line.qty > Number(selectedProduct.stock.boxes) && (
-                              <div className="text-xs text-red-600 mt-1 font-medium bg-red-50 px-2 py-1 rounded border border-red-200">
-                                ⚠️ الكمية المطلوبة ({formatArabicQuantity(line.qty)} {selectedProduct?.unit || 'وحدة'}) أكبر من المخزون المتاح ({formatArabicQuantity(selectedProduct.stock.boxes)} {selectedProduct?.unit || 'وحدة'})
-                              </div>
-                            )}
-                            {selectedProduct && !selectedProduct.stock && (
-                              <div className="text-xs text-red-600 mt-1 font-medium bg-red-50 px-2 py-1 rounded border border-red-200">
-                                ⚠️ لا يوجد مخزون لهذا الصنف
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              {
+                                selectedProduct?.unit === 'صندوق'
+                                  ? 'عدد الصناديق'
+                                  : `الكمية (${selectedProduct?.unit || 'وحدة'})`
+                              }
+                            </label>
+                            <input
+                              type="number"
+                              value={line.qty || ''}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                updateSaleLine(index, 'qty', value === '' ? 0 : parseFloat(value));
+                              }}
+                              className={`w-full px-3 py-2 border rounded-md text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                                selectedProduct?.stock && line.qty > Number(selectedProduct.stock.boxes)
+                                  ? 'border-red-300 bg-red-50' 
+                                  : 'border-gray-300'
+                              }`}
+                              placeholder={
+                                selectedProduct?.unit === 'صندوق'
+                                  ? 'أدخل عدد الصناديق'
+                                  : `أدخل الكمية بـ${selectedProduct?.unit || 'الوحدة'}`
+                              }
+                              min="0.01"
+                              step="0.01"
+                              required
+                            />
+                            {selectedProduct?.unit === 'صندوق' && selectedProduct?.stock && line.qty > Number(selectedProduct.stock.boxes) && (
+                              <div className="text-xs text-red-600 mt-1 font-medium">
+                                ⚠️ عدد الصناديق المطلوبة أكبر من المخزون ({formatArabicQuantity(selectedProduct.stock.boxes)} صندوق)
                               </div>
                             )}
                           </div>
                           
                           <div className="col-span-2">
                             <label className="block text-xs font-medium text-gray-700 mb-1">
-                              إجمالي الأمتار/الوحدات (المحفوظ في الفاتورة)
+                              {
+                                selectedProduct?.unit === 'صندوق' 
+                                  ? 'الكمية الإجمالية بالمتر'
+                                  : selectedProduct?.unit === 'قطعة'
+                                    ? 'إجمالي القطع'
+                                    : 'الكمية الإجمالية'
+                              }
                             </label>
                             <div className="px-3 py-2 bg-purple-50 border border-purple-200 rounded-md">
                               <span className="text-sm font-bold text-purple-700 block text-center">
-                                {line.qty > 0 ? `${formatArabicArea(line.qty)} ${selectedProduct?.unit || 'وحدة'}` : '0'}
+                                {line.qty > 0 ? (
+                                  selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox
+                                    ? `${formatArabicArea(line.qty * Number(selectedProduct.unitsPerBox))} متر`
+                                    : `${formatArabicArea(line.qty)} ${selectedProduct?.unit || 'وحدة'}`
+                                ) : '0'}
                               </span>
                             </div>
-                            {selectedProduct?.unitsPerBox && Number(selectedProduct.unitsPerBox) > 0 && line.qty > 0 && (
-                              <div className="text-xs text-blue-600 mt-1 font-medium bg-blue-50 px-2 py-1 rounded">
-                                📊 {formatArabicQuantity(line.qty / Number(selectedProduct.unitsPerBox))} صندوق × {formatArabicNumber(selectedProduct.unitsPerBox)} {selectedProduct?.unit}/صندوق = {formatArabicArea(line.qty)} {selectedProduct?.unit}
+                            {selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox && line.qty > 0 && (
+                              <div className="text-xs text-blue-600 mt-1 font-medium">
+                                📊 {formatArabicQuantity(line.qty)} صندوق × {formatArabicNumber(selectedProduct.unitsPerBox)} متر/صندوق = {formatArabicArea(line.qty * Number(selectedProduct.unitsPerBox))} متر
                               </div>
                             )}
                           </div>
@@ -1697,15 +1714,18 @@ const ProvisionalSalesPage = () => {
                             <input
                               type="number"
                               value={line.unitPrice || ''}
-                              onChange={(e) => updateSaleLine(index, 'unitPrice', Number(e.target.value) || 0)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                updateSaleLine(index, 'unitPrice', value === '' ? 0 : parseFloat(value));
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                               placeholder="0"
                               min="0"
                               step="0.01"
                               required
                             />
                             {selectedProduct?.price?.sellPrice && (
-                              <div className="text-xs text-purple-600 mt-1 font-medium">
+                              <div className="text-xs text-blue-600 mt-1 font-medium">
                                 💰 {formatArabicCurrency(selectedProduct.price.sellPrice)}
                               </div>
                             )}
@@ -1738,10 +1758,10 @@ const ProvisionalSalesPage = () => {
                   </div>
 
                   {saleForm.lines.length > 0 && (
-                    <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-300 rounded-lg">
+                    <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-lg">
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-bold text-gray-700">المجموع الإجمالي:</span>
-                        <span className="text-2xl font-bold text-purple-600">
+                        <span className="text-2xl font-bold text-green-600">
                           {formatArabicCurrency(saleForm.lines.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0))}
                         </span>
                       </div>

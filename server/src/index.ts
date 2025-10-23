@@ -1,8 +1,9 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import compression from "compression";
 /*ROUTE IMPORT*/
 import authRoute from "./routes/authRoute";
 import usersRoute from "./routes/usersRoute";
@@ -36,10 +37,40 @@ app.use(cors({
   credentials: true
 }));
 
+// Compression middleware - تقليل حجم البيانات بنسبة 70-90%
+app.use(compression({
+  level: 6, // توازن بين السرعة والضغط
+  threshold: 1024, // فقط للبيانات أكبر من 1KB
+  filter: (req: Request, res: Response) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  }
+}));
+
 // Optimized caching for better performance
 app.use('/api', (req, res, next) => {
   if (req.method === 'GET') {
-    res.set('Cache-Control', 'public, max-age=5');
+    // تحسين الـ cache بناءً على نوع البيانات
+    const path = req.path;
+    
+    // بيانات ثابتة - cache طويل (5 دقائق)
+    if (path.includes('/products') || path.includes('/company') || path.includes('/users')) {
+      res.set('Cache-Control', 'public, max-age=300');
+    }
+    // بيانات متغيرة - cache متوسط (1 دقيقة)
+    else if (path.includes('/sales') || path.includes('/purchases') || path.includes('/warehouse')) {
+      res.set('Cache-Control', 'public, max-age=60');
+    }
+    // بيانات حساسة - بدون cache
+    else if (path.includes('/auth') || path.includes('/permissions')) {
+      res.set('Cache-Control', 'private, no-cache');
+    }
+    // افتراضي - cache قصير
+    else {
+      res.set('Cache-Control', 'public, max-age=30');
+    }
   } else {
     res.set('Cache-Control', 'no-cache');
   }

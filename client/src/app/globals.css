@@ -7,13 +7,13 @@
     @apply bg-white rounded-lg border border-slate-200 shadow-sm;
   }
   .card-body {
-    @apply p-4 sm:p-6;
+    @apply p-6;
   }
   .card-header {
-    @apply px-4 sm:px-6 pt-4 sm:pt-6 pb-3 border-b border-slate-200;
+    @apply px-6 pt-6 pb-3 border-b border-slate-200;
   }
   .card-title {
-    @apply text-base sm:text-lg font-semibold text-slate-800;
+    @apply text-lg font-semibold text-slate-800;
   }
 
   .input {
@@ -21,28 +21,13 @@
   }
 
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-md px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-primary {
     @apply btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
   }
   .btn-ghost {
     @apply btn bg-transparent text-slate-700 hover:bg-slate-100 focus:ring-slate-300;
-  }
-  
-  /* Responsive Table Container */
-  .table-responsive {
-    @apply w-full overflow-x-auto -mx-4 sm:mx-0;
-  }
-  
-  /* Mobile-friendly spacing */
-  .container-mobile {
-    @apply px-2 sm:px-4 lg:px-6;
-  }
-  
-  /* Responsive Grid */
-  .grid-responsive {
-    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6;
   }
 }
 
@@ -86,6 +71,25 @@ body,
   color: var(--primary-text);
 }
 
+/* Responsive Base Font Size */
+@media (max-width: 639px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
 @font-face {
   font-family: 'Tajawal';
   src: url('./fonts/Tajawal-Regular.ttf') format('truetype');
@@ -105,19 +109,19 @@ body,
   }
 }
 
-/* Enhanced Modal Styles with Better Contrast - Mobile Responsive */
+/* Enhanced Modal Styles with Better Contrast */
 .modal-overlay {
-  @apply fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[3] p-2 sm:p-4;
+  @apply fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[3];
 }
 
 .modal-container {
   background-color: var(--secondary-bg);
-  @apply rounded-lg shadow-2xl w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-4xl lg:max-w-5xl xl:max-w-6xl mx-auto max-h-[95vh] sm:max-h-[90vh] overflow-y-auto;
+  @apply rounded-lg shadow-2xl w-full mx-4 max-h-[90vh] overflow-y-auto;
   border: 1px solid var(--border-color);
 }
 
 .modal-header {
-  @apply flex justify-between items-start p-3 sm:p-4 md:p-6;
+  @apply flex justify-between items-start p-6;
   border-bottom: 2px solid var(--accent-bg);
   background-color: var(--primary-bg);
 }
@@ -125,11 +129,10 @@ body,
 .modal-content {
   background-color: var(--secondary-bg);
   color: var(--primary-text);
-  @apply p-3 sm:p-4 md:p-6;
 }
 
 .modal-footer {
-  @apply p-3 sm:p-4 md:p-6;
+  @apply p-6;
   border-top: 2px solid var(--accent-bg);
   background-color: var(--primary-bg);
 }
@@ -341,6 +344,351 @@ body,
 }
 
 /* Print Styles */
+/* ========================================
+   RESPONSIVE DESIGN - ALL DEVICES
+   ======================================== */
+
+/* Mobile First Approach */
+/* Base styles for mobile (< 640px) */
+
+/* Responsive Container */
+.container-responsive {
+  @apply w-full px-3 mx-auto;
+}
+
+@media (min-width: 640px) {
+  .container-responsive {
+    @apply px-4 max-w-screen-sm;
+  }
+}
+
+@media (min-width: 768px) {
+  .container-responsive {
+    @apply px-6 max-w-screen-md;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-responsive {
+    @apply px-8 max-w-screen-lg;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container-responsive {
+    @apply px-10 max-w-screen-xl;
+  }
+}
+
+/* Responsive Tables */
+.table-responsive {
+  @apply w-full overflow-x-auto -mx-3 px-3;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 768px) {
+  .table-responsive {
+    @apply mx-0 px-0 overflow-x-visible;
+  }
+}
+
+.table-responsive table {
+  @apply min-w-full;
+}
+
+/* Mobile: Smaller text and padding */
+@media (max-width: 639px) {
+  .table-responsive th,
+  .table-responsive td {
+    @apply px-2 py-2 text-xs;
+  }
+  
+  .table-responsive th {
+    @apply font-semibold;
+  }
+}
+
+/* Tablet: Medium text and padding */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .table-responsive th,
+  .table-responsive td {
+    @apply px-4 py-3 text-sm;
+  }
+}
+
+/* Desktop: Full text and padding */
+@media (min-width: 1024px) {
+  .table-responsive th,
+  .table-responsive td {
+    @apply px-6 py-4 text-base;
+  }
+}
+
+/* Responsive Cards */
+.card-responsive {
+  @apply rounded-lg p-3 mb-3;
+}
+
+@media (min-width: 640px) {
+  .card-responsive {
+    @apply p-4 mb-4;
+  }
+}
+
+@media (min-width: 768px) {
+  .card-responsive {
+    @apply p-6 mb-6 rounded-xl;
+  }
+}
+
+/* Responsive Grid */
+.grid-responsive {
+  @apply grid gap-3;
+  grid-template-columns: repeat(1, 1fr);
+}
+
+@media (min-width: 640px) {
+  .grid-responsive {
+    @apply gap-4;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-responsive {
+    @apply gap-6;
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .grid-responsive {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Responsive Buttons */
+.btn-responsive {
+  @apply px-3 py-2 text-xs rounded-md;
+}
+
+@media (min-width: 640px) {
+  .btn-responsive {
+    @apply px-4 py-2 text-sm;
+  }
+}
+
+@media (min-width: 768px) {
+  .btn-responsive {
+    @apply px-6 py-3 text-base rounded-lg;
+  }
+}
+
+/* Responsive Modal */
+@media (max-width: 639px) {
+  .modal-container {
+    @apply mx-2 max-w-full rounded-lg;
+    max-height: 95vh;
+  }
+  
+  .modal-header,
+  .modal-content,
+  .modal-footer {
+    @apply p-3;
+  }
+  
+  .modal-input,
+  .modal-select {
+    @apply p-2 text-sm;
+  }
+  
+  .modal-button,
+  .modal-button-primary {
+    @apply px-4 py-2 text-sm;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+  .modal-container {
+    @apply mx-4 max-w-lg;
+  }
+  
+  .modal-header,
+  .modal-content,
+  .modal-footer {
+    @apply p-4;
+  }
+}
+
+@media (min-width: 768px) {
+  .modal-container {
+    @apply max-w-2xl;
+  }
+}
+
+@media (min-width: 1024px) {
+  .modal-container {
+    @apply max-w-4xl;
+  }
+}
+
+@media (min-width: 1280px) {
+  .modal-container {
+    @apply max-w-5xl;
+  }
+}
+
+/* Responsive Typography */
+@media (max-width: 639px) {
+  h1 { @apply text-xl font-bold; }
+  h2 { @apply text-lg font-semibold; }
+  h3 { @apply text-base font-semibold; }
+  h4 { @apply text-sm font-medium; }
+  p { @apply text-sm; }
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+  h1 { @apply text-2xl font-bold; }
+  h2 { @apply text-xl font-semibold; }
+  h3 { @apply text-lg font-semibold; }
+  h4 { @apply text-base font-medium; }
+  p { @apply text-sm; }
+}
+
+@media (min-width: 768px) {
+  h1 { @apply text-3xl font-bold; }
+  h2 { @apply text-2xl font-semibold; }
+  h3 { @apply text-xl font-semibold; }
+  h4 { @apply text-lg font-medium; }
+  p { @apply text-base; }
+}
+
+/* Responsive Form Inputs */
+.form-input-responsive {
+  @apply w-full p-2 text-sm rounded-md;
+}
+
+@media (min-width: 640px) {
+  .form-input-responsive {
+    @apply p-3 text-base;
+  }
+}
+
+@media (min-width: 768px) {
+  .form-input-responsive {
+    @apply p-4 text-base rounded-lg;
+  }
+}
+
+/* Responsive Spacing */
+.spacing-responsive {
+  @apply space-y-3;
+}
+
+@media (min-width: 640px) {
+  .spacing-responsive {
+    @apply space-y-4;
+  }
+}
+
+@media (min-width: 768px) {
+  .spacing-responsive {
+    @apply space-y-6;
+  }
+}
+
+/* Hide/Show Elements Based on Screen Size */
+.mobile-only {
+  @apply block;
+}
+
+@media (min-width: 768px) {
+  .mobile-only {
+    @apply hidden;
+  }
+}
+
+.tablet-up {
+  @apply hidden;
+}
+
+@media (min-width: 768px) {
+  .tablet-up {
+    @apply block;
+  }
+}
+
+.desktop-only {
+  @apply hidden;
+}
+
+@media (min-width: 1024px) {
+  .desktop-only {
+    @apply block;
+  }
+}
+
+/* Touch-Friendly Targets (44px minimum) */
+@media (max-width: 1023px) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    @apply flex items-center justify-center;
+  }
+}
+
+/* Responsive Stats Cards */
+.stat-card-responsive {
+  @apply p-3 rounded-lg;
+}
+
+@media (min-width: 640px) {
+  .stat-card-responsive {
+    @apply p-4;
+  }
+}
+
+@media (min-width: 768px) {
+  .stat-card-responsive {
+    @apply p-6 rounded-xl;
+  }
+}
+
+/* Responsive Sidebar Offset */
+.main-content {
+  @apply transition-all duration-300;
+}
+
+@media (min-width: 768px) {
+  .main-content {
+    margin-right: 256px; /* w-64 */
+  }
+  
+  .main-content.sidebar-collapsed {
+    margin-right: 64px; /* w-16 */
+  }
+}
+
+/* Responsive Images */
+.img-responsive {
+  @apply w-full h-auto;
+  max-width: 100%;
+}
+
+/* Prevent Horizontal Scroll */
+body {
+  overflow-x: hidden;
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ========================================
+   PRINT STYLES
+   ======================================== */
+
 @media print {
   /* Hide non-printable elements */
   .no-print,
@@ -435,155 +783,5 @@ body,
 
   .avoid-break {
     page-break-inside: avoid;
-  }
-}
-
-/* ===================================
-   MOBILE & TABLET RESPONSIVE STYLES
-   =================================== */
-
-/* Base Mobile Styles (< 640px) */
-@media (max-width: 639px) {
-  /* Reduce font sizes */
-  html {
-    font-size: 14px;
-  }
-  
-  /* Compact headers */
-  h1 {
-    font-size: 1.5rem !important;
-  }
-  
-  h2 {
-    font-size: 1.25rem !important;
-  }
-  
-  h3 {
-    font-size: 1.1rem !important;
-  }
-  
-  /* Mobile-friendly buttons */
-  button, .btn {
-    min-height: 44px; /* Touch-friendly size */
-    padding: 0.75rem 1rem;
-  }
-  
-  /* Compact inputs */
-  input, select, textarea {
-    font-size: 16px !important; /* Prevent zoom on iOS */
-    padding: 0.75rem;
-  }
-  
-  /* Stack grids on mobile */
-  .grid {
-    grid-template-columns: 1fr !important;
-  }
-  
-  /* Full-width cards */
-  .card {
-    margin: 0.5rem 0;
-    border-radius: 0.5rem;
-  }
-  
-  /* Scrollable tables */
-  table {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  /* Hide less important columns on mobile */
-  .hide-mobile {
-    display: none !important;
-  }
-  
-  /* Compact table cells */
-  td, th {
-    padding: 0.5rem !important;
-    font-size: 0.875rem;
-  }
-  
-  /* Stack form fields */
-  .form-row {
-    flex-direction: column !important;
-  }
-  
-  /* Full-width modals */
-  .modal-container {
-    width: 100vw !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
-    border-radius: 0 !important;
-    margin: 0 !important;
-  }
-  
-  /* Compact stats cards */
-  .stat-card {
-    padding: 1rem !important;
-  }
-  
-  .stat-value {
-    font-size: 1.5rem !important;
-  }
-  
-  .stat-label {
-    font-size: 0.75rem !important;
-  }
-}
-
-/* Tablet Styles (640px - 1024px) */
-@media (min-width: 640px) and (max-width: 1023px) {
-  html {
-    font-size: 15px;
-  }
-  
-  /* 2-column grid for tablets */
-  .grid-responsive {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-  
-  /* Adjust modal width */
-  .modal-container {
-    max-width: 90vw;
-  }
-  
-  /* Comfortable touch targets */
-  button, .btn {
-    min-height: 42px;
-  }
-}
-
-/* Landscape Mobile (< 768px height) */
-@media (max-height: 767px) and (orientation: landscape) {
-  .modal-container {
-    max-height: 95vh;
-  }
-  
-  .modal-header, .modal-footer {
-    padding: 0.75rem !important;
-  }
-  
-  .modal-content {
-    padding: 1rem !important;
-  }
-}
-
-/* Touch Device Optimizations */
-@media (hover: none) and (pointer: coarse) {
-  /* Larger touch targets */
-  button, a, input, select {
-    min-height: 44px;
-    min-width: 44px;
-  }
-  
-  /* Remove hover effects on touch devices */
-  *:hover {
-    transform: none !important;
-  }
-  
-  /* Better tap highlighting */
-  * {
-    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
   }
 }

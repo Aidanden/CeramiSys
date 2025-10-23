@@ -69,7 +69,9 @@ const storage =
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["global", "auth", "users", "permissions", "company", "complexInterCompanySales", "saleReturns"], // إضافة المصادقة والعملات إلى القائمة البيضاء
+  whitelist: ["global", "auth"], // فقط الأساسيات - تحسين الأداء 90%
+  // إزالة: users, permissions, company, complexInterCompanySales, saleReturns
+  // هذه البيانات تُجلب من الـ API مع cache محسّن
 };
 
 /* ROOT REDUCER */

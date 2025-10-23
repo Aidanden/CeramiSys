@@ -72,6 +72,69 @@ export const API_CACHE_CONFIG = {
     // إضافة polling للتحديث التلقائي للإشعارات
     pollingInterval: 30000, // 30 ثانية
   },
+  // إعدادات المبيعات - كاش متوسط
+  sales: {
+    keepUnusedDataFor: 300, // 5 minutes
+    refetchOnMountOrArgChange: 30, // 30 ثانية
+    refetchOnFocus: false,
+    refetchOnReconnect: true,
+  },
+  // إعدادات المشتريات - كاش متوسط
+  purchases: {
+    keepUnusedDataFor: 300, // 5 minutes
+    refetchOnMountOrArgChange: 30,
+    refetchOnFocus: false,
+    refetchOnReconnect: true,
+  },
+  // إعدادات المبيعات بين الشركات - كاش متوسط
+  interCompanySales: {
+    keepUnusedDataFor: 300, // 5 minutes
+    refetchOnMountOrArgChange: 30,
+    refetchOnFocus: false,
+    refetchOnReconnect: true,
+  },
+  // إعدادات التقارير - كاش قصير
+  reports: {
+    keepUnusedDataFor: 180, // 3 minutes
+    refetchOnMountOrArgChange: 60,
+    refetchOnFocus: false,
+    refetchOnReconnect: true,
+  },
+  // إعدادات الأنشطة - كاش قصير
+  activities: {
+    keepUnusedDataFor: 120, // 2 minutes
+    refetchOnMountOrArgChange: 30,
+    refetchOnFocus: false,
+    refetchOnReconnect: true,
+  },
+  // إعدادات المبيعات المبدئية - كاش متوسط
+  provisionalSales: {
+    keepUnusedDataFor: 300, // 5 minutes
+    refetchOnMountOrArgChange: 30,
+    refetchOnFocus: false,
+    refetchOnReconnect: true,
+  },
+  // إعدادات مرتجعات المبيعات - كاش متوسط
+  saleReturns: {
+    keepUnusedDataFor: 300, // 5 minutes
+    refetchOnMountOrArgChange: 30,
+    refetchOnFocus: false,
+    refetchOnReconnect: true,
+  },
+  // إعدادات المخزن - كاش متوسط
+  warehouse: {
+    keepUnusedDataFor: 300, // 5 minutes
+    refetchOnMountOrArgChange: 30,
+    refetchOnFocus: false,
+    refetchOnReconnect: true,
+  },
+  // إعدادات الدفعات - كاش متوسط
+  salePayments: {
+    keepUnusedDataFor: 300, // 5 minutes
+    refetchOnMountOrArgChange: 30,
+    refetchOnFocus: false,
+    refetchOnReconnect: true,
+  },
 };
 
 

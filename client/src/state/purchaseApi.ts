@@ -1,6 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from './index';
 import { baseQueryWithAuthInterceptor } from './apiUtils';
+import { API_CACHE_CONFIG } from '@/lib/config';
 
 export interface PurchaseLine {
   id?: number;
@@ -151,6 +152,7 @@ export const purchaseApi = createApi({
   reducerPath: 'purchaseApi',
   baseQuery: baseQueryWithAuthInterceptor,
   tagTypes: ['Purchase', 'Supplier', 'PurchaseStats'],
+  ...API_CACHE_CONFIG.purchases, // تحسين الأداء
   endpoints: (builder) => ({
     // Purchase endpoints
     getPurchases: builder.query<{
