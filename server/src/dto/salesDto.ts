@@ -28,9 +28,9 @@ export const CreateSaleDtoSchema = z.object({
   companyId: z.number().int().positive().optional(), // للـ System User: تحديد الشركة التي يريد البيع منها
   customerId: z.number().int().positive().optional(),
   invoiceNumber: z.string().optional(),
-  saleType: z.nativeEnum(SaleType, { message: 'نوع البيع غير صحيح' }),
-  paymentMethod: z.nativeEnum(PaymentMethod, { message: 'طريقة الدفع غير صحيحة' }).optional(), // اختياري للبيع الآجل
+  notes: z.string().optional(), // ملاحظات
   lines: z.array(CreateSaleLineDtoSchema).min(1, 'يجب إضافة بند واحد على الأقل')
+  // ملاحظة: saleType و paymentMethod سيحددهما المحاسب لاحقاً
 });
 
 export const UpdateSaleDtoSchema = z.object({

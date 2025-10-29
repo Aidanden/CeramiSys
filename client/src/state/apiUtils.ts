@@ -49,6 +49,11 @@ export const baseQueryWithAuth = fetchBaseQuery({
     headers.set("Content-Type", "application/json");
     headers.set("Accept", "application/json");
     
+    // منع الـ cache في المتصفح
+    headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+    headers.set("Pragma", "no-cache");
+    headers.set("Expires", "0");
+    
     return headers;
   },
 });
@@ -73,16 +78,7 @@ export const baseQueryWithAuthInterceptor = async (args: any, api: any, extraOpt
     }
   }
   
-  // Log critical errors only in development
-  if (result.error && process.env.NODE_ENV === 'development') {
-    const status = (result.error as any)?.status;
-    
-    // Only log server errors (5xx) and critical client errors
-    if (status >= 500 || status === 403 || status === 404) {
-      const url = typeof args === 'string' ? args : (args as any)?.url || 'unknown';
-      console.error(`🚨 API Error [${status}]:`, url);
-    }
-  }
+  // تم تعطيل logging للأخطاء - يتم عرضها في notifications فقط
   
   return result;
 };

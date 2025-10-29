@@ -5,6 +5,7 @@
 
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuthInterceptor } from "./apiUtils";
+import { API_CACHE_CONFIG } from "@/lib/config";
 
 // Types للمبيعات
 export interface SaleLine {
@@ -38,13 +39,18 @@ export interface Sale {
   };
   invoiceNumber?: string;
   total: number;
-  saleType: "CASH" | "CREDIT";
-  paymentMethod?: "CASH" | "BANK" | "CARD"; // اختياري للبيع الآجل
-  receiptIssued?: boolean; // حالة إصدار إيصال القبض
-  receiptIssuedAt?: string; // تاريخ إصدار الإيصال
-  receiptIssuedBy?: string; // المحاسب الذي أصدر الإيصال
+  status: "DRAFT" | "APPROVED" | "CANCELLED"; // حالة الفاتورة
+  notes?: string; // ملاحظات
+  saleType?: "CASH" | "CREDIT"; // يحدده المحاسب
+  paymentMethod?: "CASH" | "BANK" | "CARD"; // يحدده المحاسب
+  approvedAt?: string; // تاريخ اعتماد الفاتورة
+  approvedBy?: string; // المحاسب الذي اعتمد الفاتورة
+  receiptIssued?: boolean; // هل تم إصدار إيصال قبض؟
+  receiptIssuedAt?: string; // تاريخ إصدار إيصال القبض
+  receiptIssuedBy?: string; // من أصدر إيصال القبض
   dispatchOrders?: { id: number; status: string }[]; // أوامر صرف المخزن
   createdAt: string;
+  updatedAt: string;
   lines: SaleLine[];
 }
 
@@ -52,13 +58,13 @@ export interface CreateSaleRequest {
   companyId?: number; // للـ System User: تحديد الشركة التي يريد البيع منها
   customerId?: number;
   invoiceNumber?: string;
-  saleType: "CASH" | "CREDIT";
-  paymentMethod?: "CASH" | "BANK" | "CARD"; // اختياري للبيع الآجل
+  notes?: string; // ملاحظات اختيارية
   lines: {
     productId: number;
     qty: number;
     unitPrice: number;
   }[];
+  // ملاحظة: saleType و paymentMethod سيحددهما المحاسب لاحقاً
 }
 
 export interface UpdateSaleRequest {
@@ -163,10 +169,8 @@ export const salesApi = createApi({
   reducerPath: "salesApi",
   baseQuery: baseQueryWithAuthInterceptor,
   tagTypes: ["Sales", "Sale", "SalesStats", "Customers", "Customer"],
-  keepUnusedDataFor: 300, // 5 دقائق cache - تحسين الأداء
-  refetchOnMountOrArgChange: 30, // إعادة الجلب بعد 30 ثانية فقط
-  refetchOnFocus: false, // لا إعادة جلب عند العودة للتبويب
-  refetchOnReconnect: true, // فقط عند إعادة الاتصال
+  // تطبيق إعدادات التحديث الفوري من config.ts
+  ...API_CACHE_CONFIG.sales,
   endpoints: (builder) => ({
     // ============== المبيعات ==============
     
@@ -190,6 +194,7 @@ export const salesApi = createApi({
               { type: "Sales", id: "LIST" },
             ]
           : [{ type: "Sales", id: "LIST" }],
+      keepUnusedDataFor: API_CACHE_CONFIG.sales.keepUnusedDataFor,
     }),
 
     /**
@@ -210,6 +215,96 @@ export const salesApi = createApi({
         body: data,
       }),
       invalidatesTags: [{ type: "Sales", id: "LIST" }, { type: "SalesStats", id: "STATS" }],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        // الحصول على الفاتورة الجديدة فوراً بدون انتظار الخادم
+        const optimisticSale = {
+          id: Date.now(), // ID مؤقت
+          invoiceNumber: `TEMP-${Date.now()}`,
+          customerId: arg.customerId,
+          customer: arg.customerId ? { 
+            id: arg.customerId, 
+            name: 'جاري التحميل...',
+            phone: '',
+            note: ''
+          } : null,
+          companyId: arg.companyId,
+          company: { id: arg.companyId, name: 'جاري التحميل...' },
+          notes: arg.notes || '',
+          lines: arg.lines || [],
+          totalAmount: arg.lines?.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0) || 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          createdBy: 1,
+          receiptIssued: false,
+          receiptIssuedAt: null,
+          receiptIssuedBy: null
+        };
+
+        // تحديث فوري للـ cache - تحديث جميع الـ queries المحتملة
+        const patchResults: any[] = [];
+        
+        // تحديث الـ query الافتراضي
+        patchResults.push(
+          dispatch(
+            salesApi.util.updateQueryData('getSales', {}, (draft) => {
+              if (draft?.data?.sales) {
+                draft.data.sales.unshift(optimisticSale as any);
+              }
+            })
+          )
+        );
+        
+        // تحديث الـ queries مع pagination
+        for (let page = 1; page <= 5; page++) {
+          patchResults.push(
+            dispatch(
+              salesApi.util.updateQueryData('getSales', { page, limit: 10 }, (draft) => {
+                if (draft?.data?.sales && page === 1) {
+                  draft.data.sales.unshift(optimisticSale as any);
+                }
+              })
+            )
+          );
+        }
+
+        try {
+          const { data: response } = await queryFulfilled;
+          const realSale = response.data;
+          
+          // استبدال البيانات المؤقتة بالبيانات الحقيقية في جميع الـ queries
+          dispatch(
+            salesApi.util.updateQueryData('getSales', {}, (draft) => {
+              if (draft?.data?.sales) {
+                const tempIndex = draft.data.sales.findIndex(s => s.id === optimisticSale.id);
+                if (tempIndex !== -1) {
+                  draft.data.sales[tempIndex] = realSale;
+                }
+              }
+            })
+          );
+          
+          // تحديث الـ queries مع pagination
+          for (let page = 1; page <= 5; page++) {
+            dispatch(
+              salesApi.util.updateQueryData('getSales', { page, limit: 10 }, (draft) => {
+                if (draft?.data?.sales && page === 1) {
+                  const tempIndex = draft.data.sales.findIndex(s => s.id === optimisticSale.id);
+                  if (tempIndex !== -1) {
+                    draft.data.sales[tempIndex] = realSale;
+                  }
+                }
+              })
+            );
+          }
+        } catch (error) {
+          // في حالة الخطأ، إزالة البيانات المؤقتة
+          patchResults.forEach(patchResult => {
+            if (patchResult && patchResult.undo) {
+              patchResult.undo();
+            }
+          });
+        }
+      },
     }),
 
     /**
@@ -226,6 +321,40 @@ export const salesApi = createApi({
         { type: "Sales", id: "LIST" },
         { type: "SalesStats", id: "STATS" },
       ],
+      async onQueryStarted({ id, data }, { dispatch, queryFulfilled }) {
+        // Optimistic update للفاتورة المحدثة
+        const patchResults: any[] = [];
+        
+        try {
+          // تحديث جميع الـ queries
+          patchResults.push(
+            dispatch(
+              salesApi.util.updateQueryData('getSales', { page: 1, limit: 10, search: undefined }, (draft) => {
+                const sale = draft?.data?.sales?.find(s => s.id === id);
+                if (sale) {
+                  Object.assign(sale, data);
+                }
+              })
+            )
+          );
+          
+          patchResults.push(
+            dispatch(
+              salesApi.util.updateQueryData('getSales', { page: 1, limit: 1000, search: undefined }, (draft) => {
+                const sale = draft?.data?.sales?.find(s => s.id === id);
+                if (sale) {
+                  Object.assign(sale, data);
+                }
+              })
+            )
+          );
+          
+          await queryFulfilled;
+        } catch {
+          // في حالة الخطأ، نرجع التغييرات
+          patchResults.forEach(patchResult => patchResult.undo());
+        }
+      },
     }),
 
     /**
@@ -241,6 +370,38 @@ export const salesApi = createApi({
         { type: "Sales", id: "LIST" },
         { type: "SalesStats", id: "STATS" },
       ],
+      async onQueryStarted(id, { dispatch, queryFulfilled }) {
+        // Optimistic update لحذف الفاتورة
+        const patchResults: any[] = [];
+        
+        try {
+          // حذف من جميع الـ queries
+          patchResults.push(
+            dispatch(
+              salesApi.util.updateQueryData('getSales', { page: 1, limit: 10, search: undefined }, (draft) => {
+                if (draft?.data?.sales) {
+                  draft.data.sales = draft.data.sales.filter(sale => sale.id !== id);
+                }
+              })
+            )
+          );
+          
+          patchResults.push(
+            dispatch(
+              salesApi.util.updateQueryData('getSales', { page: 1, limit: 1000, search: undefined }, (draft) => {
+                if (draft?.data?.sales) {
+                  draft.data.sales = draft.data.sales.filter(sale => sale.id !== id);
+                }
+              })
+            )
+          );
+          
+          await queryFulfilled;
+        } catch {
+          // في حالة الخطأ، نرجع التغييرات
+          patchResults.forEach(patchResult => patchResult.undo());
+        }
+      },
     }),
 
     /**
@@ -379,6 +540,24 @@ export const salesApi = createApi({
         { type: "Customers", id: "LIST" },
       ],
     }),
+
+    /**
+     * اعتماد فاتورة مبدئية
+     */
+    approveSale: builder.mutation<
+      { success: boolean; message: string; data: Sale }, 
+      { id: number; saleType: "CASH" | "CREDIT"; paymentMethod?: "CASH" | "BANK" | "CARD" }
+    >({
+      query: ({ id, ...data }) => ({
+        url: `sales/${id}/approve`,
+        method: "PATCH",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Sale", id },
+        { type: "Sales", id: "LIST" },
+      ],
+    }),
   }),
 });
 
@@ -393,6 +572,7 @@ export const {
   useGetSalesStatsQuery,
   useGetCashSalesQuery,
   useIssueReceiptMutation,
+  useApproveSaleMutation,
   // العملاء
   useGetCustomersQuery,
   useGetCustomerQuery,

@@ -168,12 +168,6 @@ const Sidebar = () => {
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink
-            href="/provisional-sales"
-            icon={Wallet}
-            label="الفواتير المبدئية"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
             href="/sales"
             icon={ShoppingCart}
             label="المبيعات"

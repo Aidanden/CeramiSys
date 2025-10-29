@@ -78,8 +78,8 @@ export class SalesController {
           saleData: {
             companyId: saleData.companyId,
             customerId: saleData.customerId,
-            saleType: saleData.saleType,
-            paymentMethod: saleData.paymentMethod,
+            invoiceNumber: saleData.invoiceNumber,
+            notes: saleData.notes,
             linesCount: saleData.lines.length
           }
         });
@@ -573,6 +573,83 @@ export class SalesController {
         });
       } else if (error.message.includes('فواتير مرتبطة')) {
         res.status(409).json({
+          success: false,
+          message: error.message,
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: 'خطأ في الخادم الداخلي',
+        });
+      }
+    }
+  }
+
+  /**
+   * اعتماد فاتورة مبدئية
+   */
+  async approveSale(req: Request, res: Response): Promise<void> {
+    try {
+      const saleId = parseInt(req.params.id!);
+      const { saleType, paymentMethod } = req.body;
+      const userCompanyId = (req as any).user?.companyId;
+      const isSystemUser = (req as any).user?.isSystemUser;
+      const approvedBy = (req as any).user?.username || 'Unknown';
+
+      if (isNaN(saleId)) {
+        res.status(400).json({
+          success: false,
+          message: 'معرف الفاتورة غير صالح',
+        });
+        return;
+      }
+
+      // التحقق من البيانات المطلوبة
+      if (!saleType || !['CASH', 'CREDIT'].includes(saleType)) {
+        res.status(400).json({
+          success: false,
+          message: 'نوع البيع مطلوب ويجب أن يكون نقدي أو آجل',
+        });
+        return;
+      }
+
+      // للبيع النقدي، طريقة الدفع مطلوبة
+      if (saleType === 'CASH' && (!paymentMethod || !['CASH', 'BANK', 'CARD'].includes(paymentMethod))) {
+        res.status(400).json({
+          success: false,
+          message: 'طريقة الدفع مطلوبة للبيع النقدي',
+        });
+        return;
+      }
+
+      const approvedSale = await this.salesService.approveSale(
+        saleId,
+        { saleType, paymentMethod },
+        userCompanyId,
+        approvedBy,
+        isSystemUser
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'تم اعتماد الفاتورة وخصم المخزون بنجاح',
+        data: approvedSale,
+      });
+    } catch (error: any) {
+      console.error('خطأ في اعتماد الفاتورة:', error);
+
+      if (error.message.includes('غير موجودة') || error.message.includes('ليست مبدئية')) {
+        res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      } else if (error.message.includes('المخزون غير كافي')) {
+        res.status(400).json({
+          success: false,
+          message: error.message,
+        });
+      } else if (error.message.includes('ليس لديك صلاحية')) {
+        res.status(403).json({
           success: false,
           message: error.message,
         });

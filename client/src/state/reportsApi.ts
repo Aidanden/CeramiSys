@@ -1,5 +1,6 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuthInterceptor } from "./apiUtils";
+import { API_CACHE_CONFIG } from "@/lib/config";
 
 // Types
 export interface SalesReportQuery {
@@ -41,6 +42,11 @@ export interface TopProductsReportQuery {
 export const reportsApi = createApi({
   reducerPath: "reportsApi",
   baseQuery: baseQueryWithAuthInterceptor,
+  // تطبيق إعدادات عدم الكاش
+  keepUnusedDataFor: API_CACHE_CONFIG.reports.keepUnusedDataFor,
+  refetchOnMountOrArgChange: API_CACHE_CONFIG.reports.refetchOnMountOrArgChange,
+  refetchOnFocus: API_CACHE_CONFIG.reports.refetchOnFocus,
+  refetchOnReconnect: API_CACHE_CONFIG.reports.refetchOnReconnect,
   endpoints: (build) => ({
     // تقرير المبيعات
     getSalesReport: build.query({

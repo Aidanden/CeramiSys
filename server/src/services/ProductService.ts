@@ -361,20 +361,40 @@ export class ProductService {
 
       // تحديث السعر إذا تم تحديده
       if (data.sellPrice !== undefined) {
-        await this.prisma.companyProductPrice.upsert({
+        // البحث عن السعر الموجود - أولاً في شركة المستخدم، ثم في الشركة المالكة للصنف
+        let existingPrice = await this.prisma.companyProductPrice.findFirst({
           where: {
-            companyId_productId: {
-              companyId: userCompanyId,
-              productId: id,
-            }
-          },
-          update: { sellPrice: data.sellPrice },
-          create: {
             companyId: userCompanyId,
             productId: id,
-            sellPrice: data.sellPrice,
           }
         });
+
+        // إذا لم يوجد في شركة المستخدم، ابحث في الشركة المالكة للصنف
+        if (!existingPrice) {
+          existingPrice = await this.prisma.companyProductPrice.findFirst({
+            where: {
+              companyId: existingProduct.createdByCompanyId,
+              productId: id,
+            }
+          });
+        }
+
+        if (existingPrice) {
+          // تحديث السعر الموجود فقط
+          await this.prisma.companyProductPrice.update({
+            where: { id: existingPrice.id },
+            data: { sellPrice: data.sellPrice }
+          });
+        } else {
+          // إنشاء سعر جديد فقط إذا لم يوجد أي سعر
+          await this.prisma.companyProductPrice.create({
+            data: {
+              companyId: userCompanyId,
+              productId: id,
+              sellPrice: data.sellPrice,
+            }
+          });
+        }
       }
 
       return {
@@ -455,50 +475,93 @@ export class ProductService {
    * تحديث المخزون
    */
   async updateStock(data: UpdateStockDto): Promise<void> {
-    try {
-      await this.prisma.stock.upsert({
+    // التحقق من وجود الصنف
+    const product = await this.prisma.product.findUnique({
+      where: { id: data.productId },
+      include: {
+        saleLines: { select: { id: true }, take: 1 },
+        purchaseLines: { select: { id: true }, take: 1 },
+      }
+    });
+
+    if (!product) {
+      throw new Error('الصنف غير موجود');
+    }
+
+    // التحقق من استخدام الصنف في فواتير
+    if (product.saleLines.length > 0 || product.purchaseLines.length > 0) {
+      throw new Error('لا يمكن تعديل مخزون صنف مستخدم في فواتير مبيعات أو مشتريات');
+    }
+
+    // البحث عن المخزون - أولاً في شركة المستخدم، ثم في الشركة المالكة للصنف
+    let existingStock = await this.prisma.stock.findFirst({
+      where: {
+        companyId: data.companyId,
+        productId: data.productId,
+      }
+    });
+
+    // إذا لم يوجد في شركة المستخدم، ابحث في الشركة المالكة للصنف
+    if (!existingStock) {
+      existingStock = await this.prisma.stock.findFirst({
         where: {
-          companyId_productId: {
-            companyId: data.companyId,
-            productId: data.productId,
-          }
-        },
-        update: { boxes: data.quantity },
-        create: {
-          companyId: data.companyId,
+          companyId: product.createdByCompanyId,
           productId: data.productId,
-          boxes: data.quantity,
         }
       });
-    } catch (error) {
-      console.error('خطأ في تحديث المخزون:', error);
-      throw new Error('فشل في تحديث المخزون');
     }
+
+    if (!existingStock) {
+      throw new Error('لا يوجد مخزون لهذا الصنف');
+    }
+
+    // تحديث السطر الموجود فقط - لا إنشاء أبداً
+    await this.prisma.stock.update({
+      where: { id: existingStock.id },
+      data: { boxes: data.quantity }
+    });
   }
 
   /**
    * تحديث السعر
    */
   async updatePrice(data: UpdatePriceDto): Promise<void> {
-    try {
-      await this.prisma.companyProductPrice.upsert({
+    // التحقق من وجود الصنف
+    const product = await this.prisma.product.findUnique({
+      where: { id: data.productId }
+    });
+
+    if (!product) {
+      throw new Error('الصنف غير موجود');
+    }
+
+    // البحث عن السعر الموجود - أولاً في شركة المستخدم، ثم في الشركة المالكة للصنف
+    let existingPrice = await this.prisma.companyProductPrice.findFirst({
+      where: {
+        companyId: data.companyId,
+        productId: data.productId,
+      }
+    });
+
+    // إذا لم يوجد في شركة المستخدم، ابحث في الشركة المالكة للصنف
+    if (!existingPrice) {
+      existingPrice = await this.prisma.companyProductPrice.findFirst({
         where: {
-          companyId_productId: {
-            companyId: data.companyId,
-            productId: data.productId,
-          }
-        },
-        update: { sellPrice: data.sellPrice },
-        create: {
-          companyId: data.companyId,
+          companyId: product.createdByCompanyId,
           productId: data.productId,
-          sellPrice: data.sellPrice,
         }
       });
-    } catch (error) {
-      console.error('خطأ في تحديث السعر:', error);
-      throw new Error('فشل في تحديث السعر');
     }
+
+    if (!existingPrice) {
+      throw new Error('لا يوجد سعر لهذا الصنف');
+    }
+
+    // تحديث السعر الموجود فقط - لا إنشاء أبداً
+    await this.prisma.companyProductPrice.update({
+      where: { id: existingPrice.id },
+      data: { sellPrice: data.sellPrice }
+    });
   }
 
   /**

@@ -15,7 +15,9 @@
     "db:studio": "prisma studio",
     "fix:customer-sequence": "ts-node scripts/fix-customer-sequence.ts",
     "fix:all-sequences": "ts-node scripts/fix-all-sequences.ts",
-    "generate:qr": "ts-node src/scripts/generateQRForExistingProducts.ts"
+    "generate:qr": "ts-node src/scripts/generateQRForExistingProducts.ts",
+    "convert:prices": "ts-node scripts/convert-prices-to-per-unit.ts",
+    "fix:divided-prices": "ts-node scripts/fix-divided-prices.ts"
   },
   "compilerOptions": {
     "types": [

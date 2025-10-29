@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { useGetCashSalesQuery, useIssueReceiptMutation, Sale, salesApi } from '@/state/salesApi';
+import { useGetCashSalesQuery, useIssueReceiptMutation, useApproveSaleMutation, Sale, salesApi } from '@/state/salesApi';
 import { useCreateDispatchOrderMutation } from '@/state/warehouseApi';
 import { useGetCurrentUserQuery } from '@/state/authApi';
 import { useToast } from '@/components/ui/Toast';
@@ -47,6 +47,10 @@ export default function AccountantWorkspace() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showPrintReceiptModal, setShowPrintReceiptModal] = useState(false);
   const [showPrintHistoryModal, setShowPrintHistoryModal] = useState(false);
+  
+  // States for sale approval
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [saleToApprove, setSaleToApprove] = useState<Sale | null>(null);
   
   // تعيين تاريخ اليوم كـ default
   const getTodayDate = () => {
@@ -128,6 +132,7 @@ export default function AccountantWorkspace() {
 
   const [issueReceipt, { isLoading: isIssuing }] = useIssueReceiptMutation();
   const [createDispatchOrder, { isLoading: isCreatingDispatch }] = useCreateDispatchOrderMutation();
+  const [approveSale, { isLoading: isApproving }] = useApproveSaleMutation();
   
   // Credit sales API calls
   const { data: creditSalesData, isLoading: creditSalesLoading, refetch: refetchCreditSales } = useGetCreditSalesQuery({
@@ -386,6 +391,50 @@ ${itemsText}
     setStartDate(getTodayDate());
     setEndDate(getTodayDate());
     setCurrentPage(1);
+  };
+
+  // Handle sale approval
+  const handleApproveSale = (sale: Sale) => {
+    setSaleToApprove(sale);
+    setShowApprovalModal(true);
+  };
+
+  const handleApprovalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!saleToApprove) return;
+
+    const formData = new FormData(e.target as HTMLFormElement);
+    const saleType = formData.get('saleType') as "CASH" | "CREDIT";
+    const paymentMethod = formData.get('paymentMethod') as "CASH" | "BANK" | "CARD" | undefined;
+
+    if (!saleType) {
+      showError('يرجى اختيار نوع البيع');
+      return;
+    }
+
+    if (saleType === 'CASH' && !paymentMethod) {
+      showError('يرجى اختيار طريقة الدفع للبيع النقدي');
+      return;
+    }
+
+    try {
+      await approveSale({
+        id: saleToApprove.id,
+        saleType,
+        paymentMethod: saleType === 'CASH' ? paymentMethod : undefined
+      }).unwrap();
+
+      success(`تم اعتماد الفاتورة ${saleToApprove.invoiceNumber || saleToApprove.id} وخصم المخزون بنجاح`);
+      setShowApprovalModal(false);
+      setSaleToApprove(null);
+      
+      // Refresh data
+      refetch();
+      refetchPending();
+      refetchIssued();
+    } catch (err: any) {
+      showError(err?.data?.message || 'حدث خطأ أثناء اعتماد الفاتورة');
+    }
   };
   
   // Credit sales functions
@@ -912,6 +961,17 @@ ${itemsText}
                             واتساب
                           </button>
                         </div>
+                      ) : sale.status === 'DRAFT' ? (
+                        <button
+                          onClick={() => handleApproveSale(sale)}
+                          disabled={isApproving}
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
+                        >
+                          <svg className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          اعتماد الفاتورة
+                        </button>
                       ) : (
                         <button
                           onClick={() => handleIssueReceipt(sale)}
@@ -1750,6 +1810,104 @@ ${itemsText}
                 طباعة
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sale Approval Modal */}
+      {showApprovalModal && saleToApprove && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold">✅ اعتماد الفاتورة</h2>
+              <button 
+                onClick={() => setShowApprovalModal(false)} 
+                className="text-white hover:text-gray-200"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <form onSubmit={handleApprovalSubmit} className="p-6">
+              <div className="mb-4">
+                <p className="text-gray-700 mb-2">
+                  <span className="font-medium">رقم الفاتورة:</span> {saleToApprove.invoiceNumber || saleToApprove.id}
+                </p>
+                <p className="text-gray-700 mb-2">
+                  <span className="font-medium">العميل:</span> {saleToApprove.customer?.name || 'غير محدد'}
+                </p>
+                <p className="text-gray-700 mb-4">
+                  <span className="font-medium">المجموع:</span> {saleToApprove.total.toFixed(2)} د.ل
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  نوع البيع *
+                </label>
+                <select
+                  name="saleType"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">اختر نوع البيع</option>
+                  <option value="CASH">نقدي</option>
+                  <option value="CREDIT">آجل</option>
+                </select>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  طريقة الدفع (للبيع النقدي)
+                </label>
+                <select
+                  name="paymentMethod"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">اختر طريقة الدفع</option>
+                  <option value="CASH">كاش</option>
+                  <option value="BANK">حوالة مصرفية</option>
+                  <option value="CARD">بطاقة</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  💡 طريقة الدفع مطلوبة فقط للبيع النقدي
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowApprovalModal(false)}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={isApproving}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isApproving ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      جاري الاعتماد...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      اعتماد وخصم المخزون
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

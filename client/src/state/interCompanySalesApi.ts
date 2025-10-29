@@ -5,6 +5,7 @@
 
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuthInterceptor } from "./apiUtils";
+import { API_CACHE_CONFIG } from "@/lib/config";
 
 // Types
 export interface InterCompanySaleLine {
@@ -91,6 +92,11 @@ export const interCompanySalesApi = createApi({
   reducerPath: "interCompanySalesApi",
   baseQuery: baseQueryWithAuthInterceptor,
   tagTypes: ["InterCompanySales", "InterCompanySale", "InterCompanySalesStats"],
+  // تطبيق إعدادات عدم الكاش
+  keepUnusedDataFor: API_CACHE_CONFIG.interCompanySales.keepUnusedDataFor,
+  refetchOnMountOrArgChange: API_CACHE_CONFIG.interCompanySales.refetchOnMountOrArgChange,
+  refetchOnFocus: API_CACHE_CONFIG.interCompanySales.refetchOnFocus,
+  refetchOnReconnect: API_CACHE_CONFIG.interCompanySales.refetchOnReconnect,
   endpoints: (builder) => ({
     // إنشاء فاتورة مبيعات بين الشركات
     createInterCompanySale: builder.mutation<any, CreateInterCompanySaleRequest>({

@@ -49,8 +49,7 @@ const SalesPage = () => {
   // Sale form states
   const [saleForm, setSaleForm] = useState<CreateSaleRequest>({
     customerId: undefined,
-    saleType: 'CASH',
-    paymentMethod: 'CASH', // للبيع النقدي افتراضياً
+    notes: '', // ملاحظات اختيارية
     lines: []
   });
 
@@ -190,6 +189,21 @@ const SalesPage = () => {
     };
   }, [showQRScanner]);
 
+  // حساب المجموع بناءً على نوع الوحدة
+  const calculateLineTotal = (line: any) => {
+    const product = productsData?.data?.products?.find(p => p.id === line.productId);
+    if (!product) return line.qty * line.unitPrice;
+    
+    // إذا كانت الوحدة صندوق، اضرب في عدد الأمتار
+    if (product.unit === 'صندوق' && product.unitsPerBox) {
+      const totalMeters = line.qty * Number(product.unitsPerBox);
+      return totalMeters * line.unitPrice;
+    }
+    
+    // للوحدات الأخرى (كيس، قطعة، لتر)
+    return line.qty * line.unitPrice;
+  };
+
   // Handle QR Code scan
   const handleQRScan = (qrData: string) => {
     try {
@@ -239,6 +253,7 @@ const SalesPage = () => {
           console.log('🔄 تحديث بيانات السطر الجديد...');
           updateSaleLine(newIndex, 'productId', product.id);
           if (product.price?.sellPrice) {
+            // السعر يُحفظ كما هو (سعر المتر المربع)
             updateSaleLine(newIndex, 'unitPrice', Number(product.price.sellPrice));
           }
           updateSaleLine(newIndex, 'qty', 1);
@@ -331,30 +346,55 @@ const SalesPage = () => {
     }
 
     try {
+      // تحويل الأسعار للـ Backend: للصناديق نضرب في عدد الأمتار
+      const processedLines = saleForm.lines.map(line => {
+        const product = productsData?.data?.products?.find(p => p.id === line.productId);
+        
+        if (product?.unit === 'صندوق' && product.unitsPerBox) {
+          // للصناديق: السعر النهائي = سعر المتر × عدد الأمتار في الصندوق
+          return {
+            ...line,
+            unitPrice: line.unitPrice * Number(product.unitsPerBox)
+          };
+        }
+        
+        // للوحدات الأخرى: السعر يبقى كما هو
+        return line;
+      });
+      
       // إضافة companyId للطلب
       const saleRequest = {
         ...saleForm,
+        lines: processedLines,
         companyId: targetCompanyId
       };
       
       await createSale(saleRequest).unwrap();
-      notifications.custom.success('تم بنجاح', 'تم إنشاء فاتورة المبيعات بنجاح وخصم الكميات من المخزن');
+      
+      // إغلاق المودال فوراً
       setShowCreateSaleModal(false);
+      
+      // إعادة تعيين الفورم فوراً
       setSaleForm({
         customerId: undefined,
-        saleType: 'CASH',
-        paymentMethod: 'CASH',
+        notes: '',
         lines: []
       });
       setProductSearchTerm('');
       setProductCodeSearch('');
+      
       // للمستخدمين العاديين: الاحتفاظ بالشركة، لمستخدمي النظام: إعادة تعيين
       if (user?.isSystemUser) {
         setSelectedCompanyId(null);
       }
-      refetchSales();
-      // تحديث بيانات الأصناف لأن المخزون تغير
-      dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
+      
+      // إشعار فوري
+      notifications.custom.success('تم بنجاح', 'تم إنشاء فاتورة المبيعات بنجاح');
+      
+      // تحديث بيانات الأصناف بعد تأخير قصير (لأن المخزون تغير)
+      setTimeout(() => {
+        dispatch(productsApi.util.invalidateTags(['Products', 'Product', 'ProductStats']));
+      }, 1000);
     } catch (err: any) {
       notifications.custom.error('خطأ', err.data?.message || 'حدث خطأ أثناء إنشاء الفاتورة');
     }
@@ -475,6 +515,7 @@ const SalesPage = () => {
         updateSaleLine(newLineIndex, 'productId', exactMatch.id);
         // Set the official price if available
         if (exactMatch.price?.sellPrice) {
+          // السعر يُحفظ كما هو (سعر المتر المربع)
           updateSaleLine(newLineIndex, 'unitPrice', Number(exactMatch.price.sellPrice));
         }
         setProductCodeSearch(''); // Clear search after selection
@@ -586,11 +627,11 @@ const SalesPage = () => {
         <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-text-secondary text-sm">المبيعات النقدية</p>
-              <p className="text-2xl font-bold text-success-600">{formatArabicNumber(salesData?.data?.sales?.filter((sale: any) => sale.saleType === 'CASH').length || 0)}</p>
+              <p className="text-text-secondary text-sm">فواتير مبدئية</p>
+              <p className="text-2xl font-bold text-warning-600">{formatArabicNumber(salesData?.data?.sales?.filter((sale: any) => sale.status === 'DRAFT').length || 0)}</p>
             </div>
-            <svg className="w-8 h-8 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+            <svg className="w-8 h-8 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
         </div>
@@ -598,11 +639,11 @@ const SalesPage = () => {
         <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-text-secondary text-sm">المبيعات الآجلة</p>
-              <p className="text-2xl font-bold text-warning-600">{formatArabicNumber(salesData?.data?.sales?.filter((sale: any) => sale.saleType === 'CREDIT').length || 0)}</p>
+              <p className="text-text-secondary text-sm">فواتير معتمدة</p>
+              <p className="text-2xl font-bold text-success-600">{formatArabicNumber(salesData?.data?.sales?.filter((sale: any) => sale.status === 'APPROVED').length || 0)}</p>
             </div>
-            <svg className="w-8 h-8 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <svg className="w-8 h-8 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
         </div>
@@ -813,10 +854,10 @@ const SalesPage = () => {
                   المجموع
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  نوع البيع
+                  الحالة
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  طريقة الدفع
+                  الملاحظات
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   التاريخ
@@ -868,18 +909,18 @@ const SalesPage = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      sale.saleType === 'CASH' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
+                      sale.status === 'DRAFT' 
+                        ? 'bg-yellow-100 text-yellow-800' 
+                        : sale.status === 'APPROVED'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
                     }`}>
-                      {sale.saleType === 'CASH' ? 'نقدي' : 'آجل'}
+                      {sale.status === 'DRAFT' ? 'مبدئية' : 
+                       sale.status === 'APPROVED' ? 'معتمدة' : 'ملغية'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {sale.paymentMethod === 'CASH' ? 'كاش' : 
-                     sale.paymentMethod === 'BANK' ? 'حوالة' : 
-                     sale.paymentMethod === 'CARD' ? 'بطاقة' : 
-                     <span className="text-gray-400">-</span>}
+                    {sale.notes || <span className="text-gray-400">-</span>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {new Date(sale.createdAt).toLocaleDateString('en-US')}
@@ -1116,50 +1157,18 @@ const SalesPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      نوع البيع *
+                      📝 ملاحظات (اختياري)
                     </label>
-                    <select
-                      value={saleForm.saleType}
-                      onChange={(e) => {
-                        const newSaleType = e.target.value as any;
-                        setSaleForm(prev => ({ 
-                          ...prev, 
-                          saleType: newSaleType,
-                          // عند اختيار آجل، نضع طريقة الدفع undefined ونقفل الحقل
-                          paymentMethod: newSaleType === 'CREDIT' ? undefined : prev.paymentMethod
-                        }));
-                      }}
+                    <textarea
+                      value={saleForm.notes || ''}
+                      onChange={(e) => setSaleForm(prev => ({ ...prev, notes: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      <option value="CASH">نقدي</option>
-                      <option value="CREDIT">آجل</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      طريقة الدفع {saleForm.saleType !== 'CREDIT' && '*'}
-                    </label>
-                    <select
-                      value={saleForm.paymentMethod || ''}
-                      onChange={(e) => setSaleForm(prev => ({ ...prev, paymentMethod: e.target.value as any }))}
-                      className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        saleForm.saleType === 'CREDIT' ? 'bg-gray-100 cursor-not-allowed' : ''
-                      }`}
-                      required={saleForm.saleType !== 'CREDIT'}
-                      disabled={saleForm.saleType === 'CREDIT'}
-                    >
-                      <option value="">اختر طريقة الدفع</option>
-                      <option value="CASH">كاش</option>
-                      <option value="BANK">حوالة مصرفية</option>
-                      <option value="CARD">بطاقة</option>
-                    </select>
-                    {saleForm.saleType === 'CREDIT' && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        💡 لا يلزم تحديد طريقة الدفع للبيع الآجل
-                      </p>
-                    )}
+                      rows={3}
+                      placeholder="أضف أي ملاحظات حول الفاتورة..."
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      💡 سيحدد المحاسب نوع البيع وطريقة الدفع عند اعتماد الفاتورة
+                    </p>
                   </div>
                 </div>
 
@@ -1368,6 +1377,7 @@ const SalesPage = () => {
                                 
                                 updateSaleLine(index, 'productId', productId);
                                 if (product?.price?.sellPrice) {
+                                  // السعر يُحفظ كما هو (سعر المتر المربع)
                                   updateSaleLine(index, 'unitPrice', Number(product.price.sellPrice));
                                 }
                               }}
@@ -1447,7 +1457,11 @@ const SalesPage = () => {
                                   ? 'الكمية الإجمالية بالمتر'
                                   : selectedProduct?.unit === 'قطعة'
                                     ? 'إجمالي القطع'
-                                    : 'الكمية الإجمالية'
+                                    : selectedProduct?.unit === 'كيس'
+                                      ? 'إجمالي الأكياس'
+                                      : selectedProduct?.unit === 'لتر'
+                                        ? 'إجمالي اللترات'
+                                        : 'الكمية الإجمالية'
                               }
                             </label>
                             <div className="px-3 py-2 bg-purple-50 border border-purple-200 rounded-md">
@@ -1467,7 +1481,9 @@ const SalesPage = () => {
                           </div>
                           
                           <div className="col-span-2">
-                            <label className="block text-xs font-medium text-gray-700 mb-1">السعر</label>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              السعر ({selectedProduct?.unit === 'صندوق' ? 'د.ل/م²' : `د.ل/${selectedProduct?.unit || 'وحدة'}`})
+                            </label>
                             <input
                               type="number"
                               value={line.unitPrice || ''}
@@ -1489,7 +1505,7 @@ const SalesPage = () => {
                             <label className="block text-xs font-medium text-gray-700 mb-1">المجموع</label>
                             <div className="px-1 py-2 bg-green-50 border border-green-200 rounded-md overflow-hidden">
                               <span className="text-xs font-bold text-green-700 block text-center break-words leading-tight">
-                                {formatArabicCurrency(line.qty * line.unitPrice)}
+                                {formatArabicCurrency(calculateLineTotal(line))}
                               </span>
                             </div>
                           </div>
@@ -1516,7 +1532,7 @@ const SalesPage = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-bold text-gray-700">المجموع الإجمالي:</span>
                         <span className="text-2xl font-bold text-green-600">
-                          {formatArabicCurrency(saleForm.lines.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0))}
+                          {formatArabicCurrency(saleForm.lines.reduce((sum, line) => sum + calculateLineTotal(line), 0))}
                         </span>
                       </div>
                     </div>
@@ -1675,14 +1691,23 @@ const SalesPage = () => {
                     <span className="font-medium">التاريخ:</span> {new Date(selectedSale.createdAt).toLocaleDateString('en-US')}
                   </div>
                   <div>
-                    <span className="font-medium">نوع البيع:</span> {selectedSale.saleType === 'CASH' ? 'نقدي' : 'آجل'}
+                    <span className="font-medium">الحالة:</span> 
+                    <span className={`ml-2 px-2 py-1 text-xs font-semibold rounded-full ${
+                      selectedSale.status === 'DRAFT' 
+                        ? 'bg-yellow-100 text-yellow-800' 
+                        : selectedSale.status === 'APPROVED'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {selectedSale.status === 'DRAFT' ? 'مبدئية' : 
+                       selectedSale.status === 'APPROVED' ? 'معتمدة' : 'ملغية'}
+                    </span>
                   </div>
-                  <div>
-                    <span className="font-medium">طريقة الدفع:</span> {
-                      selectedSale.paymentMethod === 'CASH' ? 'كاش' : 
-                      selectedSale.paymentMethod === 'BANK' ? 'حوالة' : 'بطاقة'
-                    }
-                  </div>
+                  {selectedSale.notes && (
+                    <div>
+                      <span className="font-medium">الملاحظات:</span> {selectedSale.notes}
+                    </div>
+                  )}
                 </div>
 
                 <div>

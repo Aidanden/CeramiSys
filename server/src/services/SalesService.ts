@@ -14,14 +14,13 @@ export class SalesService {
   }
 
   /**
-   * إنشاء فاتورة مبيعات جديدة
+   * إنشاء فاتورة مبيعات جديدة (كفاتورة مبدئية)
    * 
-   * @param data - بيانات الفاتورة (يمكن أن تحتوي على companyId للـ System User)
+   * @param data - بيانات الفاتورة (بدون saleType و paymentMethod)
    * @param userCompanyId - معرف الشركة المستهدفة للفاتورة
    * @param isSystemUser - هل المستخدم System User (يمكنه البيع من أي شركة)
    * 
-   * ملاحظة: userCompanyId هنا يمثل الشركة التي سيتم البيع منها (targetCompanyId)
-   * وليس شركة المستخدم الأصلية
+   * ملاحظة: الفاتورة تُنشأ بحالة DRAFT ولا يتم خصم المخزون حتى يعتمدها المحاسب
    */
   async createSale(data: CreateSaleDto, userCompanyId: number, isSystemUser: boolean = false) {
     try {
@@ -56,43 +55,8 @@ export class SalesService {
         throw new Error('بعض الأصناف غير موجودة أو ليس لديك صلاحية للوصول إليها');
       }
 
-      // التحقق من توفر المخزون
-      // ملاحظة: line.qty من Frontend يمثل عدد الصناديق مباشرة
-      for (const line of data.lines) {
-        const product = products.find(p => p.id === line.productId);
-        if (!product) continue;
-
-        // للـ System User: نبحث عن المخزون في الشركة المحددة في الفاتورة
-        // للمستخدم العادي: نستخدم مخزون شركته فقط
-        const stock = isSystemUser 
-          ? product.stocks.find(s => s.companyId === userCompanyId)
-          : product.stocks[0];
-        
-        const requiredBoxes = Number(line.qty); // عدد الصناديق المطلوبة
-        
-        // Debug logging
-        if (process.env.NODE_ENV !== 'production') {
-          console.log('📦 Stock Check Debug:', {
-            productId: product.id,
-            productName: product.name,
-            unit: product.unit,
-            isSystemUser,
-            userCompanyId,
-            stocksFound: product.stocks.length,
-            allStocks: product.stocks.map(s => ({ companyId: s.companyId, boxes: Number(s.boxes) })),
-            selectedStock: stock ? {
-              companyId: stock.companyId,
-              boxes: Number(stock.boxes)
-            } : 'NO_STOCK',
-            requiredBoxes
-          });
-        }
-        
-        if (!stock || Number(stock.boxes) < requiredBoxes) {
-          const availableBoxes = Number(stock?.boxes || 0);
-          throw new Error(`المخزون غير كافي للصنف: ${product.name}. المتوفر: ${availableBoxes} صندوق، المطلوب: ${requiredBoxes} صندوق`);
-        }
-      }
+      // ملاحظة: لا نتحقق من المخزون هنا لأن الفاتورة مبدئية
+      // سيتم التحقق من المخزون عند اعتماد الفاتورة من المحاسب
 
       // توليد رقم الفاتورة تلقائياً
       const invoiceNumber = await this.generateInvoiceNumber(userCompanyId);
@@ -105,18 +69,21 @@ export class SalesService {
         total += subTotal;
       }
 
-      // إنشاء الفاتورة
+      // إنشاء الفاتورة كمسودة (DRAFT)
       const sale = await this.prisma.sale.create({
         data: {
           companyId: userCompanyId,
           customerId: data.customerId,
           invoiceNumber: invoiceNumber,
           total: total,
-          paidAmount: data.saleType === 'CASH' ? total : 0, // للبيع النقدي: مدفوع بالكامل، للآجل: 0
-          remainingAmount: data.saleType === 'CASH' ? 0 : total, // للبيع النقدي: 0، للآجل: المبلغ كامل
-          saleType: data.saleType,
-          paymentMethod: data.paymentMethod,
-          isFullyPaid: data.saleType === 'CASH', // البيع النقدي مسدد بالكامل
+          status: 'DRAFT', // فاتورة مبدئية
+          notes: data.notes || null,
+          // بيانات الدفع ستُملأ لاحقاً عند اعتماد الفاتورة
+          saleType: null,
+          paymentMethod: null,
+          paidAmount: 0,
+          remainingAmount: 0,
+          isFullyPaid: false,
           lines: {
             create: data.lines.map(line => ({
               productId: line.productId,
@@ -141,55 +108,9 @@ export class SalesService {
         }
       });
 
-      // تحديث المخزون
-      // ملاحظة: line.qty من Frontend يمثل عدد الصناديق مباشرة لجميع الأصناف
-      console.log('🔄 بدء تحديث المخزون...');
-      for (const line of data.lines) {
-        const product = products.find(p => p.id === line.productId);
-        if (!product) continue;
-        
-        // الحصول على المخزون الحالي قبل التحديث
-        const currentStock = await this.prisma.stock.findUnique({
-          where: {
-            companyId_productId: {
-              companyId: userCompanyId,
-              productId: line.productId
-            }
-          }
-        });
-        
-        const boxesToDecrement = Number(line.qty);
-        
-        // Debug logging مفصل
-        console.log('📦 Stock Update:', {
-          productId: product.id,
-          productName: product.name,
-          productUnit: product.unit,
-          qtyFromFrontend: line.qty,
-          qtyType: typeof line.qty,
-          boxesToDecrement,
-          boxesToDecrementType: typeof boxesToDecrement,
-          currentStockBoxes: currentStock?.boxes ? Number(currentStock.boxes) : 0,
-          afterUpdate: currentStock?.boxes ? Number(currentStock.boxes) - boxesToDecrement : 0
-        });
-        
-        await this.prisma.stock.update({
-          where: {
-            companyId_productId: {
-              companyId: userCompanyId,
-              productId: line.productId
-            }
-          },
-          data: {
-            boxes: {
-              decrement: boxesToDecrement
-            }
-          }
-        });
-        
-        console.log(`✅ تم خصم ${boxesToDecrement} من المخزون للصنف: ${product.name}`);
-      }
-      console.log('✅ تم تحديث المخزون بنجاح');
+      // ملاحظة: لا يتم خصم المخزون هنا لأن الفاتورة مبدئية
+      // سيتم خصم المخزون عند اعتماد الفاتورة من المحاسب
+      console.log('📝 تم إنشاء فاتورة مبدئية بدون خصم مخزون');
 
       return {
         id: sale.id,
@@ -199,9 +120,12 @@ export class SalesService {
         customer: sale.customer,
         invoiceNumber: sale.invoiceNumber,
         total: Number(sale.total),
+        status: sale.status,
+        notes: sale.notes,
         saleType: sale.saleType,
         paymentMethod: sale.paymentMethod,
         createdAt: sale.createdAt,
+        updatedAt: sale.updatedAt,
         lines: sale.lines.map(line => ({
           id: line.id,
           productId: line.productId,
@@ -321,13 +245,15 @@ export class SalesService {
             customer: sale.customer,
             invoiceNumber: sale.invoiceNumber,
             total: Number(sale.total),
+            status: sale.status,
+            notes: sale.notes,
             saleType: sale.saleType,
             paymentMethod: sale.paymentMethod,
-            receiptIssued: sale.receiptIssued,
-            receiptIssuedAt: sale.receiptIssuedAt,
-            receiptIssuedBy: sale.receiptIssuedBy,
+            approvedAt: sale.approvedAt,
+            approvedBy: sale.approvedBy,
             dispatchOrders: sale.dispatchOrders,
             createdAt: sale.createdAt,
+            updatedAt: sale.updatedAt,
             lines: sale.lines.map(line => ({
               id: line.id,
               productId: line.productId,
@@ -391,13 +317,15 @@ export class SalesService {
         customer: sale.customer,
         invoiceNumber: sale.invoiceNumber,
         total: Number(sale.total),
+        status: sale.status,
+        notes: sale.notes,
         saleType: sale.saleType,
         paymentMethod: sale.paymentMethod,
-        receiptIssued: sale.receiptIssued,
-        receiptIssuedAt: sale.receiptIssuedAt,
-        receiptIssuedBy: sale.receiptIssuedBy,
+        approvedAt: sale.approvedAt,
+        approvedBy: sale.approvedBy,
         dispatchOrders: sale.dispatchOrders,
         createdAt: sale.createdAt,
+        updatedAt: sale.updatedAt,
         lines: sale.lines.map(line => ({
           id: line.id,
           productId: line.productId,
@@ -1183,6 +1111,147 @@ export class SalesService {
       // في حالة الخطأ، استخدم timestamp كبديل
       const timestamp = Date.now();
       return `INV-${timestamp}`;
+    }
+  }
+
+  /**
+   * اعتماد فاتورة مبدئية وخصم المخزون
+   */
+  async approveSale(
+    id: number, 
+    approvalData: { saleType: 'CASH' | 'CREDIT'; paymentMethod?: 'CASH' | 'BANK' | 'CARD' },
+    userCompanyId: number, 
+    approvedBy: string,
+    isSystemUser: boolean = false
+  ) {
+    try {
+      // التحقق من وجود الفاتورة وأنها مبدئية
+      const existingSale = await this.prisma.sale.findFirst({
+        where: {
+          id,
+          status: 'DRAFT', // يجب أن تكون مبدئية
+          ...(isSystemUser !== true && { companyId: userCompanyId })
+        },
+        include: {
+          lines: {
+            include: {
+              product: true
+            }
+          }
+        }
+      });
+
+      if (!existingSale) {
+        throw new Error('الفاتورة غير موجودة أو ليست مبدئية أو ليس لديك صلاحية لاعتمادها');
+      }
+
+      // التحقق من توفر المخزون قبل الاعتماد
+      for (const line of existingSale.lines) {
+        const stock = await this.prisma.stock.findUnique({
+          where: {
+            companyId_productId: {
+              companyId: existingSale.companyId,
+              productId: line.productId
+            }
+          }
+        });
+
+        const requiredBoxes = Number(line.qty);
+        
+        if (!stock || Number(stock.boxes) < requiredBoxes) {
+          const availableBoxes = Number(stock?.boxes || 0);
+          throw new Error(`المخزون غير كافي للصنف: ${line.product.name}. المتوفر: ${availableBoxes} صندوق، المطلوب: ${requiredBoxes} صندوق`);
+        }
+      }
+
+      // حساب المبالغ حسب نوع البيع
+      const total = Number(existingSale.total);
+      const paidAmount = approvalData.saleType === 'CASH' ? total : 0;
+      const remainingAmount = approvalData.saleType === 'CASH' ? 0 : total;
+      const isFullyPaid = approvalData.saleType === 'CASH';
+
+      // اعتماد الفاتورة وتحديث بياناتها
+      const approvedSale = await this.prisma.sale.update({
+        where: { id },
+        data: {
+          status: 'APPROVED',
+          saleType: approvalData.saleType,
+          paymentMethod: approvalData.paymentMethod || null,
+          paidAmount,
+          remainingAmount,
+          isFullyPaid,
+          approvedAt: new Date(),
+          approvedBy
+        },
+        include: {
+          customer: true,
+          company: {
+            select: { id: true, name: true, code: true }
+          },
+          lines: {
+            include: {
+              product: {
+                select: { id: true, sku: true, name: true, unit: true, unitsPerBox: true }
+              }
+            }
+          }
+        }
+      });
+
+      // خصم المخزون
+      console.log('🔄 بدء خصم المخزون بعد اعتماد الفاتورة...');
+      for (const line of existingSale.lines) {
+        const boxesToDecrement = Number(line.qty);
+        
+        await this.prisma.stock.update({
+          where: {
+            companyId_productId: {
+              companyId: existingSale.companyId,
+              productId: line.productId
+            }
+          },
+          data: {
+            boxes: {
+              decrement: boxesToDecrement
+            }
+          }
+        });
+        
+        console.log(`✅ تم خصم ${boxesToDecrement} صندوق من المخزون للصنف: ${line.product.name}`);
+      }
+      console.log('✅ تم خصم المخزون بنجاح');
+
+      return {
+        id: approvedSale.id,
+        companyId: approvedSale.companyId,
+        company: approvedSale.company,
+        customerId: approvedSale.customerId,
+        customer: approvedSale.customer,
+        invoiceNumber: approvedSale.invoiceNumber,
+        total: Number(approvedSale.total),
+        status: approvedSale.status,
+        notes: approvedSale.notes,
+        saleType: approvedSale.saleType,
+        paymentMethod: approvedSale.paymentMethod,
+        paidAmount: Number(approvedSale.paidAmount),
+        remainingAmount: Number(approvedSale.remainingAmount),
+        isFullyPaid: approvedSale.isFullyPaid,
+        approvedAt: approvedSale.approvedAt,
+        approvedBy: approvedSale.approvedBy,
+        createdAt: approvedSale.createdAt,
+        updatedAt: approvedSale.updatedAt,
+        lines: approvedSale.lines.map(line => ({
+          id: line.id,
+          productId: line.productId,
+          product: line.product,
+          qty: Number(line.qty),
+          unitPrice: Number(line.unitPrice),
+          subTotal: Number(line.subTotal)
+        }))
+      };
+    } catch (error) {
+      console.error('خطأ في اعتماد الفاتورة:', error);
+      throw error;
     }
   }
 }

@@ -5,6 +5,7 @@
 
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuthInterceptor } from "./apiUtils";
+import { API_CACHE_CONFIG } from "@/lib/config";
 
 // Types
 export interface ComplexInterCompanySaleLine {
@@ -69,10 +70,11 @@ export const complexInterCompanySalesApi = createApi({
   reducerPath: "complexInterCompanySalesApi",
   baseQuery: baseQueryWithAuthInterceptor,
   tagTypes: ["ComplexInterCompanySales", "ComplexInterCompanyStats"],
-  keepUnusedDataFor: 60, // 1 minute
-  refetchOnMountOrArgChange: true,
-  refetchOnFocus: false,
-  refetchOnReconnect: true,
+  // تطبيق إعدادات عدم الكاش
+  keepUnusedDataFor: API_CACHE_CONFIG.interCompanySales.keepUnusedDataFor,
+  refetchOnMountOrArgChange: API_CACHE_CONFIG.interCompanySales.refetchOnMountOrArgChange,
+  refetchOnFocus: API_CACHE_CONFIG.interCompanySales.refetchOnFocus,
+  refetchOnReconnect: API_CACHE_CONFIG.interCompanySales.refetchOnReconnect,
   endpoints: (builder) => ({
     /**
      * إنشاء عملية بيع معقدة بين الشركات

@@ -5,6 +5,7 @@
 
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuthInterceptor } from "./apiUtils";
+import { API_CACHE_CONFIG } from "@/lib/config";
 
 // Types للمبيعات الآجلة والدفعات
 export interface CreditSale {
@@ -110,6 +111,11 @@ export interface CreditSalesStats {
 export const salePaymentApi = createApi({
   reducerPath: "salePaymentApi",
   baseQuery: baseQueryWithAuthInterceptor,
+  // تطبيق إعدادات عدم الكاش
+  keepUnusedDataFor: API_CACHE_CONFIG.sales.keepUnusedDataFor,
+  refetchOnMountOrArgChange: API_CACHE_CONFIG.sales.refetchOnMountOrArgChange,
+  refetchOnFocus: API_CACHE_CONFIG.sales.refetchOnFocus,
+  refetchOnReconnect: API_CACHE_CONFIG.sales.refetchOnReconnect,
   endpoints: (builder) => ({
     // الحصول على المبيعات الآجلة
     getCreditSales: builder.query<any, CreditSalesQueryParams>({

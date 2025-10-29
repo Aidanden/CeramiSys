@@ -5,6 +5,7 @@
 
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuthInterceptor } from "./apiUtils";
+import { API_CACHE_CONFIG } from "@/lib/config";
 
 // Types للمرتجعات
 export type ReturnStatus = "PENDING" | "APPROVED" | "REJECTED" | "PROCESSED";
@@ -101,6 +102,11 @@ export const saleReturnsApi = createApi({
   reducerPath: "saleReturnsApi",
   baseQuery: baseQueryWithAuthInterceptor,
   tagTypes: ["SaleReturns", "SaleReturnStats"],
+  // تطبيق إعدادات عدم الكاش
+  keepUnusedDataFor: API_CACHE_CONFIG.saleReturns.keepUnusedDataFor,
+  refetchOnMountOrArgChange: API_CACHE_CONFIG.saleReturns.refetchOnMountOrArgChange,
+  refetchOnFocus: API_CACHE_CONFIG.saleReturns.refetchOnFocus,
+  refetchOnReconnect: API_CACHE_CONFIG.saleReturns.refetchOnReconnect,
   endpoints: (builder) => ({
     // التحقق من صلاحية الفاتورة للمرتجع
     validateSaleForReturn: builder.query<ValidateSaleResponse, number>({

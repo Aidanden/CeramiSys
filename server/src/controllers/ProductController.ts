@@ -224,6 +224,7 @@ export class ProductController {
         sku: req.body.sku,
         name: req.body.name,
         unit: req.body.unit,
+        unitsPerBox: req.body.unitsPerBox ? parseFloat(req.body.unitsPerBox) : undefined,
         sellPrice: req.body.sellPrice ? parseFloat(req.body.sellPrice) : undefined,
       };
 
@@ -285,34 +286,29 @@ export class ProductController {
         return;
       }
 
-      await this.productService.deleteProduct(productId, userCompanyId);
+      const isSystemUser = (req as any).user?.isSystemUser;
+      await this.productService.deleteProduct(productId, userCompanyId, isSystemUser);
       
       res.status(200).json({
         success: true,
         message: 'تم حذف الصنف بنجاح',
       });
     } catch (error: any) {
-      console.error('خطأ في حذف الصنف:', error);
-      
-      if (error.message === 'الصنف غير موجود') {
+      // معالجة الأخطاء بدون console.error
+      if (error.message.includes('غير موجود') || error.message.includes('صلاحية')) {
         res.status(404).json({
           success: false,
           message: error.message,
         });
-      } else if (error.message.includes('ليس لديك صلاحية')) {
-        res.status(403).json({
-          success: false,
-          message: error.message,
-        });
-      } else if (error.message.includes('معاملات مرتبطة')) {
-        res.status(409).json({
+      } else if (error.message.includes('مستخدم في فواتير') || error.message.includes('معاملات مرتبطة')) {
+        res.status(400).json({
           success: false,
           message: error.message,
         });
       } else {
         res.status(500).json({
           success: false,
-          message: 'خطأ في الخادم الداخلي',
+          message: 'خطأ في حذف الصنف',
         });
       }
     }
@@ -363,11 +359,23 @@ export class ProductController {
         message: 'تم تحديث المخزون بنجاح',
       });
     } catch (error: any) {
-      console.error('خطأ في تحديث المخزون:', error);
-      res.status(500).json({
-        success: false,
-        message: error.message || 'خطأ في الخادم الداخلي',
-      });
+      // معالجة الأخطاء بدون console.error
+      if (error.message.includes('غير موجود')) {
+        res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      } else if (error.message.includes('مستخدم في فواتير')) {
+        res.status(400).json({
+          success: false,
+          message: error.message,
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: error.message || 'خطأ في تحديث المخزون',
+        });
+      }
     }
   }
 
