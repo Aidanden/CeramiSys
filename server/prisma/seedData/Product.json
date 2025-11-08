@@ -1,36 +1,292 @@
 [
   {
-    "sku": "CER-001",
+    "sku": "001",
     "name": "بلاط سيراميك أبيض 60×60",
     "unit": "صندوق",
     "unitsPerBox": 6.0,
     "createdByCompanyId": 1
   },
   {
-    "sku": "CER-002", 
+    "sku": "002", 
     "name": "بلاط سيراميك بيج 40×40",
     "unit": "صندوق",
     "unitsPerBox": 4.5,
     "createdByCompanyId": 1
   },
   {
-    "sku": "CER-003",
+    "sku": "003",
     "name": "بلاط سيراميك رمادي 80×80",
     "unit": "صندوق", 
     "unitsPerBox": 8.0,
     "createdByCompanyId": 1
   },
   {
-    "sku": "CER-004",
+    "sku": "004",
     "name": "بلاط سيراميك أزرق 30×30",
     "unit": "قطعة",
-    "createdByCompanyId": 2
+    "createdByCompanyId": 1
   },
   {
-    "sku": "CER-005",
+    "sku": "005",
     "name": "بلاط سيراميك أسود 50×50",
     "unit": "صندوق",
     "unitsPerBox": 5.0,
+    "createdByCompanyId": 1
+  },
+
+  {
+    "sku": "1491",
+    "name": "بورسلين هندي 60×120",
+    "unit": "صندوق",
+    "unitsPerBox": 1.44,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1492",
+    "name": "بورسلين هندي 120×60",
+    "unit": "صندوق",
+    "unitsPerBox": 1.44,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1494",
+    "name": "MOOD PERLA",
+    "unit": "صندوق",
+    "unitsPerBox": 1.08,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1495",
+    "name": "IKOM GRIS",
+    "unit": "صندوق",
+    "unitsPerBox": 1.44,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1496",
+    "name": "IKOM BLANCO",
+    "unit": "صندوق",
+    "unitsPerBox": 1.44,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1497",
+    "name": "ELEMENTS HUESO 30.3×61.3",
+    "unit": "صندوق",
+    "unitsPerBox": 1.3,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1498",
+    "name": "GANTE PERLA 30.3×61.3",
+    "unit": "صندوق",
+    "unitsPerBox": 1.3,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1499",
+    "name": "GANTE CREMA 30.3×61.3",
+    "unit": "صندوق",
+    "unitsPerBox": 1.3,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1500",
+    "name": "PROVENZA GRIS 60×60",
+    "unit": "صندوق",
+    "unitsPerBox": 1.44,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1501",
+    "name": "DAVOS BEIGE 60×60",
+    "unit": "صندوق",
+    "unitsPerBox": 1.44,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1502",
+    "name": "PROVENZA BLANCO 60×60",
+    "unit": "صندوق",
+    "unitsPerBox": 1.44,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1503",
+    "name": "DAVOS HUESO 60×60",
+    "unit": "صندوق",
+    "unitsPerBox": 1.44,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1504",
+    "name": "ADZ ELEMENTS HUSO 60×60",
+    "unit": "صندوق",
+    "unitsPerBox": 1.44,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1505",
+    "name": "MONS MARFIL 60×60",
+    "unit": "صندوق",
+    "unitsPerBox": 1.44,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1506",
+    "name": "MONS PERLA 60×60",
+    "unit": "صندوق",
+    "unitsPerBox": 1.44,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1507",
+    "name": "ELEMENTS BRONCE 60×60",
+    "unit": "صندوق",
+    "unitsPerBox": 1.44,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1508",
+    "name": "IOS BLANCO",
+    "unit": "صندوق",
+    "unitsPerBox": 1.22,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1509",
+    "name": "IOS PERLA",
+    "unit": "صندوق",
+    "unitsPerBox": 1.22,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1510",
+    "name": "BETA VISON",
+    "unit": "صندوق",
+    "unitsPerBox": 1.22,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1511",
+    "name": "EPSILON BEIGE 60.8×60.8",
+    "unit": "صندوق",
+    "unitsPerBox": 1.48,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1512",
+    "name": "STYLE BLANCO",
+    "unit": "صندوق",
+    "unitsPerBox": 1.44,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1513",
+    "name": "ADZ. STYLE BLANCO 30.3×61.3",
+    "unit": "صندوق",
+    "unitsPerBox": 1.3,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1514",
+    "name": "ADZ. STYLE CENIZA 30.3×61.3",
+    "unit": "صندوق",
+    "unitsPerBox": 1.3,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1515",
+    "name": "EPSILON SIENA 30.3×61.3",
+    "unit": "صندوق",
+    "unitsPerBox": 1.3,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1516",
+    "name": "AT. EVERGLADES FRESNO 22×85",
+    "unit": "صندوق",
+    "unitsPerBox": 1.69,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1517",
+    "name": "ATLAS BLANCO 22×85",
+    "unit": "صندوق",
+    "unitsPerBox": 1.69,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1518",
+    "name": "AT. EVERGLADES NOGAL 22×85",
+    "unit": "صندوق",
+    "unitsPerBox": 1.69,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1519",
+    "name": "ATELIER PLOMO 22×85",
+    "unit": "صندوق",
+    "unitsPerBox": 1.69,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1520",
+    "name": "EASTERNWOOD SAND 22×85",
+    "unit": "صندوق",
+    "unitsPerBox": 1.69,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1521",
+    "name": "NUBA ACQUA 22×85",
+    "unit": "صندوق",
+    "unitsPerBox": 1.5,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1522",
+    "name": "EASTERNWOOD RYE 22×85",
+    "unit": "صندوق",
+    "unitsPerBox": 1.69,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1523",
+    "name": "EASTERNWOOD PALM 22×85",
+    "unit": "صندوق",
+    "unitsPerBox": 1.69,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1524",
+    "name": "GREENLAND BEECH 22×85",
+    "unit": "صندوق",
+    "unitsPerBox": 1.69,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1525",
+    "name": "EASTERNWOOD JASMIN 22×85",
+    "unit": "صندوق",
+    "unitsPerBox": 1.69,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1526",
+    "name": "EASTERNWOOD CINNAMON 22×85",
+    "unit": "صندوق",
+    "unitsPerBox": 1.69,
+    "createdByCompanyId": 2
+  },
+  {
+    "sku": "1527",
+    "name": "NK. BOSC TAUPE 22×85",
+    "unit": "صندوق",
+    "unitsPerBox": 1.69,
     "createdByCompanyId": 2
   }
+
+
+  
 ]

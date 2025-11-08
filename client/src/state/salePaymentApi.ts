@@ -111,6 +111,7 @@ export interface CreditSalesStats {
 export const salePaymentApi = createApi({
   reducerPath: "salePaymentApi",
   baseQuery: baseQueryWithAuthInterceptor,
+  tagTypes: ["CreditSales", "CreditSale", "SalePayments", "CustomerAccountSummary"],
   // تطبيق إعدادات عدم الكاش
   keepUnusedDataFor: API_CACHE_CONFIG.sales.keepUnusedDataFor,
   refetchOnMountOrArgChange: API_CACHE_CONFIG.sales.refetchOnMountOrArgChange,
@@ -123,7 +124,8 @@ export const salePaymentApi = createApi({
         url: "/sale-payments/credit-sales",
         method: "GET",
         params
-      })
+      }),
+      providesTags: ["CreditSales"]
     }),
 
     // الحصول على فاتورة آجلة واحدة
@@ -131,7 +133,8 @@ export const salePaymentApi = createApi({
       query: (id) => ({
         url: `/sale-payments/credit-sales/${id}`,
         method: "GET"
-      })
+      }),
+      providesTags: (_result, _error, id) => [{ type: "CreditSale", id }]
     }),
 
     // الحصول على إحصائيات المبيعات الآجلة
@@ -148,7 +151,14 @@ export const salePaymentApi = createApi({
         url: "/sale-payments/payments",
         method: "POST",
         body: data
-      })
+      }),
+      invalidatesTags: (_result, _error, { saleId }) => [
+        "CreditSales",
+        { type: "CreditSale", id: saleId },
+        "SalePayments",
+        { type: "CustomerAccountSummary", id: "LIST" }, // تحديث حسابات العملاء
+        { type: "Sales", id: "LIST" }, // تحديث قائمة المبيعات الرئيسية
+      ]
     }),
 
     // الحصول على دفعات فاتورة
@@ -157,7 +167,8 @@ export const salePaymentApi = createApi({
         url: "/sale-payments/payments",
         method: "GET",
         params
-      })
+      }),
+      providesTags: ["SalePayments"]
     }),
 
     // حذف دفعة
@@ -165,7 +176,13 @@ export const salePaymentApi = createApi({
       query: (id) => ({
         url: `/sale-payments/payments/${id}`,
         method: "DELETE"
-      })
+      }),
+      invalidatesTags: [
+        "CreditSales",
+        "SalePayments",
+        { type: "CustomerAccountSummary", id: "LIST" },
+        { type: "Sales", id: "LIST" }
+      ]
     })
   })
 });

@@ -32,10 +32,18 @@ export class ProductService {
       const skip = (page - 1) * limit;
 
       // بناء شروط البحث
-      const whereConditions: Prisma.ProductWhereInput = {
-        // مستخدمو النظام يرون جميع الأصناف، المستخدمون العاديون يرون أصناف شركتهم فقط
-        ...(isSystemUser !== true && { createdByCompanyId: userCompanyId }),
-      };
+      const whereConditions: Prisma.ProductWhereInput = {};
+
+      // فلترة حسب الشركة
+      if (isSystemUser) {
+        // مستخدم النظام: يمكنه فلترة بأي شركة أو رؤية الكل
+        if (companyId) {
+          whereConditions.createdByCompanyId = companyId;
+        }
+      } else {
+        // مستخدم عادي: يرى فقط أصناف شركته (تجاهل companyId من الفلتر)
+        whereConditions.createdByCompanyId = userCompanyId;
+      }
 
       // إضافة شرط البحث
       if (search) {
@@ -46,7 +54,7 @@ export class ProductService {
       }
 
       // إضافة شرط الوحدة
-      if (unit) {
+      if (unit && unit !== 'الكل') {
         whereConditions.unit = unit;
       }
 

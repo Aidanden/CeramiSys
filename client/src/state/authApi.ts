@@ -34,6 +34,12 @@ export interface User {
   role: string;
   permissions: string[];
   companyId: number;
+  company?: {
+    id: number;
+    name: string;
+    code: string;
+    parentId: number | null;
+  } | null;
   isSystemUser?: boolean;
 }
 

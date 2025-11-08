@@ -21,7 +21,11 @@ export enum PaymentMethod {
 export const CreateSaleLineDtoSchema = z.object({
   productId: z.number().int().positive('معرف الصنف يجب أن يكون رقم موجب'),
   qty: z.number().positive('الكمية يجب أن تكون أكبر من صفر'),
-  unitPrice: z.number().min(0, 'سعر الوحدة يجب أن يكون أكبر من أو يساوي صفر')
+  unitPrice: z.number().min(0, 'سعر الوحدة يجب أن يكون أكبر من أو يساوي صفر'),
+  // للأصناف من الشركة الأم
+  isFromParentCompany: z.boolean().optional(),
+  parentUnitPrice: z.number().min(0).optional(),
+  branchUnitPrice: z.number().min(0).optional()
 });
 
 export const CreateSaleDtoSchema = z.object({
@@ -46,6 +50,10 @@ export const GetSalesQueryDtoSchema = z.object({
   limit: z.string().optional().default('10').transform(Number).pipe(z.number().int().positive().max(1000)),
   search: z.string().transform(val => val === '' ? undefined : val).optional(),
   customerId: z.union([
+    z.string().transform(val => val === '' ? undefined : Number(val)).pipe(z.number().int().positive()),
+    z.literal('').transform(() => undefined)
+  ]).optional(),
+  companyId: z.union([
     z.string().transform(val => val === '' ? undefined : Number(val)).pipe(z.number().int().positive()),
     z.literal('').transform(() => undefined)
   ]).optional(),

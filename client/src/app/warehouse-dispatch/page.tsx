@@ -8,11 +8,11 @@ import {
 } from '@/state/warehouseApi';
 import { useGetCurrentUserQuery } from '@/state/authApi';
 import { useToast } from '@/components/ui/Toast';
-import { formatArabicNumber, formatArabicCurrency } from '@/utils/formatArabicNumbers';
+import { formatArabicNumber } from '@/utils/formatArabicNumbers';
 
 export default function WarehouseDispatchPage() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState<'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | ''>('');
+  const [statusFilter, setStatusFilter] = useState<'PENDING' | 'COMPLETED' | 'CANCELLED' | ''>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<DispatchOrder | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -44,7 +44,7 @@ export default function WarehouseDispatchPage() {
 
   const handleUpdateStatus = async (
     orderId: number,
-    newStatus: 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
+    newStatus: 'COMPLETED' | 'CANCELLED'
   ) => {
     try {
       await updateStatus({
@@ -57,9 +57,7 @@ export default function WarehouseDispatchPage() {
 
       success(
         newStatus === 'COMPLETED'
-          ? 'تم إكمال أمر الصرف بنجاح'
-          : newStatus === 'IN_PROGRESS'
-          ? 'تم بدء معالجة أمر الصرف'
+          ? 'تم تسليم البضائع بنجاح'
           : 'تم إلغاء أمر الصرف'
       );
 
@@ -91,10 +89,8 @@ export default function WarehouseDispatchPage() {
     switch (status) {
       case 'PENDING':
         return 'معلق';
-      case 'IN_PROGRESS':
-        return 'قيد المعالجة';
       case 'COMPLETED':
-        return 'مكتمل';
+        return 'تم التسليم';
       case 'CANCELLED':
         return 'ملغي';
       default:
@@ -151,7 +147,7 @@ export default function WarehouseDispatchPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
@@ -185,23 +181,7 @@ export default function WarehouseDispatchPage() {
         <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-text-secondary text-sm">قيد المعالجة</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {formatArabicNumber(
-                  ordersData?.data?.dispatchOrders?.filter((o) => o.status === 'IN_PROGRESS').length || 0
-                )}
-              </p>
-            </div>
-            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-        </div>
-
-        <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-text-secondary text-sm">مكتملة</p>
+              <p className="text-text-secondary text-sm">تم التسليم</p>
               <p className="text-2xl font-bold text-green-600">
                 {formatArabicNumber(
                   ordersData?.data?.dispatchOrders?.filter((o) => o.status === 'COMPLETED').length || 0
@@ -250,8 +230,7 @@ export default function WarehouseDispatchPage() {
           >
             <option value="">جميع الحالات</option>
             <option value="PENDING">معلقة</option>
-            <option value="IN_PROGRESS">قيد المعالجة</option>
-            <option value="COMPLETED">مكتملة</option>
+            <option value="COMPLETED">تم التسليم</option>
             <option value="CANCELLED">ملغية</option>
           </select>
         </div>
@@ -276,9 +255,6 @@ export default function WarehouseDispatchPage() {
                   الشركة
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  المجموع
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   الحالة
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -292,7 +268,7 @@ export default function WarehouseDispatchPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                     <div className="flex items-center justify-center gap-2">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600"></div>
                       جاري التحميل...
@@ -301,7 +277,7 @@ export default function WarehouseDispatchPage() {
                 </tr>
               ) : !ordersData?.data?.dispatchOrders || ordersData?.data?.dispatchOrders?.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                     <div className="flex flex-col items-center gap-2">
                       <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -327,11 +303,6 @@ export default function WarehouseDispatchPage() {
                         <span className="font-medium text-orange-600">{order.sale?.company?.name}</span>
                         <span className="text-xs text-gray-500">{order.sale?.company?.code}</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <span className="font-semibold text-green-600">
-                        {formatArabicCurrency(order.sale?.total || 0)}
-                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
@@ -462,10 +433,9 @@ export default function WarehouseDispatchPage() {
                     <tr>
                       <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">الصنف</th>
                       <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">الكود</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">الشركة المصدرة</th>
                       <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">الكمية بالصناديق</th>
                       <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">إجمالي الوحدات</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">السعر</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">المجموع</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
@@ -473,6 +443,15 @@ export default function WarehouseDispatchPage() {
                       <tr key={line.id} className={`hover:bg-orange-50 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">{line.product?.name}</td>
                         <td className="px-4 py-3 text-sm text-gray-600 font-mono">{line.product?.sku}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
+                            line.isFromParentCompany 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-orange-100 text-orange-800'
+                          }`}>
+                            {line.isFromParentCompany ? 'التقازي' : selectedOrder.sale?.company?.name || 'الإمارات'}
+                          </span>
+                        </td>
                         <td className="px-4 py-3 text-sm">
                           <span className="font-bold text-orange-600 text-base">
                             {formatQuantityDisplay(line.qty, line.product)}
@@ -483,21 +462,9 @@ export default function WarehouseDispatchPage() {
                             {formatTotalUnits(line.qty, line.product)}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{formatArabicCurrency(line.unitPrice)}</td>
-                        <td className="px-4 py-3 text-sm font-semibold text-green-600">{formatArabicCurrency(line.subtotal)}</td>
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-gradient-to-r from-gray-50 to-gray-100">
-                    <tr>
-                      <td colSpan={5} className="px-4 py-4 text-right font-bold text-gray-800 text-base">
-                        الإجمالي الكلي:
-                      </td>
-                      <td className="px-4 py-4 font-bold text-green-600 text-xl">
-                        {formatArabicCurrency(selectedOrder.sale?.total || 0)}
-                      </td>
-                    </tr>
-                  </tfoot>
                 </table>
               </div>
             </div>
@@ -526,36 +493,17 @@ export default function WarehouseDispatchPage() {
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                إلغاء
+                إغلاق
               </button>
 
               {selectedOrder.status === 'PENDING' && (
-                <>
-                  <button
-                    onClick={() => handleUpdateStatus(selectedOrder.id, 'IN_PROGRESS')}
-                    disabled={isUpdating}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                  >
-                    بدء المعالجة
-                  </button>
-                  <button
-                    onClick={() => handleUpdateStatus(selectedOrder.id, 'CANCELLED')}
-                    disabled={isUpdating}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-                  >
-                    إلغاء الأمر
-                  </button>
-                </>
-              )}
-
-              {selectedOrder.status === 'IN_PROGRESS' && (
                 <>
                   <button
                     onClick={() => handleUpdateStatus(selectedOrder.id, 'COMPLETED')}
                     disabled={isUpdating}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                   >
-                    إتمام الصرف
+                    تم التسليم
                   </button>
                   <button
                     onClick={() => handleUpdateStatus(selectedOrder.id, 'CANCELLED')}

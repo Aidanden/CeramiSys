@@ -83,6 +83,21 @@ export class PurchaseService {
       await this.updateStock(companyId, line.productId, line.qty);
     }
 
+    // تسجيل قيد محاسبي في حساب المورد (إذا كانت مشتريات آجلة وهناك مورد)
+    if (purchaseType === 'CREDIT' && supplierId) {
+      const SupplierAccountService = (await import('./SupplierAccountService')).default;
+      await SupplierAccountService.createAccountEntry({
+        supplierId: supplierId,
+        transactionType: 'CREDIT', // له المورد - زيادة في دين الشركة للمورد
+        amount: total,
+        referenceType: 'PURCHASE',
+        referenceId: purchase.id,
+        description: `فاتورة مشتريات آجلة رقم ${invoiceNumber || purchase.id}`,
+        transactionDate: new Date()
+      });
+      console.log(`✅ تم تسجيل قيد محاسبي (له المورد) بمبلغ ${total} دينار في حساب المورد`);
+    }
+
     return {
       ...purchase,
       total: Number(purchase.total),
@@ -442,9 +457,36 @@ export class PurchaseService {
       throw new Error('Purchase not found');
     }
 
-    // Revert stock changes
-    for (const line of purchase.lines) {
-      await this.updateStock(purchase.companyId, line.productId, -line.qty);
+    // التحقق من أن هذه الفاتورة ليست فاتورة مشتريات تم إنشاؤها تلقائياً
+    // كجزء من فاتورة مبيعات معقدة
+    const relatedSale = await prisma.sale.findFirst({
+      where: {
+        relatedBranchPurchaseId: id
+      },
+      select: {
+        id: true,
+        invoiceNumber: true,
+        customer: { select: { name: true } }
+      }
+    });
+
+    if (relatedSale) {
+      const customerName = relatedSale.customer?.name || 'غير محدد';
+      const invoiceRef = relatedSale.invoiceNumber || `#${relatedSale.id}`;
+      throw new Error(
+        `⛔ لا يمكن حذف فاتورة المشتريات هذه مباشرة!\n\n` +
+        `هذه فاتورة مشتريات تم إنشاؤها تلقائياً من فاتورة مبيعات معقدة.\n\n` +
+        `📋 فاتورة المبيعات الأصلية: ${invoiceRef}\n` +
+        `👤 العميل: ${customerName}\n\n` +
+        `💡 لحذف هذه الفاتورة، اذهب إلى فاتورة المبيعات الأصلية واحذفها.`
+      );
+    }
+
+    // Revert stock changes only if affectsInventory is true
+    if (purchase.affectsInventory) {
+      for (const line of purchase.lines) {
+        await this.updateStock(purchase.companyId, line.productId, -line.qty);
+      }
     }
 
     await prisma.purchase.delete({
@@ -493,6 +535,21 @@ export class PurchaseService {
         },
       }),
     ]);
+
+    // تسجيل قيد محاسبي في حساب المورد (إذا كان هناك مورد)
+    if (purchase.supplierId) {
+      const SupplierAccountService = (await import('./SupplierAccountService')).default;
+      await SupplierAccountService.createAccountEntry({
+        supplierId: purchase.supplierId,
+        transactionType: 'DEBIT', // عليه المورد - تخفيض من دين الشركة للمورد (دفع)
+        amount: amount,
+        referenceType: 'PAYMENT',
+        referenceId: payment.id,
+        description: `دفعة لفاتورة مشتريات ${purchase.invoiceNumber || purchase.id} - إيصال رقم ${receiptNumber}`,
+        transactionDate: paymentDate ? new Date(paymentDate) : new Date()
+      });
+      console.log(`✅ تم تسجيل قيد محاسبي (عليه المورد) بمبلغ ${amount} دينار في حساب المورد`);
+    }
 
     return { payment, updatedPurchase };
   }

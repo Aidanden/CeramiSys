@@ -111,17 +111,23 @@ export const ReceiptPrint: React.FC<ReceiptPrintProps> = ({ sale }) => {
             size: A4;
             margin: 0;
           }
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+          }
         }
       `}</style>
       <div className="print-receipt" style={{ 
       width: '210mm', 
-      maxHeight: '297mm', // صفحة A4 كاملة
+      minHeight: '297mm',
+      maxHeight: '297mm', // صفحة A4 كاملة - صفحة واحدة فقط
       padding: '15mm',
       backgroundColor: 'white',
       fontFamily: 'Arial, sans-serif',
       direction: 'rtl',
       border: '3px double #333',
-      boxSizing: 'border-box'
+      boxSizing: 'border-box',
+      overflow: 'hidden' // منع المحتوى من التجاوز
     }}>
       {/* رأس الإيصال */}
       <div style={{ textAlign: 'center', marginBottom: '15px', borderBottom: '2px solid #1e40af', paddingBottom: '10px' }}>

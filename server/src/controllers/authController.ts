@@ -217,7 +217,15 @@ export const getCurrentUser = async (req: AuthRequest, res: Response): Promise<v
     const user = await prisma.users.findUnique({
       where: { UserID: req.user.id },
       include: {
-        Role: true
+        Role: true,
+        Company: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            parentId: true
+          }
+        }
       }
     });
 
@@ -240,6 +248,12 @@ export const getCurrentUser = async (req: AuthRequest, res: Response): Promise<v
         role: user.Role.RoleName,
         permissions: user.Role.Permissions as string[],
         companyId: user.CompanyID,
+        company: user.Company ? {
+          id: user.Company.id,
+          name: user.Company.name,
+          code: user.Company.code,
+          parentId: user.Company.parentId
+        } : null,
         isSystemUser: user.IsSystemUser,
         lastLogin: user.LastLogin
       }

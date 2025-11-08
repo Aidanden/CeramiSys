@@ -2,6 +2,7 @@
 
 import { useAppDispatch, useAppSelector } from "@/app/redux";
 import { setIsSidebarCollapsed } from "@/state";
+import { useGetCurrentUserQuery } from "@/state/authApi";
 import {
   Layout,
   LucideIcon,
@@ -79,6 +80,11 @@ const Sidebar = () => {
   const isSidebarCollapsed = useAppSelector(
     (state) => state.global.isSidebarCollapsed
   );
+
+  // جلب بيانات المستخدم الحالي
+  const { data: userData } = useGetCurrentUserQuery();
+  const user = userData?.data;
+  const isParentCompany = user?.company?.parentId === null; // الشركة الأم ليس لها parentId
 
   const toggleSidebar = () => {
     dispatch(setIsSidebarCollapsed(!isSidebarCollapsed));
@@ -180,6 +186,12 @@ const Sidebar = () => {
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink
+            href="/customer-accounts"
+            icon={Wallet}
+            label="حسابات العملاء"
+            isCollapsed={isSidebarCollapsed}
+          />
+          <SidebarLink
             href="/warehouse-dispatch"
             icon={Layout}
             label="أوامر صرف المخزن"
@@ -192,13 +204,15 @@ const Sidebar = () => {
             isCollapsed={isSidebarCollapsed}
           /> */}
           
-          <SidebarLink
-            href="/complex-inter-company-sales"
-            //href="/inter-company-sales"
-            icon={ArrowRightLeft}
-            label="المبيعات من الشركة الام"
-            isCollapsed={isSidebarCollapsed}
-          />
+          {/* إخفاء شاشة "المبيعات من الشركة الأم" من الشركة الأم نفسها */}
+          {!isParentCompany && (
+            <SidebarLink
+              href="/complex-inter-company-sales"
+              icon={ArrowRightLeft}
+              label="المبيعات من الشركة الام"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
           <SidebarLink
             href="/sale-returns"
             icon={Returns}

@@ -15,13 +15,178 @@
     "boxes": 100
   },
   {
-    "companyId": 2,
+    "companyId": 1,
     "productId": 4,
     "boxes": 75
   },
   {
-    "companyId": 2,
+    "companyId": 1,
     "productId": 5,
     "boxes": 60
+  },
+  {
+    "companyId": 2,
+    "productId": 6,
+    "boxes": 30
+  },
+  {
+    "companyId": 2,
+    "productId": 7,
+    "boxes": 45
+  },
+  {
+    "companyId": 2,
+    "productId": 8,
+    "boxes": 80
+  },
+  {
+    "companyId": 2,
+    "productId": 9,
+    "boxes": 65
+  },
+  {
+    "companyId": 2,
+    "productId": 10,
+    "boxes": 70
+  },
+  {
+    "companyId": 2,
+    "productId": 11,
+    "boxes": 40
+  },
+  {
+    "companyId": 2,
+    "productId": 12,
+    "boxes": 35
+  },
+  {
+    "companyId": 2,
+    "productId": 13,
+    "boxes": 50
+  },
+  {
+    "companyId": 2,
+    "productId": 14,
+    "boxes": 55
+  },
+  {
+    "companyId": 2,
+    "productId": 15,
+    "boxes": 42
+  },
+  {
+    "companyId": 2,
+    "productId": 16,
+    "boxes": 38
+  },
+  {
+    "companyId": 2,
+    "productId": 17,
+    "boxes": 47
+  },
+  {
+    "companyId": 2,
+    "productId": 18,
+    "boxes": 33
+  },
+  {
+    "companyId": 2,
+    "productId": 19,
+    "boxes": 52
+  },
+  {
+    "companyId": 2,
+    "productId": 20,
+    "boxes": 41
+  },
+  {
+    "companyId": 2,
+    "productId": 21,
+    "boxes": 36
+  },
+  {
+    "companyId": 2,
+    "productId": 22,
+    "boxes": 28
+  },
+  {
+    "companyId": 2,
+    "productId": 23,
+    "boxes": 31
+  },
+  {
+    "companyId": 2,
+    "productId": 24,
+    "boxes": 44
+  },
+  {
+    "companyId": 2,
+    "productId": 25,
+    "boxes": 22
+  },
+  {
+    "companyId": 2,
+    "productId": 26,
+    "boxes": 58
+  },
+  {
+    "companyId": 2,
+    "productId": 27,
+    "boxes": 39
+  },
+  {
+    "companyId": 2,
+    "productId": 28,
+    "boxes": 46
+  },
+  {
+    "companyId": 2,
+    "productId": 29,
+    "boxes": 34
+  },
+  {
+    "companyId": 2,
+    "productId": 30,
+    "boxes": 29
+  },
+  {
+    "companyId": 2,
+    "productId": 31,
+    "boxes": 37
+  },
+  {
+    "companyId": 2,
+    "productId": 32,
+    "boxes": 43
+  },
+  {
+    "companyId": 2,
+    "productId": 33,
+    "boxes": 26
+  },
+  {
+    "companyId": 2,
+    "productId": 34,
+    "boxes": 32
+  },
+  {
+    "companyId": 2,
+    "productId": 35,
+    "boxes": 48
+  },
+  {
+    "companyId": 2,
+    "productId": 36,
+    "boxes": 27
+  },
+  {
+    "companyId": 2,
+    "productId": 37,
+    "boxes": 51
+  },
+  {
+    "companyId": 2,
+    "productId": 38,
+    "boxes": 40
   }
 ]

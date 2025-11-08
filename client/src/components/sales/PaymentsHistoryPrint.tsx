@@ -28,8 +28,8 @@ export const PaymentsHistoryPrint: React.FC<PaymentsHistoryPrintProps> = ({ sale
   };
 
   return (
-    <div className="hidden print:block" dir="rtl">
-      <style jsx global>{`
+    <div dir="rtl">
+      <style>{`
         @media print {
           @page {
             size: A4;
@@ -46,167 +46,120 @@ export const PaymentsHistoryPrint: React.FC<PaymentsHistoryPrintProps> = ({ sale
         }
       `}</style>
 
-      <div className="w-full max-w-[210mm] mx-auto p-6 font-arabic">
-        {/* Header */}
-        <div className="text-center border-b-2 border-gray-800 pb-4 mb-6">
-          <h1 className="text-3xl font-bold mb-2">{sale.company?.name || 'اسم الشركة'}</h1>
-          <p className="text-sm text-gray-600">كود الشركة: {sale.company?.code || '-'}</p>
+      <div style={{ width: '100%', maxWidth: '210mm', margin: '0 auto', padding: '10mm', fontFamily: 'Arial, sans-serif' }}>
+        {/* Header - مصغر */}
+        <div style={{ textAlign: 'center', borderBottom: '2px solid #1f2937', paddingBottom: '8px', marginBottom: '10px' }}>
+          <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: '0 0 4px 0' }}>{sale.company?.name || 'اسم الشركة'}</h1>
+          <h2 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0' }}>سجل الدفعات المالية</h2>
         </div>
 
-        {/* Document Title */}
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold bg-gray-800 text-white py-3 px-6 rounded inline-block">
-            سجل الدفعات المالية
-          </h2>
-        </div>
-
-        {/* Invoice Info */}
-        <div className="mb-6 bg-gray-100 p-4 rounded">
-          <h3 className="font-bold text-lg mb-3 text-center border-b border-gray-400 pb-2">
-            بيانات الفاتورة
-          </h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="font-semibold">رقم الفاتورة:</span>
-                <span className="font-bold">{sale.invoiceNumber}</span>
-              </div>
-              <div className="flex justify-between mb-2">
-                <span className="font-semibold">تاريخ الفاتورة:</span>
-                <span>{formatDate(sale.createdAt)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-semibold">اسم العميل:</span>
-                <span>{sale.customer?.name || 'عميل نقدي'}</span>
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="font-semibold">إجمالي الفاتورة:</span>
-                <span className="font-bold">{formatArabicCurrency(sale.total)}</span>
-              </div>
-              <div className="flex justify-between mb-2 text-green-700">
-                <span className="font-semibold">المبلغ المدفوع:</span>
-                <span className="font-bold">{formatArabicCurrency(sale.paidAmount)}</span>
-              </div>
-              <div className="flex justify-between text-red-600">
-                <span className="font-semibold">المبلغ المتبقي:</span>
-                <span className="font-bold">{formatArabicCurrency(sale.remainingAmount)}</span>
-              </div>
-            </div>
+        {/* Invoice Info - مصغر وفي سطر واحد */}
+        <div style={{ marginBottom: '10px', padding: '8px', backgroundColor: '#f9fafb', borderRadius: '4px', border: '1px solid #d1d5db' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+            <span><strong>فاتورة:</strong> {sale.invoiceNumber}</span>
+            <span><strong>العميل:</strong> {sale.customer?.name || 'عميل نقدي'}</span>
+            <span><strong>التاريخ:</strong> {formatDate(sale.createdAt)}</span>
+            <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#dc2626' }}>
+              <strong>الباقي:</strong> {formatArabicCurrency(sale.remainingAmount)}
+            </span>
           </div>
         </div>
 
-        {/* Payments Table */}
-        <div className="mb-6">
-          <h3 className="font-bold text-lg mb-3 text-center">
-            تفاصيل الدفعات ({formatArabicNumber(payments.length)} دفعة)
-          </h3>
-          <table className="w-full border-collapse border border-gray-400">
+        {/* Payments Table - مصغر مع أرقام أكبر */}
+        <div style={{ marginBottom: '12px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #6b7280', fontSize: '11px' }}>
             <thead>
-              <tr className="bg-gray-800 text-white">
-                <th className="border border-gray-400 p-2 text-center">#</th>
-                <th className="border border-gray-400 p-2">رقم الإيصال</th>
-                <th className="border border-gray-400 p-2">التاريخ</th>
-                <th className="border border-gray-400 p-2">المبلغ</th>
-                <th className="border border-gray-400 p-2">طريقة الدفع</th>
-                <th className="border border-gray-400 p-2">ملاحظات</th>
+              <tr style={{ backgroundColor: '#374151', color: 'white' }}>
+                <th style={{ border: '1px solid #6b7280', padding: '6px', textAlign: 'center', fontSize: '11px' }}>#</th>
+                <th style={{ border: '1px solid #6b7280', padding: '6px', fontSize: '11px' }}>رقم الإيصال</th>
+                <th style={{ border: '1px solid #6b7280', padding: '6px', fontSize: '11px' }}>التاريخ</th>
+                <th style={{ border: '1px solid #6b7280', padding: '6px', fontSize: '11px' }}>المبلغ</th>
+                <th style={{ border: '1px solid #6b7280', padding: '6px', fontSize: '11px' }}>طريقة الدفع</th>
+                <th style={{ border: '1px solid #6b7280', padding: '6px', fontSize: '11px' }}>ملاحظات</th>
               </tr>
             </thead>
             <tbody>
               {payments.map((payment, index) => (
-                <tr key={payment.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                  <td className="border border-gray-400 p-2 text-center font-semibold">
+                <tr key={payment.id} style={{ backgroundColor: index % 2 === 0 ? '#f9fafb' : 'white' }}>
+                  <td style={{ border: '1px solid #d1d5db', padding: '5px', textAlign: 'center', fontWeight: '600', fontSize: '11px' }}>
                     {index + 1}
                   </td>
-                  <td className="border border-gray-400 p-2 font-mono">
+                  <td style={{ border: '1px solid #d1d5db', padding: '5px', fontFamily: 'monospace', fontSize: '11px' }}>
                     {payment.receiptNumber}
                   </td>
-                  <td className="border border-gray-400 p-2">
+                  <td style={{ border: '1px solid #d1d5db', padding: '5px', fontSize: '11px' }}>
                     {formatDate(payment.paymentDate)}
                   </td>
-                  <td className="border border-gray-400 p-2 text-left font-bold text-green-700">
+                  <td style={{ border: '1px solid #d1d5db', padding: '5px', textAlign: 'left', fontWeight: 'bold', fontSize: '15px', color: '#15803d' }}>
                     {formatArabicCurrency(payment.amount)}
                   </td>
-                  <td className="border border-gray-400 p-2 text-center">
+                  <td style={{ border: '1px solid #d1d5db', padding: '5px', textAlign: 'center', fontSize: '11px' }}>
                     {getPaymentMethodText(payment.paymentMethod)}
                   </td>
-                  <td className="border border-gray-400 p-2 text-sm">
+                  <td style={{ border: '1px solid #d1d5db', padding: '5px', fontSize: '10px' }}>
                     {payment.notes || '-'}
                   </td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
-              <tr className="bg-gray-200 font-bold">
-                <td colSpan={3} className="border border-gray-400 p-2 text-left">
-                  الإجمالي:
+              <tr style={{ backgroundColor: '#e5e7eb', fontWeight: 'bold' }}>
+                <td colSpan={3} style={{ border: '1px solid #6b7280', padding: '8px', textAlign: 'left', fontSize: '13px' }}>
+                  إجمالي المدفوع:
                 </td>
-                <td className="border border-gray-400 p-2 text-left text-green-700">
+                <td style={{ border: '1px solid #6b7280', padding: '8px', textAlign: 'left', fontSize: '16px', fontWeight: 'bold', color: '#15803d' }}>
                   {formatArabicCurrency(payments.reduce((sum, p) => sum + p.amount, 0))}
                 </td>
-                <td colSpan={2} className="border border-gray-400 p-2"></td>
+                <td colSpan={2} style={{ border: '1px solid #6b7280', padding: '8px' }}></td>
               </tr>
             </tfoot>
           </table>
         </div>
 
-        {/* Summary */}
-        <div className="mb-6 bg-blue-50 p-4 rounded border-2 border-blue-500">
-          <h3 className="font-bold text-lg mb-3 text-center">الملخص المالي</h3>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="bg-white p-3 rounded border border-gray-300">
-              <p className="text-sm text-gray-600 mb-1">إجمالي الفاتورة</p>
-              <p className="text-xl font-bold">{formatArabicCurrency(sale.total)}</p>
+        {/* Summary - مصغر وفي سطر واحد */}
+        <div style={{ marginBottom: '10px', padding: '8px', backgroundColor: '#f0f9ff', border: '1px solid #3b82f6', borderRadius: '4px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', textAlign: 'center' }}>
+            <div>
+              <span style={{ fontSize: '11px', color: '#6b7280' }}>الإجمالي: </span>
+              <span style={{ fontSize: '15px', fontWeight: 'bold' }}>{formatArabicCurrency(sale.total)}</span>
             </div>
-            <div className="bg-white p-3 rounded border border-green-300">
-              <p className="text-sm text-gray-600 mb-1">المبلغ المدفوع</p>
-              <p className="text-xl font-bold text-green-700">{formatArabicCurrency(sale.paidAmount)}</p>
+            <div>
+              <span style={{ fontSize: '11px', color: '#6b7280' }}>المدفوع: </span>
+              <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#15803d' }}>{formatArabicCurrency(sale.paidAmount)}</span>
             </div>
-            <div className="bg-white p-3 rounded border border-red-300">
-              <p className="text-sm text-gray-600 mb-1">المبلغ المتبقي</p>
-              <p className="text-xl font-bold text-red-600">{formatArabicCurrency(sale.remainingAmount)}</p>
+            <div>
+              <span style={{ fontSize: '11px', color: '#6b7280' }}>الباقي: </span>
+              <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#dc2626' }}>{formatArabicCurrency(sale.remainingAmount)}</span>
+            </div>
+            <div>
+              {sale.remainingAmount === 0 ? (
+                <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#16a34a' }}>✓ تم السداد</span>
+              ) : (
+                <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#dc2626' }}>⚠ متبقي</span>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Payment Status */}
-        <div className="mb-6 text-center">
-          {sale.remainingAmount === 0 ? (
-            <div className="bg-green-100 border-2 border-green-500 text-green-800 p-4 rounded inline-block">
-              <p className="text-xl font-bold">✓ تم السداد بالكامل</p>
+        {/* Footer & Signatures - مصغر */}
+        <div style={{ marginTop: '15px', paddingTop: '10px', borderTop: '1px solid #9ca3af' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+            <div style={{ textAlign: 'center', flex: 1 }}>
+              <div style={{ borderTop: '1px solid #1f2937', marginBottom: '4px', marginTop: '20px' }}></div>
+              <p style={{ fontSize: '11px', fontWeight: '600', margin: 0 }}>المحاسب</p>
             </div>
-          ) : (
-            <div className="bg-yellow-100 border-2 border-yellow-500 text-yellow-800 p-4 rounded inline-block">
-              <p className="text-xl font-bold">⚠ يوجد مبلغ متبقي: {formatArabicCurrency(sale.remainingAmount)}</p>
+            <div style={{ textAlign: 'center', flex: 1 }}>
+              <div style={{ borderTop: '1px solid #1f2937', marginBottom: '4px', marginTop: '20px' }}></div>
+              <p style={{ fontSize: '11px', fontWeight: '600', margin: 0 }}>المدير المالي</p>
             </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="text-center mt-8 pt-4 border-t-2 border-gray-800">
-          <p className="text-sm mb-2">هذا المستند للمراجعة فقط</p>
-          <p className="text-xs text-gray-600">
+            <div style={{ textAlign: 'center', flex: 1 }}>
+              <div style={{ borderTop: '1px solid #1f2937', marginBottom: '4px', marginTop: '20px' }}></div>
+              <p style={{ fontSize: '11px', fontWeight: '600', margin: 0 }}>المدير العام</p>
+            </div>
+          </div>
+          <p style={{ fontSize: '9px', color: '#6b7280', textAlign: 'center', margin: 0 }}>
             تم الطباعة: {new Date().toLocaleString('ar-LY')}
           </p>
-        </div>
-
-        {/* Signatures */}
-        <div className="mt-8 pt-6 border-t border-gray-400">
-          <div className="grid grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="border-t-2 border-gray-800 w-full mb-2 mt-12"></div>
-              <p className="text-sm font-semibold">المحاسب</p>
-            </div>
-            <div className="text-center">
-              <div className="border-t-2 border-gray-800 w-full mb-2 mt-12"></div>
-              <p className="text-sm font-semibold">المدير المالي</p>
-            </div>
-            <div className="text-center">
-              <div className="border-t-2 border-gray-800 w-full mb-2 mt-12"></div>
-              <p className="text-sm font-semibold">المدير العام</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

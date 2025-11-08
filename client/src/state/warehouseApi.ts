@@ -33,6 +33,7 @@ export interface DispatchOrder {
       qty: number;
       unitPrice: number;
       subtotal: number;
+      isFromParentCompany?: boolean;
     }>;
   };
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';

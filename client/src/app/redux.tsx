@@ -30,6 +30,7 @@ import { reportsApi } from "@/state/reportsApi"; // إضافة reportsApi
 import { notificationsApi } from "@/state/notificationsApi"; // إضافة notificationsApi
 import { saleReturnsApi } from "@/state/saleReturnsApi"; // إضافة saleReturnsApi
 import { warehouseApi } from "@/state/warehouseApi"; // إضافة warehouseApi
+import { customerAccountApi } from "@/state/customerAccountApi"; // إضافة customerAccountApi
 import { setupListeners } from "@reduxjs/toolkit/query";
 import {
   persistStore,
@@ -98,6 +99,7 @@ const rootReducer = combineReducers({
   [notificationsApi.reducerPath]: notificationsApi.reducer, // إضافة notificationsApi.reducer
   [saleReturnsApi.reducerPath]: saleReturnsApi.reducer, // إضافة saleReturnsApi.reducer
   [warehouseApi.reducerPath]: warehouseApi.reducer, // إضافة warehouseApi.reducer
+  [customerAccountApi.reducerPath]: customerAccountApi.reducer, // إضافة customerAccountApi.reducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -111,7 +113,7 @@ export const makeStore = () => {
         serializableCheck: {
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
-      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware, notificationsApi.middleware, saleReturnsApi.middleware, warehouseApi.middleware), // إضافة middleware الخاص بـ APIs
+      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware, notificationsApi.middleware, saleReturnsApi.middleware, warehouseApi.middleware, customerAccountApi.middleware), // إضافة middleware الخاص بـ APIs
   });
 };
 

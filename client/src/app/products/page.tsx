@@ -76,22 +76,30 @@ const ProductsPage = () => {
     }
   }, [isEditModalOpen, selectedProduct]);
 
-  // RTK Query hooks with polling
+  // إعادة تعيين الصفحة إلى الأولى عند تغيير الفلاتر
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, searchSKU, selectedCompany, selectedUnit, stockFilter]);
+
+  // تحديد ما إذا كان هناك أي فلاتر نشطة
+  const hasActiveFilters = searchTerm || searchSKU || selectedCompany || selectedUnit || stockFilter !== 'all';
+  const hasSearchFilters = searchTerm || searchSKU;
+
+  // RTK Query hooks - نرسل جميع الفلاتر المدعومة في الـ API
   const { data: productsData, isLoading: isLoadingProducts, error: productsError, refetch } = useGetProductsQuery({
     page: currentPage,
     limit: 10,
     search: searchTerm || undefined,
     unit: selectedUnit || undefined,
+    companyId: selectedCompany ? Number(selectedCompany) : undefined,
   }, {
     pollingInterval, // إعادة جلب تلقائية كل X ميلي ثانية
   });
 
-  // استعلام منفصل للحصول على جميع الأصناف للعدد الإجمالي
+  // استعلام للحصول على جميع الأصناف للإحصائيات
   const { data: allProductsData } = useGetProductsQuery({
     page: 1,
-    limit: 10000, // رقم كبير للحصول على جميع الأصناف
-    search: searchTerm || undefined,
-    unit: selectedUnit || undefined,
+    limit: 10000,
   });
 
   const { data: companiesData, isLoading: isLoadingCompanies } = useGetCompaniesQuery({ limit: 100 });
@@ -103,15 +111,13 @@ const ProductsPage = () => {
   const [updatePrice] = useUpdatePriceMutation();
 
   // بيانات الأصناف
-  let products = productsData?.data?.products || [];
   const pagination = productsData?.data?.pagination;
-
-  // حساب عدد الأصناف حسب الحالة من البيانات الإجمالية
+  let products = productsData?.data?.products || [];
   const allProducts = allProductsData?.data?.products || [];
 
-  // فلترة حسب حالة المخزون - من جميع الأصناف وليس فقط الصفحة الحالية
+  // تطبيق فلاتر المخزون على الـ client-side (لأنها غير مدعومة في الـ API)
   if (stockFilter !== 'all') {
-    const filteredProducts = allProducts.filter(product => {
+    products = products.filter(product => {
       const stockBoxes = product.stock?.boxes || 0;
       
       if (stockFilter === 'out') {
@@ -126,59 +132,16 @@ const ProductsPage = () => {
       
       return true;
     });
-
-    // تطبيق نفس الفلاتر الأخرى على النتائج المفلترة
-    const finalFilteredProducts = filteredProducts.filter(product => {
-      // فلترة حسب اسم الصنف
-      if (searchTerm && !product.name.toLowerCase().includes(searchTerm.toLowerCase())) {
-        return false;
-      }
-
-      // فلترة حسب كود الصنف
-      if (searchSKU && !product.sku.toLowerCase().includes(searchSKU.toLowerCase())) {
-        return false;
-      }
-
-      // فلترة حسب الشركة
-      if (selectedCompany && product.createdByCompanyId.toString() !== selectedCompany) {
-        return false;
-      }
-
-      return true;
-    });
-
-    // تحديد الأصناف للصفحة الحالية
-    const startIndex = (currentPage - 1) * 10;
-    const endIndex = startIndex + 10;
-    products = finalFilteredProducts.slice(startIndex, endIndex);
-  } else {
-    // فلترة عادية للصفحة الحالية عندما stockFilter = 'all'
-    products = products.filter(product => {
-      // فلترة حسب اسم الصنف
-      if (searchTerm && !product.name.toLowerCase().includes(searchTerm.toLowerCase())) {
-        return false;
-      }
-
-      // فلترة حسب كود الصنف
-      if (searchSKU && !product.sku.toLowerCase().includes(searchSKU.toLowerCase())) {
-        return false;
-      }
-
-      // فلترة حسب الشركة
-      if (selectedCompany && product.createdByCompanyId.toString() !== selectedCompany) {
-        return false;
-      }
-
-      return true;
-    });
   }
+
+  // إحصائيات المخزون من جميع الأصناف
   const totalCount = allProducts.length;
-  const outOfStockCount = allProducts.filter(p => (p.stock?.boxes || 0) === 0).length;
-  const lowStockCount = allProducts.filter(p => {
+  const outOfStockCount = allProducts.filter((p: any) => (p.stock?.boxes || 0) === 0).length;
+  const lowStockCount = allProducts.filter((p: any) => {
     const boxes = p.stock?.boxes || 0;
     return boxes > 0 && boxes <= lowStockThreshold;
   }).length;
-  const availableCount = allProducts.filter(p => (p.stock?.boxes || 0) > 0).length;
+  const availableCount = allProducts.filter((p: any) => (p.stock?.boxes || 0) > 0).length;
 
   // معالجة إنشاء صنف
   const handleCreateProduct = async (productData: CreateProductRequest) => {
@@ -577,8 +540,33 @@ const ProductsPage = () => {
         </div>
       </div>
 
-      {/* Filters and Search */}
+      {/* Filters and Search - محسّن */}
       <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-text-primary flex items-center gap-2">
+            <Filter className="w-5 h-5" />
+            البحث والفلترة
+          </h3>
+          {hasActiveFilters && (
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setSearchSKU('');
+                setSelectedCompany('');
+                setSelectedUnit('');
+                setStockFilter('all');
+                setCurrentPage(1);
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all duration-200"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              مسح الفلاتر
+            </button>
+          )}
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Search by Name */}
           <div className="relative">
@@ -588,8 +576,20 @@ const ProductsPage = () => {
               placeholder="البحث بالاسم..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pr-10 pl-4 py-2 border border-border-primary rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200"
+              className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200 ${
+                searchTerm ? 'border-blue-500 ring-2 ring-blue-100' : 'border-border-primary'
+              }`}
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
           </div>
 
           {/* Search by SKU */}
@@ -602,17 +602,31 @@ const ProductsPage = () => {
               placeholder="البحث بالكود..."
               value={searchSKU}
               onChange={(e) => setSearchSKU(e.target.value)}
-              className="w-full pr-10 pl-4 py-2 border border-border-primary rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200"
+              className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200 ${
+                searchSKU ? 'border-blue-500 ring-2 ring-blue-100' : 'border-border-primary'
+              }`}
             />
+            {searchSKU && (
+              <button
+                onClick={() => setSearchSKU('')}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
           </div>
 
           {/* Company Filter */}
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-text-tertiary" />
+          <div className="relative">
+            <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-tertiary w-5 h-5 pointer-events-none" />
             <select
               value={selectedCompany}
               onChange={(e) => setSelectedCompany(e.target.value)}
-              className="flex-1 px-4 py-2 border border-border-primary rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary transition-all duration-200"
+              className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary transition-all duration-200 appearance-none ${
+                selectedCompany ? 'border-blue-500 ring-2 ring-blue-100 font-medium' : 'border-border-primary'
+              }`}
             >
               <option value="">جميع الشركات</option>
               {companiesData?.data?.companies.map((company) => (
@@ -621,44 +635,96 @@ const ProductsPage = () => {
                 </option>
               ))}
             </select>
+            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </div>
 
           {/* Unit Filter */}
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-text-tertiary" />
+          <div className="relative">
+            <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-tertiary w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 12h16m-7 5h7" />
+            </svg>
             <select
               value={selectedUnit}
               onChange={(e) => setSelectedUnit(e.target.value)}
-              className="flex-1 px-4 py-2 border border-border-primary rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary transition-all duration-200"
+              className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary transition-all duration-200 appearance-none ${
+                selectedUnit ? 'border-blue-500 ring-2 ring-blue-100 font-medium' : 'border-border-primary'
+              }`}
             >
               <option value="">جميع الوحدات</option>
               <option value="صندوق">صندوق</option>
               <option value="قطعة">قطعة</option>
+              <option value="كيس">كيس</option>
+              <option value="لتر">لتر</option>
             </select>
+            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </div>
         </div>
 
-        {/* Clear Filters */}
-        {(searchTerm || searchSKU || selectedCompany || selectedUnit || stockFilter !== 'all') && (
-          <div className="mt-4 flex items-center justify-between">
-            <p className="text-sm text-text-secondary">
-              عرض {products.length} من {allProducts.length} صنف
-            </p>
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setSearchSKU('');
-                setSelectedCompany('');
-                setSelectedUnit('');
-                setStockFilter('all');
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-            >
-              مسح الفلاتر
+        {/* مؤشر الفلاتر النشطة */}
+        {hasActiveFilters && (
+          <div className="mt-4 pt-4 border-t border-border-primary">
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-sm text-text-secondary">الفلاتر النشطة:</span>
+              {searchTerm && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  <Search className="w-3 h-3" />
+                  اسم: {searchTerm}
+                  <button onClick={() => setSearchTerm('')} className="hover:text-blue-900">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
             </button>
+                </span>
+              )}
+              {searchSKU && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  كود: {searchSKU}
+                  <button onClick={() => setSearchSKU('')} className="hover:text-blue-900">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {selectedCompany && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+                  {companiesData?.data?.companies.find(c => c.id === Number(selectedCompany))?.name}
+                  <button onClick={() => setSelectedCompany('')} className="hover:text-purple-900">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {selectedUnit && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                  {selectedUnit}
+                  <button onClick={() => setSelectedUnit('')} className="hover:text-green-900">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {stockFilter !== 'all' && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
+                  {stockFilter === 'available' ? 'متوفرة' : stockFilter === 'out' ? 'منتهية' : 'شارفت على الانتهاء'}
+                  <button onClick={() => setStockFilter('all')} className="hover:text-orange-900">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+            </div>
           </div>
         )}
       </div>
+
 
       {/* Products Table */}
       <div className="bg-surface-primary rounded-lg shadow-sm border border-border-primary overflow-hidden">
@@ -888,46 +954,120 @@ const ProductsPage = () => {
           </table>
         </div>
 
-        {/* Pagination */}
+        {/* Pagination - محسّن */}
         {pagination && pagination.pages > 1 && (
           <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div className="flex-1 flex justify-between sm:hidden">
+            {/* للشاشات الصغيرة */}
+            <div className="flex-1 flex justify-between items-center sm:hidden">
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 السابق
               </button>
+              <span className="text-sm text-gray-700">
+                {formatArabicNumber(currentPage)} / {formatArabicNumber(pagination.pages)}
+              </span>
               <button
                 onClick={() => setCurrentPage(Math.min(pagination.pages, currentPage + 1))}
                 disabled={currentPage === pagination.pages}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 التالي
               </button>
             </div>
+            
+            {/* للشاشات الكبيرة */}
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700">
-                  عرض {(currentPage - 1) * 10 + 1} إلى {Math.min(currentPage * 10, pagination.total)} من {pagination.total} نتيجة
+                  عرض <span className="font-medium">{formatArabicNumber((currentPage - 1) * 10 + 1)}</span> إلى{' '}
+                  <span className="font-medium">{formatArabicNumber(Math.min(currentPage * 10, pagination.total))}</span> من{' '}
+                  <span className="font-medium">{formatArabicNumber(pagination.total)}</span> نتيجة
                 </p>
               </div>
               <div>
                 <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  {Array.from({ length: pagination.pages }, (_, i) => (
+                  {/* زر الصفحة الأولى */}
                     <button
-                      key={i + 1}
-                      onClick={() => setCurrentPage(i + 1)}
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="الصفحة الأولى"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  
+                  {/* زر السابق */}
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="السابق"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+
+                  {/* أرقام الصفحات - محسّن للصفحات الكثيرة */}
+                  {(() => {
+                    const maxButtons = 7; // أقصى عدد أزرار تظهر
+                    const pages = pagination.pages;
+                    let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+                    let endPage = Math.min(pages, startPage + maxButtons - 1);
+                    
+                    if (endPage - startPage < maxButtons - 1) {
+                      startPage = Math.max(1, endPage - maxButtons + 1);
+                    }
+
+                    const buttons = [];
+                    
+                    for (let i = startPage; i <= endPage; i++) {
+                      buttons.push(
+                        <button
+                          key={i}
+                          onClick={() => setCurrentPage(i)}
                       className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                        currentPage === i + 1
+                            currentPage === i
                           ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                           : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                       }`}
                     >
-                      {i + 1}
+                          {formatArabicNumber(i)}
                     </button>
-                  ))}
+                      );
+                    }
+                    
+                    return buttons;
+                  })()}
+
+                  {/* زر التالي */}
+                  <button
+                    onClick={() => setCurrentPage(Math.min(pagination.pages, currentPage + 1))}
+                    disabled={currentPage === pagination.pages}
+                    className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="التالي"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  
+                  {/* زر الصفحة الأخيرة */}
+                  <button
+                    onClick={() => setCurrentPage(pagination.pages)}
+                    disabled={currentPage === pagination.pages}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="الصفحة الأخيرة"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    </svg>
+                  </button>
                 </nav>
               </div>
             </div>

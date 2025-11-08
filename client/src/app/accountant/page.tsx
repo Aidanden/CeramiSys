@@ -1,21 +1,20 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { useGetCashSalesQuery, useIssueReceiptMutation, useApproveSaleMutation, Sale, salesApi } from '@/state/salesApi';
+import { useGetSalesQuery, useGetCashSalesQuery, useIssueReceiptMutation, useApproveSaleMutation, useUpdateSaleMutation, Sale, salesApi } from '@/state/salesApi';
 import { useCreateDispatchOrderMutation } from '@/state/warehouseApi';
 import { useGetCurrentUserQuery } from '@/state/authApi';
+import { useGetProductsQuery } from '@/state/productsApi';
 import { useToast } from '@/components/ui/Toast';
 import { ReceiptPrint } from '@/components/sales/ReceiptPrint';
 import { InvoicePrint } from '@/components/sales/InvoicePrint';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, X, DollarSign, FileText } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import html2canvas from 'html2canvas';
 import { 
-  useGetCreditSalesQuery,
   useGetCreditSalesStatsQuery,
   useCreatePaymentMutation,
   useDeletePaymentMutation,
-  CreditSale,
   SalePayment
 } from '@/state/salePaymentApi';
 import { CreditPaymentReceiptPrint } from '@/components/sales/CreditPaymentReceiptPrint';
@@ -27,21 +26,15 @@ import { RootState } from '@/app/redux';
 import { useEffect } from 'react';
 
 export default function AccountantWorkspace() {
-  // Tab state
-  const [activeTab, setActiveTab] = useState<'cash' | 'credit'>('cash');
+  // Tab state - الشركة النشطة
+  const [activeCompanyId, setActiveCompanyId] = useState<number>(1);
   const dispatch = useDispatch();
   
-  // Cash sales states
+  // States موحدة
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [receiptFilter, setReceiptFilter] = useState<'all' | 'issued' | 'pending'>('all');
-  
-  // Credit sales states
-  const [creditCurrentPage, setCreditCurrentPage] = useState(1);
-  const [creditSearchTerm, setCreditSearchTerm] = useState('');
-  const [filterFullyPaid, setFilterFullyPaid] = useState<'all' | 'paid' | 'unpaid'>('all');
-  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
-  const [selectedCreditSale, setSelectedCreditSale] = useState<CreditSale | null>(null);
+  const [selectedCreditSale, setSelectedCreditSale] = useState<Sale | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<SalePayment | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -51,6 +44,15 @@ export default function AccountantWorkspace() {
   // States for sale approval
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [saleToApprove, setSaleToApprove] = useState<Sale | null>(null);
+  
+  // States for sale editing
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [saleToEdit, setSaleToEdit] = useState<Sale | null>(null);
+  const [editLines, setEditLines] = useState<Array<{
+    productId: number;
+    qty: number;
+    unitPrice: number;
+  }>>([]);
   
   // تعيين تاريخ اليوم كـ default
   const getTodayDate = () => {
@@ -66,6 +68,7 @@ export default function AccountantWorkspace() {
   const [currentSaleForWhatsApp, setCurrentSaleForWhatsApp] = useState<Sale | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
   const whatsappRef = useRef<HTMLDivElement>(null);
+  const historyPrintRef = useRef<HTMLDivElement>(null);
   const { data: userData } = useGetCurrentUserQuery();
   const user = userData?.data;
   const { success, error: showError } = useToast();
@@ -82,11 +85,12 @@ export default function AccountantWorkspace() {
     isLoading, 
     isFetching,
     refetch 
-  } = useGetCashSalesQuery(
+  } = useGetSalesQuery(
     {
       page: currentPage,
       limit: 10,
       search: searchTerm || undefined,
+      companyId: activeCompanyId, // ✅ فلتر حسب الشركة النشطة
       receiptIssued: getReceiptIssuedFilter(),
       startDate: startDate || undefined,
       endDate: endDate || undefined
@@ -98,33 +102,35 @@ export default function AccountantWorkspace() {
     }
   );
   
-  // جلب الفواتير المعلقة للإحصائيات
-  const { data: pendingData, refetch: refetchPending } = useGetCashSalesQuery(
+  // جلب الفواتير المعلقة للإحصائيات (فلتر حسب الشركة)
+  const { data: pendingData, refetch: refetchPending } = useGetSalesQuery(
     {
       page: 1,
-      limit: 1000, // جلب جميع الفواتير للحساب
+      limit: 1000,
+      companyId: activeCompanyId, // ✅ فلتر حسب الشركة
       receiptIssued: false,
       startDate: startDate || undefined,
       endDate: endDate || undefined
     },
     {
-      refetchOnMountOrArgChange: 5, // إعادة جلب البيانات كل 5 ثواني
+      refetchOnMountOrArgChange: 5,
       refetchOnFocus: true,
       refetchOnReconnect: true
     }
   );
   
-  // جلب الفواتير المصدرة للإحصائيات
-  const { data: issuedData, refetch: refetchIssued } = useGetCashSalesQuery(
+  // جلب الفواتير المصدرة للإحصائيات (فلتر حسب الشركة)
+  const { data: issuedData, refetch: refetchIssued } = useGetSalesQuery(
     {
       page: 1,
-      limit: 1000, // جلب جميع الفواتير للحساب
+      limit: 1000,
+      companyId: activeCompanyId, // ✅ فلتر حسب الشركة
       receiptIssued: true,
       startDate: startDate || undefined,
       endDate: endDate || undefined
     },
     {
-      refetchOnMountOrArgChange: 5, // إعادة جلب البيانات كل 5 ثواني
+      refetchOnMountOrArgChange: 5,
       refetchOnFocus: true,
       refetchOnReconnect: true
     }
@@ -133,68 +139,117 @@ export default function AccountantWorkspace() {
   const [issueReceipt, { isLoading: isIssuing }] = useIssueReceiptMutation();
   const [createDispatchOrder, { isLoading: isCreatingDispatch }] = useCreateDispatchOrderMutation();
   const [approveSale, { isLoading: isApproving }] = useApproveSaleMutation();
+  const [updateSale, { isLoading: isUpdating }] = useUpdateSaleMutation();
   
-  // Credit sales API calls
-  const { data: creditSalesData, isLoading: creditSalesLoading, refetch: refetchCreditSales } = useGetCreditSalesQuery({
-    page: creditCurrentPage,
-    limit: 10,
-    search: creditSearchTerm,
-    isFullyPaid: filterFullyPaid === 'all' ? undefined : filterFullyPaid === 'paid'
-  });
+  // Credit sales API calls (استخدام نفس endpoint مع فلتر الشركة)
+  // بما أن جميع الفواتير آجلة الآن، نستخدم salesData مباشرة
   const { data: creditStatsData } = useGetCreditSalesStatsQuery();
   const [createPayment, { isLoading: isCreatingPayment }] = useCreatePaymentMutation();
   const [deletePayment] = useDeletePaymentMutation();
   const { data: companiesData } = useGetCompaniesQuery({ limit: 1000 });
+  const { data: productsData } = useGetProductsQuery({ limit: 1000 });
 
+  /**
+   * طباعة الفاتورة - Print Invoice
+   * يستخدم React component بدلاً من HTML string
+   */
   const printReceipt = (sale: Sale) => {
     setCurrentSaleToPrint(sale);
     
+    // الانتظار حتى يتم render المكون
     setTimeout(() => {
-      const printWindow = window.open('', '_blank', 'width=800,height=600');
-      if (!printWindow) {
-        showError('يرجى السماح بفتح النوافذ المنبثقة للطباعة');
+      if (!printRef.current) {
+        showError('فشل في تحميل الفاتورة');
+        setCurrentSaleToPrint(null);
         return;
       }
 
-      const receiptContent = `
+      // فتح نافذة الطباعة
+      const printWindow = window.open('', '_blank', 'width=800,height=900');
+      if (!printWindow) {
+        showError('يرجى السماح بفتح النوافذ المنبثقة للطباعة');
+        setCurrentSaleToPrint(null);
+        return;
+      }
+
+      // بناء محتوى HTML مع الأنماط
+      const htmlContent = `
         <!DOCTYPE html>
         <html lang="ar" dir="rtl">
         <head>
           <meta charset="UTF-8">
-          <title>إيصال قبض - ${sale.invoiceNumber || sale.id}</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>فاتورة مبيعات - ${sale.invoiceNumber || sale.id}</title>
           <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: Arial, sans-serif; direction: rtl; }
-            @media print {
-              body { margin: 0; padding: 0; }
-              .receipt { page-break-after: always; }
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
             }
-            @page { size: A4; margin: 0; }
+            
+            body {
+              font-family: 'Arial', 'Segoe UI', Tahoma, sans-serif;
+              direction: rtl;
+              background: white;
+              color: #000;
+            }
+            
+            @media print {
+              body {
+                margin: 0;
+                padding: 0;
+              }
+              
+              .no-print {
+                display: none !important;
+              }
+              
+              @page {
+                size: A4;
+                margin: 10mm;
+              }
+            }
+            
+            /* تنسيق الطباعة من مكون InvoicePrint */
+            .print-receipt {
+              width: 100%;
+              max-width: 210mm;
+              margin: 0 auto;
+              padding: 20px;
+            }
           </style>
         </head>
         <body>
-          <div id="receipt-container"></div>
+          <div id="print-container">${printRef.current.innerHTML}</div>
+          
           <script>
+            // الطباعة التلقائية عند تحميل الصفحة
             window.onload = function() {
+              // تأخير بسيط للتأكد من تحميل الأنماط
+              setTimeout(() => {
               window.print();
-              setTimeout(() => window.print(), 100);
+              }, 300);
+            };
+            
+            // إغلاق النافذة بعد الطباعة أو الإلغاء
               window.onafterprint = function() {
+              setTimeout(() => {
                 window.close();
-              };
+              }, 100);
             };
           </script>
         </body>
         </html>
       `;
 
-      printWindow.document.write(receiptContent);
-      const container = printWindow.document.getElementById('receipt-container');
-      if (container && printRef.current) {
-        container.innerHTML = printRef.current.innerHTML;
-      }
+      printWindow.document.write(htmlContent);
       printWindow.document.close();
+      
+      // تنظيف state بعد فترة
+      setTimeout(() => {
       setCurrentSaleToPrint(null);
-    }, 100);
+      }, 1000);
+    }, 200);
   };
 
   const handleIssueReceipt = async (sale: Sale) => {
@@ -222,11 +277,83 @@ export default function AccountantWorkspace() {
   
   const handleCreateDispatchOrder = async (sale: Sale) => {
     try {
-      await createDispatchOrder({ saleId: sale.id }).unwrap();
-      success(`تم إنشاء أمر صرف للفاتورة ${sale.invoiceNumber || sale.id}`);
-      // RTK Query سيقوم بتحديث الـ cache تلقائياً عبر invalidatesTags
+      console.log('🔄 بدء عملية إصدار أمر الصرف...');
+      console.log('📋 بيانات الفاتورة:', {
+        id: sale.id,
+        invoiceNumber: sale.invoiceNumber,
+        status: sale.status,
+        isAutoGenerated: sale.isAutoGenerated,
+        companyId: sale.companyId,
+        company: sale.company?.name
+      });
+      
+      // التحقق: لا يمكن إصدار أمر صرف للفواتير التلقائية
+      if (sale.isAutoGenerated) {
+        showError('لا يمكن إصدار أمر صرف للفواتير التلقائية');
+        return;
+      }
+      
+      // إذا كانت الفاتورة مبدئية (DRAFT)، نعتمدها أولاً كآجلة
+      if (sale.status === 'DRAFT') {
+        console.log('📝 الفاتورة مبدئية، جاري اعتمادها كآجلة...');
+        
+        try {
+          const approveResult = await approveSale({
+            id: sale.id,
+            saleType: 'CREDIT',
+            paymentMethod: undefined
+          }).unwrap();
+          
+          console.log('✅ تم اعتماد الفاتورة كآجلة بنجاح:', approveResult);
+        } catch (approveErr: any) {
+          console.error('❌ خطأ في اعتماد الفاتورة:', approveErr);
+          
+          // التحقق من نوع الخطأ
+          const errorMessage = approveErr?.data?.message || approveErr?.message || '';
+          console.error('رسالة الخطأ:', errorMessage);
+          
+          // إذا كانت الفاتورة معتمدة بالفعل، نتخطى الاعتماد ونكمل لإنشاء أمر الصرف
+          if (errorMessage.includes('معتمدة بالفعل')) {
+            console.log('ℹ️ الفاتورة معتمدة بالفعل، الانتقال لإنشاء أمر الصرف...');
+            // لا نرجع هنا، بل نكمل لإنشاء أمر الصرف
+          } else {
+            // خطأ حقيقي في الاعتماد
+            showError(errorMessage || 'فشل اعتماد الفاتورة. تأكد من توفر المخزون في هذه الشركة.');
+            return;
+          }
+        }
+      } else if (sale.status !== 'APPROVED') {
+        showError(`لا يمكن إصدار أمر صرف لفاتورة بحالة: ${sale.status}`);
+        return;
+      }
+      
+      // إنشاء أمر الصرف (الفاتورة الآن معتمدة)
+      console.log('📦 جاري إنشاء أمر الصرف...');
+      try {
+        const dispatchResult = await createDispatchOrder({ saleId: sale.id }).unwrap();
+        console.log('✅ تم إنشاء أمر الصرف بنجاح:', dispatchResult);
+        
+        success(
+          sale.status === 'DRAFT' 
+            ? `تم اعتماد الفاتورة وإصدار أمر صرف للفاتورة ${sale.invoiceNumber || sale.id}`
+            : `تم إنشاء أمر صرف للفاتورة ${sale.invoiceNumber || sale.id}`
+        );
+      } catch (dispatchErr: any) {
+        console.error('❌ خطأ في إنشاء أمر الصرف:', dispatchErr);
+        
+        const errorMsg = dispatchErr?.data?.message || dispatchErr?.message || 'فشل إنشاء أمر الصرف';
+        showError(errorMsg);
+        return;
+      }
+      
+      // تحديث البيانات
+      console.log('🔄 جاري تحديث البيانات...');
+      await Promise.all([refetch(), refetchPending(), refetchIssued()]);
+      console.log('✅ تم تحديث البيانات بنجاح');
+      
     } catch (err: any) {
-      showError(err?.data?.message || 'حدث خطأ أثناء إنشاء أمر الصرف');
+      console.error('❌ خطأ عام غير متوقع:', err);
+      showError('حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.');
     }
   };
 
@@ -437,15 +564,105 @@ ${itemsText}
     }
   };
   
+  // Handle sale editing
+  const handleEditSale = (sale: Sale) => {
+    setSaleToEdit(sale);
+    // تحميل الأسطر الحالية
+    setEditLines(sale.lines.map(line => ({
+      productId: line.productId,
+      qty: Number(line.qty),
+      unitPrice: Number(line.unitPrice)
+    })));
+    setShowEditModal(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!saleToEdit) return;
+
+    const formData = new FormData(e.target as HTMLFormElement);
+    const customerId = formData.get('customerId') ? Number(formData.get('customerId')) : undefined;
+    const invoiceNumber = formData.get('invoiceNumber') as string;
+
+    // التحقق من وجود أسطر
+    if (editLines.length === 0) {
+      showError('يجب إضافة صنف واحد على الأقل');
+      return;
+    }
+
+    // التحقق من صحة البيانات
+    for (const line of editLines) {
+      if (!line.productId || line.qty <= 0 || line.unitPrice <= 0) {
+        showError('يرجى التأكد من صحة بيانات جميع الأصناف');
+        return;
+      }
+    }
+
+    try {
+      await updateSale({
+        id: saleToEdit.id,
+        data: {
+          customerId,
+          invoiceNumber: invoiceNumber || undefined,
+          lines: editLines
+        }
+      }).unwrap();
+
+      success(`تم تعديل الفاتورة ${saleToEdit.invoiceNumber || saleToEdit.id} بنجاح`);
+      setShowEditModal(false);
+      setSaleToEdit(null);
+      setEditLines([]);
+      
+      // Refresh data
+      refetch();
+      refetchPending();
+      refetchIssued();
+    } catch (err: any) {
+      showError(err?.data?.message || 'حدث خطأ أثناء تعديل الفاتورة');
+    }
+  };
+
+  // دوال إدارة الأسطر في التعديل
+  const addEditLine = () => {
+    setEditLines(prev => [...prev, { productId: 0, qty: 1, unitPrice: 0 }]);
+  };
+
+  const removeEditLine = (index: number) => {
+    setEditLines(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateEditLine = (index: number, field: 'productId' | 'qty' | 'unitPrice', value: number) => {
+    setEditLines(prev => prev.map((line, i) => 
+      i === index ? { ...line, [field]: value } : line
+    ));
+  };
+
+  // دالة لتحديث السعر من السعر/متر
+  const updatePriceFromUnitPrice = (index: number, pricePerUnit: number) => {
+    const product = productsData?.data?.products?.find(p => p.id === editLines[index].productId);
+    const unitsPerBox = product?.unitsPerBox ? Number(product.unitsPerBox) : 1;
+    const totalPrice = pricePerUnit * unitsPerBox;
+    updateEditLine(index, 'unitPrice', totalPrice);
+  };
+  
   // Credit sales functions
   const userFromRedux = useSelector((state: RootState) => state.auth.user);
   
   // Auto-select company for non-system users
   useEffect(() => {
     if (userFromRedux && !userFromRedux.isSystemUser && userFromRedux.companyId) {
-      setSelectedCompanyId(userFromRedux.companyId);
+      setActiveCompanyId(userFromRedux.companyId);
     }
   }, [userFromRedux]);
+  
+  // إعادة التحميل عند تغيير الشركة النشطة
+  useEffect(() => {
+    console.log('🔄 تغيير الشركة النشطة:', activeCompanyId);
+    refetch();
+    refetchPending();
+    refetchIssued();
+    setCurrentPage(1); // إعادة تعيين الصفحة للأولى
+  }, [activeCompanyId]);
   
   const handleCreatePayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -455,14 +672,20 @@ ${itemsText}
     const amount = Number(formData.get('amount'));
     const paymentMethod = formData.get('paymentMethod') as "CASH" | "BANK" | "CARD";
     const notes = formData.get('notes') as string;
+    
+    const remainingAmount = selectedCreditSale.remainingAmount || 0;
 
     if (amount <= 0) {
-      showError('المبلغ يجب أن يكون أكبر من صفر');
+      showError('❌ المبلغ يجب أن يكون أكبر من صفر');
       return;
     }
 
-    if (amount > selectedCreditSale.remainingAmount) {
-      showError(`المبلغ يتجاوز المبلغ المتبقي (${formatArabicCurrency(selectedCreditSale.remainingAmount)})`);
+    if (amount > remainingAmount) {
+      showError(
+        `❌ لا يمكن قبض مبلغ أكبر من المبلغ المتبقي!\n` +
+        `المبلغ المتبقي: ${formatArabicCurrency(remainingAmount)}\n` +
+        `المبلغ المُدخل: ${formatArabicCurrency(amount)}`
+      );
       return;
     }
 
@@ -475,7 +698,7 @@ ${itemsText}
       }).unwrap();
       
       success('تم إنشاء إيصال القبض بنجاح');
-      await refetchCreditSales();
+      await refetch();
       
       const newPayment = result.data.payment;
       const updatedSale = result.data.sale;
@@ -498,7 +721,7 @@ ${itemsText}
       try {
         await deletePayment(payment.id).unwrap();
         success('تم حذف الدفعة بنجاح');
-        refetchCreditSales();
+        refetch();
       } catch (err: any) {
         showError(err.data?.message || 'حدث خطأ أثناء حذف الدفعة');
       }
@@ -545,78 +768,135 @@ ${itemsText}
     printWindow.document.close();
   };
   
-  const printPaymentsHistory = (sale: CreditSale) => {
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
+  const printPaymentsHistory = (sale: Sale) => {
+    // فتح الـ modal أولاً لإعداد المحتوى
+    setShowPrintHistoryModal(false);
+    
+    // الانتظار حتى يتم render المكون
+    setTimeout(() => {
+      if (!historyPrintRef.current) {
+        showError('فشل في تحميل سجل الدفعات');
+        return;
+      }
+
+      // فتح نافذة الطباعة
+      const printWindow = window.open('', '_blank', 'width=1000,height=900');
     if (!printWindow) {
       showError('يرجى السماح بفتح النوافذ المنبثقة للطباعة');
       return;
     }
     
-    const printContent = document.getElementById('history-print-content');
-    if (!printContent) return;
-    
-    printWindow.document.write(`
+      // بناء محتوى HTML مع الأنماط
+      const htmlContent = `
       <!DOCTYPE html>
       <html lang="ar" dir="rtl">
       <head>
         <meta charset="UTF-8">
-        <title>سجل الدفعات</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>سجل الدفعات - ${sale.invoiceNumber || sale.id}</title>
         <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; direction: rtl; }
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            
+            body {
+              font-family: 'Arial', 'Segoe UI', Tahoma, sans-serif;
+              direction: rtl;
+              background: white;
+              color: #000;
+            }
+            
           @media print {
-            body { margin: 0; padding: 0; }
+              body {
+                margin: 0;
+                padding: 0;
           }
-          @page { size: A4; margin: 0; }
+              
+              @page {
+                size: A4;
+                margin: 15mm;
+              }
+            }
         </style>
       </head>
       <body>
-        ${printContent.innerHTML}
+          <div id="print-container">${historyPrintRef.current.innerHTML}</div>
+          
         <script>
+            // الطباعة التلقائية عند تحميل الصفحة
           window.onload = function() {
+              setTimeout(() => {
             window.print();
-            window.onafterprint = function() { window.close(); };
+              }, 300);
+            };
+            
+            // إغلاق النافذة بعد الطباعة أو الإلغاء
+            window.onafterprint = function() {
+              setTimeout(() => {
+                window.close();
+              }, 100);
           };
         </script>
       </body>
       </html>
-    `);
+      `;
+
+      printWindow.document.write(htmlContent);
     printWindow.document.close();
+    }, 100);
   };
 
+  // البيانات الرئيسية
   const sales = salesData?.data?.sales || [];
   const pagination = salesData?.data?.pagination;
   
-  // حساب الأعداد والمبالغ من البيانات الكاملة
-  const pendingSales = pendingData?.data?.sales || [];
-  const issuedSales = issuedData?.data?.sales || [];
+  // Debug: عرض البيانات المحملة
+  React.useEffect(() => {
+    if (sales.length > 0) {
+      console.log('📊 الفواتير المحملة في المحاسب:', sales.length);
+      console.log('🔍 أول فاتورة:', {
+        id: sales[0].id,
+        invoiceNumber: sales[0].invoiceNumber,
+        total: sales[0].total,
+        paidAmount: sales[0].paidAmount,
+        remainingAmount: sales[0].remainingAmount,
+        paymentsCount: sales[0].payments?.length || 0
+      });
+    }
+  }, [sales]);
   
+  // الإحصائيات
   const pendingCount = pendingData?.data?.pagination?.total || 0;
   const issuedCount = issuedData?.data?.pagination?.total || 0;
   const totalCount = pendingCount + issuedCount;
   
-  // حساب المبالغ
+  const pendingSales = pendingData?.data?.sales || [];
+  const issuedSales = issuedData?.data?.sales || [];
   const pendingTotal = pendingSales.reduce((sum, sale) => sum + sale.total, 0);
   const issuedTotal = issuedSales.reduce((sum, sale) => sum + sale.total, 0);
   const grandTotal = pendingTotal + issuedTotal;
   
-  // Credit sales stats
-  const creditStats = creditStatsData?.data || { 
-    totalSales: 0, 
-    unpaidCount: 0, 
-    paidCount: 0, 
-    totalAmount: 0, 
-    paidAmount: 0, 
-    remainingAmount: 0 
-  };
-
-  // Credit sales data
-  const stats = creditStats;
-  const filteredCreditSales = creditSalesData?.data?.sales?.filter((sale: CreditSale) => {
-    if (!selectedCompanyId) return true;
-    return sale.companyId === selectedCompanyId;
-  }) || [];
-  const companiesLoading = false;
+  // Debug: تتبع الفواتير المحملة
+  useEffect(() => {
+    console.log('📊 الفواتير المحملة:', {
+      activeCompanyId,
+      totalSales: sales.length,
+      companies: [...new Set(sales.map((s: any) => s.companyId))],
+      sales: sales.map((s: any) => ({ 
+        id: s.id, 
+        companyId: s.companyId, 
+        invoice: s.invoiceNumber,
+        status: s.status,
+        saleType: s.saleType,
+        total: s.total,
+        paidAmount: s.paidAmount,
+        remainingAmount: s.remainingAmount,
+        paymentsCount: s.payments?.length || 0
+      }))
+    });
+  }, [sales, activeCompanyId]);
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -628,55 +908,48 @@ ${itemsText}
           </svg>
           مساحة عمل المحاسب
         </h1>
-        <p className="text-gray-600 mt-2">إدارة شاملة لإيصالات القبض - المبيعات النقدية والآجلة في مكان واحد</p>
+        <p className="text-gray-600 mt-2">إدارة شاملة لفواتير المبيعات الآجلة - مصنفة حسب الشركة</p>
       </div>
       
-      {/* Tabs */}
+      {/* Tabs حسب الشركة */}
       <div className="mb-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-1">
           <nav className="flex gap-2" aria-label="Tabs">
+            {companiesData?.data?.companies?.map((company: any) => {
+              // حساب عدد الفواتير المبدئية للشركة النشطة فقط
+              const companyPendingCount = company.id === activeCompanyId ? pendingCount : 0;
+              
+              return (
             <button
-              onClick={() => setActiveTab('cash')}
+                  key={company.id}
+                  onClick={() => {
+                    setActiveCompanyId(company.id);
+                    setCurrentPage(1);
+                  }}
               className={`${
-                activeTab === 'cash'
+                    activeCompanyId === company.id
                   ? 'bg-blue-600 text-white shadow-md'
                   : 'text-gray-600 hover:bg-gray-100'
               } flex-1 py-3 px-4 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all duration-200`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
-              <span>المبيعات النقدية</span>
-              {pendingCount > 0 && (
-                <span className={`${activeTab === 'cash' ? 'bg-white text-blue-600' : 'bg-orange-100 text-orange-600'} px-2 py-0.5 rounded-full text-xs font-bold`}>
-                  {pendingCount}
+                  <span>{company.name}</span>
+                  {companyPendingCount > 0 && (
+                    <span className={`${activeCompanyId === company.id ? 'bg-white text-blue-600' : 'bg-orange-100 text-orange-600'} px-2 py-0.5 rounded-full text-xs font-bold`}>
+                      {companyPendingCount}
                 </span>
               )}
             </button>
-            <button
-              onClick={() => setActiveTab('credit')}
-              className={`${
-                activeTab === 'credit'
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : 'text-gray-600 hover:bg-gray-100'
-              } flex-1 py-3 px-4 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all duration-200`}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-              </svg>
-              <span>المبيعات الآجلة</span>
-              {creditStats.unpaidCount > 0 && (
-                <span className={`${activeTab === 'credit' ? 'bg-white text-purple-600' : 'bg-red-100 text-red-600'} px-2 py-0.5 rounded-full text-xs font-bold`}>
-                  {creditStats.unpaidCount}
-                </span>
-              )}
-            </button>
+              );
+            })}
           </nav>
         </div>
       </div>
       
-      {/* Cash Sales Tab Content */}
-      {activeTab === 'cash' && (
+      {/* Company Sales Content */}
+      {(
       <>
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
@@ -854,15 +1127,18 @@ ${itemsText}
                   العميل / الهاتف
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                  المبلغ
+                  الإجمالي
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                  طريقة الدفع
+                  المدفوع
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                  الباقي
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                   التاريخ
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
                   الإجراءات
                 </th>
               </tr>
@@ -870,13 +1146,13 @@ ${itemsText}
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading || isFetching ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                     جاري التحميل...
                   </td>
                 </tr>
               ) : sales.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                     {searchTerm ? 'لا توجد نتائج للبحث' : 
                      receiptFilter === 'pending' ? 'لا توجد فواتير معلقة' :
                      receiptFilter === 'issued' ? 'لا توجد فواتير مصدرة' :
@@ -888,6 +1164,9 @@ ${itemsText}
                   <tr key={sale.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {sale.invoiceNumber || `#${sale.id}`}
+                      {sale.status === 'DRAFT' && (
+                        <span className="mr-2 text-xs text-yellow-600">(مبدئية)</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
                       <div>
@@ -897,13 +1176,14 @@ ${itemsText}
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
-                      {sale.total.toFixed(2)} د.ل
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                      {formatArabicCurrency(sale.total || 0)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {sale.paymentMethod === 'CASH' && 'نقدي'}
-                      {sale.paymentMethod === 'BANK' && 'حوالة بنكية'}
-                      {sale.paymentMethod === 'CARD' && 'بطاقة'}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                      {formatArabicCurrency(sale.paidAmount || 0)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-orange-600">
+                      {formatArabicCurrency(sale.remainingAmount || 0)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div>
@@ -912,78 +1192,105 @@ ${itemsText}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {sale.receiptIssued || issuedReceipts.has(sale.id) ? (
-                        <div className="flex items-center gap-2">
-                          <div className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-700 bg-green-100 rounded-md">
-                            تم الإصدار
-                          </div>
+                      <div className="flex items-center gap-1">
+                        {/* للفواتير المبدئية: فقط زر اعتماد */}
+                        {sale.status === 'DRAFT' ? (
                           <button
-                            onClick={() => printReceipt(sale)}
-                            className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                            title="إعادة طباعة الإيصال"
+                            onClick={() => {
+                              setSaleToApprove(sale);
+                              setShowApprovalModal(true);
+                            }}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors flex items-center gap-2"
+                            title="اعتماد الفاتورة"
                           >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
+                            اعتماد
                           </button>
-                          {sale.dispatchOrders && sale.dispatchOrders.length > 0 ? (
+                        ) : (
+                          <>
+                            {/* قبض مبلغ - للفواتير المعتمدة فقط */}
+                            {(sale.remainingAmount || 0) > 0 && (
+                              <button
+                                onClick={() => {
+                                  setSelectedCreditSale(sale);
+                                  setShowPaymentModal(true);
+                                }}
+                                className="text-green-600 hover:text-green-900 p-1.5 rounded-md hover:bg-green-50 transition-colors"
+                                title="قبض مبلغ"
+                              >
+                                <DollarSign className="w-4 h-4" />
+                              </button>
+                            )}
+                            
+                            {/* الإيصالات */}
+                            {sale.payments && sale.payments.length > 0 && (
+                              <button
+                                onClick={() => {
+                                  setSelectedCreditSale(sale);
+                                  setShowPrintHistoryModal(true);
+                                }}
+                                className="text-purple-600 hover:text-purple-900 p-1.5 rounded-md hover:bg-purple-50 transition-colors relative"
+                                title="عرض الإيصالات"
+                              >
+                                <FileText className="w-4 h-4" />
+                                <span className="absolute -top-1 -right-1 bg-purple-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                                  {sale.payments.length}
+                                </span>
+                              </button>
+                            )}
+                              
+                            {/* أمر صرف المخزن - لا يظهر للفواتير التلقائية */}
+                            {!sale.isAutoGenerated && (
+                              sale.dispatchOrders && sale.dispatchOrders.length > 0 ? (
+                                <button
+                                  disabled
+                                  className="text-gray-400 p-1.5 rounded-md cursor-not-allowed"
+                                  title="تم إصدار أمر الصرف"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                  </svg>
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleCreateDispatchOrder(sale)}
+                                  disabled={isCreatingDispatch}
+                                  className="text-orange-600 hover:text-orange-900 p-1.5 rounded-md hover:bg-orange-50 transition-colors disabled:opacity-50"
+                                  title="أمر صرف المخزن"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                  </svg>
+                                </button>
+                              )
+                            )}
+                            
+                            {/* طباعة الفاتورة */}
                             <button
-                              disabled
-                              className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gray-400 cursor-not-allowed opacity-75"
-                              title="تم إرسال أمر الصرف"
+                              onClick={() => printReceipt(sale)}
+                              className="text-gray-600 hover:text-gray-900 p-1.5 rounded-md hover:bg-gray-50 transition-colors"
+                              title="طباعة الفاتورة"
                             >
-                              <svg className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                               </svg>
-                              تم إرسال أمر صرف
                             </button>
-                          ) : (
+                            
+                            {/* واتساب */}
                             <button
-                              onClick={() => handleCreateDispatchOrder(sale)}
-                              disabled={isCreatingDispatch}
-                              className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
-                              title="إنشاء أمر صرف من المخزن"
+                              onClick={() => handleSendWhatsApp(sale)}
+                              className="text-green-600 hover:text-green-900 p-1.5 rounded-md hover:bg-green-50 transition-colors"
+                              title="إرسال على واتساب"
                             >
-                              <svg className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                               </svg>
-                              ارسال أمر صرف
                             </button>
-                          )}
-                          <button
-                            onClick={() => handleSendWhatsApp(sale)}
-                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
-                            title="إرسال الفاتورة على الواتساب"
-                          >
-                            <svg className="h-4 w-4 ml-2" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                            </svg>
-                            واتساب
-                          </button>
+                          </>
+                        )}
                         </div>
-                      ) : sale.status === 'DRAFT' ? (
-                        <button
-                          onClick={() => handleApproveSale(sale)}
-                          disabled={isApproving}
-                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
-                        >
-                          <svg className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          اعتماد الفاتورة
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleIssueReceipt(sale)}
-                          disabled={isIssuing}
-                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 transition-colors"
-                        >
-                          <svg className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                          </svg>
-                          إصدار إيصال قبض
-                        </button>
-                      )}
                     </td>
                   </tr>
                 ))
@@ -1124,7 +1431,7 @@ ${itemsText}
         )}
       </div>
 
-      {/* Hidden print container for receipts - positioned off-screen but visible for html2canvas */}
+      {/* Hidden print container for invoices - positioned off-screen but visible for html2canvas */}
       <div 
         ref={printRef} 
         className="fixed"
@@ -1136,7 +1443,27 @@ ${itemsText}
           pointerEvents: 'none'
         }}
       >
-        {currentSaleToPrint && <ReceiptPrint sale={currentSaleToPrint} />}
+        {currentSaleToPrint && <InvoicePrint sale={currentSaleToPrint} />}
+      </div>
+
+      {/* Hidden print container for payments history */}
+      <div 
+        ref={historyPrintRef} 
+        className="fixed"
+        style={{ 
+          position: 'fixed',
+          left: '-9999px',
+          top: '0',
+          visibility: selectedCreditSale && selectedCreditSale.payments && selectedCreditSale.payments.length > 0 ? 'visible' : 'hidden',
+          pointerEvents: 'none'
+        }}
+      >
+        {selectedCreditSale && selectedCreditSale.payments && selectedCreditSale.payments.length > 0 && (
+          <PaymentsHistoryPrint 
+            sale={selectedCreditSale as any} 
+            payments={selectedCreditSale.payments as any} 
+          />
+        )}
       </div>
 
       {/* Hidden container for WhatsApp invoice - positioned off-screen but visible for html2canvas */}
@@ -1158,432 +1485,61 @@ ${itemsText}
       </>
       )}
       
-      {/* Credit Sales Tab Content */}
-      {activeTab === 'credit' && (
-      <>
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm">إجمالي المبيعات الآجلة</p>
-              <p className="text-2xl font-bold text-gray-900">{formatArabicNumber(stats.totalCreditSales || 0)}</p>
-            </div>
-            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-          </div>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm">المبلغ الإجمالي</p>
-              <p className="text-2xl font-bold text-purple-600">{formatArabicCurrency(stats.totalAmount || 0)}</p>
-            </div>
-            <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-            </svg>
-          </div>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm">المبلغ المدفوع</p>
-              <p className="text-2xl font-bold text-green-600">{formatArabicCurrency(stats.totalPaid || 0)}</p>
-            </div>
-            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm">المبلغ المتبقي</p>
-              <p className="text-2xl font-bold text-orange-600">{formatArabicCurrency(stats.totalRemaining || 0)}</p>
-            </div>
-            <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        </div>
-      </div>
 
-      {/* Filters and Search */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
-          <div className="relative flex-1">
-            <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      {/* Payment Modal */}
+      {showPaymentModal && selectedCreditSale && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-lg bg-white rounded-xl shadow-2xl">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-t-xl">
+          <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <input
-              type="text"
-              placeholder="ابحث برقم الفاتورة أو اسم العميل..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
-          {/* Company Filter */}
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  قبض مبلغ من العميل
+                </h3>
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="text-white hover:text-gray-200 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-            <select
-              value={selectedCompanyId || ''}
-              onChange={(e) => setSelectedCompanyId(e.target.value ? Number(e.target.value) : null)}
-              disabled={false}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-            >
-              <option value="">{user?.isSystemUser ? 'جميع الشركات' : 'الشركة المحددة'}</option>
-              {companiesLoading ? (
-                <option disabled>جاري تحميل الشركات...</option>
-              ) : companiesData?.data?.companies && companiesData.data.companies.length > 0 ? (
-                // عرض جميع الشركات في القائمة
-                companiesData.data.companies.map((company) => {
-                  const isUserCompany = company.id === user?.companyId;
-                  const isSystemUser = user?.isSystemUser;
-                  const isAvailable = isSystemUser || isUserCompany;
-                  
-                  return (
-                    <option 
-                      key={company.id} 
-                      value={company.id}
-                      disabled={!isAvailable}
-                    >
-                      {company.name} ({company.code})
-                      {!isAvailable ? ' - غير متاح' : ''}
-                    </option>
-                  );
-                })
-              ) : (
-                <option disabled>لا توجد شركات متاحة</option>
-              )}
-            </select>
-          </div>
-
-          {/* Payment Status Filter */}
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <select
-              value={filterFullyPaid}
-              onChange={(e) => setFilterFullyPaid(e.target.value as 'all' | 'paid' | 'unpaid')}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="all">جميع الفواتير</option>
-              <option value="unpaid">غير مسددة</option>
-              <option value="paid">مسددة بالكامل</option>
-            </select>
-          </div>
-
-          {/* Export */}
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            تصدير
           </button>
         </div>
       </div>
 
-      {/* Sales Table */}
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  رقم الفاتورة
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  الشركة
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  العميل
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  المبلغ الإجمالي
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  المبلغ المدفوع
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  المبلغ المتبقي
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  الحالة
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  التاريخ
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  الإجراءات
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredCreditSales.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center justify-center text-gray-500">
-                      <div className="text-6xl mb-4">📋</div>
-                      <p className="text-lg font-medium mb-2">لا توجد مبيعات آجلة</p>
-                      <p className="text-sm">
-                        {selectedCompanyId 
-                          ? 'لا توجد مبيعات آجلة للشركة المختارة'
-                          : filterFullyPaid !== 'all'
-                          ? `لا توجد فواتير ${filterFullyPaid === 'paid' ? 'مسددة' : 'غير مسددة'}`
-                          : searchTerm
-                          ? 'لا توجد نتائج للبحث'
-                          : 'ابدأ بإنشاء أول فاتورة مبيعات آجلة'}
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredCreditSales.map((sale: CreditSale) => (
-                <tr key={sale.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {sale.invoiceNumber || `#${sale.id}`}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div className="flex flex-col">
-                      <span className="font-medium text-blue-600">{sale.company?.name}</span>
-                      <span className="text-xs text-gray-500">{sale.company?.code}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {sale.customer?.name || 'غير محدد'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                    {formatArabicCurrency(sale.total)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
-                    {formatArabicCurrency(sale.paidAmount)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-red-600">
-                    {formatArabicCurrency(sale.remainingAmount)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      sale.isFullyPaid 
-                        ? 'bg-green-100 text-green-800' 
-                        : sale.paidAmount > 0
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {sale.isFullyPaid ? 'مسددة' : sale.paidAmount > 0 ? 'مسددة جزئياً' : 'غير مسددة'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(sale.createdAt).toLocaleDateString('ar-LY')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center gap-2">
-                      {!sale.isFullyPaid && (
-                        <button
-                          onClick={() => {
-                            setSelectedCreditSale(sale);
-                            setShowPaymentModal(true);
-                          }}
-                          className="text-green-600 hover:text-green-900 p-1 rounded"
-                          title="إضافة دفعة"
-                        >
-                          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                          </svg>
-                        </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          setSelectedCreditSale(sale);
-                          setShowDetailsModal(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-900 p-1 rounded"
-                        title="عرض التفاصيل"
-                      >
+            <div className="p-6">
+              {/* معلومات الفاتورة */}
+              <div className="mb-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                <h4 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {creditSalesData?.data?.pagination && filteredCreditSales.length > 0 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button
-                onClick={() => setCreditCurrentPage(p => Math.max(1, p - 1))}
-                disabled={creditCurrentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-              >
-                السابق
-              </button>
-              <button
-                onClick={() => setCreditCurrentPage(p => Math.min(creditSalesData.data.pagination.pages, p + 1))}
-                disabled={creditCurrentPage === creditSalesData.data.pagination.pages}
-                className="mr-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-              >
-                التالي
-              </button>
-            </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  عرض <span className="font-medium">{formatArabicNumber(((creditCurrentPage - 1) * 10) + 1)}</span> إلى{' '}
-                  <span className="font-medium">
-                    {formatArabicNumber(Math.min(creditCurrentPage * 10, creditSalesData.data.pagination.total))}
-                  </span>{' '}
-                  من <span className="font-medium">{formatArabicNumber(creditSalesData.data.pagination.total)}</span> نتيجة
-                  {selectedCompanyId && (
-                    <span className="mr-2 text-purple-600 font-medium">
-                      (للشركة: {companiesData?.data?.companies?.find(c => c.id === selectedCompanyId)?.name})
-                    </span>
-                  )}
-                </p>
-              </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                  <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                    <span className="mr-1">السابق</span>
-                  </button>
-                  
-                  {/* أرقام الصفحات */}
-                  {(() => {
-                    const pages = [];
-                    const totalPages = creditSalesData.data.pagination.pages;
-                    const maxVisible = 5;
-                    
-                    let startPage = Math.max(1, creditCurrentPage - Math.floor(maxVisible / 2));
-                    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-                    
-                    if (endPage - startPage < maxVisible - 1) {
-                      startPage = Math.max(1, endPage - maxVisible + 1);
-                    }
-                    
-                    // الصفحة الأولى
-                    if (startPage > 1) {
-                      pages.push(
-                        <button
-                          key={1}
-                          onClick={() => setCreditCurrentPage(1)}
-                          className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
-                        >
-                          {formatArabicNumber(1)}
-                        </button>
-                      );
-                      if (startPage > 2) {
-                        pages.push(
-                          <span key="dots1" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                            ...
-                          </span>
-                        );
-                      }
-                    }
-                    
-                    // الصفحات المرئية
-                    for (let i = startPage; i <= endPage; i++) {
-                      pages.push(
-                        <button
-                          key={i}
-                          onClick={() => setCreditCurrentPage(i)}
-                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                            creditCurrentPage === i
-                              ? 'z-10 bg-purple-600 border-purple-600 text-white'
-                              : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          {formatArabicNumber(i)}
-                        </button>
-                      );
-                    }
-                    
-                    // الصفحة الأخيرة
-                    if (endPage < totalPages) {
-                      if (endPage < totalPages - 1) {
-                        pages.push(
-                          <span key="dots2" className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                            ...
-                          </span>
-                        );
-                      }
-                      pages.push(
-                        <button
-                          key={totalPages}
-                          onClick={() => setCreditCurrentPage(totalPages)}
-                          className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
-                        >
-                          {formatArabicNumber(totalPages)}
-                        </button>
-                      );
-                    }
-                    
-                    return pages;
-                  })()}
-                  
-                  <button
-                    onClick={() => setCreditCurrentPage(p => Math.min(creditSalesData.data.pagination.pages, p + 1))}
-                    disabled={creditCurrentPage === creditSalesData.data.pagination.pages}
-                    className="relative inline-flex items-center px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span className="ml-1">التالي</span>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </nav>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Payment Modal */}
-      {showPaymentModal && selectedCreditSale && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">إضافة دفعة جديدة</h3>
-              
-              <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                <div className="text-sm text-gray-700">
-                  <div className="flex justify-between mb-1">
-                    <span>رقم الفاتورة:</span>
-                    <span className="font-semibold">{selectedCreditSale.invoiceNumber}</span>
-                  </div>
-                  <div className="flex justify-between mb-1">
-                    <span>المبلغ الإجمالي:</span>
-                    <span className="font-semibold">{formatArabicCurrency(selectedCreditSale.total)}</span>
-                  </div>
-                  <div className="flex justify-between mb-1">
-                    <span>المبلغ المدفوع:</span>
-                    <span className="font-semibold text-green-600">{formatArabicCurrency(selectedCreditSale.paidAmount)}</span>
-                  </div>
+                  معلومات الفاتورة
+                </h4>
+                <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span>المبلغ المتبقي:</span>
-                    <span className="font-semibold text-red-600">{formatArabicCurrency(selectedCreditSale.remainingAmount)}</span>
+                    <span className="text-gray-600">رقم الفاتورة:</span>
+                    <span className="font-bold text-gray-900">{selectedCreditSale.invoiceNumber}</span>
+                    </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">العميل:</span>
+                    <span className="font-semibold text-gray-900">{selectedCreditSale.customer?.name || 'غير محدد'}</span>
+        </div>
+                  <div className="h-px bg-blue-200 my-2"></div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">صافي الفاتورة:</span>
+                    <span className="font-bold text-lg text-gray-900">{formatArabicCurrency(selectedCreditSale.total)}</span>
+            </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">المدفوع سابقاً:</span>
+                    <span className="font-bold text-blue-600">{formatArabicCurrency(selectedCreditSale.paidAmount || 0)}</span>
+              </div>
+                  <div className="flex justify-between items-center bg-blue-100 -mx-4 px-4 py-2 rounded">
+                    <span className="text-gray-700 font-semibold">المبلغ المتبقي:</span>
+                    <span className="font-bold text-xl text-blue-600">{formatArabicCurrency(selectedCreditSale.remainingAmount || 0)}</span>
                   </div>
                 </div>
               </div>
@@ -1593,6 +1549,7 @@ ${itemsText}
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     المبلغ المدفوع *
                   </label>
+                  <div className="relative">
                   <input
                     type="number"
                     name="amount"
@@ -1602,7 +1559,24 @@ ${itemsText}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="أدخل المبلغ"
-                  />
+                      onInput={(e) => {
+                        const input = e.target as HTMLInputElement;
+                        const value = Number(input.value);
+                        const remaining = selectedCreditSale.remainingAmount || 0;
+                        
+                        if (value > remaining) {
+                          input.setCustomValidity(`المبلغ لا يمكن أن يتجاوز ${formatArabicCurrency(remaining)}`);
+                        } else if (value <= 0) {
+                          input.setCustomValidity('المبلغ يجب أن يكون أكبر من صفر');
+                        } else {
+                          input.setCustomValidity('');
+                        }
+                      }}
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    الحد الأقصى: {formatArabicCurrency(selectedCreditSale.remainingAmount || 0)}
+                  </p>
                 </div>
 
                 <div>
@@ -1636,9 +1610,24 @@ ${itemsText}
                   <button
                     type="submit"
                     disabled={isCreatingPayment}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-lg disabled:opacity-50 font-semibold transition-all shadow-md flex items-center justify-center gap-2"
                   >
-                    {isCreatingPayment ? 'جاري الحفظ...' : 'حفظ الدفعة'}
+                    {isCreatingPayment ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        جاري الحفظ...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        تأكيد وإصدار إيصال
+                      </>
+                    )}
                   </button>
                   <button
                     type="button"
@@ -1646,7 +1635,7 @@ ${itemsText}
                       setShowPaymentModal(false);
                       setSelectedCreditSale(null);
                     }}
-                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg"
+                    className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors"
                   >
                     إلغاء
                   </button>
@@ -1680,7 +1669,7 @@ ${itemsText}
                 </div>
                 <div>
                   <span className="text-sm text-gray-600">المبلغ المتبقي:</span>
-                  <div className="font-semibold text-red-600">{formatArabicCurrency(selectedCreditSale.remainingAmount)}</div>
+                  <div className="font-semibold text-red-600">{formatArabicCurrency(selectedCreditSale.remainingAmount || 0)}</div>
                 </div>
               </div>
 
@@ -1690,7 +1679,7 @@ ${itemsText}
                   <h4 className="font-semibold">سجل الدفعات ({formatArabicNumber(selectedCreditSale.payments?.length || 0)})</h4>
                   {selectedCreditSale.payments && selectedCreditSale.payments.length > 0 && (
                     <button
-                      onClick={() => printPaymentsHistory(selectedCreditSale)}
+                      onClick={() => printPaymentsHistory(selectedCreditSale as any)}
                       className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2"
                     >
                       🖨️ طباعة سجل الدفعات
@@ -1699,7 +1688,7 @@ ${itemsText}
                 </div>
                 {selectedCreditSale.payments && selectedCreditSale.payments.length > 0 ? (
                   <div className="space-y-2">
-                    {selectedCreditSale.payments.map((payment) => (
+                    {selectedCreditSale.payments.map((payment: any) => (
                       <div key={payment.id} className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
                         <div>
                           <div className="font-semibold">{formatArabicCurrency(payment.amount)}</div>
@@ -1748,9 +1737,9 @@ ${itemsText}
       
       {/* Print Receipt Modal */}
       {showPrintReceiptModal && selectedPayment && selectedCreditSale && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-4 flex justify-between items-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[95vh] overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 flex justify-between items-center">
               <h2 className="text-xl font-bold">🖨️ معاينة إيصال القبض</h2>
               <button onClick={() => setShowPrintReceiptModal(false)} className="text-white hover:text-gray-200">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1758,22 +1747,26 @@ ${itemsText}
                 </svg>
               </button>
             </div>
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
-              <div className="border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-                <div id="receipt-print-content" style={{ transform: 'scale(0.5)', transformOrigin: 'top center', width: '200%' }}>
-                  <CreditPaymentReceiptPrint payment={selectedPayment} sale={selectedCreditSale} />
+            <div className="p-4 overflow-y-auto max-h-[calc(95vh-140px)] bg-gray-100">
+              <div className="bg-white rounded shadow-lg max-w-[210mm] mx-auto" style={{ transform: 'scale(0.85)', transformOrigin: 'top center' }}>
+                <CreditPaymentReceiptPrint payment={selectedPayment} sale={selectedCreditSale as any} />
                 </div>
               </div>
-            </div>
-            <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">
-              <button onClick={() => setShowPrintReceiptModal(false)} className="px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+            <div className="bg-gray-50 px-6 py-3 flex justify-end gap-3 border-t">
+              <button 
+                onClick={() => setShowPrintReceiptModal(false)} 
+                className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+              >
                 إلغاء
               </button>
-              <button onClick={() => selectedPayment && selectedCreditSale && printCreditReceipt(selectedPayment, selectedCreditSale)} className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2">
+              <button 
+                onClick={() => selectedPayment && selectedCreditSale && printCreditReceipt(selectedPayment, selectedCreditSale)} 
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
+              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
-                طباعة
+                طباعة الإيصال
               </button>
             </div>
           </div>
@@ -1784,8 +1777,8 @@ ${itemsText}
       {showPrintHistoryModal && selectedCreditSale && selectedCreditSale.payments && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 flex justify-between items-center">
-              <h2 className="text-xl font-bold">🖨️ معاينة سجل الدفعات</h2>
+            <div className="bg-blue-600 text-white px-6 py-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold">إيصالات القبض للفاتورة: {selectedCreditSale.invoiceNumber}</h2>
               <button onClick={() => setShowPrintHistoryModal(false)} className="text-white hover:text-gray-200">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1793,21 +1786,62 @@ ${itemsText}
               </button>
             </div>
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
-              <div className="border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-                <div id="history-print-content" style={{ transform: 'scale(0.5)', transformOrigin: 'top center', width: '200%' }}>
-                  <PaymentsHistoryPrint sale={selectedCreditSale} payments={selectedCreditSale.payments} />
+              {/* قائمة الإيصالات */}
+              <div className="space-y-4">
+                {selectedCreditSale.payments.map((payment: any, index: number) => (
+                  <div key={payment.id} className="border-2 border-gray-200 rounded-lg p-4 bg-white hover:bg-gray-50">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900">إيصال قبض #{payment.receiptNumber}</h3>
+                        <p className="text-sm text-gray-600">التاريخ: {new Date(payment.paymentDate).toLocaleDateString('ar-LY')}</p>
                 </div>
+                      <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                        {formatArabicCurrency(payment.amount)}
+                      </span>
               </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <p className="text-xs text-gray-500">طريقة الدفع</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {payment.paymentMethod === 'CASH' ? 'نقداً' :
+                           payment.paymentMethod === 'BANK_TRANSFER' ? 'تحويل بنكي' :
+                           payment.paymentMethod === 'CHECK' ? 'شيك' : payment.paymentMethod}
+                        </p>
+                      </div>
+                      {payment.notes && (
+                        <div>
+                          <p className="text-xs text-gray-500">ملاحظات</p>
+                          <p className="text-sm font-medium text-gray-900">{payment.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => {
+                          setSelectedPayment(payment);
+                          setShowPrintReceiptModal(true);
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      >
+                        طباعة هذا الإيصال
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
             </div>
             <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">
-              <button onClick={() => setShowPrintHistoryModal(false)} className="px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-                إلغاء
+              <button onClick={() => setShowPrintHistoryModal(false)} className="px-6 py-2.5 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                إغلاق
               </button>
-              <button onClick={() => selectedCreditSale && printPaymentsHistory(selectedCreditSale)} className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+              <button onClick={() => selectedCreditSale && printPaymentsHistory(selectedCreditSale as any)} className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
-                طباعة
+                طباعة كل الإيصالات
               </button>
             </div>
           </div>
@@ -1911,7 +1945,297 @@ ${itemsText}
           </div>
         </div>
       )}
-      </>
+
+      {/* Sale Edit Modal */}
+      {showEditModal && saleToEdit && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full my-8 max-h-[90vh] overflow-y-auto">
+            <div className="bg-gradient-to-r from-orange-600 to-orange-700 text-white px-6 py-4 flex justify-between items-center sticky top-0 z-10">
+              <h2 className="text-xl font-bold">✏️ تعديل الفاتورة</h2>
+              <button 
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditLines([]);
+                }} 
+                className="text-white hover:text-gray-200"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditSubmit} className="p-6">
+              {/* معلومات الفاتورة */}
+              <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+                <p className="text-gray-700 mb-2">
+                  <span className="font-medium">رقم الفاتورة الحالي:</span> {saleToEdit.invoiceNumber || saleToEdit.id}
+                </p>
+                <p className="text-gray-700">
+                  <span className="font-medium">المجموع القديم:</span> {formatArabicCurrency(saleToEdit.total)}
+                </p>
+              </div>
+
+              {/* رقم الفاتورة */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  رقم الفاتورة
+                </label>
+                <input
+                  type="text"
+                  name="invoiceNumber"
+                  defaultValue={saleToEdit.invoiceNumber || ''}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder="أدخل رقم الفاتورة"
+                />
+              </div>
+
+              {/* العميل */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  العميل
+                </label>
+                <select
+                  name="customerId"
+                  defaultValue={saleToEdit.customerId || ''}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="">غير محدد</option>
+                  {salesData?.data?.sales
+                    ?.map(s => s.customer)
+                    .filter((customer, index, self) => 
+                      customer && self.findIndex(c => c?.id === customer.id) === index
+                    )
+                    .map(customer => customer && (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </option>
+                    ))
+                  }
+                </select>
+              </div>
+
+              {/* قسم الأصناف */}
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    الأصناف ({editLines.length})
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addEditLine}
+                    className="inline-flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
+                  >
+                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    إضافة صنف
+                  </button>
+                </div>
+
+                {editLines.length === 0 ? (
+                  <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                    <p className="text-gray-500">لا توجد أصناف. انقر على "إضافة صنف" لإضافة صنف جديد</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {editLines.map((line, index) => {
+                      const product = productsData?.data?.products?.find(p => p.id === line.productId);
+                      const unitsPerBox = product?.unitsPerBox ? Number(product.unitsPerBox) : null;
+                      const totalUnits = unitsPerBox && line.qty ? line.qty * unitsPerBox : null;
+                      const pricePerUnit = unitsPerBox && line.unitPrice ? line.unitPrice / unitsPerBox : null;
+                      const subtotal = line.qty * line.unitPrice;
+                      
+                      return (
+                      <div key={index} className="bg-white p-4 rounded-lg border-2 border-gray-200 shadow-sm hover:border-orange-300 transition-colors">
+                        <div className="grid grid-cols-12 gap-3 items-start">
+                          {/* اختيار الصنف */}
+                          <div className="col-span-5">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">الصنف</label>
+                            <select
+                              value={line.productId}
+                              onChange={(e) => updateEditLine(index, 'productId', Number(e.target.value))}
+                              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                              required
+                            >
+                              <option value={0}>اختر صنف...</option>
+                              {productsData?.data?.products?.map(product => (
+                                <option key={product.id} value={product.id}>
+                                  {product.name} - {product.sku}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* الكمية */}
+                          <div className="col-span-3">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              الكمية {product?.unit === 'صندوق' && '(صندوق)'}
+                            </label>
+                            <input
+                              type="number"
+                              value={line.qty}
+                              onChange={(e) => updateEditLine(index, 'qty', Number(e.target.value))}
+                              min="0.01"
+                              step="0.01"
+                              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                              required
+                            />
+                            {totalUnits && (
+                              <p className="text-xs text-blue-600 mt-0.5">
+                                📏 {formatArabicNumber(totalUnits.toFixed(2))} متر
+                              </p>
+                            )}
+                          </div>
+
+                          {/* السعر */}
+                          <div className="col-span-3">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              السعر/متر
+                            </label>
+                            <input
+                              type="number"
+                              value={pricePerUnit || 0}
+                              onChange={(e) => updatePriceFromUnitPrice(index, Number(e.target.value))}
+                              min="0.01"
+                              step="0.01"
+                              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                              required
+                            />
+                            {unitsPerBox && line.unitPrice > 0 && (
+                              <p className="text-xs text-blue-600 mt-0.5">
+                                📦 {formatArabicCurrency(line.unitPrice)}/صندوق
+                              </p>
+                            )}
+                          </div>
+
+                          {/* زر الحذف */}
+                          <div className="col-span-1 flex items-end">
+                            <button
+                              type="button"
+                              onClick={() => removeEditLine(index)}
+                              className="w-full p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                              title="حذف"
+                            >
+                              <svg className="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {/* معلومات تفصيلية */}
+                        <div className="mt-3 pt-3 border-t border-gray-200 bg-gradient-to-r from-blue-50 to-green-50 p-2 rounded">
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            {/* العمود الأيسر */}
+                            <div className="space-y-1">
+                              {product?.unit && (
+                                <p className="text-gray-600">
+                                  <span className="font-medium">الوحدة:</span> {product.unit}
+                                </p>
+                              )}
+                              {unitsPerBox && (
+                                <p className="text-gray-600">
+                                  <span className="font-medium">متر/صندوق:</span> {formatArabicNumber(unitsPerBox.toFixed(2))}
+                                </p>
+                              )}
+                              {pricePerUnit && (
+                                <p className="text-green-700 font-medium">
+                                  السعر/متر: {formatArabicCurrency(pricePerUnit)}
+                                </p>
+                              )}
+                            </div>
+                            
+                            {/* العمود الأيمن */}
+                            <div className="space-y-1 text-left">
+                              <p className="text-lg font-bold text-blue-700">
+                                المجموع: {formatArabicCurrency(subtotal)}
+                              </p>
+                              {totalUnits && (
+                                <p className="text-gray-600">
+                                  <span className="font-medium">إجمالي الأمتار:</span> {formatArabicNumber(totalUnits.toFixed(2))} م
+                                </p>
+                              )}
+                              {unitsPerBox && line.unitPrice > 0 && (
+                                <p className="text-blue-600">
+                                  السعر/صندوق: {formatArabicCurrency(line.unitPrice)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )})}
+                  </div>
+                )}
+              </div>
+
+              {/* المجموع الجديد */}
+              {editLines.length > 0 && (
+                <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-medium text-gray-700">المجموع الجديد:</span>
+                    <span className="text-2xl font-bold text-blue-600">
+                      {formatArabicCurrency(editLines.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0))}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* ملاحظة تحذيرية */}
+              <div className="bg-amber-50 border-r-4 border-amber-400 p-4 mb-6">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="mr-3">
+                    <p className="text-sm text-amber-700">
+                      <strong>تنبيه:</strong> عند تعديل الأصناف أو الكميات، سيتم إرجاع المخزون القديم وخصم المخزون الجديد. تأكد من توفر المخزون الكافي.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* الأزرار */}
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditLines([]);
+                  }}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdating || editLines.length === 0}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isUpdating ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      جار التعديل...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      حفظ التعديلات
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

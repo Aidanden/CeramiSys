@@ -11,9 +11,10 @@ import { API_CACHE_CONFIG } from "@/lib/config";
 export interface ComplexInterCompanySaleLine {
   productId: number;
   qty: number;
-  parentUnitPrice: number; // سعر التقازي
+  parentUnitPrice?: number; // سعر التقازي (فقط للأصناف من الشركة الأم)
   branchUnitPrice: number;  // سعر الإمارات (مع هامش الربح)
   subTotal: number;
+  isFromParentCompany?: boolean; // هل الصنف من الشركة الأم؟
 }
 
 export interface CreateComplexInterCompanySaleRequest {
@@ -36,7 +37,17 @@ export interface ComplexInterCompanySaleResult {
     id: number;
     invoiceNumber: string;
     total: number;
-  };
+  } | null;
+  purchaseFromParent?: {
+    id: number;
+    invoiceNumber: string;
+    total: number;
+  } | null;
+  branchPurchase?: {
+    id: number;
+    invoiceNumber: string;
+    total: number;
+  } | null;
   stockUpdates: Array<{
     productId: number;
     companyId: number;

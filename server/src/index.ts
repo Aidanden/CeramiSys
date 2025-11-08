@@ -20,6 +20,7 @@ import notificationRoutes from "./routes/notificationRoutes";
 import provisionalSalesRoutes from "./routes/provisionalSalesRoutes";
 import saleReturnRoutes from "./routes/saleReturnRoutes";
 import warehouseRoutes from "./routes/warehouseRoutes";
+import customerAccountRoutes from "./routes/customerAccountRoutes";
 
 
 /*CONFIGRATION*/
@@ -101,6 +102,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/provisional-sales', provisionalSalesRoutes);
 app.use('/api/sale-returns', saleReturnRoutes);
 app.use('/api/warehouse', warehouseRoutes);
+app.use('/api/customer-accounts', customerAccountRoutes);
 
 
 // Health check endpoint

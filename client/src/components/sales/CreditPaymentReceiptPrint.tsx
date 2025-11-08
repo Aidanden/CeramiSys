@@ -101,161 +101,109 @@ export const CreditPaymentReceiptPrint: React.FC<CreditPaymentReceiptPrintProps>
   return (
     <div className="print-receipt" style={{ 
       width: '210mm', 
-      minHeight: '148mm', // نصف صفحة A4
-      padding: '15mm',
+      minHeight: '148mm',
+      padding: '12mm',
       backgroundColor: 'white',
       fontFamily: 'Arial, sans-serif',
       direction: 'rtl',
       pageBreakAfter: 'always',
-      border: '3px double #333'
+      border: '2px solid #333'
     }}>
-      {/* رأس الإيصال */}
-      <div style={{ textAlign: 'center', marginBottom: '25px', borderBottom: '2px solid #1e40af', paddingBottom: '15px' }}>
-        <h1 style={{ fontSize: '28px', margin: '0 0 8px 0', color: '#1e40af' }}>
+      {/* رأس الإيصال - بسيط */}
+      <div style={{ textAlign: 'center', marginBottom: '15px', borderBottom: '2px solid #333', paddingBottom: '10px' }}>
+        <h1 style={{ fontSize: '22px', margin: '0 0 4px 0', color: '#000' }}>
           {sale.company?.name || 'اسم الشركة'}
         </h1>
-        <p style={{ fontSize: '13px', margin: '5px 0', color: '#666' }}>
+        <p style={{ fontSize: '12px', margin: '3px 0', color: '#666' }}>
           كود الشركة: {sale.company?.code || '-'}
         </p>
-        <h2 style={{ 
-          fontSize: '22px', 
-          margin: '12px 0 0 0', 
-          color: 'white',
-          backgroundColor: '#16a34a',
-          padding: '8px',
-          borderRadius: '6px'
-        }}>
+        <h2 style={{ fontSize: '18px', margin: '8px 0 0 0', color: '#000', fontWeight: 'bold' }}>
           إيصال قبض - دفعة آجلة
         </h2>
       </div>
 
-      {/* معلومات الإيصال */}
+      {/* معلومات الإيصال - في سطر واحد */}
       <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: '1fr 1fr', 
-        gap: '15px',
-        marginBottom: '25px',
-        padding: '12px',
-        backgroundColor: '#f0fdf4',
-        borderRadius: '6px',
-        border: '1px solid #16a34a'
+        marginBottom: '12px',
+        padding: '8px',
+        backgroundColor: '#f9fafb',
+        border: '1px solid #d1d5db',
+        borderRadius: '4px'
       }}>
-        <div>
-          <p style={{ margin: '5px 0', fontSize: '14px' }}>
-            <strong>رقم الإيصال:</strong> {payment.receiptNumber}
-          </p>
-          <p style={{ margin: '5px 0', fontSize: '14px' }}>
-            <strong>التاريخ:</strong> {new Date(payment.paymentDate).toLocaleDateString('ar-LY', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}
-          </p>
-        </div>
-        <div>
-          <p style={{ margin: '5px 0', fontSize: '14px' }}>
-            <strong>الوقت:</strong> {new Date(payment.paymentDate).toLocaleTimeString('ar-LY')}
-          </p>
-          <p style={{ margin: '5px 0', fontSize: '14px' }}>
-            <strong>طريقة الدفع:</strong> {
-              payment.paymentMethod === 'CASH' ? '💵 كاش' :
-              payment.paymentMethod === 'BANK' ? '🏦 حوالة بنكية' : '💳 بطاقة'
-            }
-          </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+          <span><strong>رقم الإيصال:</strong> {payment.receiptNumber}</span>
+          <span><strong>التاريخ:</strong> {new Date(payment.paymentDate).toLocaleDateString('ar-LY')}</span>
+          <span><strong>طريقة الدفع:</strong> {
+            payment.paymentMethod === 'CASH' ? 'كاش' :
+            payment.paymentMethod === 'BANK' ? 'حوالة' : 'بطاقة'
+          }</span>
         </div>
       </div>
 
-      {/* معلومات الدافع */}
+      {/* معلومات الدافع - بسيط */}
       <div style={{ 
-        marginBottom: '25px',
+        marginBottom: '15px',
+        padding: '10px',
+        backgroundColor: '#f9fafb',
+        border: '1px solid #d1d5db',
+        borderRadius: '4px'
+      }}>
+        <p style={{ margin: '0', fontSize: '13px' }}>
+          <strong>استلمنا من:</strong> <span style={{ fontSize: '15px', fontWeight: 'bold' }}>{sale.customer?.name || 'عميل'}</span>
+          {sale.customer?.phone && <span style={{ marginRight: '15px', color: '#666' }}>هاتف: {sale.customer.phone}</span>}
+        </p>
+      </div>
+
+      {/* المبلغ - واضح وبسيط */}
+      <div style={{ 
+        marginBottom: '15px',
         padding: '15px',
-        backgroundColor: '#fef3c7',
-        borderRadius: '6px',
-        border: '1px solid #fbbf24'
+        textAlign: 'center',
+        border: '2px solid #333',
+        borderRadius: '6px'
       }}>
-        <p style={{ margin: '0 0 10px 0', fontSize: '15px', fontWeight: 'bold', color: '#92400e' }}>
-          استلمنا من السيد/ة:
-        </p>
-        <p style={{ margin: '0', fontSize: '18px', fontWeight: 'bold', color: '#1e40af' }}>
-          {sale.customer?.name || 'عميل'}
-        </p>
-        {sale.customer?.phone && (
-          <p style={{ margin: '5px 0 0 0', fontSize: '13px', color: '#666' }}>
-            الهاتف: {sale.customer.phone}
-          </p>
-        )}
-      </div>
-
-      {/* المبلغ */}
-      <div style={{ 
-        marginBottom: '25px',
-        padding: '20px',
-        backgroundColor: '#dbeafe',
-        borderRadius: '8px',
-        border: '2px solid #1e40af',
-        textAlign: 'center'
-      }}>
-        <p style={{ margin: '0 0 10px 0', fontSize: '15px', color: '#1e40af' }}>
-          مبلغ وقدره
-        </p>
+        <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#666' }}>مبلغ وقدره</p>
         <p style={{ 
-          margin: '0 0 15px 0', 
-          fontSize: '32px', 
+          margin: '0 0 10px 0', 
+          fontSize: '36px', 
           fontWeight: 'bold', 
-          color: '#16a34a',
-          textShadow: '1px 1px 2px rgba(0,0,0,0.1)'
+          color: '#000'
         }}>
           {formatArabicCurrency(payment.amount)}
         </p>
-        <div style={{ 
-          padding: '12px',
-          backgroundColor: 'white',
-          borderRadius: '6px',
-          border: '1px dashed #1e40af'
-        }}>
-          <p style={{ margin: '0', fontSize: '14px', color: '#1e40af', fontWeight: 'bold' }}>
-            فقط: {amountInWords} لا غير
-          </p>
-        </div>
+        <p style={{ margin: '0', fontSize: '13px', color: '#666', borderTop: '1px dashed #999', paddingTop: '8px' }}>
+          فقط: {amountInWords} لا غير
+        </p>
       </div>
 
-      {/* معلومات الفاتورة */}
+      {/* معلومات الفاتورة - سطر واحد */}
       <div style={{ 
-        marginBottom: '25px',
-        padding: '12px',
+        marginBottom: '12px',
+        padding: '8px',
         backgroundColor: '#f9fafb',
-        borderRadius: '6px',
-        border: '1px solid #d1d5db'
+        border: '1px solid #d1d5db',
+        borderRadius: '4px'
       }}>
-        <p style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
-          <strong>وذلك عن:</strong> دفعة من فاتورة مبيعات آجلة رقم {sale.invoiceNumber || sale.id}
+        <p style={{ margin: '0 0 8px 0', fontSize: '13px' }}>
+          <strong>دفعة من فاتورة آجلة رقم:</strong> {sale.invoiceNumber || sale.id}
         </p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginTop: '10px' }}>
-          <div style={{ padding: '8px', backgroundColor: '#f3f4f6', borderRadius: '4px' }}>
-            <p style={{ margin: '0', fontSize: '11px', color: '#666' }}>إجمالي الفاتورة</p>
-            <p style={{ margin: '3px 0 0 0', fontSize: '13px', fontWeight: 'bold' }}>{formatArabicCurrency(sale.total)}</p>
-          </div>
-          <div style={{ padding: '8px', backgroundColor: '#dcfce7', borderRadius: '4px' }}>
-            <p style={{ margin: '0', fontSize: '11px', color: '#666' }}>إجمالي المدفوع</p>
-            <p style={{ margin: '3px 0 0 0', fontSize: '13px', fontWeight: 'bold', color: '#16a34a' }}>{formatArabicCurrency(sale.paidAmount)}</p>
-          </div>
-          <div style={{ padding: '8px', backgroundColor: '#fee2e2', borderRadius: '4px' }}>
-            <p style={{ margin: '0', fontSize: '11px', color: '#666' }}>المبلغ المتبقي</p>
-            <p style={{ margin: '3px 0 0 0', fontSize: '13px', fontWeight: 'bold', color: '#dc2626' }}>{formatArabicCurrency(sale.remainingAmount)}</p>
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', paddingTop: '6px', borderTop: '1px solid #e5e7eb' }}>
+          <span>إجمالي الفاتورة: <strong style={{ fontSize: '14px' }}>{formatArabicCurrency(sale.total)}</strong></span>
+          <span style={{ color: '#16a34a' }}>المدفوع: <strong style={{ fontSize: '14px' }}>{formatArabicCurrency(sale.paidAmount)}</strong></span>
+          <span style={{ color: '#dc2626' }}>الباقي: <strong style={{ fontSize: '14px' }}>{formatArabicCurrency(sale.remainingAmount)}</strong></span>
         </div>
       </div>
 
       {/* ملاحظات */}
       {payment.notes && (
         <div style={{ 
-          marginBottom: '25px',
-          padding: '12px',
+          marginBottom: '12px',
+          padding: '8px',
           backgroundColor: '#fef9c3',
-          borderRadius: '6px',
-          border: '1px solid #fbbf24'
+          border: '1px solid #fbbf24',
+          borderRadius: '4px'
         }}>
-          <p style={{ margin: '0', fontSize: '13px' }}>
+          <p style={{ margin: '0', fontSize: '12px' }}>
             <strong>ملاحظات:</strong> {payment.notes}
           </p>
         </div>
@@ -263,23 +211,20 @@ export const CreditPaymentReceiptPrint: React.FC<CreditPaymentReceiptPrintProps>
 
       {/* التوقيعات */}
       <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: '1fr 1fr', 
-        gap: '40px',
-        marginTop: '40px',
-        paddingTop: '15px',
-        borderTop: '1px solid #ddd'
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginTop: '30px',
+        paddingTop: '12px',
+        borderTop: '1px solid #d1d5db'
       }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ borderTop: '2px solid #333', paddingTop: '8px', marginTop: '30px' }}>
-            <p style={{ margin: '0', fontSize: '13px', fontWeight: 'bold' }}>المستلم</p>
-            <p style={{ margin: '5px 0 0 0', fontSize: '11px', color: '#666' }}>الاسم والتوقيع</p>
+        <div style={{ textAlign: 'center', flex: 1 }}>
+          <div style={{ borderTop: '1px solid #333', paddingTop: '6px', marginTop: '20px' }}>
+            <p style={{ margin: '0', fontSize: '12px', fontWeight: 'bold' }}>المستلم</p>
           </div>
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ borderTop: '2px solid #333', paddingTop: '8px', marginTop: '30px' }}>
-            <p style={{ margin: '0', fontSize: '13px', fontWeight: 'bold' }}>الدافع</p>
-            <p style={{ margin: '5px 0 0 0', fontSize: '11px', color: '#666' }}>الاسم والتوقيع</p>
+        <div style={{ textAlign: 'center', flex: 1 }}>
+          <div style={{ borderTop: '1px solid #333', paddingTop: '6px', marginTop: '20px' }}>
+            <p style={{ margin: '0', fontSize: '12px', fontWeight: 'bold' }}>الدافع</p>
           </div>
         </div>
       </div>
@@ -287,15 +232,12 @@ export const CreditPaymentReceiptPrint: React.FC<CreditPaymentReceiptPrintProps>
       {/* الختم */}
       <div style={{ 
         textAlign: 'center', 
-        marginTop: '25px', 
-        padding: '10px',
-        backgroundColor: '#f3f4f6',
-        borderRadius: '6px',
-        fontSize: '11px', 
-        color: '#666' 
+        marginTop: '15px', 
+        fontSize: '10px', 
+        color: '#999' 
       }}>
-        <p style={{ margin: '3px 0' }}>✓ إيصال قبض صحيح - دفعة من فاتورة آجلة</p>
-        <p style={{ margin: '3px 0' }}>تم الطباعة بتاريخ: {new Date().toLocaleDateString('ar-LY')} - {new Date().toLocaleTimeString('ar-LY')}</p>
+        <p style={{ margin: '2px 0' }}>إيصال قبض صحيح</p>
+        <p style={{ margin: '2px 0' }}>تم الطباعة: {new Date().toLocaleDateString('ar-LY')} - {new Date().toLocaleTimeString('ar-LY')}</p>
       </div>
     </div>
   );
