@@ -90,6 +90,7 @@ const ProductsPage = () => {
     page: currentPage,
     limit: 10,
     search: searchTerm || undefined,
+    sku: searchSKU || undefined,
     unit: selectedUnit || undefined,
     companyId: selectedCompany ? Number(selectedCompany) : undefined,
   }, {

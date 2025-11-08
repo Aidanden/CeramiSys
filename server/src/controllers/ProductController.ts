@@ -22,6 +22,7 @@ export class ProductController {
         page: req.query.page ? parseInt(req.query.page as string) : 1,
         limit: req.query.limit ? parseInt(req.query.limit as string) : 10,
         search: req.query.search as string,
+        sku: req.query.sku as string,
         companyId: req.query.companyId ? parseInt(req.query.companyId as string) : undefined,
         unit: req.query.unit as string,
       };

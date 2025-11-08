@@ -55,6 +55,7 @@ export interface GetProductsQuery {
   page?: number;
   limit?: number;
   search?: string;
+  sku?: string;
   companyId?: number;
   unit?: string;
 }
@@ -140,6 +141,7 @@ export const productsApi = createApi({
         if (params.page) searchParams.append('page', params.page.toString());
         if (params.limit) searchParams.append('limit', params.limit.toString());
         if (params.search) searchParams.append('search', params.search);
+        if (params.sku) searchParams.append('sku', params.sku);
         if (params.companyId) searchParams.append('companyId', params.companyId.toString());
         if (params.unit) searchParams.append('unit', params.unit);
         

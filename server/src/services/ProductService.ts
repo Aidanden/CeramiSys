@@ -28,7 +28,7 @@ export class ProductService {
    */
   async getProducts(query: GetProductsQueryDto, userCompanyId: number, isSystemUser?: boolean): Promise<ProductsResponseDto> {
     try {
-      const { page = 1, limit = 10, search, companyId, unit } = query;
+      const { page = 1, limit = 10, search, sku, companyId, unit } = query;
       const skip = (page - 1) * limit;
 
       // بناء شروط البحث
@@ -45,12 +45,22 @@ export class ProductService {
         whereConditions.createdByCompanyId = userCompanyId;
       }
 
-      // إضافة شرط البحث
+      // إضافة شروط البحث
+      const orConditions: Prisma.ProductWhereInput[] = [];
+      
+      // البحث بالاسم
       if (search) {
-        whereConditions.OR = [
-          { name: { contains: search, mode: 'insensitive' } },
-          { sku: { contains: search, mode: 'insensitive' } },
-        ];
+        orConditions.push({ name: { contains: search, mode: Prisma.QueryMode.insensitive } });
+      }
+      
+      // البحث بالكود (SKU) - بحث دقيق تماماً
+      if (sku) {
+        whereConditions.sku = { equals: sku, mode: Prisma.QueryMode.insensitive };
+      }
+      
+      // إضافة شروط OR إذا كانت موجودة
+      if (orConditions.length > 0) {
+        whereConditions.OR = orConditions;
       }
 
       // إضافة شرط الوحدة
