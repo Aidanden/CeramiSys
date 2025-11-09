@@ -220,6 +220,12 @@ const Sidebar = () => {
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink
+            href="/return-payments"
+            icon={DollarSign}
+            label="إيصالات دفع المردودات"
+            isCollapsed={isSidebarCollapsed}
+          />
+          <SidebarLink
             href="/purchases"
             icon={CreditCard}
             label="المشتريات"

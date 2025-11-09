@@ -17,6 +17,12 @@ export enum PaymentMethod {
   CARD = 'CARD'    // بطاقة
 }
 
+export enum ReturnStatus {
+  PENDING = 'PENDING',     // قيد الانتظار
+  APPROVED = 'APPROVED',   // معتمدة
+  REJECTED = 'REJECTED'    // مرفوضة
+}
+
 // Zod Schemas للتحقق من صحة البيانات
 export const CreateSaleLineDtoSchema = z.object({
   productId: z.number().int().positive('معرف الصنف يجب أن يكون رقم موجب'),

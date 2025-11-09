@@ -54,12 +54,13 @@ export class WarehouseService {
         where.status = query.status;
       }
 
-      // البحث برقم الفاتورة أو اسم العميل
+      // البحث برقم الفاتورة أو اسم العميل أو رقم الهاتف
       if (query.search) {
         where.sale = {
           OR: [
             { invoiceNumber: { contains: query.search, mode: 'insensitive' } },
-            { customer: { name: { contains: query.search, mode: 'insensitive' } } }
+            { customer: { name: { contains: query.search, mode: 'insensitive' } } },
+            { customer: { phone: { contains: query.search, mode: 'insensitive' } } }
           ]
         };
       }

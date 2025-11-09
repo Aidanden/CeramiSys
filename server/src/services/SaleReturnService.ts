@@ -1,96 +1,240 @@
-import { PrismaClient, ReturnStatus, PaymentMethod } from '@prisma/client';
+/**
+ * Sale Return Service
+ * خدمة المردودات
+ */
+
+import { PrismaClient } from '@prisma/client';
+import { 
+  CreateSaleReturnDto, 
+  GetSaleReturnsQueryDto,
+  CreateReturnPaymentDto,
+  GetReturnPaymentsQueryDto
+} from '../dto/saleReturnDto';
 
 const prisma = new PrismaClient();
 
-export interface CreateSaleReturnRequest {
-  saleId: number;
-  companyId: number;
-  customerId?: number;
-  reason?: string;
-  notes?: string;
-  refundMethod?: PaymentMethod;
-  lines: {
-    productId: number;
-    qty: number;
-    unitPrice: number;
-  }[];
-}
-
-export interface UpdateReturnStatusRequest {
-  returnId: number;
-  status: ReturnStatus;
-  notes?: string;
-}
-
 export class SaleReturnService {
   /**
-   * التحقق من أن الفاتورة مدفوعة بالكامل
+   * إنشاء مردود مبيعات جديد
+   * يدعم المردودات الجزئية والمردودات المنفصلة للتقازي والإمارات
    */
-  async validateSaleForReturn(saleId: number): Promise<{ valid: boolean; message?: string }> {
+  async createSaleReturn(data: CreateSaleReturnDto, companyId: number) {
+    // التحقق من وجود الفاتورة
     const sale = await prisma.sale.findUnique({
-      where: { id: saleId },
+      where: { id: data.saleId },
       include: {
         lines: {
           include: {
-            product: true
+            product: {
+              include: {
+                createdByCompany: true
+              }
+            }
           }
         },
-        returns: true
+        customer: true,
+        company: true
       }
     });
 
     if (!sale) {
-      return { valid: false, message: 'الفاتورة غير موجودة' };
+      throw new Error('الفاتورة غير موجودة');
     }
 
-    // التحقق من أن الفاتورة مدفوعة بالكامل
-    if (!sale.isFullyPaid) {
-      const formattedAmount = Number(sale.remainingAmount).toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+    // التحقق من أن الفاتورة معتمدة
+    if (sale.status !== 'APPROVED') {
+      throw new Error('لا يمكن إرجاع منتجات من فاتورة غير معتمدة');
+    }
+
+    // التحقق من أن الكميات المردودة صحيحة
+    for (const returnLine of data.lines) {
+      const saleLine = sale.lines.find(l => l.productId === returnLine.productId);
+      if (!saleLine) {
+        throw new Error(`الصنف غير موجود في الفاتورة الأصلية`);
+      }
+      
+      // يمكن إضافة تحقق إضافي للكمية المسموح بإرجاعها
+      if (returnLine.qty > Number(saleLine.qty)) {
+        throw new Error(`الكمية المردودة للصنف ${saleLine.product.name} أكبر من الكمية المباعة`);
+      }
+    }
+
+    // حساب المجموع الكلي للمردود
+    const total = data.lines.reduce((sum, line) => {
+      return sum + (line.qty * line.unitPrice);
+    }, 0);
+
+    // إنشاء المردود
+    const saleReturn = await prisma.$transaction(async (tx) => {
+      // إنشاء المردود الرئيسي
+      const newReturn = await tx.saleReturn.create({
+        data: {
+          saleId: data.saleId,
+          companyId: companyId,
+          customerId: sale.customerId,
+          total: total,
+          paidAmount: 0,
+          remainingAmount: total,
+          isFullyPaid: false,
+          status: 'PENDING',
+          reason: data.reason,
+          notes: data.notes,
+          lines: {
+            create: data.lines.map(line => ({
+              productId: line.productId,
+              qty: line.qty,
+              unitPrice: line.unitPrice,
+              subTotal: line.qty * line.unitPrice
+            }))
+          }
+        },
+        include: {
+          lines: {
+            include: {
+              product: {
+                include: {
+                  createdByCompany: true
+                }
+              }
+            }
+          },
+          customer: true,
+          sale: true
+        }
       });
-      return { 
-        valid: false, 
-        message: `الفاتورة غير مدفوعة بالكامل. المبلغ المتبقي: ${formattedAmount} د.ل` 
-      };
-    }
 
-    return { valid: true };
+      // حساب قيمة الرد للشركة الأم والشركة الفرعية منفصلة
+      // في حال كانت الفاتورة تحتوي على منتجات من كلا الشركتين
+      let parentCompanyReturnValue = 0;
+      let branchCompanyReturnValue = 0;
+
+      for (const line of newReturn.lines) {
+        const product = line.product;
+        // إذا كان المنتج من الشركة الأم (Al-Taqazi)
+        if (product.createdByCompany.isParent) {
+          parentCompanyReturnValue += Number(line.subTotal);
+        } else {
+          // المنتج من الشركة الفرعية (Al-Emarat)
+          branchCompanyReturnValue += Number(line.subTotal);
+        }
+      }
+
+      // حفظ قيم الرد المنفصلة في notes كـ metadata
+      if (parentCompanyReturnValue > 0 && branchCompanyReturnValue > 0) {
+        const metadata = {
+          parentCompanyReturnValue,
+          branchCompanyReturnValue,
+          splitReturn: true
+        };
+        
+        await tx.saleReturn.update({
+          where: { id: newReturn.id },
+          data: {
+            notes: data.notes 
+              ? `${data.notes}\n[قيمة الرد - التقازي: ${parentCompanyReturnValue} | الإمارات: ${branchCompanyReturnValue}]`
+              : `[قيمة الرد - التقازي: ${parentCompanyReturnValue} | الإمارات: ${branchCompanyReturnValue}]`
+          }
+        });
+      }
+
+      return newReturn;
+    });
+
+    return saleReturn;
   }
 
   /**
-   * إنشاء مرتجع جديد
+   * الحصول على جميع المردودات مع فلترة وترتيب
    */
-  async createReturn(data: CreateSaleReturnRequest) {
-    // التحقق من صحة الفاتورة
-    const validation = await this.validateSaleForReturn(data.saleId);
-    if (!validation.valid) {
-      throw new Error(validation.message);
+  async getSaleReturns(queryDto: GetSaleReturnsQueryDto, companyId: number) {
+    const { page, limit, search, saleId, customerId, status, isFullyPaid, startDate, endDate } = queryDto;
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      companyId: companyId
+    };
+
+    if (search) {
+      where.OR = [
+        { returnNumber: { contains: search, mode: 'insensitive' } },
+        { customer: { name: { contains: search, mode: 'insensitive' } } },
+        { sale: { invoiceNumber: { contains: search, mode: 'insensitive' } } }
+      ];
     }
 
-    // حساب الإجمالي
-    const total = data.lines.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0);
+    if (saleId) {
+      where.saleId = saleId;
+    }
 
-    // إنشاء المرتجع
-    const saleReturn = await prisma.saleReturn.create({
-      data: {
-        saleId: data.saleId,
-        companyId: data.companyId,
-        customerId: data.customerId,
-        total,
-        refundAmount: total, // افتراضياً المبلغ المسترد = الإجمالي
-        refundMethod: data.refundMethod,
-        reason: data.reason,
-        notes: data.notes,
-        status: ReturnStatus.PENDING,
-        lines: {
-          create: data.lines.map(line => ({
-            productId: line.productId,
-            qty: line.qty,
-            unitPrice: line.unitPrice,
-            subTotal: line.qty * line.unitPrice
-          }))
+    if (customerId) {
+      where.customerId = customerId;
+    }
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (isFullyPaid !== undefined) {
+      where.isFullyPaid = isFullyPaid;
+    }
+
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt.lte = end;
+      }
+    }
+
+    const [returns, total] = await Promise.all([
+      prisma.saleReturn.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          lines: {
+            include: {
+              product: true
+            }
+          },
+          customer: true,
+          sale: {
+            select: {
+              id: true,
+              invoiceNumber: true,
+              total: true
+            }
+          },
+          payments: {
+            orderBy: { createdAt: 'desc' }
+          }
         }
+      }),
+      prisma.saleReturn.count({ where })
+    ]);
+
+    return {
+      data: returns,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  }
+
+  /**
+   * الحصول على مردود واحد بالمعرف
+   */
+  async getSaleReturnById(id: number, companyId: number) {
+    const saleReturn = await prisma.saleReturn.findFirst({
+      where: { 
+        id,
+        companyId 
       },
       include: {
         lines: {
@@ -98,67 +242,143 @@ export class SaleReturnService {
             product: true
           }
         },
+        customer: true,
         sale: {
           include: {
-            customer: true
+            lines: {
+              include: {
+                product: true
+              }
+            }
           }
-        }
-      }
-    });
-
-    return saleReturn;
-  }
-
-  /**
-   * معالجة المرتجع (إرجاع المخزون)
-   */
-  async processReturn(returnId: number) {
-    const saleReturn = await prisma.saleReturn.findUnique({
-      where: { id: returnId },
-      include: {
-        lines: {
-          include: {
-            product: true
-          }
+        },
+        payments: {
+          orderBy: { createdAt: 'desc' }
         }
       }
     });
 
     if (!saleReturn) {
-      throw new Error('المرتجع غير موجود');
+      throw new Error('المردود غير موجود');
     }
 
-    if (saleReturn.status !== ReturnStatus.APPROVED) {
-      throw new Error('يجب اعتماد المرتجع أولاً');
+    return saleReturn;
+  }
+
+  /**
+   * اعتماد مردود المبيعات
+   * عند الاعتماد يتم إرجاع المنتجات إلى المخزون
+   */
+  async approveSaleReturn(id: number, companyId: number) {
+    const saleReturn = await this.getSaleReturnById(id, companyId);
+
+    if (saleReturn.status === 'APPROVED') {
+      throw new Error('المردود معتمد مسبقاً');
     }
 
-    // إرجاع المخزون
-    for (const line of saleReturn.lines) {
-      await prisma.stock.upsert({
-        where: {
-          companyId_productId: {
-            companyId: saleReturn.companyId,
-            productId: line.productId
-          }
+    if (saleReturn.status === 'REJECTED') {
+      throw new Error('لا يمكن اعتماد مردود مرفوض');
+    }
+
+    // اعتماد المردود وإرجاع المخزون
+    const updated = await prisma.$transaction(async (tx) => {
+      // تحديث حالة المردود
+      const updatedReturn = await tx.saleReturn.update({
+        where: { id },
+        data: {
+          status: 'APPROVED',
+          processedAt: new Date()
         },
-        update: {
-          boxes: {
-            increment: line.qty
-          }
-        },
-        create: {
-          companyId: saleReturn.companyId,
-          productId: line.productId,
-          boxes: line.qty
+        include: {
+          lines: {
+            include: {
+              product: true
+            }
+          },
+          customer: true,
+          sale: true,
+          payments: true
         }
       });
+
+      // إرجاع المنتجات إلى المخزون
+      // المنتجات يجب أن ترجع لمخزون الشركة التي أنشأتها (التقازي أو الإمارات)
+      for (const line of updatedReturn.lines) {
+        // الحصول على معلومات المنتج الكاملة لمعرفة الشركة المنشئة
+        const product = await tx.product.findUnique({
+          where: { id: line.productId },
+          include: {
+            createdByCompany: true
+          }
+        });
+
+        if (!product) {
+          throw new Error(`المنتج ${line.productId} غير موجود`);
+        }
+
+        // تحديد الشركة التي يجب إرجاع المخزون لها
+        // إذا كان المنتج من التقازي، يُرجع لمخزون التقازي
+        // إذا كان من الإمارات، يُرجع لمخزون الإمارات
+        const targetCompanyId = product.createdByCompanyId;
+
+        // البحث عن المخزون في الشركة الصحيحة
+        const stock = await tx.stock.findFirst({
+          where: {
+            productId: line.productId,
+            companyId: targetCompanyId
+          }
+        });
+
+        if (stock) {
+          // إضافة الكمية المرجعة إلى المخزون الموجود
+          const currentBoxes = Number(stock.boxes);
+          const returnedQty = Number(line.qty);
+          const newBoxes = currentBoxes + returnedQty;
+          
+          console.log(`📦 إرجاع مخزون - المنتج: ${line.productId}, الكمية الحالية: ${currentBoxes}, الكمية المرجعة: ${returnedQty}, الكمية الجديدة: ${newBoxes}`);
+          
+          await tx.stock.update({
+            where: { id: stock.id },
+            data: {
+              boxes: newBoxes
+            }
+          });
+        } else {
+          // إنشاء سجل مخزون جديد في الشركة الصحيحة
+          await tx.stock.create({
+            data: {
+              productId: line.productId,
+              companyId: targetCompanyId,
+              boxes: line.qty
+            }
+          });
+        }
+      }
+
+      return updatedReturn;
+    });
+
+    return updated;
+  }
+
+  /**
+   * رفض مردود المبيعات
+   */
+  async rejectSaleReturn(id: number, companyId: number) {
+    const saleReturn = await this.getSaleReturnById(id, companyId);
+
+    if (saleReturn.status === 'APPROVED') {
+      throw new Error('لا يمكن رفض مردود معتمد');
     }
 
-    // تحديث حالة المرتجع
-    const updatedReturn = await prisma.saleReturn.update({
-      where: { id: returnId },
+    if (saleReturn.status === 'REJECTED') {
+      throw new Error('المردود مرفوض مسبقاً');
+    }
+
+    const updated = await prisma.saleReturn.update({
+      where: { id },
       data: {
-        status: ReturnStatus.PROCESSED,
+        status: 'REJECTED',
         processedAt: new Date()
       },
       include: {
@@ -167,196 +387,180 @@ export class SaleReturnService {
             product: true
           }
         },
-        sale: {
-          include: {
-            customer: true
-          }
-        }
+        customer: true,
+        sale: true,
+        payments: true
       }
     });
 
-    return updatedReturn;
+    return updated;
   }
 
   /**
-   * تحديث حالة المرتجع
+   * حذف مردود (فقط إذا كان قيد الانتظار)
    */
-  async updateReturnStatus(data: UpdateReturnStatusRequest) {
-    const saleReturn = await prisma.saleReturn.update({
-      where: { id: data.returnId },
-      data: {
-        status: data.status,
-        notes: data.notes,
-        processedAt: data.status === ReturnStatus.PROCESSED ? new Date() : undefined
-      },
-      include: {
-        lines: {
-          include: {
-            product: true
-          }
-        },
-        sale: {
-          include: {
-            customer: true
-          }
-        }
-      }
-    });
+  async deleteSaleReturn(id: number, companyId: number) {
+    const saleReturn = await this.getSaleReturnById(id, companyId);
 
-    // إذا تم اعتماد المرتجع، نقوم بمعالجته تلقائياً
-    if (data.status === ReturnStatus.APPROVED) {
-      return await this.processReturn(data.returnId);
+    if (saleReturn.status !== 'PENDING') {
+      throw new Error('لا يمكن حذف مردود معتمد أو مرفوض');
     }
 
-    return saleReturn;
+    await prisma.saleReturn.delete({
+      where: { id }
+    });
+
+    return { success: true, message: 'تم حذف المردود بنجاح' };
+  }
+
+  // ==================== Return Payments ====================
+
+  /**
+   * إضافة دفعة لمردود المبيعات
+   */
+  async createReturnPayment(data: CreateReturnPaymentDto, companyId: number) {
+    const saleReturn = await this.getSaleReturnById(data.saleReturnId, companyId);
+
+    // التحقق من أن المردود معتمد
+    if (saleReturn.status !== 'APPROVED') {
+      throw new Error('لا يمكن إضافة دفعة لمردود غير معتمد');
+    }
+
+    // التحقق من أن المبلغ لا يتجاوز المبلغ المتبقي
+    if (data.amount > Number(saleReturn.remainingAmount)) {
+      throw new Error(`المبلغ يتجاوز المبلغ المتبقي (${saleReturn.remainingAmount})`);
+    }
+
+    const payment = await prisma.$transaction(async (tx) => {
+      // إنشاء الدفعة
+      const newPayment = await tx.returnPayment.create({
+        data: {
+          saleReturnId: data.saleReturnId,
+          companyId: companyId,
+          amount: data.amount,
+          paymentMethod: data.paymentMethod,
+          paymentDate: data.paymentDate ? new Date(data.paymentDate) : new Date(),
+          notes: data.notes
+        }
+      });
+
+      // تحديث المبلغ المدفوع والمتبقي في المردود
+      const newPaidAmount = Number(saleReturn.paidAmount) + data.amount;
+      const newRemainingAmount = Number(saleReturn.total) - newPaidAmount;
+      const isFullyPaid = newRemainingAmount <= 0;
+
+      await tx.saleReturn.update({
+        where: { id: data.saleReturnId },
+        data: {
+          paidAmount: newPaidAmount,
+          remainingAmount: newRemainingAmount,
+          isFullyPaid: isFullyPaid
+        }
+      });
+
+      return newPayment;
+    });
+
+    return payment;
   }
 
   /**
-   * الحصول على جميع المرتجعات
+   * الحصول على دفعات المردودات
    */
-  async getReturns(filters?: {
-    companyId?: number;
-    customerId?: number;
-    status?: ReturnStatus;
-    page?: number;
-    limit?: number;
-  }) {
-    const page = filters?.page || 1;
-    const limit = filters?.limit || 10;
+  async getReturnPayments(queryDto: GetReturnPaymentsQueryDto, companyId: number) {
+    const { page, limit, saleReturnId, startDate, endDate } = queryDto;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-    if (filters?.companyId) where.companyId = filters.companyId;
-    if (filters?.customerId) where.customerId = filters.customerId;
-    if (filters?.status) where.status = filters.status;
+    const where: any = {
+      companyId: companyId
+    };
 
-    const [returns, total] = await Promise.all([
-      prisma.saleReturn.findMany({
+    if (saleReturnId) {
+      where.saleReturnId = saleReturnId;
+    }
+
+    if (startDate || endDate) {
+      where.paymentDate = {};
+      if (startDate) where.paymentDate.gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        where.paymentDate.lte = end;
+      }
+    }
+
+    const [payments, total] = await Promise.all([
+      prisma.returnPayment.findMany({
         where,
-        include: {
-          lines: {
-            include: {
-              product: true
-            }
-          },
-          sale: {
-            include: {
-              customer: true
-            }
-          },
-          company: true,
-          customer: true
-        },
-        orderBy: { createdAt: 'desc' },
         skip,
-        take: limit
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          saleReturn: {
+            include: {
+              customer: true,
+              sale: {
+                select: {
+                  invoiceNumber: true
+                }
+              }
+            }
+          }
+        }
       }),
-      prisma.saleReturn.count({ where })
+      prisma.returnPayment.count({ where })
     ]);
 
     return {
-      returns,
+      data: payments,
       pagination: {
-        total,
         page,
         limit,
+        total,
         totalPages: Math.ceil(total / limit)
       }
     };
   }
 
   /**
-   * الحصول على مرتجع واحد
+   * حذف دفعة مردود
    */
-  async getReturnById(returnId: number) {
-    const saleReturn = await prisma.saleReturn.findUnique({
-      where: { id: returnId },
+  async deleteReturnPayment(paymentId: number, companyId: number) {
+    const payment = await prisma.returnPayment.findFirst({
+      where: { 
+        id: paymentId,
+        companyId 
+      },
       include: {
-        lines: {
-          include: {
-            product: true
-          }
-        },
-        sale: {
-          include: {
-            customer: true,
-            lines: {
-              include: {
-                product: true
-              }
-            }
-          }
-        },
-        company: true,
-        customer: true
+        saleReturn: true
       }
     });
 
-    if (!saleReturn) {
-      throw new Error('المرتجع غير موجود');
+    if (!payment) {
+      throw new Error('الدفعة غير موجودة');
     }
 
-    return saleReturn;
-  }
+    await prisma.$transaction(async (tx) => {
+      // حذف الدفعة
+      await tx.returnPayment.delete({
+        where: { id: paymentId }
+      });
 
-  /**
-   * حذف مرتجع (فقط إذا كان في حالة PENDING)
-   */
-  async deleteReturn(returnId: number) {
-    const saleReturn = await prisma.saleReturn.findUnique({
-      where: { id: returnId }
+      // تحديث المبلغ المدفوع والمتبقي
+      const newPaidAmount = Number(payment.saleReturn.paidAmount) - Number(payment.amount);
+      const newRemainingAmount = Number(payment.saleReturn.total) - newPaidAmount;
+      const isFullyPaid = newRemainingAmount <= 0;
+
+      await tx.saleReturn.update({
+        where: { id: payment.saleReturnId },
+        data: {
+          paidAmount: newPaidAmount,
+          remainingAmount: newRemainingAmount,
+          isFullyPaid: isFullyPaid
+        }
+      });
     });
 
-    if (!saleReturn) {
-      throw new Error('المرتجع غير موجود');
-    }
-
-    if (saleReturn.status !== ReturnStatus.PENDING) {
-      throw new Error('لا يمكن حذف مرتجع تم معالجته');
-    }
-
-    await prisma.saleReturn.delete({
-      where: { id: returnId }
-    });
-
-    return { message: 'تم حذف المرتجع بنجاح' };
-  }
-
-  /**
-   * إحصائيات المرتجعات
-   */
-  async getReturnStats(companyId?: number) {
-    const where: any = {};
-    if (companyId) where.companyId = companyId;
-
-    const [
-      totalReturns,
-      pendingReturns,
-      approvedReturns,
-      processedReturns,
-      rejectedReturns,
-      totalAmount
-    ] = await Promise.all([
-      prisma.saleReturn.count({ where }),
-      prisma.saleReturn.count({ where: { ...where, status: ReturnStatus.PENDING } }),
-      prisma.saleReturn.count({ where: { ...where, status: ReturnStatus.APPROVED } }),
-      prisma.saleReturn.count({ where: { ...where, status: ReturnStatus.PROCESSED } }),
-      prisma.saleReturn.count({ where: { ...where, status: ReturnStatus.REJECTED } }),
-      prisma.saleReturn.aggregate({
-        where: { ...where, status: ReturnStatus.PROCESSED },
-        _sum: { total: true }
-      })
-    ]);
-
-    return {
-      totalReturns,
-      pendingReturns,
-      approvedReturns,
-      processedReturns,
-      rejectedReturns,
-      totalAmount: totalAmount._sum.total || 0
-    };
+    return { success: true, message: 'تم حذف الدفعة بنجاح' };
   }
 }
-
-export default new SaleReturnService();

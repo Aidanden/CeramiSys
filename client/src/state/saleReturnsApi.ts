@@ -70,7 +70,6 @@ export interface CreateSaleReturnRequest {
   customerId?: number;
   reason?: string;
   notes?: string;
-  refundMethod?: PaymentMethod;
   lines: {
     productId: number;
     qty: number;

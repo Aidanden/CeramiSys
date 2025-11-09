@@ -28,6 +28,7 @@ model Company {
   sales               Sale[]
   salePayments        SalePayment[]
   saleReturns         SaleReturn[]
+  returnPayments      ReturnPayment[]
   stocks              Stock[]
   users               Users[]
   notifications       Notification[]
@@ -231,28 +232,32 @@ model SalePayment {
 }
 
 model SaleReturn {
-  id           Int              @id @default(autoincrement())
-  saleId       Int
-  companyId    Int
-  customerId   Int?
-  returnNumber String?
-  total        Decimal          @default(0) @db.Decimal(18, 4)
-  refundAmount Decimal          @default(0) @db.Decimal(18, 4)
-  refundMethod PaymentMethod?
-  status       ReturnStatus     @default(PENDING)
-  reason       String?
-  notes        String?
-  createdAt    DateTime         @default(now())
-  processedAt  DateTime?
-  company      Company          @relation(fields: [companyId], references: [id])
-  customer     Customer?        @relation(fields: [customerId], references: [id])
-  sale         Sale             @relation(fields: [saleId], references: [id])
-  lines        SaleReturnLine[]
+  id                Int                 @id @default(autoincrement())
+  saleId            Int
+  companyId         Int
+  customerId        Int?
+  returnNumber      String?
+  total             Decimal             @default(0) @db.Decimal(18, 4)
+  paidAmount        Decimal             @default(0) @db.Decimal(18, 4) // المبلغ المدفوع
+  remainingAmount   Decimal             @default(0) @db.Decimal(18, 4) // المبلغ المتبقي
+  isFullyPaid       Boolean             @default(false) // هل تم الدفع بالكامل
+  refundMethod      PaymentMethod?
+  status            ReturnStatus        @default(PENDING)
+  reason            String?
+  notes             String?
+  createdAt         DateTime            @default(now())
+  processedAt       DateTime?
+  company           Company             @relation(fields: [companyId], references: [id])
+  customer          Customer?           @relation(fields: [customerId], references: [id])
+  sale              Sale                @relation(fields: [saleId], references: [id])
+  lines             SaleReturnLine[]
+  payments          ReturnPayment[]     // إيصالات الدفع
 
   @@index([saleId])
   @@index([companyId])
   @@index([customerId])
   @@index([status])
+  @@index([isFullyPaid])
 }
 
 model SaleReturnLine {
@@ -264,6 +269,24 @@ model SaleReturnLine {
   subTotal     Decimal    @db.Decimal(18, 4)
   product      Product    @relation(fields: [productId], references: [id])
   saleReturn   SaleReturn @relation(fields: [saleReturnId], references: [id])
+}
+
+model ReturnPayment {
+  id            Int           @id @default(autoincrement())
+  saleReturnId  Int
+  companyId     Int
+  receiptNumber String?       // رقم إيصال الدفع
+  amount        Decimal       @db.Decimal(18, 4)
+  paymentMethod PaymentMethod @default(CASH)
+  paymentDate   DateTime      @default(now())
+  notes         String?
+  createdAt     DateTime      @default(now())
+  company       Company       @relation(fields: [companyId], references: [id])
+  saleReturn    SaleReturn    @relation(fields: [saleReturnId], references: [id])
+
+  @@index([saleReturnId])
+  @@index([companyId])
+  @@index([paymentDate])
 }
 
 model ProvisionalSale {

@@ -14,6 +14,10 @@ export default function WarehouseDispatchPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<'PENDING' | 'COMPLETED' | 'CANCELLED' | ''>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<DispatchOrder | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [notes, setNotes] = useState('');
@@ -31,7 +35,9 @@ export default function WarehouseDispatchPage() {
       page: currentPage,
       limit: 20,
       status: statusFilter || undefined,
-      search: searchTerm || undefined,
+      search: searchTerm || customerName || customerPhone || undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
     },
     {
       refetchOnMountOrArgChange: true,
@@ -197,11 +203,21 @@ export default function WarehouseDispatchPage() {
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Search */}
+        <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+          <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          </svg>
+          فلاتر البحث
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Search by Invoice Number */}
           <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              البحث برقم الفاتورة
+            </label>
             <svg
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5"
+              className="absolute right-3 top-9 text-gray-400 w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -215,25 +231,133 @@ export default function WarehouseDispatchPage() {
             </svg>
             <input
               type="text"
-              placeholder="البحث برقم الفاتورة أو اسم العميل..."
+              placeholder="رقم الفاتورة..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
 
+          {/* Search by Customer Name */}
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              البحث باسم العميل
+            </label>
+            <svg
+              className="absolute right-3 top-9 text-gray-400 w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              />
+            </svg>
+            <input
+              type="text"
+              placeholder="اسم العميل..."
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            />
+          </div>
+
+          {/* Search by Phone */}
+          <div className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              البحث برقم الهاتف
+            </label>
+            <svg
+              className="absolute right-3 top-9 text-gray-400 w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+              />
+            </svg>
+            <input
+              type="text"
+              placeholder="رقم الهاتف..."
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            />
+          </div>
+
           {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-          >
-            <option value="">جميع الحالات</option>
-            <option value="PENDING">معلقة</option>
-            <option value="COMPLETED">تم التسليم</option>
-            <option value="CANCELLED">ملغية</option>
-          </select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              الحالة
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            >
+              <option value="">جميع الحالات</option>
+              <option value="PENDING">معلقة</option>
+              <option value="COMPLETED">تم التسليم</option>
+              <option value="CANCELLED">ملغية</option>
+            </select>
+          </div>
+
+          {/* Start Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              من تاريخ
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            />
+          </div>
+
+          {/* End Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              إلى تاريخ
+            </label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            />
+          </div>
         </div>
+
+        {/* Clear Filters Button */}
+        {(searchTerm || customerName || customerPhone || statusFilter || startDate || endDate) && (
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setCustomerName('');
+                setCustomerPhone('');
+                setStatusFilter('');
+                setStartDate('');
+                setEndDate('');
+                setCurrentPage(1);
+              }}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              مسح الفلاتر
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Orders Table */}
