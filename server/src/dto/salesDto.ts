@@ -17,20 +17,30 @@ export enum PaymentMethod {
   CARD = 'CARD'    // بطاقة
 }
 
+export enum ReturnStatus {
+  PENDING = 'PENDING',     // قيد الانتظار
+  APPROVED = 'APPROVED',   // معتمدة
+  REJECTED = 'REJECTED'    // مرفوضة
+}
+
 // Zod Schemas للتحقق من صحة البيانات
 export const CreateSaleLineDtoSchema = z.object({
   productId: z.number().int().positive('معرف الصنف يجب أن يكون رقم موجب'),
   qty: z.number().positive('الكمية يجب أن تكون أكبر من صفر'),
-  unitPrice: z.number().min(0, 'سعر الوحدة يجب أن يكون أكبر من أو يساوي صفر')
+  unitPrice: z.number().min(0, 'سعر الوحدة يجب أن يكون أكبر من أو يساوي صفر'),
+  // للأصناف من الشركة الأم
+  isFromParentCompany: z.boolean().optional(),
+  parentUnitPrice: z.number().min(0).optional(),
+  branchUnitPrice: z.number().min(0).optional()
 });
 
 export const CreateSaleDtoSchema = z.object({
   companyId: z.number().int().positive().optional(), // للـ System User: تحديد الشركة التي يريد البيع منها
   customerId: z.number().int().positive().optional(),
   invoiceNumber: z.string().optional(),
-  saleType: z.nativeEnum(SaleType, { message: 'نوع البيع غير صحيح' }),
-  paymentMethod: z.nativeEnum(PaymentMethod, { message: 'طريقة الدفع غير صحيحة' }).optional(), // اختياري للبيع الآجل
+  notes: z.string().optional(), // ملاحظات
   lines: z.array(CreateSaleLineDtoSchema).min(1, 'يجب إضافة بند واحد على الأقل')
+  // ملاحظة: saleType و paymentMethod سيحددهما المحاسب لاحقاً
 });
 
 export const UpdateSaleDtoSchema = z.object({
@@ -46,6 +56,10 @@ export const GetSalesQueryDtoSchema = z.object({
   limit: z.string().optional().default('10').transform(Number).pipe(z.number().int().positive().max(1000)),
   search: z.string().transform(val => val === '' ? undefined : val).optional(),
   customerId: z.union([
+    z.string().transform(val => val === '' ? undefined : Number(val)).pipe(z.number().int().positive()),
+    z.literal('').transform(() => undefined)
+  ]).optional(),
+  companyId: z.union([
     z.string().transform(val => val === '' ? undefined : Number(val)).pipe(z.number().int().positive()),
     z.literal('').transform(() => undefined)
   ]).optional(),

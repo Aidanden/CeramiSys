@@ -17,9 +17,10 @@ import { PrismaClient } from '@prisma/client';
 export interface ComplexInterCompanySaleLine {
   productId: number;
   qty: number;
-  parentUnitPrice: number; // سعر التقازي
+  parentUnitPrice?: number; // سعر التقازي (فقط للأصناف من الشركة الأم)
   branchUnitPrice: number;  // سعر الإمارات (مع هامش الربح)
   subTotal: number;
+  isFromParentCompany?: boolean; // هل الصنف من الشركة الأم؟
 }
 
 export interface CreateComplexInterCompanySaleRequest {
@@ -42,12 +43,17 @@ export interface ComplexInterCompanySaleResult {
     id: number;
     invoiceNumber: string;
     total: number;
-  };
-  stockUpdates: Array<{
-    productId: number;
-    companyId: number;
-    newStock: number;
-  }>;
+  } | null;
+  purchaseFromParent?: {
+    id: number;
+    invoiceNumber: string;
+    total: number;
+  } | null;
+  branchPurchase?: {
+    id: number;
+    invoiceNumber: string;
+    total: number;
+  } | null;
 }
 
 export class ComplexInterCompanySaleService {
@@ -117,121 +123,25 @@ export class ComplexInterCompanySaleService {
         throw new Error('العميل غير موجود');
       }
 
-      // التحقق من توفر المخزون في الشركة الأم
-      const products = await this.prisma.product.findMany({
-        where: {
-          id: { in: data.lines.map(line => line.productId) }
-        },
-        include: {
-          stocks: {
-            where: { companyId: data.parentCompanyId }
-          }
-        }
-      });
-
-      for (const line of data.lines) {
-        const product = products.find(p => p.id === line.productId);
-        if (!product) {
-          throw new Error(`المنتج غير موجود: ${line.productId}`);
-        }
-
-        const stock = product.stocks[0];
-        if (!stock || Number(stock.boxes) < line.qty) {
-          throw new Error(`المخزون غير كافي للمنتج: ${product.name}`);
-        }
-      }
+      // لا نتحقق من المخزون هنا - سيتم التحقق عند اعتماد الفاتورة
+      // المعلومات عن مصدر كل صنف محفوظة في `isFromParentCompany`
 
       // بدء المعاملة
       const result = await this.prisma.$transaction(async (tx) => {
-        // 1. خصم المخزون من الشركة الأم (التقازي)
-        const stockUpdates = [];
-        for (const line of data.lines) {
-          const stock = await tx.stock.findUnique({
-            where: {
-              companyId_productId: {
-                companyId: data.parentCompanyId,
-                productId: line.productId
-              }
-            }
-          });
+        // ملاحظة: لا يتم خصم المخزون أو التحقق منه هنا لأن الفاتورة مبدئية (DRAFT)
+        // سيتم التحقق من المخزون وخصمه عند اعتماد الفاتورة من المحاسب
 
-          if (!stock) {
-            throw new Error(`المخزون غير موجود للمنتج: ${line.productId}`);
-          }
+        // ملاحظة: لم نعد ننشئ الفواتير التلقائية هنا!
+        // سيتم إنشاؤها فقط عند اعتماد الفاتورة من المحاسب
+        // المعلومات محفوظة في `isFromParentCompany` و `parentUnitPrice` في SaleLine
 
-          const newStock = Number(stock.boxes) - line.qty;
-          if (newStock < 0) {
-            throw new Error(`المخزون غير كافي للمنتج: ${line.productId}`);
-          }
-
-          await tx.stock.update({
-            where: {
-              companyId_productId: {
-                companyId: data.parentCompanyId,
-                productId: line.productId
-              }
-            },
-            data: { boxes: newStock }
-          });
-
-          stockUpdates.push({
-            productId: line.productId,
-            companyId: data.parentCompanyId,
-            newStock: newStock
-          });
-        }
-
-        // 2. إنشاء أو الحصول على عميل يمثل الشركة الفرعية
-        // البحث عن عميل بنفس اسم الشركة الفرعية
-        let branchAsCustomer = await tx.customer.findFirst({
-          where: {
-            name: branchCompany.name,
-            phone: `BRANCH-${data.branchCompanyId}` // معرف فريد للشركات الفرعية
-          }
-        });
-
-        // إذا لم يوجد، أنشئه
-        if (!branchAsCustomer) {
-          branchAsCustomer = await tx.customer.create({
-            data: {
-              name: branchCompany.name,
-              phone: `BRANCH-${data.branchCompanyId}`,
-              note: `عميل وهمي يمثل الشركة الفرعية: ${branchCompany.name}`
-            }
-          });
-        }
-
-        // 3. إنشاء فاتورة بيع آجل من التقازي للإمارات
-        const parentSaleTotal = data.lines.reduce((sum, line) => sum + (line.qty * line.parentUnitPrice), 0);
-        const parentSale = await tx.sale.create({
-          data: {
-            companyId: data.parentCompanyId,
-            customerId: branchAsCustomer.id, // الشركة الفرعية كعميل
-            invoiceNumber: `PR-${data.parentCompanyId}-${Date.now()}`,
-            total: parentSaleTotal,
-            saleType: 'CREDIT',
-            paymentMethod: 'CASH',
-            paidAmount: 0,
-            remainingAmount: parentSaleTotal,
-            isFullyPaid: false,
-            lines: {
-              create: data.lines.map(line => ({
-                productId: line.productId,
-                qty: line.qty,
-                unitPrice: line.parentUnitPrice,
-                subTotal: line.qty * line.parentUnitPrice
-              }))
-            }
-          }
-        });
-
-        // 3. إنشاء فاتورة بيع للعميل من الإمارات
+        // 3. إنشاء فاتورة بيع واحدة للعميل من الشركة التابعة (تحتوي على كل الأصناف)
         const customerSaleTotal = data.lines.reduce((sum, line) => sum + line.subTotal, 0);
-        const customerSaleType = data.customerSaleType || 'CASH';
-        const customerPaymentMethod = data.customerPaymentMethod || 'CASH';
-        const customerPaidAmount = customerSaleType === 'CASH' ? customerSaleTotal : 0;
-        const customerRemainingAmount = customerSaleType === 'CASH' ? 0 : customerSaleTotal;
-        const customerIsFullyPaid = customerSaleType === 'CASH';
+        const customerSaleType = 'CREDIT'; // ✅ جميع الفواتير آجلة
+        const customerPaymentMethod = null; // سيُحدد لاحقاً عند الاعتماد
+        const customerPaidAmount = 0; // لم يُدفع شيء
+        const customerRemainingAmount = customerSaleTotal; // المبلغ المتبقي = المجموع
+        const customerIsFullyPaid = false;
         
         const customerSale = await tx.sale.create({
           data: {
@@ -244,35 +154,22 @@ export class ComplexInterCompanySaleService {
             paidAmount: customerPaidAmount,
             remainingAmount: customerRemainingAmount,
             isFullyPaid: customerIsFullyPaid,
+            status: 'DRAFT', // مبدئية - في انتظار اعتماد المحاسب
             lines: {
               create: data.lines.map(line => ({
                 productId: line.productId,
                 qty: line.qty,
                 unitPrice: line.branchUnitPrice,
-                subTotal: line.subTotal
+                subTotal: line.subTotal,
+                isFromParentCompany: line.isFromParentCompany || false,
+                parentUnitPrice: line.parentUnitPrice || null,
+                branchUnitPrice: line.branchUnitPrice || null
               }))
             }
           }
         });
 
-        // 4. إنشاء سجل شراء من الشركة الأم
-        const purchaseFromParent = await tx.purchaseFromParent.create({
-          data: {
-            branchCompanyId: data.branchCompanyId,
-            parentCompanyId: data.parentCompanyId,
-            invoiceNumber: `PFP-${Date.now()}`,
-            total: parentSaleTotal,
-            isSettled: false,
-            lines: {
-              create: data.lines.map(line => ({
-                productId: line.productId,
-                qty: line.qty,
-                unitPrice: line.parentUnitPrice,
-                subTotal: line.qty * line.parentUnitPrice
-              }))
-            }
-          }
-        });
+        // لا حاجة لتحديث relatedParentSaleId هنا، سيتم ذلك عند الاعتماد
 
         return {
           customerSale: {
@@ -280,12 +177,9 @@ export class ComplexInterCompanySaleService {
             invoiceNumber: customerSale.invoiceNumber!,
             total: Number(customerSale.total)
           },
-          parentSale: {
-            id: parentSale.id,
-            invoiceNumber: parentSale.invoiceNumber!,
-            total: Number(parentSale.total)
-          },
-          stockUpdates
+          parentSale: null, // سيتم إنشاؤها عند الاعتماد
+          purchaseFromParent: null, // سيتم إنشاؤها عند الاعتماد
+          branchPurchase: null // سيتم إنشاؤها عند الاعتماد
         };
       });
 

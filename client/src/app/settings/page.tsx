@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui/Toast';
 export default function SettingsPage() {
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [lowStockThreshold, setLowStockThreshold] = useState('10');
+  const [profitMargin, setProfitMargin] = useState('20');
   const [isSaving, setIsSaving] = useState(false);
   const { success, error } = useToast();
 
@@ -19,6 +20,11 @@ export default function SettingsPage() {
     const savedThreshold = localStorage.getItem('lowStockThreshold');
     if (savedThreshold) {
       setLowStockThreshold(savedThreshold);
+    }
+    
+    const savedMargin = localStorage.getItem('profitMargin');
+    if (savedMargin) {
+      setProfitMargin(savedMargin);
     }
   }, []);
 
@@ -43,12 +49,20 @@ export default function SettingsPage() {
       return;
     }
 
+    // التحقق من هامش الربح
+    const margin = parseFloat(profitMargin);
+    if (isNaN(margin) || margin < 0 || margin > 100) {
+      error('يرجى إدخال قيمة صحيحة لهامش الربح (0-100%)');
+      return;
+    }
+
     setIsSaving(true);
     
     try {
       // حفظ في localStorage
       localStorage.setItem('whatsappNumber', cleanNumber);
       localStorage.setItem('lowStockThreshold', threshold.toString());
+      localStorage.setItem('profitMargin', margin.toString());
       success('تم حفظ الإعدادات بنجاح');
     } catch (err) {
       error('حدث خطأ أثناء حفظ الإعدادات');
@@ -61,8 +75,10 @@ export default function SettingsPage() {
   const handleClear = () => {
     localStorage.removeItem('whatsappNumber');
     localStorage.removeItem('lowStockThreshold');
+    localStorage.removeItem('profitMargin');
     setWhatsappNumber('');
     setLowStockThreshold('10');
+    setProfitMargin('20');
     success('تم مسح الإعدادات');
   };
 
@@ -120,6 +136,35 @@ export default function SettingsPage() {
             </div>
             <p className="mt-2 text-sm text-gray-500">
               💡 الأصناف التي يكون مخزونها أقل من أو يساوي هذا الحد ستظهر كـ "شارفت على الانتهاء"
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              هامش الربح للشركة التابعة (%)
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+              </div>
+              <input
+                type="number"
+                value={profitMargin}
+                onChange={(e) => setProfitMargin(e.target.value)}
+                placeholder="20"
+                min="0"
+                max="100"
+                step="0.1"
+                className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-lg"
+              />
+            </div>
+            <p className="mt-2 text-sm text-gray-500">
+              💰 عند بيع أصناف من الشركة الأم، سيتم إضافة هذا الهامش على سعر الشركة الأم
+            </p>
+            <p className="mt-1 text-sm text-gray-500">
+              📊 مثال: إذا كان سعر الشركة الأم 100 د.ل وهامش الربح 20%، سيكون سعر البيع 120 د.ل
             </p>
           </div>
         </div>

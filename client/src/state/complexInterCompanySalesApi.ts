@@ -5,14 +5,16 @@
 
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuthInterceptor } from "./apiUtils";
+import { API_CACHE_CONFIG } from "@/lib/config";
 
 // Types
 export interface ComplexInterCompanySaleLine {
   productId: number;
   qty: number;
-  parentUnitPrice: number; // سعر التقازي
+  parentUnitPrice?: number; // سعر التقازي (فقط للأصناف من الشركة الأم)
   branchUnitPrice: number;  // سعر الإمارات (مع هامش الربح)
   subTotal: number;
+  isFromParentCompany?: boolean; // هل الصنف من الشركة الأم؟
 }
 
 export interface CreateComplexInterCompanySaleRequest {
@@ -35,7 +37,17 @@ export interface ComplexInterCompanySaleResult {
     id: number;
     invoiceNumber: string;
     total: number;
-  };
+  } | null;
+  purchaseFromParent?: {
+    id: number;
+    invoiceNumber: string;
+    total: number;
+  } | null;
+  branchPurchase?: {
+    id: number;
+    invoiceNumber: string;
+    total: number;
+  } | null;
   stockUpdates: Array<{
     productId: number;
     companyId: number;
@@ -69,10 +81,11 @@ export const complexInterCompanySalesApi = createApi({
   reducerPath: "complexInterCompanySalesApi",
   baseQuery: baseQueryWithAuthInterceptor,
   tagTypes: ["ComplexInterCompanySales", "ComplexInterCompanyStats"],
-  keepUnusedDataFor: 60, // 1 minute
-  refetchOnMountOrArgChange: true,
-  refetchOnFocus: false,
-  refetchOnReconnect: true,
+  // تطبيق إعدادات عدم الكاش
+  keepUnusedDataFor: API_CACHE_CONFIG.interCompanySales.keepUnusedDataFor,
+  refetchOnMountOrArgChange: API_CACHE_CONFIG.interCompanySales.refetchOnMountOrArgChange,
+  refetchOnFocus: API_CACHE_CONFIG.interCompanySales.refetchOnFocus,
+  refetchOnReconnect: API_CACHE_CONFIG.interCompanySales.refetchOnReconnect,
   endpoints: (builder) => ({
     /**
      * إنشاء عملية بيع معقدة بين الشركات

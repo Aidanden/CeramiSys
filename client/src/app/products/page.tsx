@@ -44,6 +44,7 @@ const ProductsPage = () => {
   const [selectedCompany, setSelectedCompany] = useState('');
   const [stockFilter, setStockFilter] = useState<'all' | 'out' | 'low' | 'available'>('all');
   const [lowStockThreshold, setLowStockThreshold] = useState(10);
+  const [pollingInterval, setPollingInterval] = useState<number | undefined>(undefined);
   
   // State للمودالز
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -56,8 +57,8 @@ const ProductsPage = () => {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
 
   // وحدة القياس في نماذج الإضافة والتعديل
-  const [createUnit, setCreateUnit] = useState<'صندوق' | 'قطعة'>('صندوق');
-  const [editUnit, setEditUnit] = useState<'صندوق' | 'قطعة'>('صندوق');
+  const [createUnit, setCreateUnit] = useState<'صندوق' | 'قطعة' | 'كيس' | 'لتر'>('صندوق');
+  const [editUnit, setEditUnit] = useState<'صندوق' | 'قطعة' | 'كيس' | 'لتر'>('صندوق');
 
   // تحميل حد المخزون من localStorage
   useEffect(() => {
@@ -70,22 +71,36 @@ const ProductsPage = () => {
   // مزامنة قيمة الوحدة في نموذج التعديل عند فتح المودال
   useEffect(() => {
     if (isEditModalOpen && selectedProduct) {
-      const unit = (selectedProduct.unit as 'صندوق' | 'قطعة' | undefined) || 'صندوق';
+      const unit = (selectedProduct.unit as 'صندوق' | 'قطعة' | 'كيس' | 'لتر' | undefined) || 'صندوق';
       setEditUnit(unit);
     }
   }, [isEditModalOpen, selectedProduct]);
 
-  // RTK Query hooks
+  // إعادة تعيين الصفحة إلى الأولى عند تغيير الفلاتر
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, searchSKU, selectedCompany, selectedUnit, stockFilter]);
+
+  // تحديد ما إذا كان هناك أي فلاتر نشطة
+  const hasActiveFilters = searchTerm || searchSKU || selectedCompany || selectedUnit || stockFilter !== 'all';
+  const hasSearchFilters = searchTerm || searchSKU;
+
+  // RTK Query hooks - نرسل جميع الفلاتر المدعومة في الـ API
   const { data: productsData, isLoading: isLoadingProducts, error: productsError, refetch } = useGetProductsQuery({
     page: currentPage,
     limit: 10,
     search: searchTerm || undefined,
+    sku: searchSKU || undefined,
     unit: selectedUnit || undefined,
+    companyId: selectedCompany ? Number(selectedCompany) : undefined,
   }, {
-    // إعادة جلب البيانات عند العودة للصفحة
-    refetchOnFocus: true,
-    // إعادة جلب البيانات عند إعادة الاتصال
-    refetchOnReconnect: true,
+    pollingInterval, // إعادة جلب تلقائية كل X ميلي ثانية
+  });
+
+  // استعلام للحصول على جميع الأصناف للإحصائيات
+  const { data: allProductsData } = useGetProductsQuery({
+    page: 1,
+    limit: 10000,
   });
 
   const { data: companiesData, isLoading: isLoadingCompanies } = useGetCompaniesQuery({ limit: 100 });
@@ -97,49 +112,37 @@ const ProductsPage = () => {
   const [updatePrice] = useUpdatePriceMutation();
 
   // بيانات الأصناف
-  let products = productsData?.data?.products || [];
   const pagination = productsData?.data?.pagination;
+  let products = productsData?.data?.products || [];
+  const allProducts = allProductsData?.data?.products || [];
 
-  // فلترة على جانب العميل
-  products = products.filter(product => {
-    // فلترة حسب اسم الصنف
-    if (searchTerm && !product.name.toLowerCase().includes(searchTerm.toLowerCase())) {
-      return false;
-    }
+  // تطبيق فلاتر المخزون على الـ client-side (لأنها غير مدعومة في الـ API)
+  if (stockFilter !== 'all') {
+    products = products.filter(product => {
+      const stockBoxes = product.stock?.boxes || 0;
+      
+      if (stockFilter === 'out') {
+        return stockBoxes === 0;
+      }
+      if (stockFilter === 'low') {
+        return stockBoxes > 0 && stockBoxes <= lowStockThreshold;
+      }
+      if (stockFilter === 'available') {
+        return stockBoxes > 0;
+      }
+      
+      return true;
+    });
+  }
 
-    // فلترة حسب كود الصنف
-    if (searchSKU && !product.sku.toLowerCase().includes(searchSKU.toLowerCase())) {
-      return false;
-    }
-
-    // فلترة حسب الشركة
-    if (selectedCompany && product.createdByCompanyId.toString() !== selectedCompany) {
-      return false;
-    }
-
-    // فلترة حسب حالة المخزون
-    const stockBoxes = product.stock?.boxes || 0;
-    if (stockFilter === 'out' && stockBoxes > 0) {
-      return false;
-    }
-    if (stockFilter === 'low' && (stockBoxes === 0 || stockBoxes > lowStockThreshold)) {
-      return false;
-    }
-    if (stockFilter === 'available' && stockBoxes === 0) {
-      return false;
-    }
-
-    return true;
-  });
-
-  // حساب عدد الأصناف حسب الحالة
-  const allProducts = productsData?.data?.products || [];
-  const outOfStockCount = allProducts.filter(p => (p.stock?.boxes || 0) === 0).length;
-  const lowStockCount = allProducts.filter(p => {
+  // إحصائيات المخزون من جميع الأصناف
+  const totalCount = allProducts.length;
+  const outOfStockCount = allProducts.filter((p: any) => (p.stock?.boxes || 0) === 0).length;
+  const lowStockCount = allProducts.filter((p: any) => {
     const boxes = p.stock?.boxes || 0;
     return boxes > 0 && boxes <= lowStockThreshold;
   }).length;
-  const availableCount = allProducts.filter(p => (p.stock?.boxes || 0) > 0).length;
+  const availableCount = allProducts.filter((p: any) => (p.stock?.boxes || 0) > 0).length;
 
   // معالجة إنشاء صنف
   const handleCreateProduct = async (productData: CreateProductRequest) => {
@@ -148,7 +151,34 @@ const ProductsPage = () => {
       if (result.success) {
         notifications.products.createSuccess(productData.name);
         setIsCreateModalOpen(false);
-        refetch(); // تحديث قائمة الأصناف
+        
+        // إعادة تعيين النموذج
+        const form = document.querySelector('#create-product-form') as HTMLFormElement;
+        if (form) form.reset();
+        setCreateUnit('صندوق');
+        
+        // مسح جميع الفلاتر لضمان ظهور الصنف الجديد
+        setSearchTerm('');
+        setSearchSKU('');
+        setSelectedCompany('');
+        setSelectedUnit('');
+        setStockFilter('all');
+        
+        // الانتقال للصفحة الأولى
+        setCurrentPage(1);
+        
+        // تفعيل polling لمدة 10 ثواني لضمان التحديث
+        setPollingInterval(500); // كل نصف ثانية
+        
+        // إعادة جلب فورية
+        setTimeout(() => {
+          refetch();
+        }, 100);
+        
+        // إيقاف polling بعد 10 ثواني
+        setTimeout(() => {
+          setPollingInterval(undefined);
+        }, 10000);
       }
     } catch (error: any) {
       notifications.products.createError(error?.data?.message);
@@ -164,10 +194,12 @@ const ProductsPage = () => {
         id: selectedProduct.id, 
         productData 
       }).unwrap();
+      
       if (result.success) {
         notifications.products.updateSuccess(selectedProduct.name);
         setIsEditModalOpen(false);
         setSelectedProduct(null);
+        // RTK Query invalidatesTags سيحدث البيانات تلقائياً
       }
     } catch (error: any) {
       notifications.products.updateError(error?.data?.message);
@@ -192,18 +224,18 @@ const ProductsPage = () => {
 
   // معالجة تحديث المخزون
   const handleUpdateStock = async (boxes: number) => {
-    if (!selectedProduct) return;
+    if (!selectedProduct || !currentUser?.companyId) return;
     
     try {
       await updateStock({
-        companyId: 1, // This should come from user context
+        companyId: currentUser.companyId,
         productId: selectedProduct.id,
-        quantity: boxes // سيتم تحديث هذا لاحقاً ليكون boxes
+        quantity: boxes
       }).unwrap();
       notifications.products.stockUpdateSuccess(selectedProduct.name, boxes);
       setIsStockModalOpen(false);
       setSelectedProduct(null);
-      refetch(); // Refresh the products list
+      // RTK Query invalidatesTags سيحدث البيانات تلقائياً
     } catch (error: any) {
       notifications.products.stockUpdateError(error?.data?.message);
     }
@@ -211,18 +243,18 @@ const ProductsPage = () => {
 
   // معالجة تحديث السعر
   const handleUpdatePrice = async (sellPrice: number) => {
-    if (!selectedProduct) return;
+    if (!selectedProduct || !currentUser?.companyId) return;
     
     try {
       await updatePrice({
-        companyId: 1, // This should come from user context
+        companyId: currentUser.companyId,
         productId: selectedProduct.id,
         sellPrice
       }).unwrap();
       notifications.products.priceUpdateSuccess(selectedProduct.name, sellPrice);
       setIsPriceModalOpen(false);
       setSelectedProduct(null);
-      refetch(); // Refresh the products list
+      // RTK Query invalidatesTags سيحدث البيانات تلقائياً
     } catch (error: any) {
       notifications.products.priceUpdateError(error?.data?.message);
     }
@@ -313,7 +345,7 @@ const ProductsPage = () => {
               <div class="product-sku">الكود: ${product.sku}</div>
               ${product.unit ? `<div class="product-details">الوحدة: ${product.unit}</div>` : ''}
               ${product.unitsPerBox ? `<div class="product-details">عدد الوحدات في الصندوق: ${product.unitsPerBox} م²</div>` : ''}
-              ${product.price?.sellPrice ? `<div class="product-details">السعر: ${product.price.sellPrice} د.ل</div>` : ''}
+              ${product.price?.sellPrice ? `<div class="product-details">السعر: ${product.price.sellPrice} د.ل/م²</div>` : ''}
             </div>
             <img src="${product.qrCode}" alt="QR Code" />
           </div>
@@ -402,7 +434,7 @@ const ProductsPage = () => {
               <div class="product-sku">الكود: ${selectedProduct.sku}</div>
               ${selectedProduct.unit ? `<div class="product-details">الوحدة: ${selectedProduct.unit}</div>` : ''}
               ${selectedProduct.unitsPerBox ? `<div class="product-details">عدد الوحدات في الصندوق: ${selectedProduct.unitsPerBox}</div>` : ''}
-              ${selectedProduct.price?.sellPrice ? `<div class="product-details">السعر: ${selectedProduct.price.sellPrice} د.ل</div>` : ''}
+              ${selectedProduct.price?.sellPrice ? `<div class="product-details">السعر: ${selectedProduct.price.sellPrice} د.ل/م²</div>` : ''}
             </div>
             <img src="${qrCodeUrl}" alt="QR Code" />
           </div>
@@ -446,17 +478,23 @@ const ProductsPage = () => {
       <div className="bg-surface-primary p-4 rounded-lg shadow-sm border border-border-primary mb-6">
         <div className="flex flex-wrap gap-3">
           <button
-            onClick={() => setStockFilter('all')}
+            onClick={() => {
+              setStockFilter('all');
+              setCurrentPage(1);
+            }}
             className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
               stockFilter === 'all'
                 ? 'bg-primary-600 text-white shadow-md'
                 : 'bg-background-secondary text-text-secondary hover:bg-background-hover'
             }`}
           >
-            جميع الأصناف ({allProducts.length})
+            جميع الأصناف ({totalCount})
           </button>
           <button
-            onClick={() => setStockFilter('available')}
+            onClick={() => {
+              setStockFilter('available');
+              setCurrentPage(1);
+            }}
             className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
               stockFilter === 'available'
                 ? 'bg-success-600 text-white shadow-md'
@@ -469,7 +507,10 @@ const ProductsPage = () => {
             متوفرة بالمخزن ({availableCount})
           </button>
           <button
-            onClick={() => setStockFilter('out')}
+            onClick={() => {
+              setStockFilter('out');
+              setCurrentPage(1);
+            }}
             className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
               stockFilter === 'out'
                 ? 'bg-error-600 text-white shadow-md'
@@ -482,7 +523,10 @@ const ProductsPage = () => {
             منتهية من المخزن ({outOfStockCount})
           </button>
           <button
-            onClick={() => setStockFilter('low')}
+            onClick={() => {
+              setStockFilter('low');
+              setCurrentPage(1);
+            }}
             className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
               stockFilter === 'low'
                 ? 'bg-warning-600 text-white shadow-md'
@@ -497,8 +541,33 @@ const ProductsPage = () => {
         </div>
       </div>
 
-      {/* Filters and Search */}
+      {/* Filters and Search - محسّن */}
       <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-text-primary flex items-center gap-2">
+            <Filter className="w-5 h-5" />
+            البحث والفلترة
+          </h3>
+          {hasActiveFilters && (
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setSearchSKU('');
+                setSelectedCompany('');
+                setSelectedUnit('');
+                setStockFilter('all');
+                setCurrentPage(1);
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all duration-200"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              مسح الفلاتر
+            </button>
+          )}
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Search by Name */}
           <div className="relative">
@@ -508,8 +577,20 @@ const ProductsPage = () => {
               placeholder="البحث بالاسم..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pr-10 pl-4 py-2 border border-border-primary rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200"
+              className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200 ${
+                searchTerm ? 'border-blue-500 ring-2 ring-blue-100' : 'border-border-primary'
+              }`}
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
           </div>
 
           {/* Search by SKU */}
@@ -522,17 +603,31 @@ const ProductsPage = () => {
               placeholder="البحث بالكود..."
               value={searchSKU}
               onChange={(e) => setSearchSKU(e.target.value)}
-              className="w-full pr-10 pl-4 py-2 border border-border-primary rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200"
+              className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200 ${
+                searchSKU ? 'border-blue-500 ring-2 ring-blue-100' : 'border-border-primary'
+              }`}
             />
+            {searchSKU && (
+              <button
+                onClick={() => setSearchSKU('')}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
           </div>
 
           {/* Company Filter */}
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-text-tertiary" />
+          <div className="relative">
+            <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-tertiary w-5 h-5 pointer-events-none" />
             <select
               value={selectedCompany}
               onChange={(e) => setSelectedCompany(e.target.value)}
-              className="flex-1 px-4 py-2 border border-border-primary rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary transition-all duration-200"
+              className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary transition-all duration-200 appearance-none ${
+                selectedCompany ? 'border-blue-500 ring-2 ring-blue-100 font-medium' : 'border-border-primary'
+              }`}
             >
               <option value="">جميع الشركات</option>
               {companiesData?.data?.companies.map((company) => (
@@ -541,73 +636,125 @@ const ProductsPage = () => {
                 </option>
               ))}
             </select>
+            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </div>
 
           {/* Unit Filter */}
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-text-tertiary" />
+          <div className="relative">
+            <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-tertiary w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 12h16m-7 5h7" />
+            </svg>
             <select
               value={selectedUnit}
               onChange={(e) => setSelectedUnit(e.target.value)}
-              className="flex-1 px-4 py-2 border border-border-primary rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary transition-all duration-200"
+              className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary transition-all duration-200 appearance-none ${
+                selectedUnit ? 'border-blue-500 ring-2 ring-blue-100 font-medium' : 'border-border-primary'
+              }`}
             >
               <option value="">جميع الوحدات</option>
               <option value="صندوق">صندوق</option>
               <option value="قطعة">قطعة</option>
+              <option value="كيس">كيس</option>
+              <option value="لتر">لتر</option>
             </select>
+            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </div>
         </div>
 
-        {/* Clear Filters */}
-        {(searchTerm || searchSKU || selectedCompany || selectedUnit || stockFilter !== 'all') && (
-          <div className="mt-4 flex items-center justify-between">
-            <p className="text-sm text-text-secondary">
-              عرض {products.length} من {allProducts.length} صنف
-            </p>
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setSearchSKU('');
-                setSelectedCompany('');
-                setSelectedUnit('');
-                setStockFilter('all');
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-            >
-              مسح الفلاتر
+        {/* مؤشر الفلاتر النشطة */}
+        {hasActiveFilters && (
+          <div className="mt-4 pt-4 border-t border-border-primary">
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-sm text-text-secondary">الفلاتر النشطة:</span>
+              {searchTerm && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  <Search className="w-3 h-3" />
+                  اسم: {searchTerm}
+                  <button onClick={() => setSearchTerm('')} className="hover:text-blue-900">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
             </button>
+                </span>
+              )}
+              {searchSKU && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  كود: {searchSKU}
+                  <button onClick={() => setSearchSKU('')} className="hover:text-blue-900">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {selectedCompany && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+                  {companiesData?.data?.companies.find(c => c.id === Number(selectedCompany))?.name}
+                  <button onClick={() => setSelectedCompany('')} className="hover:text-purple-900">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {selectedUnit && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                  {selectedUnit}
+                  <button onClick={() => setSelectedUnit('')} className="hover:text-green-900">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {stockFilter !== 'all' && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
+                  {stockFilter === 'available' ? 'متوفرة' : stockFilter === 'out' ? 'منتهية' : 'شارفت على الانتهاء'}
+                  <button onClick={() => setStockFilter('all')} className="hover:text-orange-900">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+            </div>
           </div>
         )}
       </div>
 
+
       {/* Products Table */}
       <div className="bg-surface-primary rounded-lg shadow-sm border border-border-primary overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="min-w-full table-auto">
             <thead className="bg-background-secondary">
               <tr>
-                <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
+                <th className="px-3 sm:px-4 lg:px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider min-w-[200px]">
                   الصنف
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
+                <th className="px-3 sm:px-4 lg:px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider min-w-[100px]">
                   الرمز
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
+                <th className="px-3 sm:px-4 lg:px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider min-w-[80px] hidden sm:table-cell">
                   الوحدة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
-                  المخزون (صناديق)
+                <th className="px-3 sm:px-4 lg:px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider min-w-[120px]">
+                  المخزون
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
-                  الكمية (متر مربع)
+                <th className="px-3 sm:px-4 lg:px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider min-w-[120px] hidden md:table-cell">
+                  الكمية (م²)
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
-                  السعر
+                <th className="px-3 sm:px-4 lg:px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider min-w-[100px]">
+                  السعر (د.ل/م²)
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
+                <th className="px-3 sm:px-4 lg:px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider min-w-[120px] hidden lg:table-cell">
                   الشركة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
+                <th className="px-3 sm:px-4 lg:px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider min-w-[140px]">
                   الإجراءات
                 </th>
               </tr>
@@ -615,41 +762,46 @@ const ProductsPage = () => {
             <tbody className="bg-surface-primary divide-y divide-border-primary">
               {isLoadingProducts ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-text-secondary">
-                    جاري التحميل...
+                  <td colSpan={8} className="px-3 sm:px-6 py-8 sm:py-12 text-center text-text-secondary">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                      <p className="text-sm sm:text-base">جاري التحميل...</p>
+                    </div>
                   </td>
                 </tr>
               ) : productsError ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center">
-                    <div className="text-error-500 mb-4">
-                      <p className="text-lg font-semibold mb-2">خطأ في تحميل البيانات</p>
-                      <p className="text-sm text-text-secondary">
-                        {(productsError as any)?.status === 401 
-                          ? 'انتهت صلاحية جلستك، يرجى تسجيل الدخول مرة أخرى'
-                          : 'حدث خطأ أثناء تحميل قائمة الأصناف'}
-                      </p>
+                  <td colSpan={8} className="px-3 sm:px-6 py-8 sm:py-12 text-center">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="text-error-500 text-center">
+                        <p className="text-base sm:text-lg font-semibold mb-2">خطأ في تحميل البيانات</p>
+                        <p className="text-xs sm:text-sm text-text-secondary max-w-md">
+                          {(productsError as any)?.status === 401 
+                            ? 'انتهت صلاحية جلستك، يرجى تسجيل الدخول مرة أخرى'
+                            : 'حدث خطأ أثناء تحميل قائمة الأصناف'}
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => window.location.reload()}
+                        className="px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-all duration-200 text-sm sm:text-base"
+                      >
+                        إعادة المحاولة
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => refetch()}
-                      className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 transition-all duration-200"
-                    >
-                      إعادة المحاولة
-                    </button>
                   </td>
                 </tr>
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-text-secondary">
+                  <td colSpan={8} className="px-3 sm:px-6 py-8 sm:py-12 text-center text-text-secondary">
                     <div className="flex flex-col items-center gap-3">
-                      <ShoppingBag className="w-12 h-12 text-text-muted" />
-                      <div>
-                        <p className="text-lg font-medium text-text-secondary">لا توجد أصناف في مخزن شركتك</p>
-                        <p className="text-sm text-text-tertiary">ابدأ بإضافة أول صنف لشركتك</p>
+                      <ShoppingBag className="w-10 h-10 sm:w-12 sm:h-12 text-text-tertiary" />
+                      <div className="text-center">
+                        <p className="text-base sm:text-lg font-medium mb-1">لا توجد أصناف</p>
+                        <p className="text-xs sm:text-sm">ابدأ بإضافة أول صنف لك</p>
                       </div>
                       <button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="mt-2 flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-all duration-200"
+                        className="mt-2 px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all duration-200 flex items-center gap-2 text-sm sm:text-base"
                       >
                         <Plus className="w-4 h-4" />
                         إضافة صنف جديد
@@ -660,69 +812,82 @@ const ProductsPage = () => {
               ) : (
                 products.map((product) => (
                   <tr key={product.id} className="hover:bg-background-hover transition-all duration-200">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 flex items-center justify-center">
-                            <ShoppingBag className="w-5 h-5" />
+                    <td className="px-3 sm:px-4 lg:px-6 py-4">
+                      <div className="flex items-center space-x-3 space-x-reverse">
+                        <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10">
+                          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 flex items-center justify-center">
+                            <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
                           </div>
                         </div>
-                        <div className="mr-4">
-                          <div className="text-sm font-medium text-text-primary">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium text-text-primary truncate">
                             {product.name}
+                          </div>
+                          <div className="text-xs text-text-secondary sm:hidden">
+                            {product.unit || '-'} • {product.createdByCompany.name}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
-                      <code className="bg-background-tertiary px-2 py-1 rounded text-xs">
+                    <td className="px-3 sm:px-4 lg:px-6 py-4 text-sm text-text-primary">
+                      <code className="bg-background-tertiary px-2 py-1 rounded text-xs font-mono">
                         {product.sku}
                       </code>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
-                      {product.unit || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-text-primary">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        (product.stock?.boxes || 0) > 0 
-                          ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-200' 
-                          : 'bg-error-100 dark:bg-error-900/30 text-error-800 dark:text-error-200'
-                      }`}>
-                        {formatArabicQuantity(product.stock?.boxes || 0)} {product.unit === 'صندوق' ? 'صندوق' : (product.unit || 'وحدة')}
+                    <td className="px-3 sm:px-4 lg:px-6 py-4 text-sm text-text-primary hidden sm:table-cell">
+                      <span className="inline-flex px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-800 rounded-full">
+                        {product.unit || '-'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-3 sm:px-4 lg:px-6 py-4 text-sm text-text-primary">
+                      <div className="flex flex-col items-start">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          (product.stock?.boxes || 0) > 0 
+                            ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-200' 
+                            : 'bg-error-100 dark:bg-error-900/30 text-error-800 dark:text-error-200'
+                        }`}>
+                          {formatArabicQuantity(product.stock?.boxes || 0)}
+                        </span>
+                        <span className="text-xs text-text-secondary mt-1">
+                          {product.unit === 'صندوق' ? 'صندوق' : (product.unit || 'وحدة')}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-3 sm:px-4 lg:px-6 py-4 text-sm text-gray-900 hidden md:table-cell">
                       {product.unit === 'صندوق' && product.unitsPerBox ? (
                         <div className="text-center">
-                          <span className="font-medium text-blue-600">
+                          <div className="font-medium text-blue-600 text-sm">
                             {formatArabicArea(Number(product.stock?.boxes || 0) * Number(product.unitsPerBox))} م²
-                          </span>
-                          <div className="text-xs text-gray-500">
-                            ({formatArabicArea(product.unitsPerBox)} م² × {formatArabicQuantity(product.stock?.boxes || 0)} صندوق)
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {formatArabicArea(product.unitsPerBox)} م² × {formatArabicQuantity(product.stock?.boxes || 0)}
                           </div>
                         </div>
                       ) : (
                         <span className="text-gray-400 text-center block">-</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <span className="font-medium text-green-600">
+                    <td className="px-3 sm:px-4 lg:px-6 py-4 text-sm text-gray-900">
+                      <div className="font-medium text-green-600">
                         {product.price?.sellPrice 
                           ? formatArabicCurrency(product.price.sellPrice) 
                           : '-'}
+                      </div>
+                    </td>
+                    <td className="px-3 sm:px-4 lg:px-6 py-4 text-sm text-gray-900 hidden lg:table-cell">
+                      <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full">
+                        {product.createdByCompany.name}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {product.createdByCompany.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center gap-2">
+                    <td className="px-3 sm:px-4 lg:px-6 py-4 text-right text-sm font-medium">
+                      <div className="flex items-center justify-end gap-1 sm:gap-2">
+                        {/* الأزرار الأساسية - تظهر دائماً */}
                         <button
                           onClick={() => {
                             setSelectedProduct(product);
                             setIsEditModalOpen(true);
                           }}
-                          className="text-blue-600 hover:text-blue-900 p-1 rounded"
+                          className="text-blue-600 hover:text-blue-900 p-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                           title="تعديل"
                         >
                           <Edit className="w-4 h-4" />
@@ -730,37 +895,28 @@ const ProductsPage = () => {
                         <button
                           onClick={() => {
                             setSelectedProduct(product);
-                            setIsDeleteModalOpen(true);
-                          }}
-                          className="text-red-600 hover:text-red-900 p-1 rounded"
-                          title="حذف"
-                          disabled={isDeleting}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedProduct(product);
                             setIsStockModalOpen(true);
                           }}
-                          className="text-green-600 hover:text-green-900 p-1 rounded"
+                          className="text-green-600 hover:text-green-900 p-1.5 rounded-md hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
                           title="إدارة المخزون"
                         >
                           <ShoppingBag className="w-4 h-4" />
                         </button>
+                        
+                        {/* الأزرار الإضافية - تظهر في الشاشات المتوسطة وما فوق */}
                         <button
                           onClick={() => {
                             setSelectedProduct(product);
                             setIsPriceModalOpen(true);
                           }}
-                          className="text-purple-600 hover:text-purple-900 p-1 rounded"
+                          className="text-purple-600 hover:text-purple-900 p-1.5 rounded-md hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors hidden sm:block"
                           title="إدارة السعر"
                         >
                           <DollarSign className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleGenerateQR(product)}
-                          className="text-indigo-600 hover:text-indigo-900 p-1 rounded"
+                          className="text-indigo-600 hover:text-indigo-900 p-1.5 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors hidden md:block"
                           title="عرض QR Code"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -769,13 +925,26 @@ const ProductsPage = () => {
                         </button>
                         <button
                           onClick={() => handlePrintQRDirect(product)}
-                          className="text-blue-600 hover:text-blue-900 p-1 rounded"
+                          className="text-blue-600 hover:text-blue-900 p-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors hidden lg:block"
                           title="طباعة QR Code"
                           disabled={!product.qrCode}
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                           </svg>
+                        </button>
+                        
+                        {/* زر الحذف - يظهر في الشاشات الكبيرة فقط */}
+                        <button
+                          onClick={() => {
+                            setSelectedProduct(product);
+                            setIsDeleteModalOpen(true);
+                          }}
+                          className="text-red-600 hover:text-red-900 p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors hidden lg:block"
+                          title="حذف"
+                          disabled={isDeleting}
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -786,46 +955,120 @@ const ProductsPage = () => {
           </table>
         </div>
 
-        {/* Pagination */}
+        {/* Pagination - محسّن */}
         {pagination && pagination.pages > 1 && (
           <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div className="flex-1 flex justify-between sm:hidden">
+            {/* للشاشات الصغيرة */}
+            <div className="flex-1 flex justify-between items-center sm:hidden">
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 السابق
               </button>
+              <span className="text-sm text-gray-700">
+                {formatArabicNumber(currentPage)} / {formatArabicNumber(pagination.pages)}
+              </span>
               <button
                 onClick={() => setCurrentPage(Math.min(pagination.pages, currentPage + 1))}
                 disabled={currentPage === pagination.pages}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 التالي
               </button>
             </div>
+            
+            {/* للشاشات الكبيرة */}
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700">
-                  عرض {(currentPage - 1) * 10 + 1} إلى {Math.min(currentPage * 10, pagination.total)} من {pagination.total} نتيجة
+                  عرض <span className="font-medium">{formatArabicNumber((currentPage - 1) * 10 + 1)}</span> إلى{' '}
+                  <span className="font-medium">{formatArabicNumber(Math.min(currentPage * 10, pagination.total))}</span> من{' '}
+                  <span className="font-medium">{formatArabicNumber(pagination.total)}</span> نتيجة
                 </p>
               </div>
               <div>
                 <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  {Array.from({ length: pagination.pages }, (_, i) => (
+                  {/* زر الصفحة الأولى */}
                     <button
-                      key={i + 1}
-                      onClick={() => setCurrentPage(i + 1)}
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="الصفحة الأولى"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  
+                  {/* زر السابق */}
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="السابق"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+
+                  {/* أرقام الصفحات - محسّن للصفحات الكثيرة */}
+                  {(() => {
+                    const maxButtons = 7; // أقصى عدد أزرار تظهر
+                    const pages = pagination.pages;
+                    let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+                    let endPage = Math.min(pages, startPage + maxButtons - 1);
+                    
+                    if (endPage - startPage < maxButtons - 1) {
+                      startPage = Math.max(1, endPage - maxButtons + 1);
+                    }
+
+                    const buttons = [];
+                    
+                    for (let i = startPage; i <= endPage; i++) {
+                      buttons.push(
+                        <button
+                          key={i}
+                          onClick={() => setCurrentPage(i)}
                       className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                        currentPage === i + 1
+                            currentPage === i
                           ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                           : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                       }`}
                     >
-                      {i + 1}
+                          {formatArabicNumber(i)}
                     </button>
-                  ))}
+                      );
+                    }
+                    
+                    return buttons;
+                  })()}
+
+                  {/* زر التالي */}
+                  <button
+                    onClick={() => setCurrentPage(Math.min(pagination.pages, currentPage + 1))}
+                    disabled={currentPage === pagination.pages}
+                    className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="التالي"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  
+                  {/* زر الصفحة الأخيرة */}
+                  <button
+                    onClick={() => setCurrentPage(pagination.pages)}
+                    disabled={currentPage === pagination.pages}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="الصفحة الأخيرة"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    </svg>
+                  </button>
                 </nav>
               </div>
             </div>
@@ -847,7 +1090,7 @@ const ProductsPage = () => {
               </button>
             </div>
             
-            <form onSubmit={(e) => {
+            <form id="create-product-form" onSubmit={(e) => {
               e.preventDefault();
               
               // التحقق من تحميل الشركات
@@ -947,32 +1190,36 @@ const ProductsPage = () => {
                   <select
                     name="unit"
                     value={createUnit}
-                    onChange={(e) => setCreateUnit(e.target.value as 'صندوق' | 'قطعة')}
+                    onChange={(e) => setCreateUnit(e.target.value as 'صندوق' | 'قطعة' | 'كيس' | 'لتر')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="صندوق">صندوق</option>
                     <option value="قطعة">قطعة</option>
+                    <option value="كيس">كيس</option>
+                    <option value="لتر">لتر</option>
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {createUnit === 'صندوق' ? 'عدد الوحدات في الصندوق' : `عدد ال${createUnit} في الصندوق`}
-                  </label>
-                  <input
-                    type="number"
-                    name="unitsPerBox"
-                    step="0.01"
-                    min="0.01"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
-                    disabled={createUnit !== 'صندوق'}
-                    placeholder={createUnit === 'صندوق' ? 'مثال: 6 (6 متر في الصندوق)' : `مثال: 100 (100 ${createUnit} في الصندوق)`}
-                  />
-                </div>
+                {/* حقل unitsPerBox يظهر فقط للصندوق */}
+                {createUnit === 'صندوق' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      عدد الوحدات في الصندوق (بالمتر المربع)
+                    </label>
+                    <input
+                      type="number"
+                      name="unitsPerBox"
+                      step="0.01"
+                      min="0.01"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="مثال: 1.44 (1.44 متر مربع في الصندوق)"
+                    />
+                  </div>
+                )}
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    سعر البيع
+                    سعر البيع (للمتر الواحد)
                   </label>
                   <input
                     type="number"
@@ -982,6 +1229,9 @@ const ProductsPage = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="0.00"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    أدخل سعر المتر الواحد (ليس سعر الصندوق)
+                  </p>
                 </div>
                 
                 <div>
@@ -1046,13 +1296,27 @@ const ProductsPage = () => {
             <form onSubmit={(e) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
-              const productData = {
+              
+              const productData: any = {
                 sku: formData.get('sku') as string,
                 name: formData.get('name') as string,
                 unit: formData.get('unit') as string || undefined,
-                unitsPerBox: formData.get('unitsPerBox') ? Number(formData.get('unitsPerBox')) : undefined,
-                sellPrice: formData.get('sellPrice') ? Number(formData.get('sellPrice')) : undefined,
               };
+              
+              // إرسال unitsPerBox فقط للصندوق
+              if (editUnit === 'صندوق') {
+                const unitsPerBoxValue = formData.get('unitsPerBox');
+                if (unitsPerBoxValue) {
+                  productData.unitsPerBox = Number(unitsPerBoxValue);
+                }
+              }
+              
+              // إرسال السعر
+              const sellPriceValue = formData.get('sellPrice');
+              if (sellPriceValue) {
+                productData.sellPrice = Number(sellPriceValue);
+              }
+              
               handleUpdateProduct(productData);
             }}>
               <div className="space-y-4">
@@ -1091,29 +1355,33 @@ const ProductsPage = () => {
                   <select
                     name="unit"
                     value={editUnit}
-                    onChange={(e) => setEditUnit(e.target.value as 'صندوق' | 'قطعة')}
+                    onChange={(e) => setEditUnit(e.target.value as 'صندوق' | 'قطعة' | 'كيس' | 'لتر')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="صندوق">صندوق</option>
                     <option value="قطعة">قطعة</option>
+                    <option value="كيس">كيس</option>
+                    <option value="لتر">لتر</option>
                   </select>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {editUnit === 'صندوق' ? 'عدد الوحدات في الصندوق' : `عدد ال${editUnit} في الصندوق`}
-                  </label>
-                  <input
-                    type="number"
-                    name="unitsPerBox"
-                    step="0.01"
-                    min="0.01"
-                    defaultValue={selectedProduct.unitsPerBox || ''}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
-                    disabled={editUnit !== 'صندوق'}
-                    placeholder={editUnit === 'صندوق' ? 'مثال: 6 (6 وحدات في الصندوق)' : `مثال: 100 (100 ${editUnit} في الصندوق)`}
-                  />
-                </div>
+                {/* حقل unitsPerBox يظهر فقط للصندوق */}
+                {editUnit === 'صندوق' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      عدد الوحدات في الصندوق (بالمتر المربع)
+                    </label>
+                    <input
+                      type="number"
+                      name="unitsPerBox"
+                      step="0.01"
+                      min="0.01"
+                      defaultValue={selectedProduct.unitsPerBox || ''}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="مثال: 1.44 (1.44 متر مربع في الصندوق)"
+                    />
+                  </div>
+                )}
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1326,14 +1594,14 @@ const ProductsPage = () => {
                 <p className="text-sm text-gray-600">رمز الصنف: {selectedProduct.sku}</p>
                 <div className="text-sm text-gray-600 space-y-1">
                   <div className="flex justify-between">
-                    <span>السعر الحالي:</span>
-                    <span className="font-medium">{formatArabicCurrency(selectedProduct.price?.sellPrice || 0)}</span>
+                    <span>السعر الحالي (للمتر المربع):</span>
+                    <span className="font-medium">{formatArabicCurrency(selectedProduct.price?.sellPrice || 0)}/م²</span>
                   </div>
                   {selectedProduct.unit === 'صندوق' && selectedProduct.unitsPerBox && selectedProduct.price?.sellPrice && (
                     <div className="flex justify-between text-blue-600">
-                      <span>السعر لكل متر مربع:</span>
+                      <span>سعر الصندوق الكامل:</span>
                       <span className="font-medium">
-                        {formatArabicCurrency(Number(selectedProduct.price.sellPrice) / Number(selectedProduct.unitsPerBox))}/م²
+                        {formatArabicCurrency(Number(selectedProduct.price.sellPrice) * Number(selectedProduct.unitsPerBox))}/صندوق
                       </span>
                     </div>
                   )}
@@ -1350,7 +1618,7 @@ const ProductsPage = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    السعر الجديد *
+                    السعر الجديد (للمتر الواحد) *
                   </label>
                   <input
                     type="number"
@@ -1360,8 +1628,11 @@ const ProductsPage = () => {
                     step="0.01"
                     defaultValue={selectedProduct.price?.sellPrice || 0}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="أدخل السعر الجديد"
+                    placeholder="أدخل سعر المتر الواحد"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    أدخل سعر المتر الواحد (ليس سعر الصندوق)
+                  </p>
                 </div>
               </div>
               
@@ -1433,8 +1704,8 @@ const ProductsPage = () => {
                   )}
                   {selectedProduct.price?.sellPrice && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">السعر:</span>
-                      <span className="font-medium text-green-600">{formatArabicCurrency(selectedProduct.price.sellPrice)}</span>
+                      <span className="text-gray-600">السعر (للمتر المربع):</span>
+                      <span className="font-medium text-green-600">{formatArabicCurrency(selectedProduct.price.sellPrice)}/م²</span>
                     </div>
                   )}
                 </div>

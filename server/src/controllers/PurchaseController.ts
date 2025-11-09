@@ -190,20 +190,29 @@ export class PurchaseController {
         message: 'تم حذف فاتورة المشتريات بنجاح',
       });
     } catch (error: any) {
-      console.error('Error deleting purchase:', error);
+      console.error('خطأ في حذف فاتورة المشتريات:', error);
       
-      if (error.message === 'Purchase not found') {
+      // رسائل خطأ محمية (403 Forbidden)
+      if (error.message.includes('لا يمكن حذف فاتورة المشتريات هذه مباشرة')) {
+        res.status(403).json({
+          success: false,
+          message: error.message,
+        });
+      }
+      // رسائل خطأ غير موجود (404 Not Found)
+      else if (error.message === 'Purchase not found') {
       res.status(404).json({
         success: false,
         message: 'فاتورة المشتريات غير موجودة',
       });
-      return;
       }
-
+      // أخطاء أخرى (500 Internal Server Error)
+      else {
       res.status(500).json({
         success: false,
         message: error.message || 'حدث خطأ في حذف فاتورة المشتريات',
       });
+      }
     }
   }
 

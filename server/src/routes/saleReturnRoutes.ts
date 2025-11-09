@@ -1,34 +1,29 @@
+/**
+ * Sale Return Routes
+ * مسارات المردودات
+ */
+
 import { Router } from 'express';
-import saleReturnController from '../controllers/saleReturnController';
+import { SaleReturnController } from '../controllers/SaleReturnController';
 import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
+const controller = new SaleReturnController();
 
-// جميع المسارات تحتاج authentication
+// جميع المسارات تحتاج مصادقة
 router.use(authenticateToken);
 
-// التحقق من صلاحية الفاتورة للمرتجع
-router.get('/validate-sale/:saleId', saleReturnController.validateSale);
+// مسارات المردودات
+router.post('/', controller.createSaleReturn.bind(controller));
+router.get('/', controller.getSaleReturns.bind(controller));
+router.get('/:id', controller.getSaleReturnById.bind(controller));
+router.post('/:id/approve', controller.approveSaleReturn.bind(controller));
+router.post('/:id/reject', controller.rejectSaleReturn.bind(controller));
+router.delete('/:id', controller.deleteSaleReturn.bind(controller));
 
-// الحصول على الإحصائيات
-router.get('/stats', saleReturnController.getReturnStats);
-
-// الحصول على جميع المرتجعات
-router.get('/', saleReturnController.getReturns);
-
-// الحصول على مرتجع واحد
-router.get('/:id', saleReturnController.getReturnById);
-
-// إنشاء مرتجع جديد
-router.post('/', saleReturnController.createReturn);
-
-// تحديث حالة المرتجع
-router.patch('/:id/status', saleReturnController.updateReturnStatus);
-
-// معالجة المرتجع (إرجاع المخزون)
-router.post('/:id/process', saleReturnController.processReturn);
-
-// حذف مرتجع
-router.delete('/:id', saleReturnController.deleteReturn);
+// مسارات دفعات المردودات
+router.post('/payments', controller.createReturnPayment.bind(controller));
+router.get('/payments', controller.getReturnPayments.bind(controller));
+router.delete('/payments/:paymentId', controller.deleteReturnPayment.bind(controller));
 
 export default router;

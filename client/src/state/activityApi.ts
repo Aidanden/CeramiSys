@@ -5,6 +5,7 @@
 
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuthInterceptor } from "./apiUtils";
+import { API_CACHE_CONFIG } from "@/lib/config";
 
 // Types للأنشطة
 export interface ActivityItem {
@@ -32,10 +33,11 @@ export const activityApi = createApi({
   reducerPath: "activityApi",
   baseQuery: baseQueryWithAuthInterceptor,
   tagTypes: ["Activities"],
-  keepUnusedDataFor: 60, // 1 minute
-  refetchOnMountOrArgChange: true,
-  refetchOnFocus: false,
-  refetchOnReconnect: true,
+  // تطبيق إعدادات عدم الكاش
+  keepUnusedDataFor: API_CACHE_CONFIG.activities.keepUnusedDataFor,
+  refetchOnMountOrArgChange: API_CACHE_CONFIG.activities.refetchOnMountOrArgChange,
+  refetchOnFocus: API_CACHE_CONFIG.activities.refetchOnFocus,
+  refetchOnReconnect: API_CACHE_CONFIG.activities.refetchOnReconnect,
   endpoints: (builder) => ({
     /**
      * الحصول على الأنشطة الأخيرة

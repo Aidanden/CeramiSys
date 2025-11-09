@@ -2,6 +2,7 @@
 
 import { useAppDispatch, useAppSelector } from "@/app/redux";
 import { setIsSidebarCollapsed } from "@/state";
+import { useGetCurrentUserQuery } from "@/state/authApi";
 import {
   Layout,
   LucideIcon,
@@ -79,6 +80,11 @@ const Sidebar = () => {
   const isSidebarCollapsed = useAppSelector(
     (state) => state.global.isSidebarCollapsed
   );
+
+  // جلب بيانات المستخدم الحالي
+  const { data: userData } = useGetCurrentUserQuery();
+  const user = userData?.data;
+  const isParentCompany = user?.company?.parentId === null; // الشركة الأم ليس لها parentId
 
   const toggleSidebar = () => {
     dispatch(setIsSidebarCollapsed(!isSidebarCollapsed));
@@ -168,12 +174,6 @@ const Sidebar = () => {
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink
-            href="/provisional-sales"
-            icon={Wallet}
-            label="الفواتير المبدئية"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
             href="/sales"
             icon={ShoppingCart}
             label="المبيعات"
@@ -183,6 +183,12 @@ const Sidebar = () => {
             href="/accountant"
             icon={CreditCard}
             label="مساحة عمل المحاسب"
+            isCollapsed={isSidebarCollapsed}
+          />
+          <SidebarLink
+            href="/customer-accounts"
+            icon={Wallet}
+            label="حسابات العملاء"
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink
@@ -198,17 +204,25 @@ const Sidebar = () => {
             isCollapsed={isSidebarCollapsed}
           /> */}
           
-          <SidebarLink
-            href="/complex-inter-company-sales"
-            //href="/inter-company-sales"
-            icon={ArrowRightLeft}
-            label="المبيعات من الشركة الام"
-            isCollapsed={isSidebarCollapsed}
-          />
+          {/* إخفاء شاشة "المبيعات من الشركة الأم" من الشركة الأم نفسها */}
+          {!isParentCompany && (
+            <SidebarLink
+              href="/complex-inter-company-sales"
+              icon={ArrowRightLeft}
+              label="المبيعات من الشركة الام"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
           <SidebarLink
             href="/sale-returns"
             icon={Returns}
             label="المردودات"
+            isCollapsed={isSidebarCollapsed}
+          />
+          <SidebarLink
+            href="/return-payments"
+            icon={DollarSign}
+            label="إيصالات دفع المردودات"
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink

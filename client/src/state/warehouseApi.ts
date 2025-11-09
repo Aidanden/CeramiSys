@@ -1,5 +1,6 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithAuthInterceptor } from './apiUtils';
+import { API_CACHE_CONFIG } from '@/lib/config';
 
 // Types
 export interface DispatchOrder {
@@ -32,6 +33,7 @@ export interface DispatchOrder {
       qty: number;
       unitPrice: number;
       subtotal: number;
+      isFromParentCompany?: boolean;
     }>;
   };
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
@@ -79,6 +81,11 @@ export const warehouseApi = createApi({
   reducerPath: 'warehouseApi',
   baseQuery: baseQueryWithAuthInterceptor,
   tagTypes: ['DispatchOrders', 'Sales'],
+  // تطبيق إعدادات عدم الكاش
+  keepUnusedDataFor: API_CACHE_CONFIG.warehouse.keepUnusedDataFor,
+  refetchOnMountOrArgChange: API_CACHE_CONFIG.warehouse.refetchOnMountOrArgChange,
+  refetchOnFocus: API_CACHE_CONFIG.warehouse.refetchOnFocus,
+  refetchOnReconnect: API_CACHE_CONFIG.warehouse.refetchOnReconnect,
   endpoints: (builder) => ({
     // Get all dispatch orders
     getDispatchOrders: builder.query<{ data: DispatchOrdersResponse }, GetDispatchOrdersParams>({
@@ -87,6 +94,7 @@ export const warehouseApi = createApi({
         params,
       }),
       providesTags: ['DispatchOrders'],
+      keepUnusedDataFor: API_CACHE_CONFIG.warehouse.keepUnusedDataFor,
     }),
 
     // Get single dispatch order
@@ -103,6 +111,23 @@ export const warehouseApi = createApi({
         body,
       }),
       invalidatesTags: ['DispatchOrders', 'Sales'],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data: response } = await queryFulfilled;
+          const newOrder = response.data;
+          
+          // تحديث الـ cache مباشرة - إضافة الأمر الجديد في بداية القائمة
+          dispatch(
+            warehouseApi.util.updateQueryData('getDispatchOrders', { limit: 100 }, (draft) => {
+              if (draft?.data?.dispatchOrders && newOrder) {
+                draft.data.dispatchOrders.unshift(newOrder);
+              }
+            })
+          );
+        } catch {
+          // في حالة الخطأ، سيتم invalidate tags تلقائياً
+        }
+      },
     }),
 
     // Update dispatch order status
@@ -119,6 +144,31 @@ export const warehouseApi = createApi({
         'DispatchOrders',
         { type: 'DispatchOrders', id },
       ],
+      async onQueryStarted({ id, body }, { dispatch, queryFulfilled }) {
+        // Optimistic update لتحديث حالة الأمر
+        const patchResults: any[] = [];
+        
+        try {
+          patchResults.push(
+            dispatch(
+              warehouseApi.util.updateQueryData('getDispatchOrders', { limit: 100 }, (draft) => {
+                const order = draft?.data?.dispatchOrders?.find(o => o.id === id);
+                if (order) {
+                  order.status = body.status;
+                  if (body.status === 'COMPLETED') {
+                    order.completedAt = new Date().toISOString();
+                  }
+                }
+              })
+            )
+          );
+          
+          await queryFulfilled;
+        } catch {
+          // في حالة الخطأ، نرجع التغييرات
+          patchResults.forEach(patchResult => patchResult.undo());
+        }
+      },
     }),
 
     // Delete dispatch order
@@ -128,6 +178,27 @@ export const warehouseApi = createApi({
         method: 'DELETE',
       }),
       invalidatesTags: ['DispatchOrders'],
+      async onQueryStarted(id, { dispatch, queryFulfilled }) {
+        // Optimistic update لحذف الأمر
+        const patchResults: any[] = [];
+        
+        try {
+          patchResults.push(
+            dispatch(
+              warehouseApi.util.updateQueryData('getDispatchOrders', { limit: 100 }, (draft) => {
+                if (draft?.data?.dispatchOrders) {
+                  draft.data.dispatchOrders = draft.data.dispatchOrders.filter(order => order.id !== id);
+                }
+              })
+            )
+          );
+          
+          await queryFulfilled;
+        } catch {
+          // في حالة الخطأ، نرجع التغييرات
+          patchResults.forEach(patchResult => patchResult.undo());
+        }
+      },
     }),
   }),
 });

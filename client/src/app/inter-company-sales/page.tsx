@@ -141,16 +141,30 @@ const InterCompanySalesPage = () => {
     
     // Calculate subTotal
     if (field === 'qty' || field === 'branchUnitPrice') {
-      newLines[index].subTotal = newLines[index].qty * newLines[index].branchUnitPrice;
+      const product = productsData?.data?.products?.find((p: any) => p.id === newLines[index].productId);
+      if (product?.unit === 'صندوق' && product.unitsPerBox) {
+        const totalMeters = newLines[index].qty * product.unitsPerBox;
+        newLines[index].subTotal = totalMeters * newLines[index].branchUnitPrice;
+      } else {
+        newLines[index].subTotal = newLines[index].qty * newLines[index].branchUnitPrice;
+      }
     }
     
     // Auto-fill parent price when product is selected
     if (field === 'productId') {
       const product = productsData?.data?.products?.find((p: any) => p.id === value);
       if (product?.price?.sellPrice) {
+        // السعر يُحفظ كما هو (سعر المتر المربع)
         newLines[index].parentUnitPrice = product.price.sellPrice;
         newLines[index].branchUnitPrice = product.price.sellPrice * 1.2; // 20% markup by default
-        newLines[index].subTotal = newLines[index].qty * newLines[index].branchUnitPrice;
+        
+        // حساب المجموع بناءً على نوع الوحدة
+        if (product.unit === 'صندوق' && product.unitsPerBox) {
+          const totalMeters = newLines[index].qty * product.unitsPerBox;
+          newLines[index].subTotal = totalMeters * newLines[index].branchUnitPrice;
+        } else {
+          newLines[index].subTotal = newLines[index].qty * newLines[index].branchUnitPrice;
+        }
       }
     }
     
@@ -184,11 +198,28 @@ const InterCompanySalesPage = () => {
     }
     
     try {
+      // تحويل الأسعار للـ Backend: للصناديق نضرب في عدد الأمتار
+      const processedLines = lines.map(line => {
+        const product = productsData?.data?.products?.find((p: any) => p.id === line.productId);
+        
+        if (product?.unit === 'صندوق' && product.unitsPerBox) {
+          // للصناديق: الأسعار النهائية = سعر المتر × عدد الأمتار في الصندوق
+          return {
+            ...line,
+            parentUnitPrice: line.parentUnitPrice * Number(product.unitsPerBox),
+            branchUnitPrice: line.branchUnitPrice * Number(product.unitsPerBox)
+          };
+        }
+        
+        // للوحدات الأخرى: الأسعار تبقى كما هي
+        return line;
+      });
+      
       await createSale({
         customerId,
         saleType,
         paymentMethod: saleType === 'CASH' ? paymentMethod : undefined,
-        lines
+        lines: processedLines
       }).unwrap();
       
       success('تم بنجاح', 'تم إنشاء فاتورة المبيعات بين الشركات بنجاح');

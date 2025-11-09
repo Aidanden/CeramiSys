@@ -1,14 +1,14 @@
 [
   {
     "id": 1,
-    "name": "شركة التقازي",
+    "name": "مخزن التقازي",
     "code": "TG",
     "isParent": true,
     "parentId": null
   },
   {
     "id": 2,
-    "name": "شركة الامارات",
+    "name": "صالة الامارات",
     "code": "EM",
     "isParent": false,
     "parentId": 1

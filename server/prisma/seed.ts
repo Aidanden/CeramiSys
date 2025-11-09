@@ -61,7 +61,8 @@ async function main() {
     "Product.json",
     "Stock.json",
     "CompanyProductPrice.json",
-    "Customer.json"
+    "Customer.json",
+    "Supplier.json"
   ];
 
   await deleteAllData();
@@ -94,6 +95,9 @@ async function main() {
         break;
       case 'Customer':
         modelName = 'customer';
+        break;
+      case 'Supplier':
+        modelName = 'supplier';
         break;
       default:
         modelName = baseModelName.toLowerCase();

@@ -225,7 +225,7 @@ export class SalePaymentService {
       const newRemainingAmount = Number(sale.total) - newPaidAmount;
       const isFullyPaid = newRemainingAmount <= 0;
 
-      await this.prisma.sale.update({
+      const updatedSale = await this.prisma.sale.update({
         where: { id: data.saleId },
         data: {
           paidAmount: newPaidAmount,
@@ -233,6 +233,21 @@ export class SalePaymentService {
           isFullyPaid
         }
       });
+
+      // تسجيل قيد محاسبي في حساب العميل (إذا كان هناك عميل)
+      if (sale.customerId) {
+        const CustomerAccountService = (await import('./CustomerAccountService')).default;
+        await CustomerAccountService.createAccountEntry({
+          customerId: sale.customerId,
+          transactionType: 'CREDIT', // له - تخفيض من دين العميل (دفع)
+          amount: data.amount,
+          referenceType: 'PAYMENT',
+          referenceId: payment.id,
+          description: `قبض دفعة من فاتورة ${sale.invoiceNumber || sale.id} - إيصال رقم ${receiptNumber}`,
+          transactionDate: data.paymentDate ? new Date(data.paymentDate) : new Date()
+        });
+        console.log(`✅ تم تسجيل قيد محاسبي (له) بمبلغ ${data.amount} دينار في حساب العميل`);
+      }
 
       // جلب الدفعة مع العلاقات
       const paymentWithRelations = await this.prisma.salePayment.findUnique({

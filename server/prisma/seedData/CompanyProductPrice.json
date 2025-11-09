@@ -15,13 +15,178 @@
     "sellPrice": 95.00
   },
   {
-    "companyId": 2,
+    "companyId": 1,
     "productId": 4,
     "sellPrice": 110.25
   },
   {
-    "companyId": 2,
+    "companyId": 1,
     "productId": 5,
     "sellPrice": 130.00
+  },
+  {
+    "companyId": 2,
+    "productId": 6,
+    "sellPrice": 130.00
+  },
+  {
+    "companyId": 2,
+    "productId": 7,
+    "sellPrice": 60.00
+  },
+  {
+    "companyId": 2,
+    "productId": 8,
+    "sellPrice": 45.00
+  },
+  {
+    "companyId": 2,
+    "productId": 9,
+    "sellPrice": 45.00
+  },
+  {
+    "companyId": 2,
+    "productId": 10,
+    "sellPrice": 45.00
+  },
+  {
+    "companyId": 2,
+    "productId": 11,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 12,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 13,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 14,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 15,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 16,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 17,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 18,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 19,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 20,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 21,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 22,
+    "sellPrice": 60.00
+  },
+  {
+    "companyId": 2,
+    "productId": 23,
+    "sellPrice": 60.00
+  },
+  {
+    "companyId": 2,
+    "productId": 24,
+    "sellPrice": 50.00
+  },
+  {
+    "companyId": 2,
+    "productId": 25,
+    "sellPrice": 130.00
+  },
+  {
+    "companyId": 2,
+    "productId": 26,
+    "sellPrice": 45.00
+  },
+  {
+    "companyId": 2,
+    "productId": 27,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 28,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 29,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 30,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 31,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 32,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 33,
+    "sellPrice": 60.00
+  },
+  {
+    "companyId": 2,
+    "productId": 34,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 35,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 36,
+    "sellPrice": 60.00
+  },
+  {
+    "companyId": 2,
+    "productId": 37,
+    "sellPrice": 55.00
+  },
+  {
+    "companyId": 2,
+    "productId": 38,
+    "sellPrice": 55.00
   }
 ]

@@ -93,6 +93,10 @@ export class GetProductsQueryDto {
   search?: string;
 
   @IsOptional()
+  @IsString({ message: 'كود الصنف يجب أن يكون نص' })
+  sku?: string;
+
+  @IsOptional()
   @Transform(({ value }) => parseInt(value))
   @IsInt({ message: 'معرف الشركة يجب أن يكون رقم صحيح' })
   @Min(1, { message: 'معرف الشركة يجب أن يكون أكبر من صفر' })

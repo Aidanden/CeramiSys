@@ -90,6 +90,13 @@ router.delete('/customers/:id', salesController.deleteCustomer.bind(salesControl
 router.post('/:id/issue-receipt', salesController.issueReceipt.bind(salesController));
 
 /**
+ * @route   PATCH /api/sales/:id/approve
+ * @desc    اعتماد فاتورة مبدئية وخصم المخزون
+ * @access  Private
+ */
+router.patch('/:id/approve', salesController.approveSale.bind(salesController));
+
+/**
  * @route   GET /api/sales/:id
  * @desc    الحصول على فاتورة مبيعات واحدة
  * @access  Private

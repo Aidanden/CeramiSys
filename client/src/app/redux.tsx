@@ -28,9 +28,11 @@ import { activityApi } from "@/state/activityApi"; // إضافة activityApi
 import { complexInterCompanySalesApi } from "@/state/complexInterCompanySalesApi"; // إضافة complexInterCompanySalesApi
 import { reportsApi } from "@/state/reportsApi"; // إضافة reportsApi
 import { notificationsApi } from "@/state/notificationsApi"; // إضافة notificationsApi
-import { provisionalSalesApi } from "@/state/provisionalSalesApi"; // إضافة provisionalSalesApi
 import { saleReturnsApi } from "@/state/saleReturnsApi"; // إضافة saleReturnsApi
+import { saleReturnApi } from "@/state/saleReturnApi"; // إضافة saleReturnApi الجديد
+import { returnPaymentApi } from "@/state/returnPaymentApi"; // إضافة returnPaymentApi
 import { warehouseApi } from "@/state/warehouseApi"; // إضافة warehouseApi
+import { customerAccountApi } from "@/state/customerAccountApi"; // إضافة customerAccountApi
 import { setupListeners } from "@reduxjs/toolkit/query";
 import {
   persistStore,
@@ -97,9 +99,11 @@ const rootReducer = combineReducers({
   [complexInterCompanySalesApi.reducerPath]: complexInterCompanySalesApi.reducer, // إضافة complexInterCompanySalesApi.reducer
   [reportsApi.reducerPath]: reportsApi.reducer, // إضافة reportsApi.reducer
   [notificationsApi.reducerPath]: notificationsApi.reducer, // إضافة notificationsApi.reducer
-  [provisionalSalesApi.reducerPath]: provisionalSalesApi.reducer, // إضافة provisionalSalesApi.reducer
   [saleReturnsApi.reducerPath]: saleReturnsApi.reducer, // إضافة saleReturnsApi.reducer
+  [saleReturnApi.reducerPath]: saleReturnApi.reducer, // إضافة saleReturnApi.reducer الجديد
+  [returnPaymentApi.reducerPath]: returnPaymentApi.reducer, // إضافة returnPaymentApi.reducer
   [warehouseApi.reducerPath]: warehouseApi.reducer, // إضافة warehouseApi.reducer
+  [customerAccountApi.reducerPath]: customerAccountApi.reducer, // إضافة customerAccountApi.reducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -113,7 +117,7 @@ export const makeStore = () => {
         serializableCheck: {
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
-      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware, notificationsApi.middleware, provisionalSalesApi.middleware, saleReturnsApi.middleware, warehouseApi.middleware), // إضافة middleware الخاص بـ APIs
+      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware, notificationsApi.middleware, saleReturnsApi.middleware, saleReturnApi.middleware, returnPaymentApi.middleware, warehouseApi.middleware, customerAccountApi.middleware), // إضافة middleware الخاص بـ APIs
   });
 };
 

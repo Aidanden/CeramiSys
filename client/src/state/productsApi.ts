@@ -55,6 +55,7 @@ export interface GetProductsQuery {
   page?: number;
   limit?: number;
   search?: string;
+  sku?: string;
   companyId?: number;
   unit?: string;
 }
@@ -140,12 +141,18 @@ export const productsApi = createApi({
         if (params.page) searchParams.append('page', params.page.toString());
         if (params.limit) searchParams.append('limit', params.limit.toString());
         if (params.search) searchParams.append('search', params.search);
+        if (params.sku) searchParams.append('sku', params.sku);
         if (params.companyId) searchParams.append('companyId', params.companyId.toString());
         if (params.unit) searchParams.append('unit', params.unit);
+        
+        // إضافة timestamp لمنع الـ cache في المتصفح
+        searchParams.append('_t', Date.now().toString());
         
         const queryString = searchParams.toString();
         return `/products${queryString ? `?${queryString}` : ''}`;
       },
+      // إجبار إعادة الجلب دائماً - بدون cache
+      keepUnusedDataFor: 0,
       providesTags: (result) => 
         result?.data?.products
           ? [
@@ -168,7 +175,8 @@ export const productsApi = createApi({
         method: "POST",
         body: productData,
       }),
-      invalidatesTags: [{ type: 'Products', id: 'LIST' }, 'ProductStats'],
+      // الحل الجذري: invalidate جميع الـ tags لإعادة جلب البيانات تلقائياً
+      invalidatesTags: ['Products', 'Product', 'ProductStats'],
     }),
 
     // تحديث صنف
@@ -183,6 +191,14 @@ export const productsApi = createApi({
         { type: 'Products', id: 'LIST' },
         'ProductStats'
       ],
+      async onQueryStarted({ id, productData }, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(productsApi.util.invalidateTags([{ type: 'Products', id: 'LIST' }]));
+        } catch (error) {
+          // Error handled by RTK Query
+        }
+      },
     }),
 
     // حذف صنف
@@ -191,11 +207,7 @@ export const productsApi = createApi({
         url: `/products/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, id) => [
-        { type: 'Product', id },
-        { type: 'Products', id: 'LIST' },
-        'ProductStats'
-      ],
+      invalidatesTags: ['Products', 'ProductStats'],
     }),
 
     // تحديث المخزون
@@ -210,6 +222,17 @@ export const productsApi = createApi({
         { type: 'Products', id: 'LIST' },
         'ProductStats'
       ],
+      async onQueryStarted({ productId, quantity }, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          
+          // تحديث فوري لجميع الـ queries
+          dispatch(productsApi.util.invalidateTags([{ type: 'Products', id: 'LIST' }]));
+          
+        } catch {
+          // في حالة الخطأ، سيتم التعامل معه في المكون
+        }
+      },
     }),
 
     // تحديث السعر
@@ -224,6 +247,17 @@ export const productsApi = createApi({
         { type: 'Products', id: 'LIST' },
         'ProductStats'
       ],
+      async onQueryStarted({ productId, sellPrice }, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          
+          // تحديث فوري لجميع الـ queries
+          dispatch(productsApi.util.invalidateTags([{ type: 'Products', id: 'LIST' }]));
+          
+        } catch {
+          // في حالة الخطأ، سيتم التعامل معه في المكون
+        }
+      },
     }),
 
     // الحصول على إحصائيات الأصناف

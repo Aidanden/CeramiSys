@@ -24,116 +24,105 @@ export const API_CONFIG = {
   },
 };
 
-// إعدادات الكاش لـ RTK Query
+// إعدادات محسّنة للأداء مع Optimistic Updates
 export const API_CACHE_CONFIG = {
-  // إعدادات المصادقة - كاش طويل لأنها لا تتغير كثيراً
+  // إعدادات المصادقة - بدون كاش (حساسة)
   auth: {
-    keepUnusedDataFor: 600, // 10 minutes
-    refetchOnMountOrArgChange: false,
-    refetchOnFocus: false,
-    refetchOnReconnect: false,
+    keepUnusedDataFor: 0, // بدون كاش
+    refetchOnMountOrArgChange: true, // جلب دائماً
+    refetchOnFocus: false, // لا نجلب عند التركيز
+    refetchOnReconnect: true, // جلب عند إعادة الاتصال
   },
-  // إعدادات الشركات - كاش متوسط
+  // إعدادات الشركات - كاش قصير
   companies: {
-    keepUnusedDataFor: 300, // 5 minutes
-    refetchOnMountOrArgChange: true,
-    refetchOnFocus: false,
-    refetchOnReconnect: true,
+    keepUnusedDataFor: 300, // 5 دقائق كاش
+    refetchOnMountOrArgChange: 30, // جلب كل 30 ثانية
+    refetchOnFocus: false, // لا نجلب عند التركيز
+    refetchOnReconnect: true, // جلب عند إعادة الاتصال
   },
-  // إعدادات المستخدمين - كاش قصير لأنها تتغير كثيراً
+  // إعدادات المستخدمين - كاش قصير
   users: {
-    keepUnusedDataFor: 180, // 3 minutes
-    refetchOnMountOrArgChange: true,
-    refetchOnFocus: false,
-    refetchOnReconnect: true,
-    // إضافة polling للتحديث التلقائي (اختياري)
-    pollingInterval: 30000, // 30 ثانية (معطل افتراضياً)
+    keepUnusedDataFor: 300, // 5 دقائق كاش
+    refetchOnMountOrArgChange: 30, // جلب كل 30 ثانية
+    refetchOnFocus: false, // لا نجلب عند التركيز
+    refetchOnReconnect: true, // جلب عند إعادة الاتصال
   },
-  // إعدادات الصلاحيات - كاش طويل لأنها لا تتغير كثيراً
+  // إعدادات الصلاحيات - كاش طويل
   permissions: {
-    keepUnusedDataFor: 900, // 15 minutes
-    refetchOnMountOrArgChange: false,
-    refetchOnFocus: false,
-    refetchOnReconnect: true,
+    keepUnusedDataFor: 600, // 10 دقائق كاش
+    refetchOnMountOrArgChange: 60, // جلب كل دقيقة
+    refetchOnFocus: false, // لا نجلب عند التركيز
+    refetchOnReconnect: true, // جلب عند إعادة الاتصال
   },
-  // إعدادات الأصناف - كاش متوسط لأنها تتغير أحياناً
+  // إعدادات الأصناف - تحديث فوري عند التغيير
   products: {
-    keepUnusedDataFor: 300, // 5 minutes
-    refetchOnMountOrArgChange: true,
-    refetchOnFocus: false,
-    refetchOnReconnect: true,
+    keepUnusedDataFor: 60, // دقيقة واحدة فقط
+    refetchOnMountOrArgChange: true, // جلب فوري عند أي تغيير
+    refetchOnFocus: false, // لا نجلب عند التركيز
+    refetchOnReconnect: true, // جلب عند إعادة الاتصال
   },
-  // إعدادات الإشعارات - كاش قصير لأنها تتغير بسرعة
+  // إعدادات الإشعارات - كاش قصير
   notifications: {
-    keepUnusedDataFor: 60, // 1 minute
-    refetchOnMountOrArgChange: true,
-    refetchOnFocus: true,
-    refetchOnReconnect: true,
-    // إضافة polling للتحديث التلقائي للإشعارات
-    pollingInterval: 30000, // 30 ثانية
+    keepUnusedDataFor: 60, // دقيقة واحدة كاش
+    refetchOnMountOrArgChange: 15, // جلب كل 15 ثانية
+    refetchOnFocus: false, // لا نجلب عند التركيز
+    refetchOnReconnect: true, // جلب عند إعادة الاتصال
   },
-  // إعدادات المبيعات - كاش متوسط
+  // إعدادات المبيعات - فوري بدون كاش
   sales: {
-    keepUnusedDataFor: 300, // 5 minutes
-    refetchOnMountOrArgChange: 30, // 30 ثانية
-    refetchOnFocus: false,
-    refetchOnReconnect: true,
+    keepUnusedDataFor: 0, // بدون كاش للتحديث الفوري
+    refetchOnMountOrArgChange: true, // جلب دائماً
+    refetchOnFocus: false, // لا نجلب عند التركيز
+    refetchOnReconnect: true, // جلب عند إعادة الاتصال
   },
   // إعدادات المشتريات - كاش متوسط
   purchases: {
-    keepUnusedDataFor: 300, // 5 minutes
-    refetchOnMountOrArgChange: 30,
-    refetchOnFocus: false,
-    refetchOnReconnect: true,
+    keepUnusedDataFor: 300, // 5 دقائق كاش
+    refetchOnMountOrArgChange: 30, // جلب كل 30 ثانية
+    refetchOnFocus: false, // لا نجلب عند التركيز
+    refetchOnReconnect: true, // جلب عند إعادة الاتصال
   },
   // إعدادات المبيعات بين الشركات - كاش متوسط
   interCompanySales: {
-    keepUnusedDataFor: 300, // 5 minutes
-    refetchOnMountOrArgChange: 30,
-    refetchOnFocus: false,
-    refetchOnReconnect: true,
+    keepUnusedDataFor: 300, // 5 دقائق كاش
+    refetchOnMountOrArgChange: 30, // جلب كل 30 ثانية
+    refetchOnFocus: false, // لا نجلب عند التركيز
+    refetchOnReconnect: true, // جلب عند إعادة الاتصال
   },
   // إعدادات التقارير - كاش قصير
   reports: {
-    keepUnusedDataFor: 180, // 3 minutes
-    refetchOnMountOrArgChange: 60,
-    refetchOnFocus: false,
-    refetchOnReconnect: true,
+    keepUnusedDataFor: 180, // 3 دقائق كاش
+    refetchOnMountOrArgChange: 30, // جلب كل 30 ثانية
+    refetchOnFocus: false, // لا نجلب عند التركيز
+    refetchOnReconnect: true, // جلب عند إعادة الاتصال
   },
   // إعدادات الأنشطة - كاش قصير
   activities: {
-    keepUnusedDataFor: 120, // 2 minutes
-    refetchOnMountOrArgChange: 30,
-    refetchOnFocus: false,
-    refetchOnReconnect: true,
-  },
-  // إعدادات المبيعات المبدئية - كاش متوسط
-  provisionalSales: {
-    keepUnusedDataFor: 300, // 5 minutes
-    refetchOnMountOrArgChange: 30,
-    refetchOnFocus: false,
-    refetchOnReconnect: true,
+    keepUnusedDataFor: 120, // دقيقتان كاش
+    refetchOnMountOrArgChange: 20, // جلب كل 20 ثانية
+    refetchOnFocus: false, // لا نجلب عند التركيز
+    refetchOnReconnect: true, // جلب عند إعادة الاتصال
   },
   // إعدادات مرتجعات المبيعات - كاش متوسط
   saleReturns: {
-    keepUnusedDataFor: 300, // 5 minutes
-    refetchOnMountOrArgChange: 30,
-    refetchOnFocus: false,
-    refetchOnReconnect: true,
+    keepUnusedDataFor: 300, // 5 دقائق كاش
+    refetchOnMountOrArgChange: 30, // جلب كل 30 ثانية
+    refetchOnFocus: false, // لا نجلب عند التركيز
+    refetchOnReconnect: true, // جلب عند إعادة الاتصال
   },
-  // إعدادات المخزن - كاش متوسط
+  // إعدادات المخزن - كاش متوسط مع Optimistic Updates
   warehouse: {
-    keepUnusedDataFor: 300, // 5 minutes
-    refetchOnMountOrArgChange: 30,
-    refetchOnFocus: false,
-    refetchOnReconnect: true,
+    keepUnusedDataFor: 300, // 5 دقائق كاش
+    refetchOnMountOrArgChange: 30, // جلب كل 30 ثانية
+    refetchOnFocus: false, // لا نجلب عند التركيز
+    refetchOnReconnect: true, // جلب عند إعادة الاتصال
   },
   // إعدادات الدفعات - كاش متوسط
   salePayments: {
-    keepUnusedDataFor: 300, // 5 minutes
-    refetchOnMountOrArgChange: 30,
-    refetchOnFocus: false,
-    refetchOnReconnect: true,
+    keepUnusedDataFor: 300, // 5 دقائق كاش
+    refetchOnMountOrArgChange: 30, // جلب كل 30 ثانية
+    refetchOnFocus: false, // لا نجلب عند التركيز
+    refetchOnReconnect: true, // جلب عند إعادة الاتصال
   },
 };
 
