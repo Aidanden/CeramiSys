@@ -174,12 +174,12 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
             }`}
           >
             <option value="current">الشركة الحالية</option>
-            <option value="parent">الشركة الأم</option>
+            <option value="parent">مخزن التقازي</option>
           </select>
           
           {line.isFromParentCompany && (
             <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-slate-200 text-slate-700 border border-slate-300">
-              شركة أم
+              مخزن التقازي
             </span>
           )}
         </div>
@@ -248,7 +248,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
             <option value={0}>
               {lineFilteredProducts.length > 0 
                 ? 'اختر الصنف...' 
-                : (line.isFromParentCompany ? 'لا توجد أصناف من الشركة الأم' : 'لا توجد أصناف من الشركة الحالية')
+                : (line.isFromParentCompany ? 'لا توجد أصناف من مخزن التقازي' : 'لا توجد أصناف من الشركة الحالية')
               }
             </option>
             {lineFilteredProducts.map((product: any) => (
@@ -361,11 +361,11 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
         <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
           <div className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
             <span>💰</span>
-            <span>تفاصيل التسعير (من الشركة الأم)</span>
+            <span>تفاصيل التسعير (من مخزن التقازي)</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
             <div className="flex justify-between items-center p-3 bg-white rounded-lg border border-slate-200">
-              <span className="text-gray-600 font-medium">سعر الشركة الأم:</span>
+              <span className="text-gray-600 font-medium">سعر مخزن التقازي:</span>
               <span className="font-bold text-slate-700">{formatArabicCurrency(line.parentUnitPrice)}</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-white rounded-lg border border-slate-200">
@@ -388,7 +388,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
           <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
             <p className="text-xs text-amber-800 flex items-center gap-2">
               <span>⚠️</span>
-              <span>لا يمكن البيع بأقل من سعر الشركة الأم ({formatArabicCurrency(line.parentUnitPrice)})</span>
+              <span>لا يمكن البيع بأقل من سعر مخزن التقازي ({formatArabicCurrency(line.parentUnitPrice)})</span>
             </p>
           </div>
         </div>

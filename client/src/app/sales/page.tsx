@@ -315,7 +315,7 @@ const SalesPage = () => {
       });
     });
     
-    const companyType = isFromParentCompany ? '(من الشركة الأم)' : '(من الشركة الحالية)';
+    const companyType = isFromParentCompany ? '(من مخزن التقازي)' : '(من الشركة الحالية)';
     notifications.custom.success('تم بنجاح', `تم إضافة الصنف: ${product.name} ${companyType}`);
   };
 
@@ -560,7 +560,7 @@ const SalesPage = () => {
     });
 
     if (invalidLines.length > 0) {
-      notifications.custom.error('خطأ', 'بعض الأصناف المختارة غير صالحة. يجب أن تكون الأصناف من الشركة الحالية أو الشركة الأم فقط.');
+      notifications.custom.error('خطأ', 'بعض الأصناف المختارة غير صالحة. يجب أن تكون الأصناف من الشركة الحالية أو مخزن التقازي فقط.');
       return;
     }
 
@@ -1579,7 +1579,7 @@ const SalesPage = () => {
                                             {product.name}
                                             {isFromParentCompany && (
                                               <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 mr-2">
-                                                شركة أم
+                                                مخزن التقازي
                                               </span>
                                             )}
                                           </div>
@@ -1738,7 +1738,7 @@ const SalesPage = () => {
                                 </span>
                               </div>
                               <div className="text-xs text-orange-600 mt-1">
-                                • فاتورة مبيعات للعميل • فاتورة مبيعات من الشركة الأم (آجلة) • فاتورة مشتريات للشركة الأم
+                                • فاتورة مبيعات للعميل • فاتورة مبيعات من مخزن التقازي (آجلة) • فاتورة مشتريات لمخزن التقازي
                               </div>
                             </div>
                           );
@@ -1748,7 +1748,7 @@ const SalesPage = () => {
                               <div className="flex items-center gap-2">
                                 <span className="text-blue-600">🏢</span>
                                 <span className="text-sm font-medium text-blue-700">
-                                  فاتورة من الشركة الأم - سيتم إنشاء فواتير متعددة تلقائياً
+                                  فاتورة من مخزن التقازي - سيتم إنشاء فواتير متعددة تلقائياً
                                 </span>
                               </div>
                             </div>
@@ -1959,26 +1959,43 @@ const SalesPage = () => {
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">كود الصنف</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الصنف</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الكمية</th>
-                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">عدد الصناديق</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">سعر الوحدة</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">المجموع</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
                         {selectedSale.lines.map((line, index) => {
-                          const boxesCount = line.product?.unitsPerBox ? Math.ceil(line.qty / Number(line.product.unitsPerBox)) : line.qty;
+                          // حساب الأمتار المربعة وسعر المتر للأصناف بوحدة صندوق
+                          const isBox = line.product?.unit === 'صندوق';
+                          const unitsPerBox = line.product?.unitsPerBox ? Number(line.product.unitsPerBox) : null;
+                          
+                          // الكمية: إذا صندوق نعرض الأمتار، وإلا نعرض الكمية العادية
+                          const displayQty = isBox && unitsPerBox ? line.qty * unitsPerBox : line.qty;
+                          const displayUnit = isBox ? 'م²' : (line.product?.unit || 'وحدة');
+                          
+                          // السعر: إذا صندوق نعرض سعر المتر، وإلا نعرض سعر الوحدة
+                          const displayPrice = isBox && unitsPerBox ? line.unitPrice / unitsPerBox : line.unitPrice;
+                          
                           return (
                             <tr key={index}>
                               <td className="px-4 py-2 text-sm font-mono text-gray-600">{line.product?.sku}</td>
-                              <td className="px-4 py-2 text-sm">{line.product?.name}</td>
                               <td className="px-4 py-2 text-sm">
-                                {formatArabicArea(line.qty)} {line.product?.unit || 'متر مربع'}
+                                {line.product?.name}
+                                {isBox && (
+                                  <span className="block text-xs text-gray-500 mt-0.5">
+                                    ({line.qty} صندوق × {unitsPerBox?.toFixed(2)} م²)
+                                  </span>
+                                )}
                               </td>
                               <td className="px-4 py-2 text-sm">
-                                {formatArabicQuantity(boxesCount)} صندوق
+                                <span className="font-medium text-blue-600">{formatArabicArea(displayQty)}</span>
+                                <span className="text-gray-600 mr-1">{displayUnit}</span>
                               </td>
-                              <td className="px-4 py-2 text-sm">{formatArabicCurrency(line.unitPrice)}</td>
-                              <td className="px-4 py-2 text-sm font-medium">{formatArabicCurrency(line.subTotal)}</td>
+                              <td className="px-4 py-2 text-sm">
+                                <span className="font-medium">{formatArabicCurrency(displayPrice)}</span>
+                                {isBox && <span className="text-gray-500 text-xs block">/م²</span>}
+                              </td>
+                              <td className="px-4 py-2 text-sm font-medium text-green-600">{formatArabicCurrency(line.subTotal)}</td>
                             </tr>
                           );
                         })}
