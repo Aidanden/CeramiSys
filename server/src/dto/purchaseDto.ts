@@ -4,7 +4,7 @@ import { z } from 'zod';
 export const CreatePurchaseDto = z.object({
   companyId: z.number().int().positive(),
   supplierId: z.number().int().positive().optional(),
-  invoiceNumber: z.string().optional(),
+  invoiceNumber: z.string().regex(/^\d{6}$/, 'رقم الفاتورة يجب أن يكون 6 أرقام فقط').optional(),
   purchaseType: z.enum(['CASH', 'CREDIT']),
   paymentMethod: z.enum(['CASH', 'BANK', 'CARD']).optional(),
   lines: z.array(z.object({
@@ -17,7 +17,7 @@ export const CreatePurchaseDto = z.object({
 // DTO for updating a purchase
 export const UpdatePurchaseDto = z.object({
   supplierId: z.number().int().positive().optional(),
-  invoiceNumber: z.string().optional(),
+  invoiceNumber: z.string().regex(/^\d{6}$/, 'رقم الفاتورة يجب أن يكون 6 أرقام فقط').optional(),
   purchaseType: z.enum(['CASH', 'CREDIT']).optional(),
   paymentMethod: z.enum(['CASH', 'BANK', 'CARD']).optional(),
   lines: z.array(z.object({
@@ -67,6 +67,11 @@ export const GetPurchasesQueryDto = z.object({
   search: z.string().optional(),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
+  supplierName: z.string().optional(),
+  supplierPhone: z.string().optional(),
+  invoiceNumber: z.string().optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
 });
 
 export const GetSuppliersQueryDto = z.object({
@@ -99,6 +104,24 @@ export interface PurchaseLine {
   subTotal: number;
 }
 
+export interface PurchaseExpense {
+  id: number;
+  purchaseId: number;
+  categoryId: number;
+  category: {
+    id: number;
+    name: string;
+  };
+  supplierId: number | null;
+  supplier: {
+    id: number;
+    name: string;
+  } | null;
+  amount: number;
+  description: string | null;
+  createdAt: string;
+}
+
 export interface Purchase {
   id: number;
   companyId: number;
@@ -123,6 +146,7 @@ export interface Purchase {
   createdAt: string;
   lines: PurchaseLine[];
   payments: PurchasePayment[];
+  expenses?: PurchaseExpense[];
 }
 
 export interface PurchasePayment {

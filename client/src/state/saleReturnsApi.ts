@@ -133,6 +133,9 @@ export const saleReturnsApi = createApi({
         status?: ReturnStatus;
         page?: number;
         limit?: number;
+        search?: string;
+        startDate?: string;
+        endDate?: string;
       }
     >({
       query: (params) => {
@@ -142,6 +145,9 @@ export const saleReturnsApi = createApi({
         if (params.status) queryParams.append("status", params.status);
         if (params.page) queryParams.append("page", params.page.toString());
         if (params.limit) queryParams.append("limit", params.limit.toString());
+        if (params.search) queryParams.append("search", params.search);
+        if (params.startDate) queryParams.append("startDate", params.startDate);
+        if (params.endDate) queryParams.append("endDate", params.endDate);
 
         return {
           url: `/sale-returns?${queryParams.toString()}`,

@@ -34,33 +34,63 @@ export class ProductService {
       // بناء شروط البحث
       const whereConditions: Prisma.ProductWhereInput = {};
 
-      // فلترة حسب الشركة
+      // بناء شروط الشركة
+      let companyConditions: Prisma.ProductWhereInput[] = [];
+      
       if (isSystemUser) {
         // مستخدم النظام: يمكنه فلترة بأي شركة أو رؤية الكل
         if (companyId) {
-          whereConditions.createdByCompanyId = companyId;
+          if (companyId === 1) {
+            // إذا اختار التقازي، أظهر أصناف التقازي فقط
+            companyConditions = [{ createdByCompanyId: 1 }];
+          } else {
+            // إذا اختار شركة أخرى، أظهر أصنافها + أصناف التقازي
+            companyConditions = [
+              { createdByCompanyId: companyId },
+              { createdByCompanyId: 1 }
+            ];
+          }
         }
       } else {
-        // مستخدم عادي: يرى فقط أصناف شركته (تجاهل companyId من الفلتر)
-        whereConditions.createdByCompanyId = userCompanyId;
+        // مستخدم عادي: يرى أصناف شركته + أصناف التقازي
+        if (userCompanyId === 1) {
+          // إذا كان من التقازي، أظهر أصناف التقازي فقط
+          companyConditions = [{ createdByCompanyId: 1 }];
+        } else {
+          // إذا كان من شركة أخرى، أظهر أصنافه + أصناف التقازي
+          companyConditions = [
+            { createdByCompanyId: userCompanyId },
+            { createdByCompanyId: 1 }
+          ];
+        }
       }
 
-      // إضافة شروط البحث
-      const orConditions: Prisma.ProductWhereInput[] = [];
+      // بناء شروط البحث
+      const searchConditions: Prisma.ProductWhereInput[] = [];
       
       // البحث بالاسم
       if (search) {
-        orConditions.push({ name: { contains: search, mode: Prisma.QueryMode.insensitive } });
+        searchConditions.push({ name: { contains: search, mode: Prisma.QueryMode.insensitive } });
       }
       
       // البحث بالكود (SKU) - بحث دقيق تماماً
       if (sku) {
         whereConditions.sku = { equals: sku, mode: Prisma.QueryMode.insensitive };
       }
-      
-      // إضافة شروط OR إذا كانت موجودة
-      if (orConditions.length > 0) {
-        whereConditions.OR = orConditions;
+
+      // دمج شروط الشركة والبحث
+      if (companyConditions.length > 0 && searchConditions.length > 0) {
+        // إذا كان لدينا شروط شركة وبحث، نحتاج AND بينهما
+        whereConditions.AND = [
+          { OR: companyConditions },
+          { OR: searchConditions }
+        ];
+      } else if (companyConditions.length > 0) {
+        // شروط الشركة فقط
+        whereConditions.OR = companyConditions;
+      } else if (searchConditions.length > 0) {
+        // شروط البحث فقط
+        whereConditions.OR = searchConditions;
       }
 
       // إضافة شرط الوحدة
@@ -97,29 +127,39 @@ export class ProductService {
       });
 
       // تحويل البيانات للتنسيق المطلوب
-      const formattedProducts: ProductResponseDto[] = products.map(product => ({
-        id: product.id,
-        sku: product.sku,
-        name: product.name,
-        unit: product.unit ?? undefined,
-        unitsPerBox: product.unitsPerBox ? Number(product.unitsPerBox) : undefined,
-        qrCode: product.qrCode ?? undefined,
-        createdByCompanyId: product.createdByCompanyId,
-        createdByCompany: product.createdByCompany,
-        createdAt: product.createdAt,
-        updatedAt: product.updatedAt,
-        stock: product.stocks[0] ? {
-          boxes: Number(product.stocks[0].boxes),
-          updatedAt: product.stocks[0].updatedAt
-        } : {
-          boxes: 0,
-          updatedAt: new Date()
-        },
-        price: product.prices[0] ? {
-          sellPrice: Number(product.prices[0].sellPrice),
-          updatedAt: product.prices[0].updatedAt
-        } : undefined,
-      }));
+      const formattedProducts: ProductResponseDto[] = products.map(product => {
+        const boxes = product.stocks[0] ? Number(product.stocks[0].boxes) : 0;
+        const unitsPerBox = product.unitsPerBox ? Number(product.unitsPerBox) : 1;
+        const quantity = boxes * unitsPerBox;
+
+        return {
+          id: product.id,
+          sku: product.sku,
+          name: product.name,
+          unit: product.unit ?? undefined,
+          unitsPerBox: product.unitsPerBox ? Number(product.unitsPerBox) : undefined,
+          qrCode: product.qrCode ?? undefined,
+          createdByCompanyId: product.createdByCompanyId,
+          createdByCompany: product.createdByCompany,
+          createdAt: product.createdAt,
+          updatedAt: product.updatedAt,
+          stock: product.stocks[0] ? [{
+            companyId: userCompanyId,
+            boxes: boxes,
+            quantity: quantity,
+            updatedAt: product.stocks[0].updatedAt
+          }] : [{
+            companyId: userCompanyId,
+            boxes: 0,
+            quantity: 0,
+            updatedAt: new Date()
+          }],
+          price: product.prices[0] ? {
+            sellPrice: Number(product.prices[0].sellPrice),
+            updatedAt: product.prices[0].updatedAt
+          } : undefined,
+        };
+      });
 
       const pages = Math.ceil(total / limit);
 
@@ -171,6 +211,10 @@ export class ProductService {
         throw new Error('الصنف غير موجود أو ليس لديك صلاحية للوصول إليه');
       }
 
+      const boxes = product.stocks[0] ? Number(product.stocks[0].boxes) : 0;
+      const unitsPerBox = product.unitsPerBox ? Number(product.unitsPerBox) : 1;
+      const quantity = boxes * unitsPerBox;
+
       return {
         id: product.id,
         sku: product.sku,
@@ -182,13 +226,17 @@ export class ProductService {
         createdByCompany: product.createdByCompany,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
-        stock: product.stocks[0] ? {
-          boxes: Number(product.stocks[0].boxes),
+        stock: product.stocks[0] ? [{
+          companyId: userCompanyId,
+          boxes: boxes,
+          quantity: quantity,
           updatedAt: product.stocks[0].updatedAt
-        } : {
+        }] : [{
+          companyId: userCompanyId,
           boxes: 0,
+          quantity: 0,
           updatedAt: new Date()
-        },
+        }],
         price: product.prices[0] ? {
           sellPrice: Number(product.prices[0].sellPrice),
           updatedAt: product.prices[0].updatedAt
@@ -415,6 +463,10 @@ export class ProductService {
         }
       }
 
+      const boxes = product.stocks[0] ? Number(product.stocks[0].boxes) : 0;
+      const unitsPerBox = product.unitsPerBox ? Number(product.unitsPerBox) : 1;
+      const quantity = boxes * unitsPerBox;
+
       return {
         id: product.id,
         sku: product.sku,
@@ -425,10 +477,17 @@ export class ProductService {
         createdByCompany: product.createdByCompany,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
-        stock: product.stocks[0] ? {
-          boxes: Number(product.stocks[0].boxes),
+        stock: product.stocks[0] ? [{
+          companyId: userCompanyId,
+          boxes: boxes,
+          quantity: quantity,
           updatedAt: product.stocks[0].updatedAt
-        } : undefined,
+        }] : [{
+          companyId: userCompanyId,
+          boxes: 0,
+          quantity: 0,
+          updatedAt: new Date()
+        }],
         price: product.prices[0] ? {
           sellPrice: Number(product.prices[0].sellPrice),
           updatedAt: product.prices[0].updatedAt

@@ -13,6 +13,9 @@ import salesRoutes from "./routes/salesRoutes";
 import salePaymentRoutes from "./routes/salePaymentRoutes";
 import interCompanySaleRoutes from "./routes/interCompanySaleRoutes";
 import purchaseRoutes from "./routes/purchaseRoutes";
+import purchaseExpenseRoutes from "./routes/purchaseExpense.routes";
+import paymentReceiptRoutes from './routes/paymentReceipt.routes';
+import supplierAccountRoutes from './routes/supplierAccount.routes';
 import activityRoutes from "./routes/activityRoutes";
 import complexInterCompanySaleRoutes from "./routes/complexInterCompanySaleRoutes";
 import reportsRoute from "./routes/reportsRoute";
@@ -21,6 +24,7 @@ import provisionalSalesRoutes from "./routes/provisionalSalesRoutes";
 import saleReturnRoutes from "./routes/saleReturnRoutes";
 import warehouseRoutes from "./routes/warehouseRoutes";
 import customerAccountRoutes from "./routes/customerAccountRoutes";
+import damageReportRoutes from "./routes/damageReportRoutes";
 
 
 /*CONFIGRATION*/
@@ -95,6 +99,8 @@ app.use('/api/sales', salesRoutes);
 app.use('/api/sale-payments', salePaymentRoutes);
 app.use('/api/inter-company-sales', interCompanySaleRoutes);
 app.use('/api', purchaseRoutes);
+app.use('/api/purchase-expenses', purchaseExpenseRoutes);
+app.use('/api/payment-receipts', paymentReceiptRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/complex-inter-company-sales', complexInterCompanySaleRoutes);
 app.use('/api/reports', reportsRoute);
@@ -103,6 +109,8 @@ app.use('/api/provisional-sales', provisionalSalesRoutes);
 app.use('/api/sale-returns', saleReturnRoutes);
 app.use('/api/warehouse', warehouseRoutes);
 app.use('/api/customer-accounts', customerAccountRoutes);
+app.use('/api/supplier-accounts', supplierAccountRoutes);
+app.use('/api/damage-reports', damageReportRoutes);
 
 
 // Health check endpoint

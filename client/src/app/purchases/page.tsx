@@ -5,32 +5,78 @@ import { useRouter } from 'next/navigation';
 import { 
   useGetPurchasesQuery, 
   useCreatePurchaseMutation, 
+  useUpdatePurchaseMutation,
   useDeletePurchaseMutation,
   useGetSuppliersQuery,
   Purchase,
+  CreatePurchaseRequest,
+  UpdatePurchaseRequest,
   Supplier,
-  CreatePurchaseRequest
+  useCreateSupplierMutation
 } from '@/state/purchaseApi';
-import { useGetProductsQuery } from '@/state/productsApi';
 import { useGetCompaniesQuery } from '@/state/companyApi';
+import { useGetProductsQuery } from '@/state/productsApi';
+import { 
+  useGetExpenseCategoriesQuery, 
+  useApprovePurchaseMutation,
+  useAddExpensesToApprovedPurchaseMutation,
+  useGetPurchaseExpensesQuery,
+  useDeletePurchaseExpenseMutation,
+  CreatePurchaseExpenseDto 
+} from '@/state/api/purchaseExpenseApi';
+import { useAppSelector } from '@/app/redux';
 import { useToast } from '@/components/ui/Toast';
-import { formatArabicNumber, formatArabicCurrency, formatArabicQuantity, formatArabicArea } from '@/utils/formatArabicNumbers';
+import { formatArabicCurrency } from '@/utils/formatArabicNumbers';
+import ExpenseCategorySelector from '@/components/purchases/ExpenseCategorySelector';
+import SupplierSelector from '@/components/purchases/SupplierSelector';
 import UnifiedSupplierModal from '@/components/shared/UnifiedSupplierModal';
+import PurchaseLineItem from './PurchaseLineItem';
+import PurchaseApprovalModal from '@/components/purchases/PurchaseApprovalModal';
 
 const PurchasesPage = () => {
   const { success, error, warning, info, confirm } = useToast();
+  const user = useAppSelector((state) => state.auth.user);
   
   // States
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(user?.companyId || null);
+  
+  // Filter states
+  const [filterSupplierName, setFilterSupplierName] = useState('');
+  const [filterSupplierPhone, setFilterSupplierPhone] = useState('');
+  const [filterInvoiceNumber, setFilterInvoiceNumber] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
   const [showCreatePurchaseModal, setShowCreatePurchaseModal] = useState(false);
   const [showSupplierModal, setShowSupplierModal] = useState(false);
+  const [showCreateSupplierModal, setShowCreateSupplierModal] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
   const [showPurchaseDetailsModal, setShowPurchaseDetailsModal] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [purchaseToApprove, setPurchaseToApprove] = useState<Purchase | null>(null);
+  const [showAddExpensesModal, setShowAddExpensesModal] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingPurchaseId, setEditingPurchaseId] = useState<number | null>(null);
+  const [expenseForm, setExpenseForm] = useState<CreatePurchaseExpenseDto[]>([]);
+  const [newExpense, setNewExpense] = useState<CreatePurchaseExpenseDto>({
+    categoryId: 0,
+    supplierId: undefined,
+    amount: 0,
+    notes: ''
+  });
+  const [newSupplierForm, setNewSupplierForm] = useState({
+    name: '',
+    phone: '',
+    address: ''
+  });
+  const [supplierSearchTerm, setSupplierSearchTerm] = useState('');
+  const [showSupplierSuggestions, setShowSupplierSuggestions] = useState(false);
+  const [selectedSupplierName, setSelectedSupplierName] = useState('');
+  const supplierSearchRef = useRef<HTMLDivElement>(null);
   
   // Purchase form states
   const [purchaseForm, setPurchaseForm] = useState<CreatePurchaseRequest>({
+    companyId: user?.companyId || 0,
     supplierId: undefined,
     purchaseType: 'CASH',
     paymentMethod: 'CASH',
@@ -41,6 +87,7 @@ const PurchasesPage = () => {
   const [productSearchTerm, setProductSearchTerm] = useState('');
   const [productCodeSearch, setProductCodeSearch] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cleanup timeout on unmount
@@ -52,26 +99,709 @@ const PurchasesPage = () => {
     };
   }, []);
 
+  // إغلاق قائمة الموردين عند النقر خارجها
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (supplierSearchRef.current && !supplierSearchRef.current.contains(event.target as Node)) {
+        setShowSupplierSuggestions(false);
+      }
+    };
+
+    if (showSupplierSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSupplierSuggestions]);
+
+  // إغلاق القائمة المنسدلة للأصناف عند النقر خارجها
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.product-dropdown-container')) {
+        setShowProductDropdown(false);
+      }
+    };
+
+    if (showProductDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showProductDropdown]);
+
   // API calls
   const { data: purchasesData, isLoading: purchasesLoading, refetch: refetchPurchases } = useGetPurchasesQuery({
     page: currentPage,
     limit: 10,
-    search: searchTerm
+    supplierName: filterSupplierName || undefined,
+    supplierPhone: filterSupplierPhone || undefined,
+    invoiceNumber: filterInvoiceNumber || undefined,
+    dateFrom: filterDateFrom || undefined,
+    dateTo: filterDateTo || undefined,
   });
 
-  const { data: suppliersData, isLoading: suppliersLoading, error: suppliersError } = useGetSuppliersQuery({ limit: 1000 });
+  const { data: suppliersData, isLoading: suppliersLoading, error: suppliersError, refetch: refetchSuppliers } = useGetSuppliersQuery({ limit: 1000 });
   const { data: companiesData, isLoading: companiesLoading } = useGetCompaniesQuery({ limit: 1000 });
   const { data: productsData, isLoading: productsLoading } = useGetProductsQuery({ 
     limit: 1000
   });
   
   const [createPurchase, { isLoading: isCreating }] = useCreatePurchaseMutation();
+  const [updatePurchase, { isLoading: isUpdating }] = useUpdatePurchaseMutation();
   const [deletePurchase, { isLoading: isDeleting }] = useDeletePurchaseMutation();
+  const [createSupplier, { isLoading: isCreatingSupplier }] = useCreateSupplierMutation();
+  const [approvePurchase, { isLoading: isApproving }] = useApprovePurchaseMutation();
+  const [addExpensesToApprovedPurchase, { isLoading: isAddingExpenses }] = useAddExpensesToApprovedPurchaseMutation();
+  const [deletePurchaseExpense] = useDeletePurchaseExpenseMutation();
+  
+  // Fetch expense categories
+  const { data: expenseCategories = [], isLoading: isLoadingCategories, error: categoriesError } = useGetExpenseCategoriesQuery();
+  
+  // Debug logging للفئات (يمكن إزالته في الإنتاج)
+  // console.log('🏷️ فئات المصروفات:', {
+  //   categories: expenseCategories,
+  //   isLoading: isLoadingCategories,
+  //   error: categoriesError
+  // });
+  
+  // جلب المصروفات الموجودة للفاتورة المختارة
+  const { data: existingExpenses = [] } = useGetPurchaseExpensesQuery(
+    selectedPurchase?.id || 0,
+    { skip: !selectedPurchase?.id }
+  );
+
+  // تعيين الشركة الافتراضية عند تحميل الصفحة
+  useEffect(() => {
+    if (user?.companyId && !selectedCompanyId) {
+      setSelectedCompanyId(user.companyId);
+    }
+  }, [user?.companyId]);
 
   // Filter products by selected company
   const filteredProducts = productsData?.data?.products?.filter(product => 
     product.createdByCompanyId === selectedCompanyId
   ) || [];
+
+  // Filter products by search term (name or SKU)
+  const searchFilteredProducts = filteredProducts.filter((product: any) => {
+    if (!productCodeSearch) return true;
+    const matchesName = product.name.toLowerCase().includes(productCodeSearch.toLowerCase());
+    const matchesCode = product.sku.toLowerCase().includes(productCodeSearch.toLowerCase());
+    return matchesName || matchesCode;
+  });
+
+  // دالة اختيار الصنف من القائمة المنسدلة
+  const handleSelectProductFromDropdown = (product: any) => {
+    console.log('🎯 تم اختيار صنف من القائمة المنسدلة:', product);
+    
+    // إضافة بند جديد
+    const newLine = {
+      productId: product.id,
+      qty: 1,
+      unitPrice: Number(product.latestPricing?.purchasePrice || 0)
+    };
+    
+    setPurchaseForm(prev => ({
+      ...prev,
+      lines: [...prev.lines, newLine]
+    }));
+    
+    // إغلاق القائمة المنسدلة ومسح البحث
+    setShowProductDropdown(false);
+    setProductCodeSearch('');
+    
+    success('تم الإضافة', `تم إضافة ${product.name} إلى الفاتورة`);
+  };
+
+  // دالة فتح modal الاعتماد
+  const handleOpenApprovalModal = (purchase: Purchase) => {
+    setPurchaseToApprove(purchase);
+    setShowApprovalModal(true);
+  };
+
+  // دالة إغلاق modal الاعتماد
+  const handleCloseApprovalModal = () => {
+    setShowApprovalModal(false);
+    setPurchaseToApprove(null);
+  };
+
+  // دالة نجاح الاعتماد
+  const handleApprovalSuccess = () => {
+    refetchPurchases(); // إعادة تحميل قائمة المشتريات
+    handleCloseApprovalModal();
+  };
+
+  // دوال التحقق من إمكانية التعديل والحذف
+  const canEditPurchase = (purchase: any) => {
+    // يمكن التعديل إذا كانت الفاتورة غير معتمدة وإيصالات الدفع معلقة
+    return !purchase.isApproved && (!purchase.paymentReceipts || purchase.paymentReceipts.every((receipt: any) => receipt.status === 'PENDING'));
+  };
+
+  const canDeletePurchase = (purchase: any) => {
+    // يمكن الحذف إذا كانت الفاتورة غير معتمدة وإيصالات الدفع معلقة
+    return !purchase.isApproved && (!purchase.paymentReceipts || purchase.paymentReceipts.every((receipt: any) => receipt.status === 'PENDING'));
+  };
+
+  // معالج تعديل الفاتورة
+  const handleEditPurchase = (purchase: any) => {
+    // تحديد الفاتورة المحددة للتعديل
+    setSelectedPurchase(purchase);
+    setIsEditMode(true);
+    setEditingPurchaseId(purchase.id);
+    // ملء النموذج بالبيانات الحالية
+    setPurchaseForm({
+      companyId: purchase.companyId,
+      supplierId: purchase.supplierId,
+      purchaseType: purchase.purchaseType,
+      paymentMethod: purchase.paymentMethod,
+      lines: purchase.lines || []
+    });
+    setSelectedSupplierName(purchase.supplier?.name || '');
+    setShowCreatePurchaseModal(true);
+  };
+
+  // معالج إضافة مصروفات
+  const handleAddExpenses = (purchase: any) => {
+    setSelectedPurchase(purchase);
+    setExpenseForm([]);
+    setNewExpense({
+      categoryId: 0,
+      supplierId: undefined,
+      amount: 0,
+      notes: ''
+    });
+    setShowAddExpensesModal(true);
+  };
+
+  // إضافة مصروف جديد للقائمة
+  const handleAddExpenseToList = () => {
+    // console.log('🔍 محاولة إضافة مصروف:', newExpense);
+    
+    if (newExpense.categoryId === 0 || newExpense.amount <= 0) {
+      error('خطأ', 'يرجى اختيار فئة المصروف وإدخال مبلغ صحيح');
+      return;
+    }
+
+    // التحقق من أن المورد إجباري
+    if (!newExpense.supplierId) {
+      error('خطأ', 'يرجى اختيار المورد');
+      return;
+    }
+
+    try {
+      // تنظيف البيانات قبل الإضافة
+      const cleanExpense = {
+        categoryId: newExpense.categoryId,
+        supplierId: newExpense.supplierId,
+        amount: newExpense.amount,
+        notes: newExpense.notes || undefined
+      };
+
+      // console.log('✅ إضافة مصروف منظف:', cleanExpense);
+      // console.log('📋 قائمة المصروفات الحالية:', expenseForm);
+
+      setExpenseForm([...expenseForm, cleanExpense]);
+      setNewExpense({
+        categoryId: 0,
+        supplierId: undefined,
+        amount: 0,
+        notes: ''
+      });
+
+      // console.log('🎉 تم إضافة المصروف بنجاح');
+      success('تم بنجاح!', 'تم إضافة المصروف إلى القائمة');
+    } catch (err) {
+      error('خطأ', 'حدث خطأ في إضافة المصروف');
+    }
+  };
+
+  // حذف مصروف من القائمة
+  const handleRemoveExpenseFromList = (index: number) => {
+    setExpenseForm(expenseForm.filter((_, i) => i !== index));
+  };
+
+  // حفظ المصروفات واعتماد الفاتورة
+  const handleSaveExpenses = async () => {
+    if (!selectedPurchase) return;
+
+    // للفواتير المعتمدة: يجب إضافة مصروف واحد على الأقل
+    if (selectedPurchase.isApproved && expenseForm.length === 0) {
+      error('خطأ', 'يجب إضافة مصروف واحد على الأقل للفاتورة المعتمدة');
+      return;
+    }
+
+    // للفواتير الجديدة: يمكن اعتماد الفاتورة بدون مصروفات
+    if (!selectedPurchase.isApproved && expenseForm.length === 0) {
+      const confirmed = window.confirm('لم تقم بإضافة أي مصروفات. هل تريد اعتماد الفاتورة فقط؟');
+      if (!confirmed) return;
+    }
+
+    try {
+      // تنظيف البيانات قبل الإرسال
+      const cleanExpenses = expenseForm.map(expense => ({
+        categoryId: expense.categoryId,
+        supplierId: expense.supplierId || undefined,
+        amount: expense.amount,
+        notes: expense.notes || undefined
+      }));
+
+      console.log('إرسال طلب اعتماد الفاتورة:', {
+        purchaseId: selectedPurchase.id,
+        expenses: cleanExpenses
+      });
+
+      // استخدام API مختلف حسب حالة الفاتورة
+      let result;
+      if (selectedPurchase.isApproved) {
+        // للفواتير المعتمدة: استخدم API إضافة المصروفات
+        result = await addExpensesToApprovedPurchase({
+          purchaseId: selectedPurchase.id,
+          expenses: cleanExpenses
+        }).unwrap();
+      } else {
+        // للفواتير الجديدة: استخدم API الاعتماد
+        result = await approvePurchase({
+          purchaseId: selectedPurchase.id,
+          expenses: cleanExpenses
+        }).unwrap();
+      }
+
+      console.log('نتيجة اعتماد الفاتورة:', result);
+
+      // رسالة نجاح مخصصة حسب حالة الفاتورة
+      const successMessage = result.message || 'تم اعتماد الفاتورة وإضافة المصروفات بنجاح';
+      success('تم بنجاح!', successMessage);
+      setShowAddExpensesModal(false);
+      setExpenseForm([]);
+      setNewExpense({
+        categoryId: 0,
+        supplierId: undefined,
+        amount: 0,
+        notes: ''
+      });
+      refetchPurchases();
+    } catch (err: any) {
+      // تحديد رسالة الخطأ المناسبة بدون console.error
+      let errorMessage = 'حدث خطأ في إضافة المصروفات';
+      
+      if (err?.data?.message) {
+        errorMessage = err.data.message;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      } else if (err?.status === 500) {
+        errorMessage = 'خطأ في الخادم - يرجى المحاولة مرة أخرى';
+      } else if (err?.status) {
+        errorMessage = `خطأ في الاتصال (${err.status})`;
+      }
+      
+      error('خطأ', errorMessage);
+    }
+  };
+
+  // فلترة الموردين حسب فئة المصروف المختارة
+  const getFilteredSuppliersForCategory = (categoryId: number) => {
+    if (categoryId === 0) return [];
+    
+    const selectedCategory = expenseCategories.find(cat => cat.id === categoryId);
+    if (!selectedCategory || !selectedCategory.suppliers) return [];
+    
+    return selectedCategory.suppliers.map(categorySupplier => categorySupplier.supplier);
+  };
+
+  // حذف مصروف
+  const handleDeleteExpense = async (expenseId: number) => {
+    const confirmed = window.confirm('هل أنت متأكد من حذف هذا المصروف؟ سيتم حذف إيصال الدفع المرتبط به إن وجد.');
+    if (!confirmed) return;
+
+    try {
+      const result = await deletePurchaseExpense(expenseId).unwrap();
+      success('تم الحذف', result.message || 'تم حذف المصروف بنجاح');
+      
+      // تحديث الفاتورة المعروضة فوراً
+      if (selectedPurchase) {
+        // تحديث المصروفات في الفاتورة المعروضة
+        const updatedExpenses = (selectedPurchase as any).expenses?.filter(
+          (exp: any) => exp.id !== expenseId
+        ) || [];
+        
+        setSelectedPurchase({
+          ...selectedPurchase,
+          expenses: updatedExpenses,
+        } as any);
+      }
+      
+      // تحديث قائمة الفواتير
+      refetchPurchases();
+    } catch (err: any) {
+      const errorMessage = err?.data?.message || err?.message || 'حدث خطأ أثناء حذف المصروف';
+      error('خطأ', errorMessage);
+    }
+  };
+
+  // معالج فتح مودال إنشاء فاتورة جديدة
+  const handleOpenNewPurchaseModal = () => {
+    // إعادة تعيين وضع الإنشاء
+    setIsEditMode(false);
+    setEditingPurchaseId(null);
+    setSelectedPurchase(null);
+    // إعادة تعيين النموذج
+    setPurchaseForm({
+      companyId: selectedCompanyId || 0,
+      supplierId: undefined,
+      purchaseType: 'CASH',
+      paymentMethod: 'CASH',
+      lines: []
+    });
+    setSelectedSupplierName('');
+    setShowCreatePurchaseModal(true);
+  };
+
+  // معالج إغلاق مودال إنشاء/تعديل الفاتورة
+  const handleClosePurchaseModal = () => {
+    setShowCreatePurchaseModal(false);
+    // إعادة تعيين الحالة
+    setIsEditMode(false);
+    setEditingPurchaseId(null);
+    setSelectedPurchase(null);
+    setSelectedSupplierName('');
+  };
+
+  // معالج حذف الفاتورة مع التحقق
+  const handleDeletePurchaseWithValidation = async (purchase: any) => {
+    if (!canDeletePurchase(purchase)) {
+      error('خطأ', 'لا يمكن حذف هذه الفاتورة. تأكد من أن إيصالات الدفع معلقة.');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'هل أنت متأكد من حذف هذه الفاتورة؟ سيتم حذف جميع إيصالات الدفع المرتبطة وتحديث حسابات الموردين.'
+    );
+    
+    if (confirmed) {
+      try {
+        await deletePurchase(purchase.id).unwrap();
+        success('نجح', 'تم حذف الفاتورة وإيصالات الدفع المرتبطة بها بنجاح');
+        refetchPurchases();
+      } catch (err) {
+        error('خطأ', 'فشل في حذف الفاتورة');
+      }
+    }
+  };
+
+  // دالة طباعة الفاتورة
+  const handlePrintInvoice = (purchase: Purchase) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      error('خطأ', 'لا يمكن فتح نافذة الطباعة. تأكد من السماح للنوافذ المنبثقة.');
+      return;
+    }
+
+    const company = companiesData?.data?.companies?.find((c: any) => c.id === purchase.companyId);
+    const supplier = suppliersData?.data?.suppliers?.find((s: any) => s.id === purchase.supplierId);
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>فاتورة مشتريات - ${purchase.invoiceNumber || purchase.id}</title>
+        <style>
+          body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 15px;
+            background: white;
+            color: #000;
+            direction: rtl;
+            font-size: 13px;
+            line-height: 1.4;
+          }
+          .invoice-header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+          }
+          .company-name {
+            font-size: 22px;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 8px;
+          }
+          .invoice-title {
+            font-size: 18px;
+            color: #000;
+            margin: 8px 0;
+            font-weight: bold;
+          }
+          .invoice-number {
+            font-size: 14px;
+            color: #000;
+            margin-top: 5px;
+          }
+          .invoice-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+          }
+          .info-section {
+            border: 2px solid #000;
+            padding: 12px;
+          }
+          .info-title {
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 8px;
+            font-size: 14px;
+            text-align: center;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+          }
+          .info-item {
+            margin: 5px 0;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+          }
+          .info-label {
+            font-weight: bold;
+          }
+          .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            margin: 20px 0 10px 0;
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 5px;
+          }
+          .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            border: 2px solid #000;
+          }
+          .items-table th {
+            background: #f0f0f0;
+            color: #000;
+            padding: 10px 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            border: 1px solid #000;
+          }
+          .items-table td {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #000;
+            font-size: 11px;
+          }
+          .items-table tr:nth-child(even) {
+            background: #f9f9f9;
+          }
+          .total-section {
+            margin-top: 20px;
+            border: 2px solid #000;
+            padding: 15px;
+          }
+          .total-title {
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+          }
+          .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 12px;
+            padding: 3px 0;
+          }
+          .total-final {
+            font-weight: bold;
+            font-size: 14px;
+            color: #000;
+            border-top: 2px solid #000;
+            padding-top: 8px;
+            margin-top: 8px;
+          }
+          .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #666;
+            font-size: 10px;
+            border-top: 1px solid #000;
+            padding-top: 15px;
+          }
+          @media print {
+            body { 
+              margin: 0; 
+              padding: 10mm; 
+              font-size: 12px;
+            }
+            @page { 
+              size: A4; 
+              margin: 15mm; 
+            }
+            .invoice-header { 
+              page-break-inside: avoid;
+            }
+            .items-table th {
+              font-size: 11px;
+            }
+            .items-table td {
+              font-size: 10px;
+            }
+            .total-row {
+              font-size: 11px;
+            }
+            .total-final {
+              font-size: 13px;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="invoice-header">
+          <div class="company-name">${company?.name || 'اسم الشركة'}</div>
+          <div class="invoice-title">فاتورة مشتريات</div>
+          <div class="invoice-number">رقم الفاتورة: ${purchase.invoiceNumber || purchase.id}</div>
+        </div>
+
+        <div class="invoice-info">
+          <div class="info-section">
+            <div class="info-title">معلومات المورد</div>
+            <div class="info-item">
+              <span class="info-label">الاسم:</span>
+              <span>${supplier?.name || 'غير محدد'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">الهاتف:</span>
+              <span>${supplier?.phone || 'غير محدد'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">العنوان:</span>
+              <span>${supplier?.address || 'غير محدد'}</span>
+            </div>
+          </div>
+          
+          <div class="info-section">
+            <div class="info-title">معلومات الفاتورة</div>
+            <div class="info-item">
+              <span class="info-label">التاريخ:</span>
+              <span>${new Date(purchase.createdAt).toLocaleDateString('en-GB')}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">الحالة:</span>
+              <span>${(purchase as any).isApproved ? 'معتمدة' : 'غير معتمدة'}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- جدول الأصناف -->
+        <div class="section-title">الأصناف</div>
+        <table class="items-table">
+            <thead>
+              <tr>
+                <th>الصنف</th>
+                <th>الكمية</th>
+                <th>سعر الوحدة</th>
+                <th>الإجمالي</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${purchase.lines?.map((line: any) => `
+                <tr>
+                  <td>${line.product?.name || 'صنف محذوف'}</td>
+                  <td>${line.qty}</td>
+                  <td>${Number(line.unitPrice).toFixed(2)} د.ل</td>
+                  <td>${(Number(line.qty) * Number(line.unitPrice)).toFixed(2)} د.ل</td>
+                </tr>
+              `).join('') || '<tr><td colspan="4">لا توجد أصناف</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- جدول المصروفات -->
+        ${(purchase as any).expenses?.length > 0 ? `
+        <div class="section-title">المصروفات</div>
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>بند المصروف</th>
+              <th>الوصف</th>
+              <th>الشخص المتبع</th>
+              <th>المبلغ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(purchase as any).expenses?.map((expense: any) => `
+              <tr>
+                <td>${expense.category?.name || 'غير محدد'}</td>
+                <td>${expense.description || '-'}</td>
+                <td>${expense.supplier?.name || 'غير محدد'}</td>
+                <td>${Number(expense.amount).toFixed(2)} د.ل</td>
+              </tr>
+            `).join('') || '<tr><td colspan="4">لا توجد مصروفات</td></tr>'}
+          </tbody>
+        </table>
+        ` : ''}
+
+        <div class="total-section">
+          <div class="total-title">ملخص الفاتورة</div>
+          <div class="total-row">
+            <span>مجموع الأصناف:</span>
+            <span>${Number(purchase.total).toFixed(2)} د.ل</span>
+          </div>
+          ${(purchase as any).expenses?.length > 0 ? `
+          <div class="total-row">
+            <span>إجمالي المصروفات:</span>
+            <span>${(purchase as any).expenses.reduce((sum: number, exp: any) => sum + Number(exp.amount), 0).toFixed(2)} د.ل</span>
+          </div>
+          <div class="total-row total-final">
+            <span>الإجمالي مع المصروفات:</span>
+            <span>${(Number(purchase.total) + (purchase as any).expenses.reduce((sum: number, exp: any) => sum + Number(exp.amount), 0)).toFixed(2)} د.ل</span>
+          </div>
+          ` : `
+          <div class="total-row total-final">
+            <span>الإجمالي النهائي:</span>
+            <span>${Number(purchase.total).toFixed(2)} د.ل</span>
+          </div>
+          `}
+          <div class="total-row">
+            <span>المبلغ المدفوع:</span>
+            <span>${Number(purchase.paidAmount).toFixed(2)} د.ل</span>
+          </div>
+          <div class="total-row">
+            <span>المبلغ المتبقي:</span>
+            <span>${Number(purchase.remainingAmount).toFixed(2)} د.ل</span>
+          </div>
+        </div>
+
+        <div class="footer">
+          <p>تم إنشاء هذه الفاتورة بواسطة نظام CeramiSys</p>
+          <p>تاريخ الطباعة: ${new Date().toLocaleString('ar-SA')}</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    // انتظار تحميل المحتوى ثم الطباعة
+    printWindow.onload = () => {
+      printWindow.print();
+      printWindow.close();
+    };
+
+    success('نجح', 'تم فتح نافذة الطباعة');
+  };
 
   if (purchasesLoading) {
     return (
@@ -98,7 +828,7 @@ const PurchasesPage = () => {
             </div>
           </div>
           <button
-            onClick={() => setShowCreatePurchaseModal(true)}
+            onClick={handleOpenNewPurchaseModal}
             disabled={!selectedCompanyId}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -121,6 +851,7 @@ const PurchasesPage = () => {
             const newCompanyId = e.target.value ? Number(e.target.value) : null;
             setSelectedCompanyId(newCompanyId);
             setPurchaseForm({
+              companyId: newCompanyId || 0,
               supplierId: undefined,
               purchaseType: 'CASH',
               paymentMethod: 'CASH',
@@ -157,41 +888,163 @@ const PurchasesPage = () => {
         )}
       </div>
 
-      {/* Filters and Search */}
+      {/* Filters */}
       <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
-          <div className="relative flex-1">
-            <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="البحث في المشتريات..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+        <div className="flex flex-col gap-4">
+          {/* عنوان الفلاتر وزر المسح */}
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              فلترة المشتريات
+            </h3>
+
+            {/* زر مسح الفلاتر */}
+            {(filterSupplierName || filterSupplierPhone || filterInvoiceNumber || filterDateFrom || filterDateTo) && (
+              <button
+                onClick={() => {
+                  setFilterSupplierName('');
+                  setFilterSupplierPhone('');
+                  setFilterInvoiceNumber('');
+                  setFilterDateFrom('');
+                  setFilterDateTo('');
+                  setCurrentPage(1);
+                }}
+                className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                مسح جميع الفلاتر
+              </button>
+            )}
           </div>
 
-          {/* Add Supplier */}
-          <button 
-            onClick={() => setShowSupplierModal(true)}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            مورد جديد
-          </button>
+          {/* حقول الفلترة */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* اسم المورد */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    اسم المورد
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ابحث باسم المورد..."
+                    value={filterSupplierName}
+                    onChange={(e) => {
+                      setFilterSupplierName(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
 
-          {/* Export */}
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            تصدير
-          </button>
+                {/* رقم هاتف المورد */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    رقم هاتف المورد
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ابحث برقم الهاتف..."
+                    value={filterSupplierPhone}
+                    onChange={(e) => {
+                      setFilterSupplierPhone(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                {/* رقم الفاتورة */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    رقم الفاتورة
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ابحث برقم الفاتورة..."
+                    value={filterInvoiceNumber}
+                    onChange={(e) => {
+                      setFilterInvoiceNumber(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                {/* تاريخ من */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    من تاريخ
+                  </label>
+                  <input
+                    type="date"
+                    value={filterDateFrom}
+                    onChange={(e) => {
+                      setFilterDateFrom(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                {/* تاريخ إلى */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    إلى تاريخ
+                  </label>
+                  <input
+                    type="date"
+                    value={filterDateTo}
+                    onChange={(e) => {
+                      setFilterDateTo(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+          {/* معلومات الفلاتر النشطة */}
+          {(filterSupplierName || filterSupplierPhone || filterInvoiceNumber || filterDateFrom || filterDateTo) && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800 font-medium mb-2">الفلاتر النشطة:</p>
+              <div className="flex flex-wrap gap-2">
+                {filterSupplierName && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                    المورد: {filterSupplierName}
+                    <button onClick={() => setFilterSupplierName('')} className="hover:text-blue-900">×</button>
+                  </span>
+                )}
+                {filterSupplierPhone && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                    الهاتف: {filterSupplierPhone}
+                    <button onClick={() => setFilterSupplierPhone('')} className="hover:text-blue-900">×</button>
+                  </span>
+                )}
+                {filterInvoiceNumber && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                    الفاتورة: {filterInvoiceNumber}
+                    <button onClick={() => setFilterInvoiceNumber('')} className="hover:text-blue-900">×</button>
+                  </span>
+                )}
+                {filterDateFrom && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                    من: {filterDateFrom}
+                    <button onClick={() => setFilterDateFrom('')} className="hover:text-blue-900">×</button>
+                  </span>
+                )}
+                {filterDateTo && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                    إلى: {filterDateTo}
+                    <button onClick={() => setFilterDateTo('')} className="hover:text-blue-900">×</button>
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -214,10 +1067,7 @@ const PurchasesPage = () => {
                   المجموع
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  نوع الشراء
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  طريق الدفع
+                  الإجمالي مع المصروفات
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   التاريخ
@@ -247,29 +1097,18 @@ const PurchasesPage = () => {
                       {formatArabicCurrency(purchase.total)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      purchase.purchaseType === 'CASH' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {purchase.purchaseType === 'CASH' ? 'نقدي' : 'آجل'}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <span className="font-semibold text-blue-600">
+                      {(() => {
+                        const expensesTotal = (purchase as any).expenses?.reduce((sum: number, exp: any) => sum + Number(exp.amount), 0) || 0;
+                        const totalWithExpenses = Number(purchase.total) + expensesTotal;
+                        return formatArabicCurrency(totalWithExpenses);
+                      })()}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {purchase.paymentMethod ? (
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        purchase.paymentMethod === 'CASH' 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : purchase.paymentMethod === 'BANK'
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-orange-100 text-orange-800'
-                      }`}>
-                        {purchase.paymentMethod === 'CASH' ? 'كاش' : 
-                         purchase.paymentMethod === 'BANK' ? 'مصرف' : 'بطاقة'}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 text-xs">-</span>
+                    {(purchase as any).expenses?.length > 0 && (
+                      <div className="text-xs text-gray-500">
+                        +{formatArabicCurrency((purchase as any).expenses.reduce((sum: number, exp: any) => sum + Number(exp.amount), 0))} مصروفات
+                      </div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -277,8 +1116,25 @@ const PurchasesPage = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center gap-2">
+                      {/* زر الاعتماد - يظهر فقط للفواتير غير المعتمدة */}
+                      {!(purchase as any).isApproved && (
+                        <button
+                          onClick={() => handleOpenApprovalModal(purchase)}
+                          className="text-green-600 hover:text-green-900 p-1 rounded"
+                          title="اعتماد الفاتورة"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </button>
+                      )}
+                      
+                      {/* زر عرض التفاصيل */}
                       <button
-                        onClick={() => setSelectedPurchase(purchase)}
+                        onClick={() => {
+                          setSelectedPurchase(purchase);
+                          setShowPurchaseDetailsModal(true);
+                        }}
                         className="text-blue-600 hover:text-blue-900 p-1 rounded"
                         title="عرض التفاصيل"
                       >
@@ -287,21 +1143,62 @@ const PurchasesPage = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
                       </button>
+
+                      {/* زر طباعة الفاتورة */}
                       <button
-                        onClick={() => {
-                          const confirmed = confirm('تأكيد الحذف', 'هل أنت متأكد من حذف هذه الفاتورة؟');
-                          if (confirmed) {
-                            deletePurchase(purchase.id);
-                          }
-                        }}
-                        className="text-red-600 hover:text-red-900 p-1 rounded"
-                        title="حذف"
-                        disabled={isDeleting}
+                        onClick={() => handlePrintInvoice(purchase)}
+                        className="text-purple-600 hover:text-purple-900 p-1 rounded"
+                        title="طباعة الفاتورة"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                         </svg>
                       </button>
+
+                      {/* زر تعديل الفاتورة - يظهر فقط إذا كانت إيصالات الدفع معلقة */}
+                      {canEditPurchase(purchase) && (
+                        <button
+                          onClick={() => handleEditPurchase(purchase)}
+                          className="text-orange-600 hover:text-orange-900 p-1 rounded"
+                          title="تعديل الفاتورة"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      )}
+
+                      {/* زر إضافة مصروفات */}
+                      <button
+                        onClick={() => handleAddExpenses(purchase)}
+                        className="text-indigo-600 hover:text-indigo-900 p-1 rounded"
+                        title="إضافة مصروفات"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                      </button>
+                      
+                      {/* زر الحذف المحسن - يظهر فقط إذا كانت إيصالات الدفع معلقة */}
+                      {canDeletePurchase(purchase) && (
+                        <button
+                          onClick={() => handleDeletePurchaseWithValidation(purchase)}
+                          className="text-red-600 hover:text-red-900 p-1 rounded"
+                          title="حذف الفاتورة"
+                          disabled={isDeleting}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
+                      
+                      {/* إشارة الاعتماد */}
+                      {(purchase as any).isApproved && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          ✓ معتمد
+                        </span>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -367,15 +1264,17 @@ const PurchasesPage = () => {
         )}
       </div>
 
-      {/* Create Purchase Form */}
+      {/* Create Purchase Modal */}
       {showCreatePurchaseModal && selectedCompanyId && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-10 mx-auto p-6 border w-11/12 max-w-7xl shadow-lg rounded-md bg-white min-h-[90vh]">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">فاتورة مشتريات جديدة</h2>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {isEditMode ? 'تعديل فاتورة المشتريات' : 'فاتورة مشتريات جديدة'}
+                </h2>
                 <button
-                  onClick={() => setShowCreatePurchaseModal(false)}
+                  onClick={handleClosePurchaseModal}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -441,61 +1340,134 @@ const PurchasesPage = () => {
                   }
 
                   try {
-                    await createPurchase({
-                      ...purchaseForm,
-                      companyId: selectedCompanyId
-                    }).unwrap();
+                    if (isEditMode && editingPurchaseId) {
+                      // تعديل فاتورة موجودة
+                      await updatePurchase({
+                        id: editingPurchaseId,
+                        data: {
+                          supplierId: purchaseForm.supplierId,
+                          purchaseType: purchaseForm.purchaseType,
+                          paymentMethod: purchaseForm.paymentMethod,
+                          lines: purchaseForm.lines.map(line => ({
+                            ...(line.id && { id: line.id }),
+                            productId: line.productId,
+                            qty: line.qty,
+                            unitPrice: line.unitPrice
+                          }))
+                        }
+                      }).unwrap();
+                      
+                      success('تم بنجاح!', 'تم تحديث فاتورة المشتريات بنجاح');
+                    } else {
+                      // إنشاء فاتورة جديدة
+                      await createPurchase({
+                        ...purchaseForm,
+                        companyId: selectedCompanyId
+                      }).unwrap();
+                      
+                      success('تم بنجاح!', 'تم إنشاء فاتورة المشتريات بنجاح');
+                    }
                     
-                    success('تم بنجاح!', 'تم إنشاء فاتورة المشتريات بنجاح');
-                    
-                    // Reset form
-                    setPurchaseForm({
-                      supplierId: undefined,
-                      purchaseType: 'CASH',
-                      paymentMethod: 'CASH',
-                      lines: []
-                    });
-                    
-                    setShowCreatePurchaseModal(false);
+                    // Reset form and close modal
+                    handleClosePurchaseModal();
                     refetchPurchases();
                     
-                  } catch (error: any) {
-                    console.error('خطأ في إنشاء فاتورة المشتريات:', error);
-                    error('خطأ', 'حدث خطأ في إنشاء فاتورة المشتريات');
+                  } catch (err: any) {
+                    console.error('خطأ في حفظ فاتورة المشتريات:', err);
+                    const errorMessage = isEditMode ? 'حدث خطأ في تحديث فاتورة المشتريات' : 'حدث خطأ في إنشاء فاتورة المشتريات';
+                    error('خطأ', errorMessage);
                   }
                 }} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="relative" ref={supplierSearchRef}>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         المورد *
                       </label>
-                      <select
-                        value={purchaseForm.supplierId || ''}
-                        onChange={(e) => setPurchaseForm(prev => ({
-                          ...prev,
-                          supplierId: e.target.value ? Number(e.target.value) : undefined
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      >
-                        <option value="">اختر مورد</option>
-                        {suppliersLoading ? (
-                          <option disabled>جاري تحميل الموردين...</option>
-                        ) : suppliersError ? (
-                          <option disabled>خطأ في تحميل الموردين</option>
-                        ) : suppliersData?.data?.suppliers?.length === 0 ? (
-                          <option disabled>لا توجد موردين</option>
-                        ) : (
-                          suppliersData?.data?.suppliers?.map((supplier) => (
-                            <option key={supplier.id} value={supplier.id}>
-                              {supplier.name}
-                            </option>
-                          ))
-                        )}
-                      </select>
-                      <p className="text-xs text-gray-500 mt-1">
-                        مطلوب - يجب اختيار مورد للمتابعة
-                      </p>
+                      <div className="flex gap-2">
+                        <div className="flex-1 relative">
+                          <input
+                            type="text"
+                            value={selectedSupplierName || supplierSearchTerm}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setSupplierSearchTerm(value);
+                              setSelectedSupplierName('');
+                              setPurchaseForm(prev => ({ ...prev, supplierId: undefined }));
+                              setShowSupplierSuggestions(true);
+                            }}
+                            onFocus={() => setShowSupplierSuggestions(true)}
+                            placeholder="ابحث عن المورد بالاسم أو الهاتف..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required={!purchaseForm.supplierId}
+                          />
+                          {suppliersLoading && (
+                            <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            </div>
+                          )}
+                          
+                          {/* Supplier Suggestions Dropdown */}
+                          {showSupplierSuggestions && !suppliersLoading && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                              {suppliersData?.data?.suppliers
+                                ?.filter((supplier) => 
+                                  supplier.name.toLowerCase().includes(supplierSearchTerm.toLowerCase()) ||
+                                  supplier.phone?.includes(supplierSearchTerm)
+                                )
+                                ?.map((supplier) => (
+                                  <div
+                                    key={supplier.id}
+                                    onClick={() => {
+                                      setPurchaseForm(prev => ({ ...prev, supplierId: supplier.id }));
+                                      setSelectedSupplierName(supplier.name);
+                                      setSupplierSearchTerm('');
+                                      setShowSupplierSuggestions(false);
+                                    }}
+                                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                  >
+                                    <div className="font-medium text-gray-900">{supplier.name}</div>
+                                    {supplier.phone && (
+                                      <div className="text-xs text-gray-500">📱 {supplier.phone}</div>
+                                    )}
+                                    {supplier.address && (
+                                      <div className="text-xs text-gray-400">📍 {supplier.address}</div>
+                                    )}
+                                  </div>
+                                ))}
+                              {suppliersData?.data?.suppliers
+                                ?.filter((supplier) => 
+                                  supplier.name.toLowerCase().includes(supplierSearchTerm.toLowerCase()) ||
+                                  supplier.phone?.includes(supplierSearchTerm)
+                                )?.length === 0 && (
+                                <div className="px-3 py-2 text-gray-500 text-sm">
+                                  لا توجد نتائج
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowCreateSupplierModal(true)}
+                          className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors flex items-center gap-1 whitespace-nowrap"
+                          title="إضافة مورد جديد"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          <span className="hidden sm:inline">مورد</span>
+                        </button>
+                      </div>
+                      {purchaseForm.supplierId && selectedSupplierName && (
+                        <p className="text-xs text-green-600 mt-1 font-medium">
+                          ✓ تم اختيار: {selectedSupplierName}
+                        </p>
+                      )}
+                      {!purchaseForm.supplierId && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          مطلوب - ابحث واختر مورد للمتابعة
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -513,45 +1485,6 @@ const PurchasesPage = () => {
                       </p>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        نوع الشراء *
-                      </label>
-                      <select
-                        value={purchaseForm.purchaseType}
-                        onChange={(e) => setPurchaseForm(prev => ({ 
-                          ...prev, 
-                          purchaseType: e.target.value as any
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      >
-                        <option value="CASH">نقدي</option>
-                        <option value="CREDIT">آجل</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        طريق الدفع *
-                      </label>
-                      <select
-                        value={purchaseForm.paymentMethod || 'CASH'}
-                        onChange={(e) => setPurchaseForm(prev => ({ 
-                          ...prev, 
-                          paymentMethod: e.target.value as any
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      >
-                        <option value="CASH">كاش</option>
-                        <option value="BANK">مصرف</option>
-                        <option value="CARD">بطاقة</option>
-                      </select>
-                      <p className="text-xs text-gray-500 mt-1">
-                        اختر طريقة الدفع للمشتريات النقدية
-                      </p>
-                    </div>
                   </div>
 
                   {/* Purchase Lines */}
@@ -568,29 +1501,14 @@ const PurchasesPage = () => {
                             lines: [...prev.lines, {
                               productId: 0,
                               qty: 1,
-                              unitPrice: 0,
-                              total: 0
+                              unitPrice: 0
                             }]
                           }))}
-                          disabled={!purchaseForm.supplierId || filteredProducts.length === 0}
-                          className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow-md transition-all duration-200 font-medium ${
-                            purchaseForm.supplierId && filteredProducts.length > 0
-                              ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white hover:shadow-lg' 
-                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          }`}
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg shadow-md transition-all duration-200 font-medium bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white hover:shadow-lg"
                         >
                           <span className="text-lg">➕</span>
                           <span>إضافة بند</span>
                         </button>
-                        {!purchaseForm.supplierId ? (
-                          <span className="text-xs text-red-600 font-medium">
-                            اختر المورد أولاً
-                          </span>
-                        ) : filteredProducts.length === 0 ? (
-                          <span className="text-xs text-red-600 font-medium">
-                            لا توجد أصناف متاحة لهذه الشركة
-                          </span>
-                        ) : null}
                       </div>
                     </div>
 
@@ -607,231 +1525,174 @@ const PurchasesPage = () => {
                           </span>
                         )}
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            البحث بالاسم
-                          </label>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          اختيار الصنف
+                        </label>
+                        <div className="relative product-dropdown-container">
                           <input
                             type="text"
-                            value={productSearchTerm}
-                            onChange={(e) => setProductSearchTerm(e.target.value)}
-                            placeholder="ابحث بالاسم..."
+                            value={productCodeSearch}
+                            onChange={(e) => {
+                              setProductCodeSearch(e.target.value);
+                              setShowProductDropdown(e.target.value.length > 0);
+                            }}
+                            onFocus={() => setShowProductDropdown(productCodeSearch.length > 0)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                // إضافة أول صنف من نتائج البحث
+                                if (searchFilteredProducts.length > 0) {
+                                  handleSelectProductFromDropdown(searchFilteredProducts[0]);
+                                }
+                              }
+                            }}
+                            placeholder="ابحث بالاسم أو الكود..."
                             className="w-full px-3 py-2 border-2 border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            البحث بالكود
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              value={productCodeSearch}
-                              onChange={(e) => {
-                                const code = e.target.value;
-                                setProductCodeSearch(code);
-                                
-                                if (code && code.trim() !== '') {
-                                  const exactMatch = productsData?.data?.products?.find(
-                                    product => product.sku.toLowerCase() === code.toLowerCase() 
-                                      && product.createdByCompanyId === selectedCompanyId
-                                  );
-                                  
-                                  if (exactMatch && purchaseForm.supplierId) {
-                                    setPurchaseForm(prev => ({
-                                      ...prev,
-                                      lines: [...prev.lines, {
-                                        productId: exactMatch.id,
-                                        qty: 1,
-                                        unitPrice: Number(exactMatch.price?.purchasePrice || 0),
-                                        total: Number(exactMatch.price?.purchasePrice || 0)
-                                      }]
-                                    }));
-                                    setProductCodeSearch('');
-                                    success('تم بنجاح', `تم إضافة الصنف: ${exactMatch.name}`);
-                                  }
-                                }
-                              }}
-                              placeholder="أدخل كود الصنف للإضافة التلقائية..."
-                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                            />
-                            {isSearching && (
-                              <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Purchase Lines List */}
-                    {purchaseForm.lines.length > 0 && (
-                      <div className="space-y-3">
-                        {purchaseForm.lines.map((line, index) => {
-                          const product = productsData?.data?.products?.find(p => p.id === line.productId);
-                          const filteredProductsForLine = filteredProducts.filter(p => 
-                            p.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
-                            p.sku.toLowerCase().includes(productSearchTerm.toLowerCase())
-                          );
-
-                          return (
-                            <div key={index} className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
-                              <div className="flex items-center justify-between mb-3">
-                                <h4 className="text-sm font-bold text-gray-700">البند {index + 1}</h4>
-                                <button
-                                  type="button"
-                                  onClick={() => setPurchaseForm(prev => ({
-                                    ...prev,
-                                    lines: prev.lines.filter((_, i) => i !== index)
-                                  }))}
-                                  className="text-red-600 hover:text-red-800 p-1 rounded"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                </button>
-                              </div>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                                    الصنف *
-                                  </label>
-                                  <select
-                                    value={line.productId}
-                                    onChange={(e) => {
-                                      const productId = Number(e.target.value);
-                                      const newLine = { ...line, productId };
-                                      if (productId && productId !== 0) {
-                                        const selectedProduct = productsData?.data?.products?.find(p => p.id === productId);
-                                        if (selectedProduct?.price?.purchasePrice) {
-                                          newLine.unitPrice = Number(selectedProduct.price.purchasePrice);
-                                          newLine.total = newLine.qty * newLine.unitPrice;
-                                        }
-                                      }
-                                      setPurchaseForm(prev => ({
-                                        ...prev,
-                                        lines: prev.lines.map((l, i) => i === index ? newLine : l)
-                                      }));
-                                    }}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    required
+                          
+                          {/* القائمة المنسدلة للأصناف */}
+                          {showProductDropdown && productCodeSearch && (
+                            <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                              {searchFilteredProducts.length > 0 ? (
+                                searchFilteredProducts.slice(0, 10).map((product: any) => (
+                                  <button
+                                    key={product.id}
+                                    type="button"
+                                    onClick={() => handleSelectProductFromDropdown(product)}
+                                    className="w-full px-3 py-2 text-right hover:bg-blue-50 focus:bg-blue-50 focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors"
                                   >
-                                    <option value={0}>اختر صنف</option>
-                                    {filteredProductsForLine.map((product) => (
-                                      <option key={product.id} value={product.id}>
-                                        {product.name} ({product.sku})
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                                
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                                    الكمية *
-                                  </label>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    step="0.01"
-                                    value={line.qty}
-                                    onChange={(e) => {
-                                      const qty = Number(e.target.value);
-                                      const newLine = { ...line, qty, total: qty * line.unitPrice };
-                                      setPurchaseForm(prev => ({
-                                        ...prev,
-                                        lines: prev.lines.map((l, i) => i === index ? newLine : l)
-                                      }));
-                                    }}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    required
-                                  />
-                                </div>
-                                
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                                    سعر الوحدة *
-                                  </label>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={line.unitPrice}
-                                    onChange={(e) => {
-                                      const unitPrice = Number(e.target.value);
-                                      const newLine = { ...line, unitPrice, total: line.qty * unitPrice };
-                                      setPurchaseForm(prev => ({
-                                        ...prev,
-                                        lines: prev.lines.map((l, i) => i === index ? newLine : l)
-                                      }));
-                                    }}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    required
-                                  />
-                                </div>
-                                
-                                <div>
-                                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                                    المجموع
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={formatArabicCurrency(line.total)}
-                                    readOnly
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600 text-sm cursor-not-allowed"
-                                  />
-                                </div>
-                              </div>
-                              
-                              {product && (
-                                <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
-                                  <div className="text-xs text-blue-800">
-                                    <span className="font-medium">معلومات الصنف:</span> {product.name} | 
-                                    <span className="font-medium"> الكود:</span> {product.sku} | 
-                                    <span className="font-medium"> الوحدة:</span> {product.unit || 'وحدة'}
-                                  </div>
+                                    <div className="flex justify-between items-center gap-3">
+                                      <div className="text-sm flex-1">
+                                        <div className="font-medium text-gray-900">
+                                          {product.name}
+                                        </div>
+                                        <div className="text-xs text-gray-500 flex items-center gap-2">
+                                          <span>كود: {product.sku}</span>
+                                          {/* عرض الكمية في المخزون */}
+                                          {product.stock && product.stock.length > 0 && (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">
+                                              📦 {product.stock.find((s: any) => s.companyId === selectedCompanyId)?.quantity || 0} {product.unit || 'وحدة'}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="text-xs font-medium text-blue-600 whitespace-nowrap">
+                                        {product.latestPricing?.purchasePrice 
+                                          ? `${Number(product.latestPricing.purchasePrice).toFixed(2)} د.ل` 
+                                          : 'غير محدد'}
+                                      </div>
+                                    </div>
+                                  </button>
+                                ))
+                              ) : (
+                                <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                                  لا توجد أصناف مطابقة
                                 </div>
                               )}
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* Total */}
-                    {purchaseForm.lines.length > 0 && (
-                      <div className="mt-4 p-4 bg-green-50 rounded-lg border-2 border-green-200">
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-green-800">إجمالي الفاتورة:</span>
-                          <span className="text-2xl font-bold text-green-600">
-                            {formatArabicCurrency(purchaseForm.lines.reduce((sum, line) => sum + line.total, 0))}
-                          </span>
+                          )}
                         </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          💡 ابحث واختر الصنف لإضافته تلقائياً للفاتورة
+                        </p>
                       </div>
+                      {productCodeSearch && (
+                        <div className="mt-3 flex justify-between items-center p-2 bg-white rounded-md border border-blue-200">
+                          <div className="text-xs font-medium text-gray-600">
+                            📊 عرض {searchFilteredProducts.length} منتج من أصل {filteredProducts.length}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setProductCodeSearch('');
+                              setShowProductDropdown(false);
+                            }}
+                            className="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 hover:bg-blue-50 rounded transition-colors"
+                          >
+                            ✖️ مسح البحث
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                      {purchaseForm.lines.length === 0 ? (
+                        <div className="text-center py-12 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg">
+                          <div className="text-6xl mb-3">📝</div>
+                          <p className="text-gray-600 font-medium mb-2">لا توجد بنود في الفاتورة</p>
+                          <p className="text-sm text-gray-500">اضغط على "إضافة بند" لبدء إنشاء الفاتورة</p>
+                        </div>
+                      ) : (
+                        purchaseForm.lines.map((line, index) => (
+                          <PurchaseLineItem
+                            key={index}
+                            line={line}
+                            index={index}
+                            products={filteredProducts}
+                            onUpdate={(idx, field, value) => {
+                              setPurchaseForm(prev => ({
+                                ...prev,
+                                lines: prev.lines.map((l, i) => 
+                                  i === idx ? { ...l, [field]: value } : l
+                                )
+                              }));
+                            }}
+                            onRemove={(idx) => {
+                              setPurchaseForm(prev => ({
+                                ...prev,
+                                lines: prev.lines.filter((_, i) => i !== idx)
+                              }));
+                            }}
+                          />
+                        ))
+                      )}
+                    </div>
+
+                    {purchaseForm.lines.length > 0 && (
+                      <>
+                        {/* المجموع الإجمالي */}
+                        <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-lg">
+                          <div className="flex justify-between items-center">
+                            <span className="text-lg font-bold text-gray-700">المجموع الإجمالي:</span>
+                            <span className="text-2xl font-bold text-green-600">
+                              {formatArabicCurrency(purchaseForm.lines.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0))}
+                            </span>
+                          </div>
+                        </div>
+                      </>
                     )}
                   </div>
 
-                  {/* Form Actions */}
-                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                  <div className="flex justify-end gap-4 pt-8 border-t-2 border-gray-200 mt-6">
                     <button
                       type="button"
-                      onClick={() => setShowCreatePurchaseModal(false)}
-                      className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                      onClick={() => {
+                        setShowCreatePurchaseModal(false);
+                        setProductCodeSearch('');
+                      }}
+                      className="flex items-center gap-2 px-8 py-3 border-2 border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 font-medium text-base"
                     >
-                      إلغاء
+                      <span>❌</span>
+                      <span>إلغاء</span>
                     </button>
                     <button
                       type="submit"
-                      disabled={isCreating || purchaseForm.lines.length === 0}
-                      className={`px-6 py-2 rounded-md text-white font-medium transition-colors ${
-                        isCreating || purchaseForm.lines.length === 0
-                          ? 'bg-gray-400 cursor-not-allowed'
-                          : 'bg-blue-600 hover:bg-blue-700'
-                      }`}
+                      disabled={(isCreating || isUpdating) || !purchaseForm.supplierId}
+                      className={`flex items-center gap-2 px-8 py-3 rounded-lg shadow-md transition-all duration-200 font-medium text-base ${
+                        !purchaseForm.supplierId
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white hover:shadow-lg'
+                      } ${(isCreating || isUpdating) ? 'opacity-50' : ''}`}
                     >
-                      {isCreating ? 'جاري الحفظ...' : 'حفظ الفاتورة'}
+                      <span>{(isCreating || isUpdating) ? '⏳' : '💾'}</span>
+                      <span>
+                        {!purchaseForm.supplierId 
+                          ? 'اختر المورد أولاً' 
+                          : (isCreating || isUpdating)
+                            ? (isEditMode ? 'جاري التحديث...' : 'جاري الحفظ...') 
+                            : (isEditMode ? 'تحديث الفاتورة' : 'حفظ الفاتورة')}
+                      </span>
                     </button>
                   </div>
                 </form>
@@ -870,38 +1731,27 @@ const PurchasesPage = () => {
                     <p className="text-lg font-semibold">{selectedPurchase.supplier?.name || 'غير محدد'}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">نوع الشراء</label>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      selectedPurchase.purchaseType === 'CASH' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {selectedPurchase.purchaseType === 'CASH' ? 'نقدي' : 'آجل'}
-                    </span>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">طريق الدفع</label>
-                    {selectedPurchase.paymentMethod ? (
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        selectedPurchase.paymentMethod === 'CASH' 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : selectedPurchase.paymentMethod === 'BANK'
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-orange-100 text-orange-800'
-                      }`}>
-                        {selectedPurchase.paymentMethod === 'CASH' ? 'كاش' : 
-                         selectedPurchase.paymentMethod === 'BANK' ? 'مصرف' : 'بطاقة'}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 text-sm">غير محدد</span>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">المجموع</label>
+                    <label className="block text-sm font-medium text-gray-700">مجموع الأصناف</label>
                     <p className="text-lg font-semibold text-green-600">
                       {formatArabicCurrency(selectedPurchase.total)}
                     </p>
                   </div>
+                  {(selectedPurchase as any).expenses?.length > 0 && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">إجمالي المصروفات</label>
+                        <p className="text-lg font-semibold text-orange-600">
+                          {formatArabicCurrency((selectedPurchase as any).expenses.reduce((sum: number, exp: any) => sum + Number(exp.amount), 0))}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">الإجمالي مع المصروفات</label>
+                        <p className="text-xl font-bold text-blue-600">
+                          {formatArabicCurrency(Number(selectedPurchase.total) + (selectedPurchase as any).expenses.reduce((sum: number, exp: any) => sum + Number(exp.amount), 0))}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {selectedPurchase.lines && selectedPurchase.lines.length > 0 && (
@@ -918,8 +1768,48 @@ const PurchasesPage = () => {
                             <div className="text-left">
                               <div>{line.qty} {line.product?.unit || 'وحدة'}</div>
                               <div className="text-sm text-gray-600">
-                                {formatArabicCurrency(line.unitPrice)} × {line.qty} = {formatArabicCurrency(line.total)}
+                                {formatArabicCurrency(line.unitPrice)} × {line.qty} = {formatArabicCurrency((line as any).total || (line.qty * line.unitPrice))}
                               </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* قسم المصروفات */}
+                {(selectedPurchase as any).expenses && (selectedPurchase as any).expenses.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">مصروفات الفاتورة</h3>
+                    <div className="space-y-2">
+                      {(selectedPurchase as any).expenses.map((expense: any, index: number) => (
+                        <div key={index} className="bg-orange-50 p-3 rounded border border-orange-200">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="font-medium text-orange-800">{expense.category?.name || 'مصروف عام'}</div>
+                              <div className="text-orange-600 text-sm">{expense.notes || 'بدون وصف'}</div>
+                              {expense.supplier && (
+                                <div className="text-orange-500 text-xs mt-1">
+                                  المورد: {expense.supplier.name}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-left">
+                                <div className="font-semibold text-orange-700">
+                                  {formatArabicCurrency(expense.amount)}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleDeleteExpense(expense.id)}
+                                className="text-red-600 hover:text-red-800 hover:bg-red-100 p-2 rounded transition-colors"
+                                title="حذف المصروف"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -941,6 +1831,445 @@ const PurchasesPage = () => {
           // Refresh suppliers list automatically via RTK Query
         }}
         mode="create"
+      />
+
+      {/* Create Supplier Modal */}
+      {showCreateSupplierModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[60]">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">إضافة مورد جديد</h3>
+                <button
+                  onClick={() => {
+                    setShowCreateSupplierModal(false);
+                    setNewSupplierForm({ name: '', phone: '', address: '' });
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                
+                if (!newSupplierForm.name.trim()) {
+                  error('يجب إدخال اسم المورد');
+                  return;
+                }
+
+                try {
+                  const result = await createSupplier({
+                    name: newSupplierForm.name.trim(),
+                    phone: newSupplierForm.phone.trim() || undefined,
+                    address: newSupplierForm.address.trim() || undefined
+                  }).unwrap();
+
+                  console.log('المورد الجديد:', result);
+                  
+                  // الحصول على بيانات المورد من result.data
+                  const supplier = (result as any).data;
+                  
+                  // إغلاق modal الإضافة أولاً
+                  setShowCreateSupplierModal(false);
+                  setNewSupplierForm({ name: '', phone: '', address: '' });
+                  
+                  // تحديث قائمة الموردين
+                  await refetchSuppliers();
+                  
+                  // انتظار قصير جداً للتأكد من تحديث الواجهة
+                  setTimeout(() => {
+                    // تعيين المورد الجديد في النموذج تلقائياً
+                    setPurchaseForm(prev => ({
+                      ...prev,
+                      supplierId: supplier.id
+                    }));
+                    setSelectedSupplierName(supplier.name);
+                    setSupplierSearchTerm('');
+                    
+                    success('تم إضافة المورد بنجاح: ' + supplier.name);
+                  }, 200);
+                } catch (err: any) {
+                  console.error('خطأ في إضافة المورد:', err);
+                  error(err?.data?.message || 'حدث خطأ أثناء إضافة المورد');
+                }
+              }} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    اسم المورد *
+                  </label>
+                  <input
+                    type="text"
+                    value={newSupplierForm.name}
+                    onChange={(e) => setNewSupplierForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                    placeholder="أدخل اسم المورد"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    رقم الهاتف
+                  </label>
+                  <input
+                    type="text"
+                    value={newSupplierForm.phone}
+                    onChange={(e) => setNewSupplierForm(prev => ({ ...prev, phone: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="أدخل رقم الهاتف (اختياري)"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    العنوان
+                  </label>
+                  <textarea
+                    value={newSupplierForm.address}
+                    onChange={(e) => setNewSupplierForm(prev => ({ ...prev, address: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                    placeholder="أدخل العنوان (اختياري)"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateSupplierModal(false);
+                      setNewSupplierForm({ name: '', phone: '', address: '' });
+                    }}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isCreatingSupplier}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {isCreatingSupplier ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        جاري الحفظ...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        حفظ المورد
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* مودال إضافة مصروفات */}
+      {showAddExpensesModal && selectedPurchase && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-10 mx-auto p-6 border max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900">اعتماد الفاتورة وإضافة المصروفات</h3>
+                <button
+                  onClick={() => setShowAddExpensesModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* معلومات الفاتورة */}
+              <div className="bg-blue-50 p-4 rounded-lg mb-6">
+                <h4 className="font-semibold text-blue-900 mb-2">معلومات الفاتورة</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">رقم الفاتورة: </span>
+                    <span className="font-medium">{selectedPurchase.invoiceNumber || selectedPurchase.id}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">المورد: </span>
+                    <span className="font-medium">{(selectedPurchase as any).supplier?.name || 'غير محدد'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">إجمالي الفاتورة: </span>
+                    <span className="font-medium text-green-600">{formatArabicCurrency(Number(selectedPurchase.total))}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">الحالة: </span>
+                    <span className={`font-medium ${selectedPurchase.isApproved ? 'text-green-600' : 'text-orange-600'}`}>
+                      {selectedPurchase.isApproved ? 'معتمدة' : 'غير معتمدة'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* المصروفات الموجودة */}
+              {existingExpenses.length > 0 && (
+                <div className="bg-yellow-50 p-4 rounded-lg mb-6">
+                  <h4 className="font-semibold text-yellow-900 mb-4">المصروفات المضافة مسبقاً</h4>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-yellow-200">
+                      <thead className="bg-yellow-100">
+                        <tr>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
+                            فئة المصروف
+                          </th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
+                            المورد
+                          </th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
+                            المبلغ
+                          </th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
+                            ملاحظات
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-yellow-50 divide-y divide-yellow-200">
+                        {existingExpenses.map((expense, index) => (
+                          <tr key={expense.id}>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-yellow-900">
+                              {expense.category?.name || 'غير محدد'}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-yellow-900">
+                              {expense.supplier?.name || 'غير محدد'}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-yellow-700">
+                              {formatArabicCurrency(Number(expense.amount))}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-yellow-600">
+                              {expense.notes || '-'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="mt-3 bg-yellow-100 p-3 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-yellow-800">إجمالي المصروفات الموجودة:</span>
+                      <span className="text-lg font-bold text-yellow-700">
+                        {formatArabicCurrency(existingExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0))}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* نموذج إضافة مصروف جديد */}
+              <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                <h4 className="font-semibold text-gray-900 mb-4">إضافة مصروف جديد</h4>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">فئة المصروف *</label>
+                    <ExpenseCategorySelector
+                      categories={expenseCategories}
+                      selectedCategoryId={newExpense.categoryId}
+                      onCategorySelect={(categoryId) => {
+                        setNewExpense({
+                          ...newExpense, 
+                          categoryId,
+                          supplierId: undefined // إعادة تعيين المورد عند تغيير الفئة
+                        });
+                      }}
+                      placeholder="اختر فئة المصروف"
+                      required={true}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      المورد <span className="text-red-500">*</span>
+                    </label>
+                    <SupplierSelector
+                      suppliers={getFilteredSuppliersForCategory(newExpense.categoryId)}
+                      selectedSupplierId={newExpense.supplierId}
+                      onSupplierSelect={(supplierId) => setNewExpense({...newExpense, supplierId})}
+                      placeholder={newExpense.categoryId === 0 
+                        ? 'اختر فئة المصروف أولاً' 
+                        : 'اختر المورد (مطلوب)'
+                      }
+                      className={newExpense.categoryId === 0 ? 'opacity-50 pointer-events-none' : ''}
+                      required={true}
+                      allowEmpty={false}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">المبلغ *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={newExpense.amount}
+                      onChange={(e) => {
+                        const amount = Number(e.target.value);
+                        // console.log('💰 تغيير مبلغ المصروف:', amount);
+                        setNewExpense({...newExpense, amount});
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">ملاحظات</label>
+                    <input
+                      type="text"
+                      value={newExpense.notes || ''}
+                      onChange={(e) => setNewExpense({...newExpense, notes: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="ملاحظات اختيارية"
+                    />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={handleAddExpenseToList}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    إضافة للقائمة
+                  </button>
+                </div>
+              </div>
+
+              {/* قائمة المصروفات المضافة */}
+              {expenseForm.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-gray-900 mb-4">المصروفات المضافة</h4>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            فئة المصروف
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            المورد
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            المبلغ
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            ملاحظات
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            إجراءات
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {expenseForm.map((expense, index) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {expenseCategories.find(cat => cat.id === expense.categoryId)?.name || 'غير محدد'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {expense.supplierId 
+                                ? getFilteredSuppliersForCategory(expense.categoryId).find(sup => sup.id === expense.supplierId)?.name || 'غير محدد'
+                                : 'غير محدد'
+                              }
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                              {formatArabicCurrency(expense.amount)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {expense.notes || '-'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <button
+                                onClick={() => handleRemoveExpenseFromList(index)}
+                                className="text-red-600 hover:text-red-900"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="mt-4 bg-blue-50 p-4 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-700">إجمالي المصروفات:</span>
+                      <span className="text-lg font-bold text-blue-600">
+                        {formatArabicCurrency(expenseForm.reduce((sum, exp) => sum + exp.amount, 0))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-sm font-medium text-gray-700">الإجمالي النهائي:</span>
+                      <span className="text-xl font-bold text-green-600">
+                        {formatArabicCurrency(
+                          Number(selectedPurchase.total) + 
+                          existingExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0) +
+                          expenseForm.reduce((sum, exp) => sum + exp.amount, 0)
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* أزرار الإجراءات */}
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowAddExpensesModal(false)}
+                  className="px-6 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={handleSaveExpenses}
+                  disabled={isApproving}
+                  className={`px-6 py-2 rounded-md flex items-center gap-2 ${
+                    isApproving 
+                      ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {isApproving ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      جاري الاعتماد...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      اعتماد الفاتورة
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Purchase Approval Modal */}
+      <PurchaseApprovalModal
+        isOpen={showApprovalModal}
+        onClose={handleCloseApprovalModal}
+        onSuccess={handleApprovalSuccess}
+        purchase={purchaseToApprove}
       />
     </div>
   );

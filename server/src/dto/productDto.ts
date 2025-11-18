@@ -160,10 +160,12 @@ export interface ProductResponseDto {
   createdAt: Date;
   updatedAt: Date;
   // بيانات المخزون والأسعار للشركة الحالية
-  stock?: {
+  stock?: Array<{
+    companyId: number;
     boxes: number; // عدد الصناديق
+    quantity: number; // الكمية بالوحدات (boxes * unitsPerBox)
     updatedAt: Date;
-  };
+  }>;
   price?: {
     sellPrice: number;
     updatedAt: Date;

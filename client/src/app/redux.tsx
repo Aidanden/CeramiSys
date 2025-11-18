@@ -24,6 +24,8 @@ import { salesApi } from "@/state/salesApi"; // إضافة salesApi
 import { salePaymentApi } from "@/state/salePaymentApi"; // إضافة salePaymentApi
 import { interCompanySalesApi } from "@/state/interCompanySalesApi"; // إضافة interCompanySalesApi
 import { purchaseApi } from "@/state/purchaseApi"; // إضافة purchaseApi
+import { purchaseExpenseApi } from "@/state/api/purchaseExpenseApi"; // إضافة purchaseExpenseApi
+import { paymentReceiptsApi } from "@/state/api/paymentReceiptsApi"; // إضافة paymentReceiptsApi
 import { activityApi } from "@/state/activityApi"; // إضافة activityApi
 import { complexInterCompanySalesApi } from "@/state/complexInterCompanySalesApi"; // إضافة complexInterCompanySalesApi
 import { reportsApi } from "@/state/reportsApi"; // إضافة reportsApi
@@ -33,6 +35,8 @@ import { saleReturnApi } from "@/state/saleReturnApi"; // إضافة saleReturnA
 import { returnPaymentApi } from "@/state/returnPaymentApi"; // إضافة returnPaymentApi
 import { warehouseApi } from "@/state/warehouseApi"; // إضافة warehouseApi
 import { customerAccountApi } from "@/state/customerAccountApi"; // إضافة customerAccountApi
+import { supplierAccountApi } from "@/state/supplierAccountApi"; // إضافة supplierAccountApi
+import { damageReportsApi } from "@/state/damageReportsApi"; // إضافة damageReportsApi
 import { setupListeners } from "@reduxjs/toolkit/query";
 import {
   persistStore,
@@ -95,6 +99,8 @@ const rootReducer = combineReducers({
   [salePaymentApi.reducerPath]: salePaymentApi.reducer, // إضافة salePaymentApi.reducer
   [interCompanySalesApi.reducerPath]: interCompanySalesApi.reducer, // إضافة interCompanySalesApi.reducer
   [purchaseApi.reducerPath]: purchaseApi.reducer, // إضافة purchaseApi.reducer
+  [purchaseExpenseApi.reducerPath]: purchaseExpenseApi.reducer, // إضافة purchaseExpenseApi.reducer
+  [paymentReceiptsApi.reducerPath]: paymentReceiptsApi.reducer, // إضافة paymentReceiptsApi.reducer
   [activityApi.reducerPath]: activityApi.reducer, // إضافة activityApi.reducer
   [complexInterCompanySalesApi.reducerPath]: complexInterCompanySalesApi.reducer, // إضافة complexInterCompanySalesApi.reducer
   [reportsApi.reducerPath]: reportsApi.reducer, // إضافة reportsApi.reducer
@@ -104,6 +110,8 @@ const rootReducer = combineReducers({
   [returnPaymentApi.reducerPath]: returnPaymentApi.reducer, // إضافة returnPaymentApi.reducer
   [warehouseApi.reducerPath]: warehouseApi.reducer, // إضافة warehouseApi.reducer
   [customerAccountApi.reducerPath]: customerAccountApi.reducer, // إضافة customerAccountApi.reducer
+  [supplierAccountApi.reducerPath]: supplierAccountApi.reducer, // إضافة supplierAccountApi.reducer
+  [damageReportsApi.reducerPath]: damageReportsApi.reducer, // إضافة damageReportsApi.reducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -117,7 +125,7 @@ export const makeStore = () => {
         serializableCheck: {
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
-      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware, notificationsApi.middleware, saleReturnsApi.middleware, saleReturnApi.middleware, returnPaymentApi.middleware, warehouseApi.middleware, customerAccountApi.middleware), // إضافة middleware الخاص بـ APIs
+      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, purchaseExpenseApi.middleware, paymentReceiptsApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware, notificationsApi.middleware, saleReturnsApi.middleware, saleReturnApi.middleware, returnPaymentApi.middleware, warehouseApi.middleware, customerAccountApi.middleware, supplierAccountApi.middleware, damageReportsApi.middleware), // إضافة middleware الخاص بـ APIs
   });
 };
 

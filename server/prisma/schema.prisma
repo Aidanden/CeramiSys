@@ -32,6 +32,7 @@ model Company {
   stocks              Stock[]
   users               Users[]
   notifications       Notification[]
+  damageReports       DamageReport[]
 }
 
 model Product {
@@ -52,6 +53,7 @@ model Product {
   saleLines            SaleLine[]
   saleReturnLines      SaleReturnLine[]
   stocks               Stock[]
+  damageReportLines    DamageReportLine[]
 }
 
 model Stock {
@@ -100,6 +102,7 @@ model Users {
   Company                 Company         @relation(fields: [CompanyID], references: [id])
   Role                    UserRoles       @relation(fields: [RoleID], references: [RoleID])
   notifications           Notification[]
+  damageReports           DamageReport[]
 }
 
 model UserRoles {
@@ -324,30 +327,38 @@ model ProvisionalSaleLine {
 }
 
 model Purchase {
-  id                  Int               @id @default(autoincrement())
-  companyId           Int
-  supplierId          Int?
-  invoiceNumber       String?
-  total               Decimal           @default(0) @db.Decimal(18, 4)
-  paidAmount          Decimal           @default(0) @db.Decimal(18, 4)
-  remainingAmount     Decimal           @default(0) @db.Decimal(18, 4)
-  purchaseType        PurchaseType      @default(CREDIT)
-  paymentMethod       PaymentMethod?
-  isFullyPaid         Boolean           @default(false)
-  status              PurchaseStatus    @default(DRAFT)
-  affectsInventory    Boolean           @default(true)
-  createdAt           DateTime          @default(now())
+  id                    Int               @id @default(autoincrement())
+  companyId             Int
+  supplierId            Int?
+  invoiceNumber         String?
+  total                 Decimal           @default(0) @db.Decimal(18, 4)
+  paidAmount            Decimal           @default(0) @db.Decimal(18, 4)
+  remainingAmount       Decimal           @default(0) @db.Decimal(18, 4)
+  purchaseType          PurchaseType      @default(CREDIT)
+  paymentMethod         PaymentMethod?
+  isFullyPaid           Boolean           @default(false)
+  status                PurchaseStatus    @default(DRAFT)
+  affectsInventory      Boolean           @default(true)
+  isApproved            Boolean           @default(false) // حالة الاعتماد
+  approvedAt            DateTime?         // تاريخ الاعتماد
+  approvedBy            String?           // المستخدم الذي اعتمد الفاتورة
+  totalExpenses         Decimal           @default(0) @db.Decimal(18, 4) // إجمالي المصروفات
+  finalTotal            Decimal           @default(0) @db.Decimal(18, 4) // الإجمالي النهائي بعد المصروفات
+  createdAt             DateTime          @default(now())
   relatedCustomerSaleId Int?
-  company             Company           @relation(fields: [companyId], references: [id])
-  supplier            Supplier?         @relation(fields: [supplierId], references: [id])
-  lines               PurchaseLine[]
-  payments            PurchasePayment[]
+  company               Company           @relation(fields: [companyId], references: [id])
+  supplier              Supplier?         @relation(fields: [supplierId], references: [id])
+  lines                 PurchaseLine[]
+  payments              PurchasePayment[]
+  expenses              PurchaseExpense[] // المصروفات المضافة
+  paymentReceipts       SupplierPaymentReceipt[] // إيصالات الدفع المرتبطة
 
   @@index([companyId])
   @@index([supplierId])
   @@index([purchaseType])
   @@index([isFullyPaid])
   @@index([status])
+  @@index([isApproved])
   @@index([relatedCustomerSaleId])
 }
 
@@ -381,15 +392,18 @@ model PurchasePayment {
 }
 
 model Supplier {
-  id             Int                @id @default(autoincrement())
-  name           String
-  phone          String?
-  email          String?
-  address        String?
-  note           String?
-  createdAt      DateTime           @default(now())
-  purchases      Purchase[]
-  accountEntries SupplierAccount[]
+  id                    Int                         @id @default(autoincrement())
+  name                  String
+  phone                 String?
+  email                 String?
+  address               String?
+  note                  String?
+  createdAt             DateTime                    @default(now())
+  purchases             Purchase[]
+  accountEntries        SupplierAccount[]
+  expenseCategories     ExpenseCategorySupplier[]   // فئات المصروفات المرتبطة
+  purchaseExpenses      PurchaseExpense[]           // المصروفات التي قام بها
+  paymentReceipts       SupplierPaymentReceipt[]    // إيصالات الدفع
 }
 
 model SupplierAccount {
@@ -583,4 +597,162 @@ enum SupplierReferenceType {
   PAYMENT        // دفعة لمورد
   ADJUSTMENT     // تعديل يدوي
   RETURN         // مرتجع مشتريات
+}
+
+// إيصالات الدفع للموردين
+model SupplierPaymentReceipt {
+  id          Int      @id @default(autoincrement())
+  supplierId  Int
+  purchaseId  Int?     // مرتبط بفاتورة مشتريات (اختياري)
+  amount      Decimal  @db.Decimal(18, 4)
+  type        SupplierPaymentType
+  description String?
+  categoryName String? // اسم فئة المصروف (للمصروفات)
+  status      PaymentReceiptStatus @default(PENDING)
+  createdAt   DateTime @default(now())
+  paidAt      DateTime?
+  notes       String?
+  
+  supplier      Supplier @relation(fields: [supplierId], references: [id])
+  purchase      Purchase? @relation(fields: [purchaseId], references: [id])
+  installments  PaymentReceiptInstallment[]
+  
+  @@index([supplierId])
+  @@index([purchaseId])
+  @@index([status])
+  @@index([type])
+}
+
+enum SupplierPaymentType {
+  MAIN_PURCHASE // فاتورة رئيسية
+  EXPENSE       // مصروف
+  RETURN        // مردود
+}
+
+enum PaymentReceiptStatus {
+  PENDING   // معلق
+  PAID      // مسدد
+  CANCELLED // ملغي
+}
+
+// فئات المصروفات (جمرك، شحن، نقل، إلخ)
+model PurchaseExpenseCategory {
+  id          Int                @id @default(autoincrement())
+  name        String
+  description String?
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  
+  suppliers   ExpenseCategorySupplier[]
+  expenses    PurchaseExpense[]
+}
+
+// ربط الموردين بفئات المصروفات
+model ExpenseCategorySupplier {
+  id         Int                      @id @default(autoincrement())
+  categoryId Int
+  supplierId Int
+  createdAt  DateTime                 @default(now())
+  category   PurchaseExpenseCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  supplier   Supplier                 @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, supplierId])
+  @@index([categoryId])
+  @@index([supplierId])
+}
+
+// المصروفات المضافة لفاتورة المشتريات
+model PurchaseExpense {
+  id          Int                      @id @default(autoincrement())
+  purchaseId  Int
+  categoryId  Int
+  supplierId  Int?                     // المورد المسؤول عن هذا المصروف
+  amount      Decimal                  @db.Decimal(18, 4)
+  notes       String?
+  createdAt   DateTime                 @default(now())
+  purchase    Purchase                 @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  category    PurchaseExpenseCategory  @relation(fields: [categoryId], references: [id])
+  supplier    Supplier?                @relation(fields: [supplierId], references: [id])
+
+  @@index([purchaseId])
+  @@index([categoryId])
+  @@index([supplierId])
+}
+
+// تكلفة المنتج التاريخية (يتم حفظها عند اعتماد الفاتورة)
+model ProductCostHistory {
+  id                Int      @id @default(autoincrement())
+  productId         Int
+  purchaseId        Int
+  companyId         Int
+  purchasePrice     Decimal  @db.Decimal(18, 4) // سعر الشراء الأساسي
+  expensePerUnit    Decimal  @db.Decimal(18, 4) // نصيب الوحدة من المصروفات
+  totalCostPerUnit  Decimal  @db.Decimal(18, 4) // التكلفة الإجمالية للوحدة
+  quantity          Decimal  @db.Decimal(20, 4) // الكمية المشتراة
+  createdAt         DateTime @default(now())
+
+  @@index([productId])
+  @@index([purchaseId])
+  @@index([companyId])
+  @@index([createdAt])
+}
+
+// الدفعات الجزئية لإيصالات الدفع
+model PaymentReceiptInstallment {
+  id                Int                    @id @default(autoincrement())
+  paymentReceiptId  Int
+  paymentReceipt    SupplierPaymentReceipt @relation(fields: [paymentReceiptId], references: [id], onDelete: Cascade)
+  
+  amount            Decimal                @db.Decimal(10, 3)
+  paidAt            DateTime               @default(now())
+  notes             String?
+  paymentMethod     String?                // طريقة الدفع (نقد، شيك، تحويل، إلخ)
+  referenceNumber   String?                // رقم مرجعي (رقم الشيك، رقم التحويل، إلخ)
+  
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  
+  @@index([paymentReceiptId])
+  @@index([paidAt])
+}
+
+// محاضر الإتلاف - Damage Reports
+model DamageReport {
+  id              Int                 @id @default(autoincrement())
+  reportNumber    String              @unique
+  companyId       Int
+  company         Company             @relation(fields: [companyId], references: [id])
+  createdByUserId String
+  createdBy       Users               @relation(fields: [createdByUserId], references: [UserID])
+  
+  reason          String
+  notes           String?
+  status          String              @default("PENDING")
+  
+  lines           DamageReportLine[]
+  
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  @@index([companyId])
+  @@index([createdByUserId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model DamageReportLine {
+  id              Int           @id @default(autoincrement())
+  damageReportId  Int
+  damageReport    DamageReport  @relation(fields: [damageReportId], references: [id], onDelete: Cascade)
+  
+  productId       Int
+  product         Product       @relation(fields: [productId], references: [id])
+  
+  quantity        Decimal       @db.Decimal(20, 4)
+  notes           String?
+  
+  createdAt       DateTime      @default(now())
+  
+  @@index([damageReportId])
+  @@index([productId])
 }

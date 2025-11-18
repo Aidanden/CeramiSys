@@ -15,9 +15,42 @@ import {
 const prisma = new PrismaClient();
 
 export class PurchaseService {
+  // Generate invoice number
+  private static async generateInvoiceNumber(): Promise<string> {
+    try {
+      // الحصول على آخر فاتورة
+      const lastPurchase = await prisma.purchase.findFirst({
+        orderBy: { id: 'desc' },
+        select: { invoiceNumber: true }
+      });
+
+      let nextNumber = 1;
+      
+      if (lastPurchase?.invoiceNumber) {
+        // استخراج الرقم من آخر فاتورة
+        const lastNumber = parseInt(lastPurchase.invoiceNumber);
+        if (!isNaN(lastNumber)) {
+          nextNumber = lastNumber + 1;
+        }
+      }
+
+      // تنسيق الرقم ليكون 6 أرقام (000001, 000002, ...)
+      return String(nextNumber).padStart(6, '0');
+    } catch (error) {
+      console.error('خطأ في توليد رقم الفاتورة:', error);
+      // في حالة الخطأ، استخدم رقم عشوائي
+      return String(Math.floor(Math.random() * 900000) + 100000);
+    }
+  }
+
   // Create a new purchase
   static async createPurchase(data: CreatePurchaseRequest): Promise<Purchase> {
-    const { companyId, supplierId, invoiceNumber, purchaseType, paymentMethod, lines } = data;
+    let { companyId, supplierId, invoiceNumber, purchaseType, paymentMethod, lines } = data;
+
+    // إذا لم يتم تقديم رقم فاتورة، قم بتوليده تلقائياً
+    if (!invoiceNumber) {
+      invoiceNumber = await this.generateInvoiceNumber();
+    }
 
     // Calculate total
     const total = lines.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0);
@@ -78,10 +111,11 @@ export class PurchaseService {
       },
     });
 
-    // Update stock for each product
-    for (const line of lines) {
-      await this.updateStock(companyId, line.productId, line.qty);
-    }
+    // لا نحدث المخزون هنا - سيتم تحديثه عند اعتماد الفاتورة
+    // Update stock for each product - MOVED TO APPROVAL PROCESS
+    // for (const line of lines) {
+    //   await this.updateStock(companyId, line.productId, line.qty);
+    // }
 
     // تسجيل قيد محاسبي في حساب المورد (إذا كانت مشتريات آجلة وهناك مورد)
     if (purchaseType === 'CREDIT' && supplierId) {
@@ -130,7 +164,12 @@ export class PurchaseService {
       isFullyPaid, 
       search,
       startDate,
-      endDate
+      endDate,
+      supplierName,
+      supplierPhone,
+      invoiceNumber,
+      dateFrom,
+      dateTo
     } = query;
 
     const skip = (page - 1) * limit;
@@ -154,6 +193,7 @@ export class PurchaseService {
       where.isFullyPaid = isFullyPaid;
     }
 
+    // البحث السريع
     if (search) {
       where.OR = [
         { invoiceNumber: { contains: search, mode: 'insensitive' } },
@@ -161,6 +201,28 @@ export class PurchaseService {
       ];
     }
 
+    // فلتر اسم المورد
+    if (supplierName) {
+      where.supplier = {
+        ...where.supplier,
+        name: { contains: supplierName, mode: 'insensitive' }
+      };
+    }
+
+    // فلتر رقم هاتف المورد
+    if (supplierPhone) {
+      where.supplier = {
+        ...where.supplier,
+        phone: { contains: supplierPhone, mode: 'insensitive' }
+      };
+    }
+
+    // فلتر رقم الفاتورة - بحث دقيق بالأرقام
+    if (invoiceNumber) {
+      where.invoiceNumber = invoiceNumber;
+    }
+
+    // فلتر التاريخ (startDate و endDate للتوافق مع الكود القديم)
     if (startDate || endDate) {
       where.createdAt = {};
       if (startDate) {
@@ -168,6 +230,20 @@ export class PurchaseService {
       }
       if (endDate) {
         where.createdAt.lte = new Date(endDate);
+      }
+    }
+
+    // فلتر التاريخ الجديد (dateFrom و dateTo)
+    if (dateFrom || dateTo) {
+      where.createdAt = where.createdAt || {};
+      if (dateFrom) {
+        where.createdAt.gte = new Date(dateFrom);
+      }
+      if (dateTo) {
+        // إضافة 23:59:59 لنهاية اليوم
+        const endOfDay = new Date(dateTo);
+        endOfDay.setHours(23, 59, 59, 999);
+        where.createdAt.lte = endOfDay;
       }
     }
 
@@ -205,6 +281,22 @@ export class PurchaseService {
             },
           },
           payments: true,
+          expenses: {
+            include: {
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+              supplier: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
         },
       }),
       prisma.purchase.count({ where }),
@@ -229,6 +321,12 @@ export class PurchaseService {
           paymentDate: payment.paymentDate.toISOString(),
           createdAt: payment.createdAt.toISOString(),
         })),
+        expenses: purchase.expenses?.map(expense => ({
+          ...expense,
+          amount: Number(expense.amount),
+          description: (expense as any).notes || null,
+          createdAt: expense.createdAt.toISOString(),
+        })) || [],
       })),
       pagination: {
         page,
@@ -271,6 +369,22 @@ export class PurchaseService {
           },
         },
         payments: true,
+        expenses: {
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            supplier: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -292,6 +406,12 @@ export class PurchaseService {
         paymentDate: payment.paymentDate.toISOString(),
         createdAt: payment.createdAt.toISOString(),
       })),
+      expenses: purchase.expenses?.map(expense => ({
+        ...expense,
+        amount: Number(expense.amount),
+        description: (expense as any).notes || null,
+        createdAt: expense.createdAt.toISOString(),
+      })) || [],
     } : null;
   }
 
@@ -306,11 +426,13 @@ export class PurchaseService {
       throw new Error('Purchase not found');
     }
 
-    // If lines are being updated, we need to handle stock changes
+    // If lines are being updated, we need to handle stock changes (only for approved purchases)
     if (data.lines) {
-      // Revert old stock changes
-      for (const line of existingPurchase.lines) {
-        await this.updateStock(existingPurchase.companyId, line.productId, -line.qty);
+      // Revert old stock changes only if purchase was approved
+      if (existingPurchase.isApproved) {
+        for (const line of existingPurchase.lines) {
+          await this.updateStock(existingPurchase.companyId, line.productId, -line.qty);
+        }
       }
 
       // Calculate new total
@@ -359,9 +481,11 @@ export class PurchaseService {
         },
       });
 
-      // Apply new stock changes
-      for (const line of data.lines) {
-        await this.updateStock(existingPurchase.companyId, line.productId, line.qty);
+      // Apply new stock changes only if purchase is approved
+      if (existingPurchase.isApproved) {
+        for (const line of data.lines) {
+          await this.updateStock(existingPurchase.companyId, line.productId, line.qty);
+        }
       }
 
       return {
@@ -450,7 +574,12 @@ export class PurchaseService {
   static async deletePurchase(id: number): Promise<void> {
     const purchase = await prisma.purchase.findUnique({
       where: { id },
-      include: { lines: true },
+      include: { 
+        lines: true,
+        payments: true,
+        expenses: true,
+        paymentReceipts: true
+      },
     });
 
     if (!purchase) {
@@ -482,15 +611,84 @@ export class PurchaseService {
       );
     }
 
-    // Revert stock changes only if affectsInventory is true
-    if (purchase.affectsInventory) {
-      for (const line of purchase.lines) {
-        await this.updateStock(purchase.companyId, line.productId, -line.qty);
-      }
+    // التحقق من حالة إيصالات الدفع - يجب أن تكون معلقة فقط
+    const nonPendingReceipts = purchase.paymentReceipts.filter(receipt => receipt.status !== 'PENDING');
+    if (nonPendingReceipts.length > 0) {
+      throw new Error('لا يمكن حذف الفاتورة. يوجد إيصالات دفع معتمدة أو مدفوعة مرتبطة بهذه الفاتورة.');
     }
 
-    await prisma.purchase.delete({
-      where: { id },
+    // استخدام transaction لضمان الحذف الآمن
+    await prisma.$transaction(async (tx) => {
+      // حذف إيصالات الدفع المعلقة
+      if (purchase.paymentReceipts.length > 0) {
+        await tx.supplierPaymentReceipt.deleteMany({
+          where: { purchaseId: id }
+        });
+      }
+
+      // حذف المدفوعات
+      if (purchase.payments.length > 0) {
+        await tx.purchasePayment.deleteMany({
+          where: { purchaseId: id }
+        });
+      }
+
+      // حذف المصروفات
+      if (purchase.expenses.length > 0) {
+        await tx.purchaseExpense.deleteMany({
+          where: { purchaseId: id }
+        });
+      }
+
+      // حذف بنود الفاتورة
+      if (purchase.lines.length > 0) {
+        await tx.purchaseLine.deleteMany({
+          where: { purchaseId: id }
+        });
+      }
+
+      // إرجاع المخزون إذا كانت الفاتورة معتمدة (أي أثرت على المخزون)
+      if (purchase.isApproved) {
+        for (const line of purchase.lines) {
+          await tx.stock.upsert({
+            where: {
+              companyId_productId: {
+                companyId: purchase.companyId,
+                productId: line.productId,
+              },
+            },
+            update: {
+              boxes: {
+                decrement: line.qty,
+              },
+            },
+            create: {
+              companyId: purchase.companyId,
+              productId: line.productId,
+              boxes: -line.qty,
+            },
+          });
+        }
+      }
+
+      // تحديث حساب المورد إذا كان موجود
+      if (purchase.supplierId && purchase.total.toNumber() > 0) {
+        await tx.supplierAccount.updateMany({
+          where: {
+            supplierId: purchase.supplierId
+          },
+          data: {
+            balance: {
+              decrement: purchase.total
+            }
+          }
+        });
+      }
+
+      // حذف الفاتورة نفسها
+      await tx.purchase.delete({
+        where: { id },
+      });
     });
   }
 

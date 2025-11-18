@@ -9,6 +9,7 @@ import {
 import { User, Search, TrendingUp, TrendingDown, FileText, X, DollarSign, Calendar, Phone } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { formatLibyanCurrency, formatArabicNumber, formatArabicDate } from "@/utils/formatLibyanNumbers";
 
 type ViewMode = 'summary' | 'account' | 'invoices';
 
@@ -42,6 +43,9 @@ const CustomerAccountsPage = () => {
   const totalCreditors = customers.filter(c => c.currentBalance < 0).length;
   const totalDebt = customers.reduce((sum, c) => sum + (c.currentBalance > 0 ? c.currentBalance : 0), 0);
   const totalCredit = customers.reduce((sum, c) => sum + (c.currentBalance < 0 ? Math.abs(c.currentBalance) : 0), 0);
+
+  const formatCurrency = formatLibyanCurrency;
+  const formatNumber = formatArabicNumber;
 
   const handleShowAccount = (customerId: number) => {
     setSelectedCustomerId(customerId);
@@ -99,7 +103,7 @@ const CustomerAccountsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 mb-1">إجمالي العملاء</p>
-                <p className="text-2xl font-bold text-blue-600">{customers.length}</p>
+                <p className="text-2xl font-bold text-blue-600">{formatNumber(customers.length)}</p>
               </div>
               <div className="bg-blue-100 p-2 rounded-full">
                 <User className="w-5 h-5 text-blue-600" />
@@ -111,8 +115,8 @@ const CustomerAccountsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 mb-1">عملاء مدينون (عليهم)</p>
-                <p className="text-2xl font-bold text-red-600">{totalDebtors}</p>
-                <p className="text-xs text-red-600 font-semibold">{totalDebt.toFixed(2)} د.ل</p>
+                <p className="text-2xl font-bold text-red-600">{formatNumber(totalDebtors)}</p>
+                <p className="text-xs text-red-600 font-semibold">{formatCurrency(totalDebt)}</p>
               </div>
               <div className="bg-red-100 p-2 rounded-full">
                 <TrendingUp className="w-5 h-5 text-red-600" />
@@ -124,8 +128,8 @@ const CustomerAccountsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 mb-1">عملاء دائنون (لهم)</p>
-                <p className="text-2xl font-bold text-green-600">{totalCreditors}</p>
-                <p className="text-xs text-green-600 font-semibold">{totalCredit.toFixed(2)} د.ل</p>
+                <p className="text-2xl font-bold text-green-600">{formatNumber(totalCreditors)}</p>
+                <p className="text-xs text-green-600 font-semibold">{formatCurrency(totalCredit)}</p>
               </div>
               <div className="bg-green-100 p-2 rounded-full">
                 <TrendingDown className="w-5 h-5 text-green-600" />
@@ -306,7 +310,7 @@ const CustomerAccountsPage = () => {
                   <div>
                     <p className="text-sm text-gray-600">تاريخ التسجيل</p>
                     <p className="text-base font-semibold text-gray-800">
-                      {format(new Date(account.customer.createdAt), "dd/MM/yyyy", { locale: ar })}
+                      {formatArabicDate(account.customer.createdAt)}
                     </p>
                   </div>
                 </div>
@@ -392,7 +396,7 @@ const CustomerAccountsPage = () => {
                       account.entries.map((entry) => (
                         <tr key={entry.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {format(new Date(entry.transactionDate), "dd/MM/yyyy HH:mm", { locale: ar })}
+                            {formatArabicDate(entry.transactionDate)}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-900">{entry.description}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -467,7 +471,7 @@ const CustomerAccountsPage = () => {
                       <div>
                         <p className="text-xs text-gray-600">التاريخ</p>
                         <p className="text-sm font-semibold text-gray-900">
-                          {format(new Date(invoice.createdAt), "dd/MM/yyyy", { locale: ar })}
+                          {formatArabicDate(invoice.createdAt)}
                         </p>
                       </div>
                       <div>
@@ -500,7 +504,7 @@ const CustomerAccountsPage = () => {
                           {invoice.payments.map((payment) => (
                             <div key={payment.id} className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
                               <span className="text-gray-600">
-                                {format(new Date(payment.paymentDate), "dd/MM/yyyy", { locale: ar })}
+                                {formatArabicDate(payment.paymentDate)}
                                 {payment.receiptNumber && ` - ${payment.receiptNumber}`}
                               </span>
                               <span className="font-semibold text-green-600">{payment.amount.toFixed(2)} د.ل</span>

@@ -25,6 +25,7 @@ import {
   Bell,
   Wallet,
   TrendingDown as Returns,
+  FileText as Receipt,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -173,6 +174,7 @@ const Sidebar = () => {
             label="الأصناف والمخزن"
             isCollapsed={isSidebarCollapsed}
           />
+        
           <SidebarLink
             href="/sales"
             icon={ShoppingCart}
@@ -189,6 +191,12 @@ const Sidebar = () => {
             href="/customer-accounts"
             icon={Wallet}
             label="حسابات العملاء"
+            isCollapsed={isSidebarCollapsed}
+          />
+          <SidebarLink
+            href="/supplier-accounts"
+            icon={CircleDollarSign}
+            label="حسابات الموردين"
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink
@@ -220,19 +228,19 @@ const Sidebar = () => {
             isCollapsed={isSidebarCollapsed}
           />
           <SidebarLink
-            href="/return-payments"
-            icon={DollarSign}
-            label="إيصالات دفع المردودات"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
             href="/purchases"
             icon={CreditCard}
             label="المشتريات"
             isCollapsed={isSidebarCollapsed}
           />
-        
           <SidebarLink
+            href="/payment-receipts"
+            icon={Receipt}
+            label="إيصالات الدفع"
+            isCollapsed={isSidebarCollapsed}
+          />
+        
+         {/* <SidebarLink
             href="/customers"
             icon={SquareUserRound}
             label="العملاء"
@@ -243,8 +251,13 @@ const Sidebar = () => {
             icon={UsersRound}
             label="الموردين"
             isCollapsed={isSidebarCollapsed}
+          /> */}
+            <SidebarLink
+            href="/damage-reports"
+            icon={FileText}
+            label="محاضر الإتلاف"
+            isCollapsed={isSidebarCollapsed}
           />
-       
           <SidebarLink
             href="/reports"
             icon={BarChart3}

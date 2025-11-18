@@ -119,7 +119,7 @@ const ProductsPage = () => {
   // تطبيق فلاتر المخزون على الـ client-side (لأنها غير مدعومة في الـ API)
   if (stockFilter !== 'all') {
     products = products.filter(product => {
-      const stockBoxes = product.stock?.boxes || 0;
+      const stockBoxes = product.stock?.[0]?.boxes || 0;
       
       if (stockFilter === 'out') {
         return stockBoxes === 0;
@@ -137,12 +137,12 @@ const ProductsPage = () => {
 
   // إحصائيات المخزون من جميع الأصناف
   const totalCount = allProducts.length;
-  const outOfStockCount = allProducts.filter((p: any) => (p.stock?.boxes || 0) === 0).length;
+  const outOfStockCount = allProducts.filter((p: any) => (p.stock?.[0]?.boxes || 0) === 0).length;
   const lowStockCount = allProducts.filter((p: any) => {
-    const boxes = p.stock?.boxes || 0;
+    const boxes = p.stock?.[0]?.boxes || 0;
     return boxes > 0 && boxes <= lowStockThreshold;
   }).length;
-  const availableCount = allProducts.filter((p: any) => (p.stock?.boxes || 0) > 0).length;
+  const availableCount = allProducts.filter((p: any) => (p.stock?.[0]?.boxes || 0) > 0).length;
 
   // معالجة إنشاء صنف
   const handleCreateProduct = async (productData: CreateProductRequest) => {
@@ -842,11 +842,11 @@ const ProductsPage = () => {
                     <td className="px-3 sm:px-4 lg:px-6 py-4 text-sm text-text-primary">
                       <div className="flex flex-col items-start">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          (product.stock?.boxes || 0) > 0 
+                          (product.stock?.[0]?.boxes || 0) > 0 
                             ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-200' 
                             : 'bg-error-100 dark:bg-error-900/30 text-error-800 dark:text-error-200'
                         }`}>
-                          {formatArabicQuantity(product.stock?.boxes || 0)}
+                          {formatArabicQuantity(product.stock?.[0]?.boxes || 0)}
                         </span>
                         <span className="text-xs text-text-secondary mt-1">
                           {product.unit === 'صندوق' ? 'صندوق' : (product.unit || 'وحدة')}
@@ -857,10 +857,10 @@ const ProductsPage = () => {
                       {product.unit === 'صندوق' && product.unitsPerBox ? (
                         <div className="text-center">
                           <div className="font-medium text-blue-600 text-sm">
-                            {formatArabicArea(Number(product.stock?.boxes || 0) * Number(product.unitsPerBox))} م²
+                            {formatArabicArea(Number(product.stock?.[0]?.boxes || 0) * Number(product.unitsPerBox))} م²
                           </div>
                           <div className="text-xs text-gray-500 mt-1">
-                            {formatArabicArea(product.unitsPerBox)} م² × {formatArabicQuantity(product.stock?.boxes || 0)}
+                            {formatArabicArea(product.unitsPerBox)} م² × {formatArabicQuantity(product.stock?.[0]?.boxes || 0)}
                           </div>
                         </div>
                       ) : (

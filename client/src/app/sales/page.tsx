@@ -76,6 +76,10 @@ const SalesPage = () => {
     qty: number;
     unitPrice: number;
   }>>([]);
+  const [customerSearchTerm, setCustomerSearchTerm] = useState('');
+  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+  const [selectedCustomerName, setSelectedCustomerName] = useState('');
+  const customerSearchRef = useRef<HTMLDivElement>(null);
   
   // Sale form states
   const [saleForm, setSaleForm] = useState<LocalCreateSaleRequest>({
@@ -113,9 +117,25 @@ const SalesPage = () => {
 
     if (showProductDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showProductDropdown]);
+
+  // إغلاق قائمة العملاء عند النقر خارجها
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (customerSearchRef.current && !customerSearchRef.current.contains(event.target as Node)) {
+        setShowCustomerSuggestions(false);
+      }
+    };
+
+    if (showCustomerSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showCustomerSuggestions]);
 
   // Initialize QR Scanner
   useEffect(() => {
@@ -1425,37 +1445,72 @@ const SalesPage = () => {
               
               <form onSubmit={handleCreateSale} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div>
+                  <div className="relative" ref={customerSearchRef}>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       العميل *
                     </label>
                     <div className="flex gap-2">
-                      <select
-                        value={saleForm.customerId || ''}
-                        onChange={(e) => setSaleForm(prev => ({
-                          ...prev,
-                          customerId: e.target.value ? Number(e.target.value) : undefined
-                        }))}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      >
-                        <option value="">اختر عميل</option>
-                        {customersLoading ? (
-                          <option disabled>جاري تحميل العملاء...</option>
-                        ) : customersError ? (
-                          <option disabled>خطأ في تحميل العملاء</option>
-                        ) : customersData?.data?.customers?.length === 0 ? (
-                          <option disabled>لا توجد عملاء</option>
-                        ) : (
-                          customersData?.data?.customers
-                            ?.filter((customer: Customer) => !customer.phone?.startsWith('BRANCH'))
-                            ?.map((customer: Customer) => (
-                              <option key={customer.id} value={customer.id}>
-                                {customer.name}
-                              </option>
-                            ))
+                      <div className="flex-1 relative">
+                        <input
+                          type="text"
+                          value={selectedCustomerName || customerSearchTerm}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setCustomerSearchTerm(value);
+                            setSelectedCustomerName('');
+                            setSaleForm(prev => ({ ...prev, customerId: undefined }));
+                            setShowCustomerSuggestions(true);
+                          }}
+                          onFocus={() => setShowCustomerSuggestions(true)}
+                          placeholder="ابحث عن العميل بالاسم أو الهاتف..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required={!saleForm.customerId}
+                        />
+                        {customersLoading && (
+                          <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                          </div>
                         )}
-                      </select>
+                        
+                        {/* Customer Suggestions Dropdown */}
+                        {showCustomerSuggestions && !customersLoading && (
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {customersData?.data?.customers
+                              ?.filter((customer: Customer) => 
+                                !customer.phone?.startsWith('BRANCH') &&
+                                (customer.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
+                                 customer.phone?.includes(customerSearchTerm))
+                              )
+                              ?.map((customer: Customer) => (
+                                <div
+                                  key={customer.id}
+                                  onClick={() => {
+                                    setSaleForm(prev => ({ ...prev, customerId: customer.id }));
+                                    setSelectedCustomerName(customer.name);
+                                    setCustomerSearchTerm('');
+                                    setShowCustomerSuggestions(false);
+                                  }}
+                                  className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                >
+                                  <div className="font-medium text-gray-900">{customer.name}</div>
+                                  {customer.phone && (
+                                    <div className="text-xs text-gray-500">📱 {customer.phone}</div>
+                                  )}
+                                </div>
+                              ))}
+                            {customersData?.data?.customers
+                              ?.filter((customer: Customer) => 
+                                !customer.phone?.startsWith('BRANCH') &&
+                                (customer.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
+                                 customer.phone?.includes(customerSearchTerm))
+                              )?.length === 0 && (
+                              <div className="px-3 py-2 text-gray-500 text-sm">
+                                لا توجد نتائج
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                       <button
                         type="button"
                         onClick={() => setShowCreateCustomerModal(true)}
@@ -1468,9 +1523,16 @@ const SalesPage = () => {
                         <span className="hidden sm:inline">عميل</span>
                       </button>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      مطلوب - يجب اختيار عميل للمتابعة
-                    </p>
+                    {saleForm.customerId && selectedCustomerName && (
+                      <p className="text-xs text-green-600 mt-1 font-medium">
+                        ✓ تم اختيار: {selectedCustomerName}
+                      </p>
+                    )}
+                    {!saleForm.customerId && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        مطلوب - ابحث واختر عميل للمتابعة
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -1842,6 +1904,8 @@ const SalesPage = () => {
                     // تحديد العميل الجديد تلقائياً في النموذج
                     if (result.data?.id) {
                       setSaleForm(prev => ({ ...prev, customerId: result.data.id }));
+                      setSelectedCustomerName(result.data.name);
+                      setCustomerSearchTerm('');
                     }
                     notifications.custom.success('تم بنجاح', 'تم إضافة العميل بنجاح واختياره تلقائياً');
                   }, 100);

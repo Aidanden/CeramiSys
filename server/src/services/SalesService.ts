@@ -1391,45 +1391,28 @@ export class SalesService {
    */
   private async generateInvoiceNumber(companyId: number): Promise<string> {
     try {
-      // الحصول على آخر فاتورة للشركة
+      // الحصول على آخر فاتورة
       const lastSale = await this.prisma.sale.findFirst({
-        where: { companyId },
         orderBy: { id: 'desc' },
-        select: { id: true, invoiceNumber: true }
+        select: { invoiceNumber: true }
       });
 
-      // الحصول على تاريخ اليوم
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-
-      // تنسيق التاريخ: YYYYMMDD
-      const datePrefix = `${year}${month}${day}`;
-
-      // البحث عن آخر رقم فاتورة لنفس اليوم
-      const todaySales = await this.prisma.sale.count({
-        where: {
-          companyId,
-          createdAt: {
-            gte: new Date(year, today.getMonth(), today.getDate()),
-            lt: new Date(year, today.getMonth(), today.getDate() + 1)
-          }
+      let nextNumber = 1;
+      
+      if (lastSale?.invoiceNumber) {
+        // استخراج الرقم من آخر فاتورة
+        const lastNumber = parseInt(lastSale.invoiceNumber);
+        if (!isNaN(lastNumber)) {
+          nextNumber = lastNumber + 1;
         }
-      });
+      }
 
-      // رقم تسلسلي جديد
-      const sequenceNumber = String(todaySales + 1).padStart(4, '0');
-
-      // تكوين رقم الفاتورة: INV-YYYYMMDD-XXXX
-      const invoiceNumber = `INV-${datePrefix}-${sequenceNumber}`;
-
-      return invoiceNumber;
+      // تنسيق الرقم ليكون 6 أرقام (000001, 000002, ...)
+      return String(nextNumber).padStart(6, '0');
     } catch (error) {
       console.error('خطأ في توليد رقم الفاتورة:', error);
-      // في حالة الخطأ، استخدم timestamp كبديل
-      const timestamp = Date.now();
-      return `INV-${timestamp}`;
+      // في حالة الخطأ، استخدم رقم عشوائي
+      return String(Math.floor(Math.random() * 900000) + 100000);
     }
   }
 

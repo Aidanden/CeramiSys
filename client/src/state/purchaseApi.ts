@@ -38,6 +38,11 @@ export interface Purchase {
   purchaseType: 'CASH' | 'CREDIT';
   paymentMethod: 'CASH' | 'BANK' | 'CARD' | null;
   isFullyPaid: boolean;
+  isApproved: boolean;
+  approvedAt: string | null;
+  approvedBy: number | null;
+  totalExpenses: number;
+  finalTotal: number;
   createdAt: string;
   lines: PurchaseLine[];
   payments: PurchasePayment[];
@@ -140,6 +145,11 @@ export interface GetPurchasesQuery {
   search?: string;
   startDate?: string;
   endDate?: string;
+  supplierName?: string;
+  supplierPhone?: string;
+  invoiceNumber?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export interface GetSuppliersQuery {
@@ -151,7 +161,7 @@ export interface GetSuppliersQuery {
 export const purchaseApi = createApi({
   reducerPath: 'purchaseApi',
   baseQuery: baseQueryWithAuthInterceptor,
-  tagTypes: ['Purchase', 'Supplier', 'PurchaseStats'],
+  tagTypes: ['Purchase', 'Supplier', 'PurchaseStats', 'PaymentReceipts'],
   ...API_CACHE_CONFIG.purchases, // تحسين الأداء
   endpoints: (builder) => ({
     // Purchase endpoints
@@ -182,7 +192,7 @@ export const purchaseApi = createApi({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Purchase', 'PurchaseStats'],
+      invalidatesTags: ['Purchase', 'PurchaseStats', 'PaymentReceipts'],
     }),
 
     updatePurchase: builder.mutation<Purchase, { id: number; data: UpdatePurchaseRequest }>({
@@ -195,6 +205,7 @@ export const purchaseApi = createApi({
         { type: 'Purchase', id },
         'Purchase',
         'PurchaseStats',
+        'PaymentReceipts',
       ],
     }),
 
@@ -203,7 +214,7 @@ export const purchaseApi = createApi({
         url: `/purchases/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['Purchase', 'PurchaseStats'],
+      invalidatesTags: ['Purchase', 'PurchaseStats', 'PaymentReceipts'],
     }),
 
     // Purchase payment endpoints
@@ -216,7 +227,7 @@ export const purchaseApi = createApi({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Purchase', 'PurchaseStats'],
+      invalidatesTags: ['Purchase', 'PurchaseStats', 'PaymentReceipts'],
     }),
 
     // Purchase statistics
