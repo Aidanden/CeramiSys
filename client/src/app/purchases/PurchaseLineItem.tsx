@@ -63,7 +63,7 @@ const PurchaseLineItem: React.FC<PurchaseLineItemProps> = ({
       return null;
     }
 
-    const metersPerBox = selectedProduct.metersPerBox || 1;
+    const metersPerBox = selectedProduct.unitsPerBox || 1;
     const boxes = Math.ceil(line.qty / metersPerBox); // تقريب للأعلى
     const totalMeters = boxes * metersPerBox;
 

@@ -841,7 +841,7 @@ const PurchasesPage = () => {
       </div>
 
       {/* Company Selection */}
-      <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-200">
+      <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-200 relative z-40">
         <label className="block text-sm font-bold text-blue-900 mb-2">
           🏢 اختر الشركة للعمل عليها *
         </label>
@@ -858,7 +858,7 @@ const PurchasesPage = () => {
               lines: []
             });
           }}
-          className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-lg font-medium"
+          className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-lg font-medium relative z-50"
         >
           <option value="">-- اختر الشركة أولاً --</option>
           {companiesLoading ? (
@@ -1572,7 +1572,14 @@ const PurchasesPage = () => {
                                           {/* عرض الكمية في المخزون */}
                                           {product.stock && product.stock.length > 0 && (
                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">
-                                              📦 {product.stock.find((s: any) => s.companyId === selectedCompanyId)?.quantity || 0} {product.unit || 'وحدة'}
+                                              📦 {(() => {
+                                                // البحث عن المخزون في الشركة المالكة للصنف أولاً
+                                                let stock = product.stock.find((s: any) => s.companyId === product.createdByCompanyId);
+                                                if (!stock || stock.boxes === 0) {
+                                                  stock = product.stock.find((s: any) => s.companyId === selectedCompanyId);
+                                                }
+                                                return stock?.boxes || 0;
+                                              })()} {product.unit || 'وحدة'}
                                             </span>
                                           )}
                                         </div>

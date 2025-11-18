@@ -120,7 +120,12 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
         // التحقق من المخزون قبل التحديث
         const product = lineFilteredProducts.find((p: any) => p.id === line.productId);
         if (product && product.stock && qtyValue > 0) {
-          const availableStock = product.stock.boxes || 0;
+          // البحث عن المخزون في الشركة المالكة للصنف أولاً، ثم في الشركة المختارة
+          let stockForCompany = product.stock.find((s: any) => s.companyId === product.createdByCompanyId);
+          if (!stockForCompany || stockForCompany.boxes === 0) {
+            stockForCompany = product.stock.find((s: any) => s.companyId === currentCompanyId);
+          }
+          const availableStock = stockForCompany?.boxes || 0;
           if (qtyValue > availableStock) {
             console.warn(`⚠️ الكمية المطلوبة (${qtyValue}) أكبر من المتوفر في المخزون (${availableStock})`);
             // إعادة تعيين الكمية للحد الأقصى المتاح
@@ -265,7 +270,14 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
             {selectedProduct?.unit === 'صندوق' ? 'الصناديق' : 'الكمية'}
             {selectedProduct && selectedProduct.stock && (
               <span className="text-xs text-blue-600 block mt-1">
-                متوفر: {selectedProduct.stock.boxes || 0} {selectedProduct.unit === 'صندوق' ? 'صندوق' : 'وحدة'}
+                متوفر: {(() => {
+                  // البحث عن المخزون في الشركة المالكة للصنف أولاً
+                  let stock = selectedProduct.stock.find((s: any) => s.companyId === selectedProduct.createdByCompanyId);
+                  if (!stock || stock.boxes === 0) {
+                    stock = selectedProduct.stock.find((s: any) => s.companyId === currentCompanyId);
+                  }
+                  return stock?.boxes || 0;
+                })()} {selectedProduct.unit === 'صندوق' ? 'صندوق' : 'وحدة'}
               </span>
             )}
           </label>
@@ -278,19 +290,44 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
               setLocalQty(value);
             }}
             className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:outline-none transition-colors ${
-              selectedProduct && selectedProduct.stock && Number(localQty) > (selectedProduct.stock.boxes || 0)
+              selectedProduct && selectedProduct.stock && Number(localQty) > ((() => {
+                let stock = selectedProduct.stock.find((s: any) => s.companyId === selectedProduct.createdByCompanyId);
+                if (!stock || stock.boxes === 0) {
+                  stock = selectedProduct.stock.find((s: any) => s.companyId === currentCompanyId);
+                }
+                return stock?.boxes || 0;
+              })())
                 ? 'border-red-300 bg-red-50 focus:ring-red-200 focus:border-red-500'
                 : 'border-gray-300 bg-white focus:ring-blue-200 focus:border-blue-400'
             }`}
             placeholder="أدخل الكمية"
             min="0"
-            max={selectedProduct?.stock?.boxes || undefined}
+            max={(() => {
+              if (!selectedProduct?.stock) return undefined;
+              let stock = selectedProduct.stock.find((s: any) => s.companyId === selectedProduct.createdByCompanyId);
+              if (!stock || stock.boxes === 0) {
+                stock = selectedProduct.stock.find((s: any) => s.companyId === currentCompanyId);
+              }
+              return stock?.boxes || undefined;
+            })()}
             required
           />
-          {selectedProduct && selectedProduct.stock && Number(localQty) > (selectedProduct.stock.boxes || 0) && (
+          {selectedProduct && selectedProduct.stock && Number(localQty) > ((() => {
+            let stock = selectedProduct.stock.find((s: any) => s.companyId === selectedProduct.createdByCompanyId);
+            if (!stock || stock.boxes === 0) {
+              stock = selectedProduct.stock.find((s: any) => s.companyId === currentCompanyId);
+            }
+            return stock?.boxes || 0;
+          })()) && (
             <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
               <span>⚠️</span>
-              <span>الكمية المطلوبة أكبر من المتوفر في المخزون ({selectedProduct.stock.boxes || 0})</span>
+              <span>الكمية المطلوبة أكبر من المتوفر في المخزون ({(() => {
+                let stock = selectedProduct.stock.find((s: any) => s.companyId === selectedProduct.createdByCompanyId);
+                if (!stock || stock.boxes === 0) {
+                  stock = selectedProduct.stock.find((s: any) => s.companyId === currentCompanyId);
+                }
+                return stock?.boxes || 0;
+              })()})</span>
             </p>
           )}
         </div>

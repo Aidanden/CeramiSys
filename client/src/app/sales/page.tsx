@@ -1003,7 +1003,7 @@ const SalesPage = () => {
       </div>
 
       {/* Company Selection */}
-      <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-200">
+      <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-200 relative z-40">
         <label className="block text-sm font-bold text-blue-900 mb-2">
           🏢 {user?.isSystemUser ? 'اختر الشركة للعمل عليها' : 'الشركة المحددة'} *
         </label>
@@ -1022,7 +1022,7 @@ const SalesPage = () => {
             setProductCodeSearch('');
           }}
           disabled={!user?.isSystemUser}
-          className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-lg font-medium disabled:bg-gray-100 disabled:cursor-not-allowed"
+          className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-lg font-medium disabled:bg-gray-100 disabled:cursor-not-allowed relative z-50"
         >
           {user?.isSystemUser && <option value="">-- اختر الشركة أولاً --</option>}
           {companiesLoading ? (
@@ -1645,8 +1645,21 @@ const SalesPage = () => {
                                               </span>
                                             )}
                                           </div>
-                                          <div className={`text-xs ${isFromParentCompany ? 'text-orange-600' : 'text-gray-500'}`}>
-                                            كود: {product.sku}
+                                          <div className={`text-xs ${isFromParentCompany ? 'text-orange-600' : 'text-gray-500'} flex items-center gap-2`}>
+                                            <span>كود: {product.sku}</span>
+                                            {/* عرض الكمية في المخزون */}
+                                            {product.stock && product.stock.length > 0 && (
+                                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">
+                                                📦 {(() => {
+                                                  // البحث عن المخزون في الشركة المالكة للصنف أولاً
+                                                  let stock = product.stock.find((s: any) => s.companyId === product.createdByCompanyId);
+                                                  if (!stock || stock.boxes === 0) {
+                                                    stock = product.stock.find((s: any) => s.companyId === selectedCompanyId);
+                                                  }
+                                                  return stock?.boxes || 0;
+                                                })()} {product.unit || 'وحدة'}
+                                              </span>
+                                            )}
                                           </div>
                                         </div>
                                         <div className={`text-xs font-medium ${isFromParentCompany ? 'text-orange-600' : 'text-blue-600'}`}>

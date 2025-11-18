@@ -109,16 +109,10 @@ export class ProductService {
             select: { id: true, name: true, code: true }
           },
           stocks: {
-            where: {
-              ...(isSystemUser !== true && { companyId: userCompanyId })
-            },
-            select: { boxes: true, updatedAt: true }
+            select: { companyId: true, boxes: true, updatedAt: true }
           },
           prices: {
-            where: {
-              ...(isSystemUser !== true && { companyId: userCompanyId })
-            },
-            select: { sellPrice: true, updatedAt: true }
+            select: { companyId: true, sellPrice: true, updatedAt: true }
           }
         },
         orderBy: { createdAt: 'desc' },
@@ -128,9 +122,25 @@ export class ProductService {
 
       // تحويل البيانات للتنسيق المطلوب
       const formattedProducts: ProductResponseDto[] = products.map(product => {
-        const boxes = product.stocks[0] ? Number(product.stocks[0].boxes) : 0;
         const unitsPerBox = product.unitsPerBox ? Number(product.unitsPerBox) : 1;
-        const quantity = boxes * unitsPerBox;
+
+        // تحويل المخزون لجميع الشركات
+        const stockData = product.stocks.map(stock => {
+          const boxes = Number(stock.boxes);
+          const quantity = boxes * unitsPerBox;
+          return {
+            companyId: stock.companyId,
+            boxes: boxes,
+            quantity: quantity,
+            updatedAt: stock.updatedAt
+          };
+        });
+
+        // تحويل الأسعار لجميع الشركات
+        const priceData = product.prices.length > 0 && product.prices[0] ? {
+          sellPrice: Number(product.prices[0].sellPrice),
+          updatedAt: product.prices[0].updatedAt
+        } : undefined;
 
         return {
           id: product.id,
@@ -143,21 +153,8 @@ export class ProductService {
           createdByCompany: product.createdByCompany,
           createdAt: product.createdAt,
           updatedAt: product.updatedAt,
-          stock: product.stocks[0] ? [{
-            companyId: userCompanyId,
-            boxes: boxes,
-            quantity: quantity,
-            updatedAt: product.stocks[0].updatedAt
-          }] : [{
-            companyId: userCompanyId,
-            boxes: 0,
-            quantity: 0,
-            updatedAt: new Date()
-          }],
-          price: product.prices[0] ? {
-            sellPrice: Number(product.prices[0].sellPrice),
-            updatedAt: product.prices[0].updatedAt
-          } : undefined,
+          stock: stockData,
+          price: priceData,
         };
       });
 
