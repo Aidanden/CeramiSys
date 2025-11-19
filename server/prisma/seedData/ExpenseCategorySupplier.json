@@ -1,0 +1,8 @@
+[
+  { "categoryName": "جمرك", "supplierName": "مخلص جمركي - شركة الأمان" },
+  { "categoryName": "مصروفات سفر", "supplierName": "شركة سفر وسياحة - المسار" },
+  { "categoryName": "شحن", "supplierName": "شركة شحن - المتوسط" },
+  { "categoryName": "نقل", "supplierName": "شركة نقل بري - السريع" },
+  { "categoryName": "تنزيل من الحاوية", "supplierName": "شركة خدمات حاويات - الرفع الحديث" },
+  { "categoryName": "تذاكر سفر", "supplierName": "شركة تذاكر سفر - الأفق" }
+]

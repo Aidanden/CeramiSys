@@ -12,6 +12,64 @@ interface CreateSupplierAccountEntryInput {
   transactionDate?: Date;
 }
 
+export interface SupplierAccountEntry {
+  id: number;
+  supplierId: number;
+  transactionType: 'DEBIT' | 'CREDIT';
+  amount: number;
+  balance: number;
+  referenceType: 'PURCHASE' | 'PAYMENT' | 'ADJUSTMENT' | 'RETURN';
+  referenceId: number;
+  description?: string;
+  transactionDate: Date;
+  createdAt: Date;
+  supplier: {
+    id: number;
+    name: string;
+    phone?: string;
+  };
+}
+
+export interface SupplierAccount {
+  supplier: {
+    id: number;
+    name: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+    note?: string;
+    createdAt: Date;
+  };
+  currentBalance: number;
+  totalDebit: number;
+  totalCredit: number;
+  entries: SupplierAccountEntry[];
+}
+
+export interface SupplierAccountSummary {
+  id: number;
+  name: string;
+  phone?: string;
+  currentBalance: number;
+  hasDebt: boolean;
+}
+
+export interface OpenPurchase {
+  id: number;
+  invoiceNumber?: string;
+  companyId: number;
+  company: {
+    id: number;
+    name: string;
+  };
+  total: number;
+  paidAmount: number;
+  remainingAmount: number;
+  purchaseType: 'CASH' | 'CREDIT';
+  status: 'DRAFT' | 'APPROVED' | 'CANCELLED';
+  createdAt: Date;
+}
+
 class SupplierAccountService {
   /**
    * إنشاء قيد في حساب المورد
@@ -65,7 +123,7 @@ class SupplierAccountService {
    * جلب حساب مورد معين مع كل المعاملات
    * Get supplier account with all transactions
    */
-  async getSupplierAccount(supplierId: number) {
+  async getSupplierAccount(supplierId: number): Promise<SupplierAccount | null> {
     const supplier = await prisma.supplier.findUnique({
       where: { id: supplierId }
     });
@@ -96,14 +154,34 @@ class SupplierAccountService {
       .reduce((sum, e) => sum + Number(e.amount), 0);
 
     return {
-      supplier,
+      supplier: {
+        id: supplier.id,
+        name: supplier.name,
+        phone: supplier.phone || undefined,
+        email: supplier.email || undefined,
+        address: supplier.address || undefined,
+        note: supplier.note || undefined,
+        createdAt: supplier.createdAt,
+      },
       currentBalance,
       totalCredit,
       totalDebit,
       entries: entries.map(entry => ({
-        ...entry,
+        id: entry.id,
+        supplierId: entry.supplierId,
+        transactionType: entry.transactionType as 'DEBIT' | 'CREDIT',
         amount: Number(entry.amount),
-        balance: Number(entry.balance)
+        balance: Number(entry.balance),
+        referenceType: entry.referenceType as 'PURCHASE' | 'PAYMENT' | 'ADJUSTMENT' | 'RETURN',
+        referenceId: entry.referenceId,
+        description: entry.description || undefined,
+        transactionDate: entry.transactionDate,
+        createdAt: entry.createdAt,
+        supplier: {
+          id: supplier.id,
+          name: supplier.name,
+          phone: supplier.phone || undefined,
+        },
       }))
     };
   }
@@ -125,7 +203,7 @@ class SupplierAccountService {
    * جلب ملخص حسابات جميع الموردين
    * Get summary of all supplier accounts
    */
-  async getAllSuppliersAccountSummary() {
+  async getAllSuppliersAccountSummary(): Promise<SupplierAccountSummary[]> {
     const suppliers = await prisma.supplier.findMany({
       include: {
         accountEntries: {
@@ -136,19 +214,60 @@ class SupplierAccountService {
     });
 
     return suppliers.map(supplier => {
-      const currentBalance = supplier.accountEntries.length > 0 && supplier.accountEntries[0]
-        ? Number(supplier.accountEntries[0].balance) 
-        : 0;
-
+      const lastEntry = supplier.accountEntries[0];
+      const currentBalance = lastEntry ? Number(lastEntry.balance) : 0;
+      
       return {
         id: supplier.id,
         name: supplier.name,
-        phone: supplier.phone,
-        email: supplier.email,
+        phone: supplier.phone || undefined,
         currentBalance,
-        hasDebt: currentBalance > 0 // رصيد موجب يعني علينا للمورد
+        hasDebt: currentBalance !== 0,
       };
     });
+  }
+
+  // جلب المشتريات المفتوحة للمورد
+  async getSupplierOpenPurchases(supplierId: number): Promise<OpenPurchase[]> {
+    try {
+      const purchases = await prisma.purchase.findMany({
+        where: {
+          supplierId,
+          remainingAmount: {
+            gt: 0, // المشتريات التي لها مبلغ متبقي
+          },
+          status: 'APPROVED', // فقط المشتريات المعتمدة
+        },
+        include: {
+          company: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return purchases.map(purchase => ({
+        id: purchase.id,
+        invoiceNumber: purchase.invoiceNumber || undefined,
+        companyId: purchase.companyId,
+        company: {
+          id: purchase.company.id,
+          name: purchase.company.name,
+        },
+        total: Number(purchase.total),
+        paidAmount: Number(purchase.paidAmount),
+        remainingAmount: Number(purchase.remainingAmount),
+        purchaseType: purchase.purchaseType as 'CASH' | 'CREDIT',
+        status: purchase.status as 'DRAFT' | 'APPROVED' | 'CANCELLED',
+        createdAt: purchase.createdAt,
+      }));
+    } catch (error) {
+      console.error('خطأ في جلب المشتريات المفتوحة:', error);
+      throw error;
+    }
   }
 }
 

@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
-import { SupplierAccountService } from '../services/supplierAccount.service';
-
-const supplierAccountService = new SupplierAccountService();
+import supplierAccountService from '../services/SupplierAccountService';
 
 export class SupplierAccountController {
   // جلب ملخص جميع حسابات الموردين

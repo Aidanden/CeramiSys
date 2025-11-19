@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import SupplierAccountLedgerService from './SupplierAccountService';
 
 const prisma = new PrismaClient();
 
@@ -108,18 +109,40 @@ export class PaymentReceiptService {
 
   // إنشاء إيصال دفع جديد
   async createPaymentReceipt(data: any) {
-    return await prisma.supplierPaymentReceipt.create({
+    const receipt = await prisma.supplierPaymentReceipt.create({
       data,
       include: {
         supplier: true,
         purchase: true,
       },
     });
+
+    if (receipt.supplierId) {
+      const referenceType = receipt.type === 'RETURN' ? 'RETURN' : 'PURCHASE';
+
+      await SupplierAccountLedgerService.createAccountEntry({
+        supplierId: receipt.supplierId,
+        transactionType: 'CREDIT',
+        amount: Number(receipt.amount),
+        referenceType,
+        referenceId: receipt.id,
+        description:
+          receipt.description ||
+          (receipt.type === 'RETURN'
+            ? `مرتجع للمورد رقم ${receipt.id}`
+            : receipt.type === 'EXPENSE'
+            ? `مصروف على المورد رقم ${receipt.id}`
+            : `فاتورة مشتريات للمورد رقم ${receipt.id}`),
+        transactionDate: receipt.createdAt,
+      });
+    }
+
+    return receipt;
   }
 
   // تحديث إيصال دفع
   async updatePaymentReceipt(id: number, data: any) {
-    return await prisma.supplierPaymentReceipt.update({
+    const receipt = await prisma.supplierPaymentReceipt.update({
       where: { id },
       data,
       include: {
@@ -127,18 +150,71 @@ export class PaymentReceiptService {
         purchase: true,
       },
     });
+
+    if (receipt.supplierId) {
+      const referenceType = receipt.type === 'RETURN' ? 'RETURN' : 'PURCHASE';
+
+      await prisma.supplierAccount.deleteMany({
+        where: {
+          supplierId: receipt.supplierId,
+          referenceType,
+          referenceId: receipt.id,
+        },
+      });
+
+      await SupplierAccountLedgerService.createAccountEntry({
+        supplierId: receipt.supplierId,
+        transactionType: 'CREDIT',
+        amount: Number(receipt.amount),
+        referenceType,
+        referenceId: receipt.id,
+        description:
+          receipt.description ||
+          (receipt.type === 'RETURN'
+            ? `مرتجع للمورد رقم ${receipt.id}`
+            : receipt.type === 'EXPENSE'
+            ? `مصروف على المورد رقم ${receipt.id}`
+            : `فاتورة مشتريات للمورد رقم ${receipt.id}`),
+        transactionDate: receipt.createdAt,
+      });
+    }
+
+    return receipt;
   }
 
   // حذف إيصال دفع
   async deletePaymentReceipt(id: number) {
-    return await prisma.supplierPaymentReceipt.delete({
+    const receipt = await prisma.supplierPaymentReceipt.delete({
       where: { id },
+      include: {
+        installments: {
+          select: { id: true },
+        },
+      },
     });
+
+    if (receipt.supplierId) {
+      await prisma.supplierAccount.deleteMany({
+        where: {
+          supplierId: receipt.supplierId,
+          OR: [
+            { referenceType: 'PURCHASE', referenceId: receipt.id },
+            { referenceType: 'RETURN', referenceId: receipt.id },
+            {
+              referenceType: 'PAYMENT',
+              referenceId: { in: receipt.installments.map((inst) => inst.id) },
+            },
+          ],
+        },
+      });
+    }
+
+    return receipt;
   }
 
   // تسديد إيصال دفع
   async payReceipt(id: number, notes?: string) {
-    return await prisma.supplierPaymentReceipt.update({
+    const receipt = await prisma.supplierPaymentReceipt.update({
       where: { id },
       data: {
         status: 'PAID',
@@ -148,13 +224,52 @@ export class PaymentReceiptService {
       include: {
         supplier: true,
         purchase: true,
+        installments: {
+          select: {
+            amount: true,
+          },
+        },
       },
     });
+
+    if (receipt.supplierId) {
+      const amountAlreadyRecorded = receipt.installments.reduce(
+        (sum, installment) => sum + Number(installment.amount),
+        0
+      );
+
+      const amountToRecord = Number(receipt.amount) - amountAlreadyRecorded;
+
+      if (amountToRecord > 0) {
+        const existingEntry = await prisma.supplierAccount.findFirst({
+          where: {
+            supplierId: receipt.supplierId,
+            referenceType: 'PAYMENT',
+            referenceId: receipt.id,
+          },
+        });
+
+        if (!existingEntry) {
+          await SupplierAccountLedgerService.createAccountEntry({
+            supplierId: receipt.supplierId,
+            transactionType: 'DEBIT',
+            amount: amountToRecord,
+            referenceType: 'PAYMENT',
+            referenceId: receipt.id,
+            description:
+              receipt.description || `تسديد إيصال دفع رقم ${receipt.id}`,
+            transactionDate: receipt.paidAt ?? new Date(),
+          });
+        }
+      }
+    }
+
+    return receipt;
   }
 
   // إلغاء إيصال دفع
   async cancelReceipt(id: number, reason?: string) {
-    return await prisma.supplierPaymentReceipt.update({
+    const receipt = await prisma.supplierPaymentReceipt.update({
       where: { id },
       data: {
         status: 'CANCELLED',
@@ -163,8 +278,33 @@ export class PaymentReceiptService {
       include: {
         supplier: true,
         purchase: true,
+        installments: {
+          select: { id: true },
+        },
       },
     });
+
+    await prisma.supplierAccount.deleteMany({
+      where: {
+        supplierId: receipt.supplierId,
+        OR: [
+          { referenceType: 'PURCHASE', referenceId: receipt.id },
+          { referenceType: 'RETURN', referenceId: receipt.id },
+          {
+            referenceType: 'PAYMENT',
+            referenceId: receipt.id,
+          },
+          {
+            referenceType: 'PAYMENT',
+            referenceId: {
+              in: receipt.installments.map((inst) => inst.id),
+            },
+          },
+        ],
+      },
+    });
+
+    return receipt;
   }
 
   // إحصائيات إيصالات الدفع

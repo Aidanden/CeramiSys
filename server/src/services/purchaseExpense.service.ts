@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import SupplierAccountService from './SupplierAccountService';
 import { 
   ApprovePurchaseRequest, 
   ApprovePurchaseResponse,
@@ -243,9 +244,13 @@ export class PurchaseExpenseService {
                 data: receiptData,
               });
 
-              console.log('✅ تم إنشاء إيصال دفع بنجاح - ID:', createdReceipt.id);
+              // إنشاء قيد في حساب المورد (خارج transaction)
+              // سيتم إنشاؤه بعد انتهاء transaction
+
+              console.log('✅ تم إنشاء إيصال دفع وقيد حساب المورد بنجاح - ID:', createdReceipt.id);
 
               paymentReceipts.push({
+                id: createdReceipt.id,
                 supplierId: expense.supplierId,
                 supplierName: supplier.name,
                 amount: expense.amount,
@@ -277,6 +282,24 @@ export class PurchaseExpenseService {
           paymentReceipts,
         };
       });
+
+      // إنشاء قيود حساب المورد بعد انتهاء transaction
+      for (const receipt of result.paymentReceipts) {
+        try {
+          await SupplierAccountService.createAccountEntry({
+            supplierId: receipt.supplierId,
+            transactionType: 'CREDIT',
+            amount: receipt.amount,
+            referenceType: 'PURCHASE',
+            referenceId: receipt.id || 0, // استخدام ID الإيصال إذا كان متوفراً
+            description: receipt.description,
+            transactionDate: new Date(),
+          });
+          console.log(`✅ تم إنشاء قيد حساب المورد: ${receipt.supplierName} - ${receipt.amount}`);
+        } catch (error) {
+          console.error(`❌ خطأ في إنشاء قيد حساب المورد: ${receipt.supplierName}`, error);
+        }
+      }
 
       console.log('🎉 تمت إضافة المصروفات بنجاح:', {
         purchaseId: result.purchase.id,
@@ -419,9 +442,12 @@ export class PurchaseExpenseService {
           },
         });
         
-        console.log('✅ تم إنشاء إيصال الفاتورة الرئيسية للمورد:', purchase.supplier.name);
+        // سيتم إنشاء قيد في حساب المورد بعد انتهاء transaction
+        
+        console.log('✅ تم إنشاء إيصال الفاتورة الرئيسية وقيد حساب المورد:', purchase.supplier.name);
         
         paymentReceipts.push({
+          id: mainReceipt.id,
           supplierId: purchase.supplier.id,
           supplierName: purchase.supplier.name,
           amount: Number(purchase.total),
@@ -444,7 +470,7 @@ export class PurchaseExpenseService {
 
           if (supplier) {
             // إنشاء إيصال منفصل لكل مصروف
-            await tx.supplierPaymentReceipt.create({
+            const expenseReceipt = await tx.supplierPaymentReceipt.create({
               data: {
                 supplierId: expense.supplierId,
                 purchaseId: purchaseId,
@@ -456,9 +482,12 @@ export class PurchaseExpenseService {
               },
             });
 
-            console.log('✅ تم إنشاء إيصال مصروف للمورد:', supplier.name, 'المبلغ:', expense.amount);
+            // سيتم إنشاء قيد في حساب المورد بعد انتهاء transaction
+
+            console.log('✅ تم إنشاء إيصال مصروف وقيد حساب المورد:', supplier.name, 'المبلغ:', expense.amount);
 
             paymentReceipts.push({
+              id: expenseReceipt.id,
               supplierId: expense.supplierId,
               supplierName: supplier.name,
               amount: expense.amount,

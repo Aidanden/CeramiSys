@@ -100,6 +100,7 @@ export interface ProductCostHistory {
 }
 
 export interface SupplierPayable {
+  id?: number; // ID إيصال الدفع
   supplierId: number;
   supplierName: string;
   amount: number;

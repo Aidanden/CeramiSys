@@ -17,6 +17,11 @@ async function deleteAllData() {
     "receipt",                       // Receipt model
     "purchaseFromParentLine",        // PurchaseFromParentLine model
     "purchaseFromParent",            // PurchaseFromParent model
+    "purchaseExpense",               // PurchaseExpense model (مصروفات المشتريات)
+    "expenseCategorySupplier",       // ExpenseCategorySupplier model (ربط الموردين بفئات المصروفات)
+    "purchaseExpenseCategory",       // PurchaseExpenseCategory model (فئات مصروفات المشتريات)
+    "paymentReceiptInstallment",     // PaymentReceiptInstallment model (أقساط إيصالات الدفع)
+    "supplierPaymentReceipt",        // SupplierPaymentReceipt model (إيصالات دفع الموردين)
     "purchasePayment",               // PurchasePayment model
     "purchaseLine",                  // PurchaseLine model
     "purchase",                      // Purchase model
@@ -32,6 +37,8 @@ async function deleteAllData() {
     "userSessions",                  // UserSessions model
     "companyProductPrice",           // CompanyProductPrice model
     "stock",                         // Stock model
+    "damageReportLine",              // DamageReportLine model (أسطر محاضر الإتلاف)
+    "damageReport",                  // DamageReport model (محاضر الإتلاف)
     "product",                       // Product model
     "users",                         // Users model
     "userRoles",                     // UserRoles model
@@ -62,7 +69,9 @@ async function main() {
     "Stock.json",
     "CompanyProductPrice.json",
     "Customer.json",
-    "Supplier.json"
+    "Supplier.json",
+    "PurchaseExpenseCategory.json",
+    "ExpenseCategorySupplier.json"
   ];
 
   await deleteAllData();
@@ -98,6 +107,12 @@ async function main() {
         break;
       case 'Supplier':
         modelName = 'supplier';
+        break;
+      case 'PurchaseExpenseCategory':
+        modelName = 'purchaseExpenseCategory';
+        break;
+      case 'ExpenseCategorySupplier':
+        modelName = 'expenseCategorySupplier';
         break;
       default:
         modelName = baseModelName.toLowerCase();
@@ -228,6 +243,43 @@ async function main() {
         }
       }
       console.log(`\n🎉 تم إنشاء ${priceCount} سعر بنجاح!\n`);
+    } else if (modelName === 'expenseCategorySupplier') {
+      // معالجة خاصة لربط الفئات بالموردين اعتمادًا على الأسماء
+      for (const data of jsonData) {
+        const { categoryName, supplierName } = data;
+
+        if (!categoryName || !supplierName) {
+          console.warn(`⚠️ تخطي ربط فئة/مورد لعدم وجود الأسماء الكاملة:`, data);
+          continue;
+        }
+
+        const category = await prisma.purchaseExpenseCategory.findFirst({
+          where: { name: categoryName }
+        });
+
+        if (!category) {
+          console.warn(`⚠️ لم يتم العثور على فئة المصروف بالاسم ${categoryName}، سيتم التخطي.`);
+          continue;
+        }
+
+        const supplier = await prisma.supplier.findFirst({
+          where: { name: supplierName }
+        });
+
+        if (!supplier) {
+          console.warn(`⚠️ لم يتم العثور على المورد بالاسم ${supplierName}، سيتم التخطي.`);
+          continue;
+        }
+
+        await model.create({
+          data: {
+            categoryId: category.id,
+            supplierId: supplier.id
+          }
+        });
+        console.log(`  ✅ تم ربط الفئة "${categoryName}" مع المورد "${supplierName}"`);
+      }
+      console.log(`✅ Seeded ${modelName} based on names mapping from ${fileName}`);
     } else {
       // معالجة عادية للجداول الأخرى
       for (const data of jsonData) {

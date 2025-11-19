@@ -47,6 +47,18 @@ const CustomerAccountsPage = () => {
   const formatCurrency = formatLibyanCurrency;
   const formatNumber = formatArabicNumber;
 
+  // منسقات خاصة بكروت الإحصائيات لعرض الأرقام بالإنجليزية
+  const statsNumberFormatter = new Intl.NumberFormat('en-US');
+  const statsCurrencyFormatter = new Intl.NumberFormat('en-US', {
+    style: 'decimal',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
+  const formatStatsNumber = (value: number) => statsNumberFormatter.format(value);
+  const formatStatsCurrency = (value: number) => `${statsCurrencyFormatter.format(value)} د.ل`;
+  const netBalance = totalDebt - totalCredit;
+
   const handleShowAccount = (customerId: number) => {
     setSelectedCustomerId(customerId);
     setViewMode('account');
@@ -103,7 +115,7 @@ const CustomerAccountsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 mb-1">إجمالي العملاء</p>
-                <p className="text-2xl font-bold text-blue-600">{formatNumber(customers.length)}</p>
+                <p className="text-2xl font-bold text-blue-600">{formatStatsNumber(customers.length)}</p>
               </div>
               <div className="bg-blue-100 p-2 rounded-full">
                 <User className="w-5 h-5 text-blue-600" />
@@ -115,8 +127,8 @@ const CustomerAccountsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 mb-1">عملاء مدينون (عليهم)</p>
-                <p className="text-2xl font-bold text-red-600">{formatNumber(totalDebtors)}</p>
-                <p className="text-xs text-red-600 font-semibold">{formatCurrency(totalDebt)}</p>
+                <p className="text-2xl font-bold text-red-600">{formatStatsNumber(totalDebtors)}</p>
+                <p className="text-xs text-red-600 font-semibold">{formatStatsCurrency(totalDebt)}</p>
               </div>
               <div className="bg-red-100 p-2 rounded-full">
                 <TrendingUp className="w-5 h-5 text-red-600" />
@@ -128,8 +140,8 @@ const CustomerAccountsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 mb-1">عملاء دائنون (لهم)</p>
-                <p className="text-2xl font-bold text-green-600">{formatNumber(totalCreditors)}</p>
-                <p className="text-xs text-green-600 font-semibold">{formatCurrency(totalCredit)}</p>
+                <p className="text-2xl font-bold text-green-600">{formatStatsNumber(totalCreditors)}</p>
+                <p className="text-xs text-green-600 font-semibold">{formatStatsCurrency(totalCredit)}</p>
               </div>
               <div className="bg-green-100 p-2 rounded-full">
                 <TrendingDown className="w-5 h-5 text-green-600" />
@@ -141,8 +153,11 @@ const CustomerAccountsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 mb-1">صافي الديون</p>
-                <p className={`text-2xl font-bold ${totalDebt - totalCredit > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                  {(totalDebt - totalCredit).toFixed(2)} د.ل
+                <p className={`text-2xl font-bold ${netBalance > 0 ? 'text-red-600' : netBalance < 0 ? 'text-green-600' : 'text-gray-700'}`}>
+                  {formatStatsCurrency(netBalance)}
+                </p>
+                <p className="text-xs text-gray-500 font-semibold">
+                  {netBalance > 0 ? 'صافي عليه (مدين)' : netBalance < 0 ? 'صافي له (دائن)' : 'متوازن'}
                 </p>
               </div>
               <div className="bg-gray-100 p-2 rounded-full">

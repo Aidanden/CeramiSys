@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import SupplierAccountLedgerService from './SupplierAccountService';
 
 const prisma = new PrismaClient();
 
@@ -62,6 +63,20 @@ class PaymentInstallmentService {
           paidAt: new Date()
         }
       });
+
+      if (paymentReceipt.supplierId) {
+        await SupplierAccountLedgerService.createAccountEntry({
+          supplierId: paymentReceipt.supplierId,
+          transactionType: 'DEBIT',
+          amount: Number(data.amount),
+          referenceType: 'PAYMENT',
+          referenceId: installment.id,
+          description: paymentReceipt.description
+            ? `دفعة على ${paymentReceipt.description}`
+            : `دفعة على إيصال دفع رقم ${paymentReceipt.id}`,
+          transactionDate: installment.paidAt,
+        });
+      }
 
       // حساب المبلغ المدفوع الجديد
       const newTotalPaid = totalPaid + Number(data.amount);
@@ -137,6 +152,17 @@ class PaymentInstallmentService {
 
       if (!installment) {
         throw new Error('الدفعة غير موجودة');
+      }
+
+      // حذف قيد كشف الحساب المرتبط بهذه الدفعة
+      if (installment.paymentReceipt.supplierId) {
+        await prisma.supplierAccount.deleteMany({
+          where: {
+            supplierId: installment.paymentReceipt.supplierId,
+            referenceType: 'PAYMENT',
+            referenceId: installment.id,
+          }
+        });
       }
 
       // حذف الدفعة

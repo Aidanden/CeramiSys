@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import SupplierAccountService from './SupplierAccountService';
 
 const prisma = new PrismaClient();
 
@@ -123,7 +124,9 @@ export class AddExpensesToApprovedPurchaseService {
               },
             });
 
-            console.log('✅ تم إنشاء إيصال دفع - ID:', createdReceipt.id);
+            // سيتم إنشاء قيد في حساب المورد بعد انتهاء transaction
+
+            console.log('✅ تم إنشاء إيصال دفع وقيد حساب المورد - ID:', createdReceipt.id);
 
             paymentReceipts.push({
               id: createdReceipt.id,
@@ -144,6 +147,24 @@ export class AddExpensesToApprovedPurchaseService {
         expensesAdded: createdExpenses.count
       };
     });
+
+    // إنشاء قيود حساب المورد بعد انتهاء transaction
+    for (const receipt of result.paymentReceipts) {
+      try {
+        await SupplierAccountService.createAccountEntry({
+          supplierId: receipt.supplierId,
+          transactionType: 'CREDIT',
+          amount: receipt.amount,
+          referenceType: 'PURCHASE',
+          referenceId: receipt.id || 0,
+          description: receipt.description,
+          transactionDate: new Date(),
+        });
+        console.log(`✅ تم إنشاء قيد حساب المورد: ${receipt.supplierName} - ${receipt.amount}`);
+      } catch (error) {
+        console.error(`❌ خطأ في إنشاء قيد حساب المورد: ${receipt.supplierName}`, error);
+      }
+    }
 
     console.log('🎉 تمت إضافة المصروفات بنجاح:', {
       purchaseId: result.purchase.id,
