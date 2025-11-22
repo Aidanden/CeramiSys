@@ -22,15 +22,6 @@ export const StockReportQueryDto = z.object({
 export type StockReportQuery = z.infer<typeof StockReportQueryDto>;
 
 // DTO لتقرير الأرباح
-export const ProfitReportQueryDto = z.object({
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  companyId: z.string().optional().transform(Number),
-  groupBy: z.enum(["day", "week", "month", "year"]).optional().default("month"),
-});
-
-export type ProfitReportQuery = z.infer<typeof ProfitReportQueryDto>;
-
 // DTO لتقرير العملاء
 export const CustomerReportQueryDto = z.object({
   companyId: z.string().optional().transform(Number),
@@ -50,3 +41,22 @@ export const TopProductsReportQueryDto = z.object({
 });
 
 export type TopProductsReportQuery = z.infer<typeof TopProductsReportQueryDto>;
+
+// DTO لتقرير الموردين
+export const SupplierReportQueryDto = z.object({
+  supplierId: z.string().optional().transform(Number),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+});
+
+export type SupplierReportQuery = z.infer<typeof SupplierReportQueryDto>;
+
+// DTO لتقرير المشتريات
+export const PurchaseReportQueryDto = z.object({
+  supplierId: z.string().optional().transform(Number),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  purchaseType: z.enum(["CASH", "CREDIT"]).optional(),
+});
+
+export type PurchaseReportQuery = z.infer<typeof PurchaseReportQueryDto>;

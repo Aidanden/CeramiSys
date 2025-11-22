@@ -7,12 +7,11 @@ export const toArabicNumbers = (str: string): string => {
 // تنسيق العملة بالدينار الليبي مع الأرقام العربية
 export const formatLibyanCurrency = (amount: number): string => {
   const formatted = new Intl.NumberFormat('ar-LY', {
-    style: 'currency',
-    currency: 'LYD',
+    style: 'decimal',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
-  return toArabicNumbers(formatted);
+  return `${toArabicNumbers(formatted)} د.ل`;
 };
 
 // تنسيق الأرقام بالأرقام العربية
@@ -53,12 +52,11 @@ export const toEnglishNumbers = (str: string): string => {
 // تنسيق العملة بالدينار الليبي مع الأرقام الإنجليزية
 export const formatLibyanCurrencyEnglish = (amount: number): string => {
   const formatted = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'LYD',
+    style: 'decimal',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
-  return formatted;
+  return `${formatted} د.ل`;
 };
 
 // تنسيق الأرقام بالأرقام الإنجليزية

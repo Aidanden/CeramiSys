@@ -508,6 +508,25 @@ export class PurchaseExpenseService {
       };
     });
 
+    // إنشاء قيود حساب المورد بعد انتهاء transaction
+    console.log('📊 إنشاء قيود حساب الموردين...');
+    for (const receipt of result.paymentReceipts) {
+      try {
+        await SupplierAccountService.createAccountEntry({
+          supplierId: receipt.supplierId,
+          transactionType: 'CREDIT',
+          amount: receipt.amount,
+          referenceType: 'PURCHASE',
+          referenceId: receipt.id || 0,
+          description: receipt.description,
+          transactionDate: new Date(),
+        });
+        console.log(`✅ تم إنشاء قيد حساب المورد: ${receipt.supplierName} - ${receipt.amount} دينار`);
+      } catch (error) {
+        console.error(`❌ خطأ في إنشاء قيد حساب المورد: ${receipt.supplierName}`, error);
+      }
+    }
+
     return {
       success: true,
       purchase: {

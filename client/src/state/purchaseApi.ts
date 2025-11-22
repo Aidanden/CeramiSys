@@ -161,7 +161,7 @@ export interface GetSuppliersQuery {
 export const purchaseApi = createApi({
   reducerPath: 'purchaseApi',
   baseQuery: baseQueryWithAuthInterceptor,
-  tagTypes: ['Purchase', 'Supplier', 'PurchaseStats', 'PaymentReceipts'],
+  tagTypes: ['Purchase', 'Supplier', 'PurchaseStats', 'PaymentReceipts', 'SupplierAccounts'],
   ...API_CACHE_CONFIG.purchases, // تحسين الأداء
   endpoints: (builder) => ({
     // Purchase endpoints
@@ -192,7 +192,7 @@ export const purchaseApi = createApi({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Purchase', 'PurchaseStats', 'PaymentReceipts'],
+      invalidatesTags: ['Purchase', 'PurchaseStats', 'PaymentReceipts', 'SupplierAccounts'],
     }),
 
     updatePurchase: builder.mutation<Purchase, { id: number; data: UpdatePurchaseRequest }>({
@@ -206,6 +206,7 @@ export const purchaseApi = createApi({
         'Purchase',
         'PurchaseStats',
         'PaymentReceipts',
+        'SupplierAccounts',
       ],
     }),
 
@@ -214,7 +215,7 @@ export const purchaseApi = createApi({
         url: `/purchases/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['Purchase', 'PurchaseStats', 'PaymentReceipts'],
+      invalidatesTags: ['Purchase', 'PurchaseStats', 'PaymentReceipts', 'SupplierAccounts'],
     }),
 
     // Purchase payment endpoints

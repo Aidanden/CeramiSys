@@ -110,7 +110,7 @@ export const purchaseExpenseApi = createApi({
     
     return baseQueryWithAuthInterceptor(args, api, extraOptions);
   },
-  tagTypes: ['ExpenseCategories', 'PurchaseExpenses', 'ProductCostHistory', 'PaymentReceipts'],
+  tagTypes: ['ExpenseCategories', 'PurchaseExpenses', 'ProductCostHistory', 'PaymentReceipts', 'SupplierAccounts'],
   endpoints: (builder) => ({
     // ==================== فئات المصروفات ====================
     getExpenseCategories: builder.query<PurchaseExpenseCategory[], boolean | void>({
@@ -168,6 +168,7 @@ export const purchaseExpenseApi = createApi({
       invalidatesTags: (result, error, { purchaseId }) => [
         { type: 'PurchaseExpenses', id: purchaseId },
         'PaymentReceipts', // تحديث إيصالات الدفع
+        'SupplierAccounts', // تحديث حسابات الموردين
       ],
     }),
 
@@ -180,6 +181,7 @@ export const purchaseExpenseApi = createApi({
       invalidatesTags: (result, error, { purchaseId }) => [
         { type: 'PurchaseExpenses', id: purchaseId },
         'PaymentReceipts', // تحديث إيصالات الدفع
+        'SupplierAccounts', // تحديث حسابات الموردين
       ],
     }),
 

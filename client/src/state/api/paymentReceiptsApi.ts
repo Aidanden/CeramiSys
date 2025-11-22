@@ -94,7 +94,7 @@ export const paymentReceiptsApi = createApi({
     
     return baseQueryWithAuthInterceptor(args, api, extraOptions);
   },
-  tagTypes: ['PaymentReceipts'],
+  tagTypes: ['PaymentReceipts', 'SupplierAccounts'],
   endpoints: (builder) => ({
     // ==================== الحصول على إيصالات الدفع ====================
     getPaymentReceipts: builder.query<PaymentReceiptsResponse, PaymentReceiptsQuery>({
@@ -118,7 +118,7 @@ export const paymentReceiptsApi = createApi({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['PaymentReceipts'],
+      invalidatesTags: ['PaymentReceipts', 'SupplierAccounts'],
     }),
 
     // ==================== تحديث إيصال دفع ====================
@@ -131,6 +131,7 @@ export const paymentReceiptsApi = createApi({
       invalidatesTags: (result, error, { id }) => [
         { type: 'PaymentReceipts', id },
         'PaymentReceipts',
+        'SupplierAccounts',
       ],
     }),
 
@@ -140,7 +141,7 @@ export const paymentReceiptsApi = createApi({
         url: `/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['PaymentReceipts'],
+      invalidatesTags: ['PaymentReceipts', 'SupplierAccounts'],
     }),
 
     // ==================== تسديد إيصال دفع ====================
@@ -153,6 +154,7 @@ export const paymentReceiptsApi = createApi({
       invalidatesTags: (result, error, { id }) => [
         { type: 'PaymentReceipts', id },
         'PaymentReceipts',
+        'SupplierAccounts',
       ],
     }),
 
@@ -166,6 +168,7 @@ export const paymentReceiptsApi = createApi({
       invalidatesTags: (result, error, { id }) => [
         { type: 'PaymentReceipts', id },
         'PaymentReceipts',
+        'SupplierAccounts',
       ],
     }),
 
@@ -179,6 +182,7 @@ export const paymentReceiptsApi = createApi({
       invalidatesTags: (result, error, { paymentReceiptId }) => [
         { type: 'PaymentReceipts', id: paymentReceiptId },
         'PaymentReceipts',
+        'SupplierAccounts',
       ],
     }),
 
@@ -194,7 +198,7 @@ export const paymentReceiptsApi = createApi({
         url: `/installments/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['PaymentReceipts'],
+      invalidatesTags: ['PaymentReceipts', 'SupplierAccounts'],
     }),
 
     // ==================== إحصائيات إيصالات الدفع ====================

@@ -3,9 +3,10 @@ import { ReportsService } from "../services/ReportsService";
 import {
   SalesReportQueryDto,
   StockReportQueryDto,
-  ProfitReportQueryDto,
   CustomerReportQueryDto,
   TopProductsReportQueryDto,
+  SupplierReportQueryDto,
+  PurchaseReportQueryDto,
 } from "../dto/reportsDto";
 
 export class ReportsController {
@@ -82,39 +83,6 @@ export class ReportsController {
   };
 
   /**
-   * GET /api/reports/profit
-   * تقرير الأرباح
-   */
-  getProfitReport = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const userCompanyId = (req as any).user?.companyId;
-      const isSystemUser = (req as any).user?.isSystemUser;
-
-      if (!userCompanyId) {
-        res.status(401).json({
-          success: false,
-          message: "غير مصرح - معرف الشركة مفقود",
-        });
-        return;
-      }
-
-      const validatedQuery = ProfitReportQueryDto.parse(req.query);
-      const report = await this.reportsService.getProfitReport(validatedQuery, userCompanyId, isSystemUser);
-
-      res.json({
-        success: true,
-        data: report,
-      });
-    } catch (error: any) {
-      console.error("Error in getProfitReport:", error);
-      res.status(500).json({
-        success: false,
-        message: error.message || "حدث خطأ أثناء جلب تقرير الأرباح",
-      });
-    }
-  };
-
-  /**
    * GET /api/reports/customers
    * تقرير العملاء
    */
@@ -176,6 +144,72 @@ export class ReportsController {
       res.status(500).json({
         success: false,
         message: error.message || "حدث خطأ أثناء جلب تقرير المنتجات الأكثر مبيعاً",
+      });
+    }
+  };
+
+  /**
+   * GET /api/reports/suppliers
+   * تقرير الموردين
+   */
+  getSupplierReport = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userCompanyId = (req as any).user?.companyId;
+      const isSystemUser = (req as any).user?.isSystemUser;
+
+      if (!userCompanyId) {
+        res.status(401).json({
+          success: false,
+          message: "غير مصرح - معرف الشركة مفقود",
+        });
+        return;
+      }
+
+      const validatedQuery = SupplierReportQueryDto.parse(req.query);
+      const report = await this.reportsService.getSupplierReport(validatedQuery, userCompanyId, isSystemUser);
+
+      res.json({
+        success: true,
+        data: report,
+      });
+    } catch (error: any) {
+      console.error("Error in getSupplierReport:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "حدث خطأ أثناء جلب تقرير الموردين",
+      });
+    }
+  };
+
+  /**
+   * GET /api/reports/purchases
+   * تقرير المشتريات
+   */
+  getPurchaseReport = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userCompanyId = (req as any).user?.companyId;
+      const isSystemUser = (req as any).user?.isSystemUser;
+
+      if (!userCompanyId) {
+        res.status(401).json({
+          success: false,
+          message: "غير مصرح - معرف الشركة مفقود",
+        });
+        return;
+      }
+
+      const validatedQuery = PurchaseReportQueryDto.parse(req.query);
+      const report = await this.reportsService.getPurchaseReport(validatedQuery, userCompanyId, isSystemUser);
+
+      res.json({
+        success: true,
+        data: report,
+      });
+    } catch (error: any) {
+      console.error("Error in getPurchaseReport:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "حدث خطأ أثناء جلب تقرير المشتريات",
       });
     }
   };

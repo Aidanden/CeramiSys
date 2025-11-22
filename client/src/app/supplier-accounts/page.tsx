@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   useGetAllSuppliersAccountSummaryQuery,
   useGetSupplierAccountQuery,
@@ -28,14 +28,31 @@ const SupplierAccountsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('summary');
+  const accountPrintRef = useRef<HTMLDivElement>(null);
 
-  const { data: summaryData, isLoading, error } = useGetAllSuppliersAccountSummaryQuery();
-  const { data: accountData, isLoading: isLoadingAccount } = useGetSupplierAccountQuery(selectedSupplierId ?? 0, {
+  const { data: summaryData, isLoading, error, refetch: refetchSummary } = useGetAllSuppliersAccountSummaryQuery();
+  const { data: accountData, isLoading: isLoadingAccount, refetch: refetchAccount } = useGetSupplierAccountQuery(selectedSupplierId ?? 0, {
     skip: !selectedSupplierId || viewMode !== 'account'
   });
-  const { data: purchasesData, isLoading: isLoadingPurchases } = useGetSupplierOpenPurchasesQuery(selectedSupplierId ?? 0, {
+  const { data: purchasesData, isLoading: isLoadingPurchases, refetch: refetchPurchases } = useGetSupplierOpenPurchasesQuery(selectedSupplierId ?? 0, {
     skip: !selectedSupplierId || viewMode !== 'purchases'
   });
+
+  // تحديث البيانات عند التركيز على الصفحة
+  useEffect(() => {
+    const handleFocus = () => {
+      refetchSummary();
+      if (selectedSupplierId && viewMode === 'account') {
+        refetchAccount();
+      }
+      if (selectedSupplierId && viewMode === 'purchases') {
+        refetchPurchases();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [selectedSupplierId, viewMode, refetchSummary, refetchAccount, refetchPurchases]);
 
   const suppliers = summaryData?.data || [];
   const account = accountData?.data;
@@ -73,6 +90,8 @@ const SupplierAccountsPage = () => {
     if (balance < 0) return 'مدين لك';
     return 'متوازن';
   };
+  const getOperationDescription = (type: 'DEBIT' | 'CREDIT') =>
+    type === 'CREDIT' ? 'مبلغ يجب دفعه للمورد (دين)' : 'دفعة تم تسديدها للمورد';
 
   const handleShowAccount = (supplierId: number) => {
     setSelectedSupplierId(supplierId);
@@ -90,6 +109,85 @@ const SupplierAccountsPage = () => {
   };
 
   const selectedSupplier = suppliers.find((s) => s.id === selectedSupplierId);
+
+  const handlePrintAccount = () => {
+    if (!account) return;
+
+    const rowsHtml = (account.entries.length
+      ? account.entries
+      : [{
+          id: 0,
+          transactionDate: '',
+          description: 'لا توجد معاملات',
+          referenceType: '',
+          referenceId: 0,
+          transactionType: 'DEBIT' as 'DEBIT' | 'CREDIT',
+          amount: 0,
+          balance: account.currentBalance,
+        }]
+    ).map((entry) => `
+        <tr>
+          <td>${entry.transactionDate ? formatEnglishDate(entry.transactionDate) : ''}</td>
+          <td>${entry.description || `${entry.referenceType} #${entry.referenceId}`}</td>
+          <td>${entry.transactionType === 'DEBIT' ? 'مدين' : 'دائن'}</td>
+          <td>${getOperationDescription(entry.transactionType)}</td>
+          <td>${formatCurrency(entry.amount)}</td>
+          <td>${formatCurrency(Math.abs(entry.balance))}</td>
+        </tr>
+      `).join('');
+
+    const printWindow = window.open('', '_blank', 'width=1024,height=768');
+    if (!printWindow) return;
+
+    const supplierInfo = `
+      <div class="supplier-info">
+        <p>الاسم: <strong>${account.supplier.name}</strong></p>
+        <p>الهاتف: <strong>${account.supplier.phone || '-'}</strong></p>
+        <p>الرصيد: <strong>${formatCurrency(Math.abs(account.currentBalance))}</strong></p>
+      </div>
+    `;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+        <head>
+          <meta charset="utf-8" />
+          <title>كشف حساب المورد - ${account.supplier.name}</title>
+          <style>
+            body { font-family: 'Cairo', 'Tahoma', sans-serif; margin: 24px; }
+            h2 { text-align: center; }
+            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: right; font-size: 14px; }
+            th { background: #f3f4f6; }
+            .supplier-info { margin-top: 16px; display: flex; gap: 24px; }
+            .supplier-info p { margin: 0; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <h2>كشف حساب المورد</h2>
+          ${supplierInfo}
+          <table>
+            <thead>
+              <tr>
+                <th>التاريخ</th>
+                <th>البيان</th>
+                <th>النوع</th>
+                <th>الدفعة (المبلغ)</th>
+                <th>العملية</th>
+                <th>الرصيد</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
 
   if (isLoading) {
     return (
@@ -123,70 +221,83 @@ const SupplierAccountsPage = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-600 mb-1">إجمالي الموردين</p>
-                <p className="text-2xl font-bold text-blue-600">{formatStatsNumber(suppliers.length)}</p>
+        {viewMode === 'summary' && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">إجمالي الموردين</p>
+                  <p className="text-2xl font-bold text-blue-600">{formatStatsNumber(suppliers.length)}</p>
+                </div>
+                <div className="bg-blue-100 p-2 rounded-full">
+                  <User className="w-5 h-5 text-blue-600" />
+                </div>
               </div>
-              <div className="bg-blue-100 p-2 rounded-full">
-                <User className="w-5 h-5 text-blue-600" />
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">مستحقات علينا</p>
+                  <p className="text-2xl font-bold text-red-600">{formatStatsNumber(totalCreditors)}</p>
+                  <p className="text-xs text-red-600 font-semibold">{formatStatsCurrency(totalCredit)}</p>
+                </div>
+                <div className="bg-red-100 p-2 rounded-full">
+                  <TrendingUp className="w-5 h-5 text-red-600" />
+                </div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">مدينين لنا</p>
+                  <p className="text-2xl font-bold text-green-600">{formatStatsNumber(totalDebtors)}</p>
+                  <p className="text-xs text-green-600 font-semibold">{formatStatsCurrency(totalDebt)}</p>
+                </div>
+                <div className="bg-green-100 p-2 rounded-full">
+                  <TrendingDown className="w-5 h-5 text-green-600" />
+                </div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">صافي الرصيد</p>
+                  <p className={`text-2xl font-bold ${netBalance > 0 ? 'text-red-600' : netBalance < 0 ? 'text-green-600' : 'text-gray-700'}`}>
+                    {formatStatsCurrency(netBalance)}
+                  </p>
+                  <p className="text-xs text-gray-500 font-semibold">
+                    {netBalance > 0 ? 'صافي مستحق عليك' : netBalance < 0 ? 'صافي مدين لك' : 'متوازن'}
+                  </p>
+                </div>
+                <div className={`p-2 rounded-full ${
+                  netBalance > 0 ? 'bg-red-100' : netBalance < 0 ? 'bg-green-100' : 'bg-gray-100'
+                }`}>
+                  <DollarSign className={`w-5 h-5 ${netBalance > 0 ? 'text-red-600' : netBalance < 0 ? 'text-green-600' : 'text-gray-600'}`} />
+                </div>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-600 mb-1">مستحقات علينا</p>
-                <p className="text-2xl font-bold text-red-600">{formatStatsNumber(totalCreditors)}</p>
-                <p className="text-xs text-red-600 font-semibold">{formatStatsCurrency(totalCredit)}</p>
-              </div>
-              <div className="bg-red-100 p-2 rounded-full">
-                <TrendingUp className="w-5 h-5 text-red-600" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-600 mb-1">مدينين لنا</p>
-                <p className="text-2xl font-bold text-green-600">{formatStatsNumber(totalDebtors)}</p>
-                <p className="text-xs text-green-600 font-semibold">{formatStatsCurrency(totalDebt)}</p>
-              </div>
-              <div className="bg-green-100 p-2 rounded-full">
-                <TrendingDown className="w-5 h-5 text-green-600" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-600 mb-1">صافي الرصيد</p>
-                <p className={`text-2xl font-bold ${netBalance > 0 ? 'text-red-600' : netBalance < 0 ? 'text-green-600' : 'text-gray-700'}`}>
-                  {formatStatsCurrency(netBalance)}
-                </p>
-                <p className="text-xs text-gray-500 font-semibold">
-                  {netBalance > 0 ? 'صافي مستحق عليك' : netBalance < 0 ? 'صافي مدين لك' : 'متوازن'}
-                </p>
-              </div>
-              <div className={`p-2 rounded-full ${
-                netBalance > 0 ? 'bg-red-100' : netBalance < 0 ? 'bg-green-100' : 'bg-gray-100'
-              }`}>
-                <DollarSign className={`w-5 h-5 ${netBalance > 0 ? 'text-red-600' : netBalance < 0 ? 'text-green-600' : 'text-gray-600'}`} />
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
 
         {viewMode !== 'summary' && (
-          <button
-            onClick={handleBackToSummary}
-            className="mb-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors flex items-center gap-2"
-          >
-            <span>←</span>
-            <span>العودة للقائمة</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <button
+              onClick={handleBackToSummary}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors flex items-center gap-2"
+            >
+              <span>←</span>
+              <span>العودة للقائمة</span>
+            </button>
+            {viewMode === 'account' && account && (
+              <button
+                onClick={handlePrintAccount}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                طباعة كشف الحساب
+              </button>
+            )}
+          </div>
         )}
 
         {viewMode === 'summary' && (
@@ -211,7 +322,7 @@ const SupplierAccountsPage = () => {
                     <tr>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المورد</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">رقم الهاتف</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الرصيد الحالي</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الرصيد</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الحالة</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الإجراءات</th>
                     </tr>
@@ -251,20 +362,13 @@ const SupplierAccountsPage = () => {
                               {getBalanceText(supplier.currentBalance)}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2 space-x-reverse">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
                             <button
                               onClick={() => handleShowAccount(supplier.id)}
                               className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors ml-2"
                             >
                               <FileText className="w-4 h-4 ml-1" />
                               كشف الحساب
-                            </button>
-                            <button
-                              onClick={() => handleShowPurchases(supplier.id)}
-                              className="inline-flex items-center px-3 py-1.5 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
-                            >
-                              <FileText className="w-4 h-4 ml-1" />
-                              المشتريات المفتوحة
                             </button>
                           </td>
                         </tr>
@@ -321,22 +425,11 @@ const SupplierAccountsPage = () => {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-gray-600 mb-1">إجمالي عليه</p>
-                        <p className="text-2xl font-bold text-red-600">{formatCurrency(account.totalDebit)}</p>
-                      </div>
-                      <div className="bg-red-100 p-3 rounded-full">
-                        <TrendingUp className="w-6 h-6 text-red-600" />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-600 mb-1">إجمالي له (مدفوع)</p>
+                        <p className="text-sm text-gray-600 mb-1">إجمالي المدفوع له</p>
                         <p className="text-2xl font-bold text-green-600">{formatCurrency(account.totalCredit)}</p>
                       </div>
                       <div className="bg-green-100 p-3 rounded-full">
@@ -347,7 +440,7 @@ const SupplierAccountsPage = () => {
                   <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-gray-600 mb-1">الرصيد الحالي</p>
+                        <p className="text-sm text-gray-600 mb-1">الرصيد</p>
                         <p className={`text-2l font-bold ${getBalanceColor(account.currentBalance)}`}>
                           {formatCurrency(Math.abs(account.currentBalance))}
                         </p>
@@ -373,7 +466,8 @@ const SupplierAccountsPage = () => {
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">التاريخ</th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">البيان</th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">النوع</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المبلغ</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الدفعة (المبلغ)</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">العملية</th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الرصيد</th>
                         </tr>
                       </thead>
@@ -401,8 +495,13 @@ const SupplierAccountsPage = () => {
                                   {formatCurrency(entry.amount)}
                                 </span>
                               </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                {getOperationDescription(entry.transactionType)}
+                              </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`text-sm font-semibold ${getBalanceColor(entry.balance)}`}>
+                                <span className={`text-sm font-semibold ${
+                                  entry.balance > 0 ? 'text-red-600' : entry.balance < 0 ? 'text-green-600' : 'text-gray-600'
+                                }`}>
                                   {formatCurrency(Math.abs(entry.balance))}
                                 </span>
                               </td>

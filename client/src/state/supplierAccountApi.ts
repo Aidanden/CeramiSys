@@ -63,6 +63,8 @@ export const supplierAccountApi = createApi({
   reducerPath: "supplierAccountApi",
   baseQuery: baseQueryWithAuthInterceptor,
   tagTypes: ["SupplierAccounts", "SupplierAccount", "OpenPurchases"],
+  refetchOnFocus: true, // إعادة جلب البيانات عند العودة للصفحة
+  refetchOnReconnect: true, // إعادة جلب البيانات عند إعادة الاتصال
   endpoints: (build) => ({
     // جلب ملخص جميع حسابات الموردين
     getAllSuppliersAccountSummary: build.query<
@@ -71,6 +73,7 @@ export const supplierAccountApi = createApi({
     >({
       query: () => "/supplier-accounts/summary",
       providesTags: ["SupplierAccounts"],
+      keepUnusedDataFor: 0, // عدم الاحتفاظ بالبيانات القديمة
     }),
 
     // جلب تفاصيل حساب مورد واحد
@@ -81,7 +84,9 @@ export const supplierAccountApi = createApi({
       query: (supplierId) => `/supplier-accounts/${supplierId}`,
       providesTags: (result, error, supplierId) => [
         { type: "SupplierAccount", id: supplierId },
+        "SupplierAccounts", // إضافة tag عام للتحديث الشامل
       ],
+      keepUnusedDataFor: 0, // عدم الاحتفاظ بالبيانات القديمة
     }),
 
     // جلب المشتريات المفتوحة للمورد
@@ -92,7 +97,9 @@ export const supplierAccountApi = createApi({
       query: (supplierId) => `/supplier-accounts/${supplierId}/open-purchases`,
       providesTags: (result, error, supplierId) => [
         { type: "OpenPurchases", id: supplierId },
+        "SupplierAccounts", // إضافة tag عام للتحديث الشامل
       ],
+      keepUnusedDataFor: 0, // عدم الاحتفاظ بالبيانات القديمة
     }),
   }),
 });

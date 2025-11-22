@@ -18,13 +18,6 @@ export interface StockReportQuery {
   maxBoxes?: number;
 }
 
-export interface ProfitReportQuery {
-  startDate?: string;
-  endDate?: string;
-  companyId?: number;
-  groupBy?: "day" | "week" | "month" | "year";
-}
-
 export interface CustomerReportQuery {
   companyId?: number;
   customerId?: number;
@@ -37,6 +30,19 @@ export interface TopProductsReportQuery {
   startDate?: string;
   endDate?: string;
   limit?: number;
+}
+
+export interface SupplierReportQuery {
+  supplierId?: number;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface PurchaseReportQuery {
+  supplierId?: number;
+  startDate?: string;
+  endDate?: string;
+  purchaseType?: "CASH" | "CREDIT";
 }
 
 export const reportsApi = createApi({
@@ -66,15 +72,6 @@ export const reportsApi = createApi({
       }),
     }),
 
-    // تقرير الأرباح
-    getProfitReport: build.query({
-      query: (params: ProfitReportQuery) => ({
-        url: "/reports/profit",
-        method: "GET",
-        params,
-      }),
-    }),
-
     // تقرير العملاء
     getCustomerReport: build.query({
       query: (params: CustomerReportQuery) => ({
@@ -92,13 +89,32 @@ export const reportsApi = createApi({
         params,
       }),
     }),
+
+    // تقرير الموردين
+    getSupplierReport: build.query({
+      query: (params: SupplierReportQuery) => ({
+        url: "/reports/suppliers",
+        method: "GET",
+        params,
+      }),
+    }),
+
+    // تقرير المشتريات
+    getPurchaseReport: build.query({
+      query: (params: PurchaseReportQuery) => ({
+        url: "/reports/purchases",
+        method: "GET",
+        params,
+      }),
+    }),
   }),
 });
 
 export const {
   useGetSalesReportQuery,
   useGetStockReportQuery,
-  useGetProfitReportQuery,
   useGetCustomerReportQuery,
   useGetTopProductsReportQuery,
+  useGetSupplierReportQuery,
+  useGetPurchaseReportQuery,
 } = reportsApi;

@@ -2,9 +2,10 @@ import { PrismaClient } from "@prisma/client";
 import { 
   SalesReportQuery, 
   StockReportQuery, 
-  ProfitReportQuery, 
   CustomerReportQuery,
-  TopProductsReportQuery 
+  TopProductsReportQuery,
+  SupplierReportQuery,
+  PurchaseReportQuery
 } from "../dto/reportsDto";
 
 export class ReportsService {
@@ -109,9 +110,7 @@ export class ReportsService {
             unit: true, 
             unitsPerBox: true,
             prices: {
-              where: { companyId: userCompanyId },
-              select: { sellPrice: true },
-              take: 1
+              select: { companyId: true, sellPrice: true }
             }
           } 
         }
@@ -122,104 +121,39 @@ export class ReportsService {
     // حساب الإحصائيات
     const totalBoxes = stocks.reduce((sum, stock) => sum + Number(stock.boxes), 0);
     const totalValue = stocks.reduce((sum, stock) => {
-      const price = stock.product.prices[0]?.sellPrice || 0;
-      return sum + (Number(stock.boxes) * Number(price));
+      const companyPriceEntry = stock.product.prices.find((price) => price.companyId === stock.companyId);
+      const sellPrice = companyPriceEntry ? Number(companyPriceEntry.sellPrice) : 0;
+      return sum + (Number(stock.boxes) * sellPrice);
     }, 0);
 
     return {
-      stocks: stocks.map(stock => ({
-        id: stock.id,
-        company: stock.company,
-        product: {
-          ...stock.product,
-          unitsPerBox: stock.product.unitsPerBox ? Number(stock.product.unitsPerBox) : null,
-          sellPrice: stock.product.prices[0] ? Number(stock.product.prices[0].sellPrice) : null,
-        },
-        boxes: Number(stock.boxes),
-        totalUnits: stock.product.unitsPerBox 
-          ? Number(stock.boxes) * Number(stock.product.unitsPerBox)
-          : Number(stock.boxes),
-        updatedAt: stock.updatedAt,
-      })),
+      stocks: stocks.map(stock => {
+        const companyPriceEntry = stock.product.prices.find((price) => price.companyId === stock.companyId);
+        const sellPrice = companyPriceEntry ? Number(companyPriceEntry.sellPrice) : null;
+
+        return {
+          id: stock.id,
+          company: stock.company,
+          product: {
+            id: stock.product.id,
+            sku: stock.product.sku,
+            name: stock.product.name,
+            unit: stock.product.unit,
+            unitsPerBox: stock.product.unitsPerBox ? Number(stock.product.unitsPerBox) : null,
+            sellPrice,
+          },
+          boxes: Number(stock.boxes),
+          totalUnits: stock.product.unitsPerBox 
+            ? Number(stock.boxes) * Number(stock.product.unitsPerBox)
+            : Number(stock.boxes),
+          updatedAt: stock.updatedAt,
+        };
+      }),
       stats: {
         totalBoxes,
         totalValue,
         itemsCount: stocks.length,
         lowStockItems: stocks.filter(s => Number(s.boxes) < 10).length,
-      }
-    };
-  }
-
-  /**
-   * تقرير الأرباح
-   */
-  async getProfitReport(query: ProfitReportQuery, userCompanyId: number, isSystemUser: boolean = false) {
-    const where: any = {
-      ...(isSystemUser !== true && { companyId: userCompanyId }),
-      ...(query.companyId && { companyId: query.companyId }),
-      ...(query.startDate || query.endDate ? {
-        saleDate: {
-          ...(query.startDate && { gte: new Date(query.startDate) }),
-          ...(query.endDate && { lte: new Date(query.endDate) }),
-        }
-      } : {}),
-    };
-
-    const sales = await this.prisma.sale.findMany({
-      where,
-      include: {
-        lines: true
-      },
-      orderBy: { createdAt: "asc" }
-    });
-
-    // تجميع البيانات حسب الفترة
-    const groupedData: { [key: string]: { revenue: number, count: number } } = {};
-    
-    sales.forEach(sale => {
-      const date = new Date(sale.createdAt);
-      let key: string;
-      
-      switch (query.groupBy) {
-        case "day":
-          key = date.toISOString().split('T')[0] || '';
-          break;
-        case "week":
-          const weekNum = Math.ceil((date.getDate() + 6 - date.getDay()) / 7);
-          key = `${date.getFullYear()}-W${weekNum}`;
-          break;
-        case "month":
-          key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-          break;
-        case "year":
-          key = String(date.getFullYear());
-          break;
-        default:
-          key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      }
-
-      if (!groupedData[key]) {
-        groupedData[key] = { revenue: 0, count: 0 };
-      }
-      
-      groupedData[key]!.revenue += Number(sale.total);
-      groupedData[key]!.count += 1;
-    });
-
-    const chartData = Object.entries(groupedData).map(([period, data]) => ({
-      period,
-      revenue: data.revenue,
-      salesCount: data.count,
-    }));
-
-    const totalRevenue = sales.reduce((sum, sale) => sum + Number(sale.total), 0);
-
-    return {
-      chartData,
-      stats: {
-        totalRevenue,
-        totalSales: sales.length,
-        averageRevenue: sales.length > 0 ? totalRevenue / sales.length : 0,
       }
     };
   }
@@ -356,6 +290,106 @@ export class ReportsService {
         totalProducts: Object.keys(productData).length,
         totalRevenue: Object.values(productData).reduce((sum: number, item: any) => sum + item.totalRevenue, 0),
         totalQty: Object.values(productData).reduce((sum: number, item: any) => sum + item.totalQty, 0),
+      }
+    };
+  }
+
+  /**
+   * تقرير الموردين
+   */
+  async getSupplierReport(query: SupplierReportQuery, userCompanyId: number, isSystemUser: boolean = false) {
+    const where: any = {
+      ...(isSystemUser !== true && { companyId: userCompanyId }),
+      ...(query.supplierId && { id: query.supplierId }),
+    };
+
+    const suppliers = await this.prisma.supplier.findMany({
+      where,
+      include: {
+        purchases: {
+          where: {
+            isApproved: true,
+            ...(query.startDate || query.endDate ? {
+              createdAt: {
+                ...(query.startDate && { gte: new Date(query.startDate) }),
+                ...(query.endDate && { lte: new Date(query.endDate) }),
+              }
+            } : {}),
+          },
+        },
+        accountEntries: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+
+    const suppliersData = suppliers.map((supplier: any) => {
+      const totalPurchases = supplier.purchases.reduce((sum: number, p: any) => sum + Number(p.finalTotal), 0);
+      const totalPaid = supplier.accountEntries
+        .filter((a: any) => a.transactionType === 'DEBIT')
+        .reduce((sum: number, a: any) => sum + Number(a.amount), 0);
+      const balance = supplier.accountEntries.length > 0 
+        ? Number(supplier.accountEntries[0].balance) 
+        : 0;
+
+      return {
+        id: supplier.id,
+        name: supplier.name,
+        phone: supplier.phone,
+        totalPurchases,
+        totalPaid,
+        balance,
+      };
+    });
+
+    return {
+      suppliers: suppliersData,
+      stats: {
+        totalSuppliers: suppliersData.length,
+        totalPurchases: suppliersData.reduce((sum, s) => sum + s.totalPurchases, 0),
+        totalPaid: suppliersData.reduce((sum, s) => sum + s.totalPaid, 0),
+        totalBalance: suppliersData.reduce((sum, s) => sum + s.balance, 0),
+      }
+    };
+  }
+
+  /**
+   * تقرير المشتريات
+   */
+  async getPurchaseReport(query: PurchaseReportQuery, userCompanyId: number, isSystemUser: boolean = false) {
+    const where: any = {
+      isApproved: true,
+      ...(isSystemUser !== true && { companyId: userCompanyId }),
+      ...(query.supplierId && { supplierId: query.supplierId }),
+      ...(query.purchaseType && { purchaseType: query.purchaseType }),
+      ...(query.startDate || query.endDate ? {
+        createdAt: {
+          ...(query.startDate && { gte: new Date(query.startDate) }),
+          ...(query.endDate && { lte: new Date(query.endDate) }),
+        }
+      } : {}),
+    };
+
+    const purchases = await this.prisma.purchase.findMany({
+      where,
+      include: {
+        supplier: { select: { id: true, name: true, phone: true } },
+        company: { select: { id: true, name: true, code: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const totalPurchases = purchases.reduce((sum, p) => sum + Number(p.finalTotal), 0);
+    const totalCash = purchases.filter(p => p.purchaseType === 'CASH').reduce((sum, p) => sum + Number(p.finalTotal), 0);
+    const totalCredit = purchases.filter(p => p.purchaseType === 'CREDIT').reduce((sum, p) => sum + Number(p.finalTotal), 0);
+
+    return {
+      purchases,
+      stats: {
+        totalPurchases,
+        totalCash,
+        totalCredit,
+        purchaseCount: purchases.length,
       }
     };
   }
