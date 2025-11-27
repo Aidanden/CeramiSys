@@ -87,7 +87,8 @@ model Users {
   FullName                String
   Email                   String?         @unique
   Phone                   String?
-  RoleID                  String
+  RoleID                  String?
+  Permissions             Json?
   IsActive                Boolean         @default(true)
   LastLogin               DateTime?
   PasswordChangedAt       DateTime?
@@ -100,7 +101,7 @@ model Users {
   completedDispatchOrders DispatchOrder[]
   Sessions                UserSessions[]
   Company                 Company         @relation(fields: [CompanyID], references: [id])
-  Role                    UserRoles       @relation(fields: [RoleID], references: [RoleID])
+  Role                    UserRoles?      @relation(fields: [RoleID], references: [RoleID])
   notifications           Notification[]
   damageReports           DamageReport[]
 }

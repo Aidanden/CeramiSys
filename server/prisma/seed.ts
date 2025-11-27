@@ -22,6 +22,7 @@ async function deleteAllData() {
     "purchaseExpenseCategory",       // PurchaseExpenseCategory model (فئات مصروفات المشتريات)
     "paymentReceiptInstallment",     // PaymentReceiptInstallment model (أقساط إيصالات الدفع)
     "supplierPaymentReceipt",        // SupplierPaymentReceipt model (إيصالات دفع الموردين)
+    "supplierAccount",               // SupplierAccount model (حسابات الموردين) - يجب حذفه قبل Supplier
     "purchasePayment",               // PurchasePayment model
     "purchaseLine",                  // PurchaseLine model
     "purchase",                      // Purchase model
@@ -29,6 +30,7 @@ async function deleteAllData() {
     "saleReturnLine",                // SaleReturnLine model
     "saleReturn",                    // SaleReturn model
     "salePayment",                   // SalePayment model
+    "customerAccount",               // CustomerAccount model (حسابات العملاء) - يجب حذفه قبل Customer
     "provisionalSaleLine",           // ProvisionalSaleLine model
     "provisionalSale",               // ProvisionalSale model
     "saleLine",                      // SaleLine model

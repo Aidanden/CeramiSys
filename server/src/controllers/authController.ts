@@ -117,7 +117,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         companyId: user.CompanyID,
         roleId: user.RoleID,
         username: user.UserName,
-        role: user.Role.RoleName,
+        role: user.Role?.RoleName || 'user',
         isSystemUser: user.IsSystemUser
       },
       process.env.JWT_SECRET || 'your-secret-key',
@@ -158,8 +158,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           username: user.UserName,
           fullName: user.FullName,
           email: user.Email,
-          role: user.Role.RoleName,
-          permissions: user.Role.Permissions as string[],
+          role: user.Role?.RoleName || 'user',
+          permissions: ((user as any).Permissions || user.Role?.Permissions || []) as string[],
           companyId: user.CompanyID,
           isSystemUser: user.IsSystemUser
         }
@@ -245,8 +245,8 @@ export const getCurrentUser = async (req: AuthRequest, res: Response): Promise<v
         fullName: user.FullName,
         email: user.Email,
         phone: user.Phone,
-        role: user.Role.RoleName,
-        permissions: user.Role.Permissions as string[],
+        role: user.Role?.RoleName || 'user',
+        permissions: ((user as any).Permissions || user.Role?.Permissions || []) as string[],
         companyId: user.CompanyID,
         company: user.Company ? {
           id: user.Company.id,

@@ -1,0 +1,288 @@
+/**
+ * Screen Permissions Constants
+ * نظام الصلاحيات المبني على الشاشات
+ */
+
+export const SCREEN_PERMISSIONS = {
+  // الشاشة الرئيسية
+  DASHBOARD: 'screen.dashboard',
+  
+  // الإدارة الأساسية
+  COMPANIES: 'screen.companies',
+  PRODUCTS: 'screen.products',
+  
+  // المبيعات
+  SALES: 'screen.sales',
+  SALE_RETURNS: 'screen.sale_returns',
+  INTER_COMPANY_SALES: 'screen.inter_company_sales',
+  
+  // المشتريات
+  PURCHASES: 'screen.purchases',
+  PAYMENT_RECEIPTS: 'screen.payment_receipts',
+  
+  // المخزون
+  WAREHOUSE_DISPATCH: 'screen.warehouse_dispatch',
+  DAMAGE_REPORTS: 'screen.damage_reports',
+  
+  // المحاسبة
+  ACCOUNTANT: 'screen.accountant',
+  CUSTOMER_ACCOUNTS: 'screen.customer_accounts',
+  SUPPLIER_ACCOUNTS: 'screen.supplier_accounts',
+  
+  // التقارير
+  REPORTS: 'screen.reports',
+  
+  // الإعدادات
+  USERS: 'screen.users',
+  PERMISSION_GROUPS: 'screen.permission_groups',
+  NOTIFICATIONS: 'screen.notifications',
+  
+  // صلاحية شاملة (للمدير)
+  ALL: 'screen.all'
+} as const;
+
+export type ScreenPermissionValue = typeof SCREEN_PERMISSIONS[keyof typeof SCREEN_PERMISSIONS];
+
+export interface ScreenMetadata {
+  id: string;
+  name: string;
+  route: string;
+  permission: ScreenPermissionValue;
+  category: 'main' | 'sales' | 'purchases' | 'inventory' | 'accounting' | 'reports' | 'settings';
+  description?: string;
+  icon?: string;
+}
+
+/**
+ * قائمة جميع الشاشات المتاحة في النظام
+ */
+export const SCREEN_METADATA: ScreenMetadata[] = [
+  // الشاشات الرئيسية
+  {
+    id: 'dashboard',
+    name: 'الرئيسية',
+    route: '/dashboard',
+    permission: SCREEN_PERMISSIONS.DASHBOARD,
+    category: 'main',
+    description: 'لوحة التحكم الرئيسية',
+    icon: 'Home'
+  },
+  {
+    id: 'companies',
+    name: 'إدارة الشركات',
+    route: '/companies',
+    permission: SCREEN_PERMISSIONS.COMPANIES,
+    category: 'main',
+    description: 'إدارة الشركات والفروع',
+    icon: 'Building2'
+  },
+  {
+    id: 'products',
+    name: 'الأصناف والمخزن',
+    route: '/products',
+    permission: SCREEN_PERMISSIONS.PRODUCTS,
+    category: 'inventory',
+    description: 'إدارة المنتجات والمخزون',
+    icon: 'ShoppingBag'
+  },
+  
+  // شاشات المبيعات
+  {
+    id: 'sales',
+    name: 'المبيعات',
+    route: '/sales',
+    permission: SCREEN_PERMISSIONS.SALES,
+    category: 'sales',
+    description: 'إدارة فواتير المبيعات',
+    icon: 'ShoppingCart'
+  },
+  {
+    id: 'sale_returns',
+    name: 'المردودات',
+    route: '/sale-returns',
+    permission: SCREEN_PERMISSIONS.SALE_RETURNS,
+    category: 'sales',
+    description: 'إدارة مردودات المبيعات',
+    icon: 'TrendingDown'
+  },
+  {
+    id: 'inter_company_sales',
+    name: 'المبيعات من الشركة الأم',
+    route: '/complex-inter-company-sales',
+    permission: SCREEN_PERMISSIONS.INTER_COMPANY_SALES,
+    category: 'sales',
+    description: 'المبيعات بين الشركات',
+    icon: 'ArrowRightLeft'
+  },
+  
+  // شاشات المشتريات
+  {
+    id: 'purchases',
+    name: 'المشتريات',
+    route: '/purchases',
+    permission: SCREEN_PERMISSIONS.PURCHASES,
+    category: 'purchases',
+    description: 'إدارة فواتير المشتريات',
+    icon: 'CreditCard'
+  },
+  {
+    id: 'payment_receipts',
+    name: 'إيصالات الدفع',
+    route: '/payment-receipts',
+    permission: SCREEN_PERMISSIONS.PAYMENT_RECEIPTS,
+    category: 'purchases',
+    description: 'إدارة إيصالات الدفع للموردين',
+    icon: 'FileText'
+  },
+  
+  // شاشات المخزون
+  {
+    id: 'warehouse_dispatch',
+    name: 'أوامر صرف المخزن',
+    route: '/warehouse-dispatch',
+    permission: SCREEN_PERMISSIONS.WAREHOUSE_DISPATCH,
+    category: 'inventory',
+    description: 'إدارة أوامر صرف المخزن',
+    icon: 'Layout'
+  },
+  {
+    id: 'damage_reports',
+    name: 'محاضر الإتلاف',
+    route: '/damage-reports',
+    permission: SCREEN_PERMISSIONS.DAMAGE_REPORTS,
+    category: 'inventory',
+    description: 'إدارة محاضر إتلاف البضائع',
+    icon: 'FileText'
+  },
+  
+  // شاشات المحاسبة
+  {
+    id: 'accountant',
+    name: 'مساحة عمل المحاسب',
+    route: '/accountant',
+    permission: SCREEN_PERMISSIONS.ACCOUNTANT,
+    category: 'accounting',
+    description: 'مساحة عمل المحاسب',
+    icon: 'CreditCard'
+  },
+  {
+    id: 'customer_accounts',
+    name: 'حسابات العملاء',
+    route: '/customer-accounts',
+    permission: SCREEN_PERMISSIONS.CUSTOMER_ACCOUNTS,
+    category: 'accounting',
+    description: 'إدارة حسابات العملاء',
+    icon: 'Wallet'
+  },
+  {
+    id: 'supplier_accounts',
+    name: 'حسابات الموردين',
+    route: '/supplier-accounts',
+    permission: SCREEN_PERMISSIONS.SUPPLIER_ACCOUNTS,
+    category: 'accounting',
+    description: 'إدارة حسابات الموردين',
+    icon: 'CircleDollarSign'
+  },
+  
+  // التقارير
+  {
+    id: 'reports',
+    name: 'التقارير',
+    route: '/reports',
+    permission: SCREEN_PERMISSIONS.REPORTS,
+    category: 'reports',
+    description: 'عرض التقارير والإحصائيات',
+    icon: 'BarChart3'
+  },
+  
+  // الإعدادات
+  {
+    id: 'users',
+    name: 'إدارة المستخدمين',
+    route: '/users',
+    permission: SCREEN_PERMISSIONS.USERS,
+    category: 'settings',
+    description: 'إدارة المستخدمين والصلاحيات',
+    icon: 'UsersRound'
+  },
+  {
+    id: 'permission_groups',
+    name: 'مجموعات الصلاحيات',
+    route: '/permission-groups',
+    permission: SCREEN_PERMISSIONS.PERMISSION_GROUPS,
+    category: 'settings',
+    description: 'إدارة مجموعات الصلاحيات',
+    icon: 'Shield'
+  },
+  {
+    id: 'notifications',
+    name: 'الإشعارات',
+    route: '/notifications',
+    permission: SCREEN_PERMISSIONS.NOTIFICATIONS,
+    category: 'settings',
+    description: 'عرض الإشعارات',
+    icon: 'Bell'
+  }
+];
+
+/**
+ * أسماء الفئات بالعربية
+ */
+export const CATEGORY_NAMES: Record<string, string> = {
+  main: 'الإدارة الأساسية',
+  sales: 'المبيعات',
+  purchases: 'المشتريات',
+  inventory: 'المخزون',
+  accounting: 'المحاسبة',
+  reports: 'التقارير',
+  settings: 'الإعدادات'
+};
+
+/**
+ * دالة للحصول على معلومات شاشة من المسار
+ */
+export function getScreenByRoute(route: string): ScreenMetadata | undefined {
+  return SCREEN_METADATA.find(screen => screen.route === route);
+}
+
+/**
+ * دالة للحصول على معلومات شاشة من الصلاحية
+ */
+export function getScreenByPermission(permission: string): ScreenMetadata | undefined {
+  return SCREEN_METADATA.find(screen => screen.permission === permission);
+}
+
+/**
+ * دالة للحصول على جميع الشاشات حسب الفئة
+ */
+export function getScreensByCategory(category: string): ScreenMetadata[] {
+  return SCREEN_METADATA.filter(screen => screen.category === category);
+}
+
+/**
+ * دالة للتحقق من صلاحية الوصول لشاشة معينة
+ */
+export function hasScreenAccess(userPermissions: string[], screenPermission: string): boolean {
+  // المدير له صلاحية الوصول لكل شيء
+  if (userPermissions.includes(SCREEN_PERMISSIONS.ALL)) {
+    return true;
+  }
+  
+  // التحقق من الصلاحية المحددة
+  return userPermissions.includes(screenPermission);
+}
+
+/**
+ * دالة للحصول على جميع الشاشات المصرح بها للمستخدم
+ */
+export function getAuthorizedScreens(userPermissions: string[]): ScreenMetadata[] {
+  // إذا كان المستخدم مدير، يحصل على جميع الشاشات
+  if (userPermissions.includes(SCREEN_PERMISSIONS.ALL)) {
+    return SCREEN_METADATA;
+  }
+  
+  // فلترة الشاشات حسب الصلاحيات
+  return SCREEN_METADATA.filter(screen => 
+    userPermissions.includes(screen.permission)
+  );
+}

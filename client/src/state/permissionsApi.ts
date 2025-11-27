@@ -1,6 +1,12 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuthInterceptor } from "./apiUtils";
 import { API_CACHE_CONFIG } from "@/lib/config";
+import type { 
+  ScreenPermission, 
+  UserScreensResponse, 
+  AllScreensResponse, 
+  ScreenByCategoryResponse 
+} from "@/types/permissions";
 
 interface Permission {
   id: string;
@@ -12,14 +18,27 @@ interface Permission {
   createdAt: string;
 }
 
-interface Role {
+export interface Role {
   id: string;
-  name: string;
+  roleName: string;
   displayName: string;
-  description: string;
+  description?: string | null;
   permissions: string[];
-  isActive: boolean;
-  createdAt: string;
+  isActive?: boolean;
+  createdAt?: string;
+}
+
+export interface CreateRoleRequest {
+  roleName: string;
+  displayName: string;
+  description?: string;
+  permissions: string[];
+}
+
+export interface UpdateRoleRequest {
+  displayName?: string;
+  description?: string;
+  permissions?: string[];
 }
 
 interface UserPermission {
@@ -31,9 +50,27 @@ interface UserPermission {
 export const permissionsApi = createApi({
   reducerPath: "permissionsApi",
   baseQuery: baseQueryWithAuthInterceptor,
-  tagTypes: ["Permissions", "Permission", "Roles", "Role", "UserPermissions"],
+  tagTypes: ["Permissions", "Permission", "Roles", "Role", "UserPermissions", "Screens", "UserScreens"],
   ...API_CACHE_CONFIG.permissions,
   endpoints: (builder) => ({
+    // إدارة الشاشات (Screen-Based Permissions)
+    getAllScreens: builder.query<AllScreensResponse, void>({
+      query: () => "/screens",
+      providesTags: ["Screens"],
+      transformResponse: (response: { success: boolean; data: AllScreensResponse }) => response.data,
+    }),
+    
+    getUserScreens: builder.query<UserScreensResponse, void>({
+      query: () => "/users/me/screens",
+      providesTags: ["UserScreens"],
+      transformResponse: (response: { success: boolean; data: UserScreensResponse }) => response.data,
+    }),
+    
+    getScreensByCategory: builder.query<ScreenByCategoryResponse, string>({
+      query: (category) => `/screens/category/${category}`,
+      providesTags: (result, error, category) => [{ type: "Screens", id: category }],
+      transformResponse: (response: { success: boolean; data: ScreenByCategoryResponse }) => response.data,
+    }),
     // إدارة الصلاحيات
     getPermissions: builder.query<Permission[], void>({
       query: () => "/permissions",
@@ -76,26 +113,26 @@ export const permissionsApi = createApi({
     }),
 
     // إدارة الأدوار
-    getRoles: builder.query<Role[], void>({
-      query: () => "/roles",
+    getRoles: builder.query<{ success: boolean; data: Role[] }, void>({
+      query: () => "/users/roles",
       providesTags: (result) => [
         "Roles",
-        ...(result?.map(({ id }) => ({ type: "Role" as const, id })) ?? []),
+        ...(result?.data?.map(({ id }) => ({ type: "Role" as const, id })) ?? []),
       ],
     }),
     
-    createRole: builder.mutation<Role, Partial<Role>>({
+    createRole: builder.mutation<Role, CreateRoleRequest>({
       query: (role) => ({
-        url: "/roles",
+        url: "/users/roles",
         method: "POST",
         body: role,
       }),
       invalidatesTags: ["Roles"],
     }),
     
-    updateRole: builder.mutation<Role, { id: string; data: Partial<Role> }>({
+    updateRole: builder.mutation<Role, { id: string; data: UpdateRoleRequest }>({
       query: ({ id, data }) => ({
-        url: `/roles/${id}`,
+        url: `/users/roles/${id}`,
         method: "PUT",
         body: data,
       }),
@@ -107,7 +144,7 @@ export const permissionsApi = createApi({
     
     deleteRole: builder.mutation<void, string>({
       query: (id) => ({
-        url: `/roles/${id}`,
+        url: `/users/roles/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: (result, error, id) => [
@@ -161,6 +198,9 @@ export const permissionsApi = createApi({
 });
 
 export const {
+  useGetAllScreensQuery,
+  useGetUserScreensQuery,
+  useGetScreensByCategoryQuery,
   useGetPermissionsQuery,
   useCreatePermissionMutation,
   useUpdatePermissionMutation,

@@ -33,21 +33,33 @@ export const authorizePermissions = (requiredPermissions: string[]) => {
       }
 
       const userPermissions = req.user.permissions as string[] || [];
+      
+      console.log('🔐 Authorization Check:', {
+        userId: req.user.userId,
+        userPermissions,
+        requiredPermissions,
+        path: req.path
+      });
 
-      // إذا كان لدى المستخدم صلاحية "all"، يُسمح له بكل شيء
-      if (userPermissions.includes('all')) {
+      // إذا كان لدى المستخدم صلاحية "all" أو "screen.all"، يُسمح له بكل شيء
+      if (userPermissions.includes('all') || userPermissions.includes('screen.all')) {
+        console.log('✅ Access granted: User has "all" or "screen.all" permission');
         next();
         return;
       }
 
-      const hasPermission = requiredPermissions.every(permission => 
+      // التحقق من أن المستخدم لديه واحدة على الأقل من الصلاحيات المطلوبة
+      const hasPermission = requiredPermissions.some(permission => 
         userPermissions.includes(permission)
       );
 
       if (!hasPermission) {
+        console.log('❌ Access denied: User lacks required permissions');
         responseHelper.error(res, 'ليس لديك الصلاحيات المطلوبة لهذا الإجراء', 403);
         return;
       }
+      
+      console.log('✅ Access granted: User has required permission');
 
       next();
     } catch (error) {

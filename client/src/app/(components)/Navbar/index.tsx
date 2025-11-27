@@ -5,7 +5,6 @@ import {
   Settings, 
   Sun, 
   Moon, 
-  Users, 
   LogOut, 
   Search,
   User
@@ -15,12 +14,10 @@ import { setIsDarkMode, setIsSidebarCollapsed } from "@/state";
 import { logout } from "@/state/authSlice";
 import { useLogoutMutation } from "@/state/authApi";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import NotificationDropdown from "@/components/NotificationDropdown";
 
 const Navbar = () => {
   const dispatch = useAppDispatch();
-  const router = useRouter();
   const [logoutMutation] = useLogoutMutation();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 

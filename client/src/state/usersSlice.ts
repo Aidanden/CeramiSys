@@ -3,7 +3,7 @@ import { User } from "./usersApi";
 
 export interface UsersState {
   selectedUser: User | null;
-  currentFilter: 'all' | 'admin' | 'manager' | 'cashier' | 'accountant';
+  currentFilter: string;
   currentPage: number;
   searchTerm: string;
   isLoading: boolean;
@@ -37,7 +37,7 @@ const usersSlice = createSlice({
     },
 
     // إدارة الفلاتر
-    setCurrentFilter: (state, action: PayloadAction<'all' | 'admin' | 'manager' | 'cashier' | 'accountant'>) => {
+    setCurrentFilter: (state, action: PayloadAction<string>) => {
       state.currentFilter = action.payload;
       state.currentPage = 1; // إعادة تعيين الصفحة عند تغيير الفلتر
     },

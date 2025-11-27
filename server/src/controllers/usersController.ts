@@ -1,11 +1,22 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
 
 const prisma = new PrismaClient();
 
 // الحصول على جميع المستخدمين
+const normalizePermissions = (permissions: any): string[] => {
+  if (!permissions) return [];
+  if (Array.isArray(permissions)) {
+    return permissions.filter(p => typeof p === 'string' && p.trim().length > 0);
+  }
+  if (typeof permissions === 'object') {
+    return Object.values(permissions).filter(p => typeof p === 'string' && p.trim().length > 0) as string[];
+  }
+  return [];
+};
+
 export const getUsers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { page = 1, limit = 10, search, role } = req.query;
@@ -25,7 +36,7 @@ export const getUsers = async (req: AuthRequest, res: Response): Promise<void> =
     }
 
     if (role && role !== 'all') {
-      where.Role = { RoleName: role };
+      where.RoleID = role;
     }
 
     const [users, total] = await Promise.all([
@@ -42,21 +53,30 @@ export const getUsers = async (req: AuthRequest, res: Response): Promise<void> =
       prisma.users.count({ where })
     ]);
 
-    const usersData = users.map(user => ({
-      id: user.UserID,
-      username: user.UserName,
-      fullName: user.FullName,
-      email: user.Email,
-      phone: user.Phone,
-      role: user.Role.RoleName,
-      roleName: user.Role.DisplayName,
-      companyId: user.CompanyID,
-      companyName: user.IsSystemUser ? 'مستخدم نظام' : (user.Company?.name || 'غير محدد'),
-      isSystemUser: user.IsSystemUser,
-      isActive: user.IsActive,
-      lastLogin: user.LastLogin,
-      createdAt: user.CreatedAt
-    }));
+    const usersData = users.map(user => {
+      const customPermissions = normalizePermissions((user as any).Permissions);
+      const rolePermissions = normalizePermissions(user.Role?.Permissions);
+      const permissions = customPermissions.length > 0 ? customPermissions : rolePermissions;
+
+      return {
+        id: user.UserID,
+        username: user.UserName,
+        fullName: user.FullName,
+        email: user.Email,
+        phone: user.Phone,
+        role: user.Role?.RoleName || null,
+        roleId: user.RoleID,
+        roleName: user.Role?.DisplayName || null,
+        permissions,
+        hasCustomPermissions: customPermissions.length > 0,
+        companyId: user.CompanyID,
+        companyName: user.IsSystemUser ? 'مستخدم نظام' : (user.Company?.name || 'غير محدد'),
+        isSystemUser: user.IsSystemUser,
+        isActive: user.IsActive,
+        lastLogin: user.LastLogin,
+        createdAt: user.CreatedAt
+      };
+    });
 
     res.json({
       success: true,
@@ -83,12 +103,22 @@ export const getUsers = async (req: AuthRequest, res: Response): Promise<void> =
 // إضافة مستخدم جديد
 export const createUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { username, fullName, email, phone, password, roleId, companyId, isSystemUser = false, isActive = true } = req.body;
+    const { username, fullName, email, phone, password, roleId, permissions, companyId, isSystemUser = false, isActive = true } = req.body;
 
-    if (!username || !fullName || !password || !roleId) {
+    const userPermissions = normalizePermissions(permissions);
+
+    if (!username || !fullName || !password) {
       res.status(400).json({
         success: false,
-        message: 'اسم المستخدم والاسم الكامل وكلمة المرور والدور مطلوبة'
+        message: 'اسم المستخدم والاسم الكامل وكلمة المرور مطلوبة'
+      });
+      return;
+    }
+
+    if (!roleId && userPermissions.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: 'يجب تحديد دور أو صلاحيات للشاشات'
       });
       return;
     }
@@ -122,16 +152,19 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
     }
 
     // التحقق من وجود الدور
-    const role = await prisma.userRoles.findUnique({
-      where: { RoleID: roleId }
-    });
-
-    if (!role) {
-      res.status(400).json({
-        success: false,
-        message: 'الدور المحدد غير موجود'
+    let role = null;
+    if (roleId) {
+      role = await prisma.userRoles.findUnique({
+        where: { RoleID: roleId }
       });
-      return;
+
+      if (!role) {
+        res.status(400).json({
+          success: false,
+          message: 'الدور المحدد غير موجود'
+        });
+        return;
+      }
     }
 
     // تشفير كلمة المرور
@@ -178,17 +211,17 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
         Email: email && email.trim() !== '' ? email : null, // تعيين null إذا كان email فارغ
         Phone: phone,
         Password: hashedPassword,
-        RoleID: roleId,
+        RoleID: roleId || null,
         CompanyID: finalCompanyId,
         IsSystemUser: isSystemUser,
-        IsActive: isActive
+        IsActive: isActive,
+        Permissions: userPermissions.length > 0 ? userPermissions : Prisma.DbNull
       }
     });
 
-    // الحصول على معلومات الدور
-    const userRole = await prisma.userRoles.findUnique({
-      where: { RoleID: roleId }
-    });
+    const effectivePermissions = userPermissions.length > 0
+      ? userPermissions
+      : normalizePermissions(role?.Permissions);
 
     res.status(201).json({
       success: true,
@@ -199,8 +232,10 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
         fullName: newUser.FullName,
         email: newUser.Email,
         phone: newUser.Phone,
-        role: userRole?.RoleName || 'غير محدد',
-        roleName: userRole?.DisplayName || 'غير محدد',
+        role: role?.RoleName || null,
+        roleId: role?.RoleID || null,
+        roleName: role?.DisplayName || null,
+        permissions: effectivePermissions,
         isActive: newUser.IsActive,
         createdAt: newUser.CreatedAt
       }
@@ -219,7 +254,9 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
 export const updateUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { username, fullName, email, phone, roleId, isActive } = req.body;
+    const { username, fullName, email, phone, roleId, permissions, isActive } = req.body;
+
+    const userPermissions = permissions !== undefined ? normalizePermissions(permissions) : undefined;
 
     if (!id) {
       res.status(400).json({
@@ -273,7 +310,7 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
     }
 
     // التحقق من وجود الدور (إذا تم تغييره)
-    if (roleId && roleId !== existingUser.RoleID) {
+    if (roleId) {
       const role = await prisma.userRoles.findUnique({
         where: { RoleID: roleId }
       });
@@ -296,12 +333,17 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
         ...(email !== undefined && { Email: email }),
         ...(phone !== undefined && { Phone: phone }),
         ...(roleId && { RoleID: roleId }),
-        ...(isActive !== undefined && { IsActive: isActive })
+        ...(isActive !== undefined && { IsActive: isActive }),
+        ...(userPermissions !== undefined && { Permissions: userPermissions.length > 0 ? userPermissions : Prisma.DbNull })
       },
       include: {
         Role: true
       }
     });
+
+    const effectivePermissions = userPermissions !== undefined
+      ? (userPermissions.length > 0 ? userPermissions : normalizePermissions(updatedUser.Role?.Permissions))
+      : (normalizePermissions((updatedUser as any).Permissions) || normalizePermissions(updatedUser.Role?.Permissions));
 
     res.json({
       success: true,
@@ -312,8 +354,10 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
         fullName: updatedUser.FullName,
         email: updatedUser.Email,
         phone: updatedUser.Phone,
-        role: updatedUser.Role.RoleName,
-        roleName: updatedUser.Role.DisplayName,
+        role: updatedUser.Role?.RoleName || null,
+        roleId: updatedUser.RoleID,
+        roleName: updatedUser.Role?.DisplayName || null,
+        permissions: effectivePermissions,
         isActive: updatedUser.IsActive,
         createdAt: updatedUser.CreatedAt
       }
@@ -399,7 +443,7 @@ export const getRoles = async (req: Request, res: Response): Promise<void> => {
 
     const rolesData = roles.map(role => ({
       id: role.RoleID,
-      name: role.RoleName,
+      roleName: role.RoleName,
       displayName: role.DisplayName,
       permissions: role.Permissions as string[],
       description: role.Description
@@ -412,6 +456,179 @@ export const getRoles = async (req: Request, res: Response): Promise<void> => {
 
   } catch (error) {
     console.error('خطأ في الحصول على الأدوار:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في الخادم'
+    });
+  }
+};
+
+// إنشاء دور جديد
+export const createRole = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { roleName, displayName, description, permissions } = req.body;
+
+    if (!roleName || !displayName || !permissions || permissions.length === 0) {
+      res.status(400).json({
+        success: false,
+        message: 'الرجاء إدخال جميع البيانات المطلوبة'
+      });
+      return;
+    }
+
+    // التحقق من عدم وجود دور بنفس الاسم
+    const existingRole = await prisma.userRoles.findUnique({
+      where: { RoleName: roleName }
+    });
+
+    if (existingRole) {
+      res.status(400).json({
+        success: false,
+        message: 'يوجد دور بنفس الاسم مسبقاً'
+      });
+      return;
+    }
+
+    const newRole = await prisma.userRoles.create({
+      data: {
+        RoleName: roleName,
+        DisplayName: displayName,
+        Description: description,
+        Permissions: permissions,
+        IsActive: true
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'تم إنشاء الدور بنجاح',
+      data: {
+        id: newRole.RoleID,
+        roleName: newRole.RoleName,
+        displayName: newRole.DisplayName,
+        permissions: newRole.Permissions as string[],
+        description: newRole.Description
+      }
+    });
+
+  } catch (error) {
+    console.error('خطأ في إنشاء الدور:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في الخادم'
+    });
+  }
+};
+
+// تحديث دور
+export const updateRole = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { displayName, description, permissions } = req.body;
+
+    // التحقق من وجود الدور
+    const role = await prisma.userRoles.findUnique({
+      where: { RoleID: id }
+    });
+
+    if (!role) {
+      res.status(404).json({
+        success: false,
+        message: 'الدور غير موجود'
+      });
+      return;
+    }
+
+    // منع تعديل دور الـ admin
+    if (role.RoleName === 'admin') {
+      res.status(403).json({
+        success: false,
+        message: 'لا يمكن تعديل دور المدير'
+      });
+      return;
+    }
+
+    const updatedRole = await prisma.userRoles.update({
+      where: { RoleID: id },
+      data: {
+        DisplayName: displayName || role.DisplayName,
+        Description: description !== undefined ? description : role.Description,
+        Permissions: permissions || role.Permissions
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'تم تحديث الدور بنجاح',
+      data: {
+        id: updatedRole.RoleID,
+        roleName: updatedRole.RoleName,
+        displayName: updatedRole.DisplayName,
+        permissions: updatedRole.Permissions as string[],
+        description: updatedRole.Description
+      }
+    });
+
+  } catch (error) {
+    console.error('خطأ في تحديث الدور:', error);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في الخادم'
+    });
+  }
+};
+
+// حذف دور
+export const deleteRole = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    // التحقق من وجود الدور
+    const role = await prisma.userRoles.findUnique({
+      where: { RoleID: id }
+    });
+
+    if (!role) {
+      res.status(404).json({
+        success: false,
+        message: 'الدور غير موجود'
+      });
+      return;
+    }
+
+    // منع حذف دور الـ admin
+    if (role.RoleName === 'admin') {
+      res.status(403).json({
+        success: false,
+        message: 'لا يمكن حذف دور المدير'
+      });
+      return;
+    }
+
+    // التحقق من عدم وجود مستخدمين مرتبطين بهذا الدور
+    const usersCount = await prisma.users.count({
+      where: { RoleID: id }
+    });
+
+    if (usersCount > 0) {
+      res.status(400).json({
+        success: false,
+        message: `لا يمكن حذف هذا الدور لأنه مرتبط بـ ${usersCount} مستخدم`
+      });
+      return;
+    }
+
+    await prisma.userRoles.delete({
+      where: { RoleID: id }
+    });
+
+    res.json({
+      success: true,
+      message: 'تم حذف الدور بنجاح'
+    });
+
+  } catch (error) {
+    console.error('خطأ في حذف الدور:', error);
     res.status(500).json({
       success: false,
       message: 'خطأ في الخادم'

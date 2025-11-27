@@ -9,7 +9,8 @@ export interface User {
   fullName: string;
   email: string;
   phone: string;
-  role: string;
+  role: string | null;
+  roleId?: string | null;
   roleName?: string;
   companyId?: number;
   companyName?: string;
@@ -17,6 +18,8 @@ export interface User {
   isActive: boolean;
   createdAt: string;
   lastLogin?: string;
+  permissions: string[];
+  hasCustomPermissions?: boolean;
 }
 
 export interface CreateUserRequest {
@@ -25,7 +28,8 @@ export interface CreateUserRequest {
   email: string;
   phone: string;
   password: string;
-  roleId: string;
+  roleId?: string;
+  permissions?: string[];
   companyId?: number;
   isSystemUser?: boolean;
   isActive: boolean;
@@ -38,6 +42,7 @@ export interface UpdateUserRequest {
   phone?: string;
   password?: string;
   roleId?: string;
+  permissions?: string[];
   companyId?: number;
   isSystemUser?: boolean;
   isActive?: boolean;

@@ -3,8 +3,8 @@
     "RoleID": "role_admin_001",
     "RoleName": "admin",
     "DisplayName": "مدير النظام",
-    "Permissions": ["all"],
-    "Description": "مدير النظام له جميع الصلاحيات",
+    "Permissions": ["screen.all"],
+    "Description": "مدير النظام له جميع الصلاحيات - يمكنه الوصول لجميع الشاشات",
     "IsActive": true
   },
   {
@@ -12,17 +12,21 @@
     "RoleName": "manager",
     "DisplayName": "مدير",
     "Permissions": [
-      "users.view",
-      "users.create", 
-      "users.edit",
-      "reports.view",
-      "treasury.view",
-      "customers.view",
-      "currencies.view",
-      "buys.view",
-      "sales.view"
+      "screen.dashboard",
+      "screen.companies",
+      "screen.products",
+      "screen.sales",
+      "screen.sale_returns",
+      "screen.purchases",
+      "screen.payment_receipts",
+      "screen.warehouse_dispatch",
+      "screen.customer_accounts",
+      "screen.supplier_accounts",
+      "screen.accountant",
+      "screen.reports",
+      "screen.users"
     ],
-    "Description": "مدير له صلاحيات إدارية محدودة",
+    "Description": "مدير له صلاحيات إدارية محدودة - يمكنه الوصول لمعظم الشاشات",
     "IsActive": true
   },
   {
@@ -30,12 +34,14 @@
     "RoleName": "cashier",
     "DisplayName": "صراف",
     "Permissions": [
-      "buys.create",
-      "sales.create", 
-      "customers.view",
-      "currencies.view"
+      "screen.dashboard",
+      "screen.sales",
+      "screen.sale_returns",
+      "screen.purchases",
+      "screen.customer_accounts",
+      "screen.supplier_accounts"
     ],
-    "Description": "صراف يمكنه إجراء عمليات البيع والشراء",
+    "Description": "صراف يمكنه إجراء عمليات البيع والشراء وإدارة الحسابات",
     "IsActive": true
   },
   {
@@ -43,13 +49,28 @@
     "RoleName": "accountant", 
     "DisplayName": "محاسب",
     "Permissions": [
-      "reports.view",
-      "treasury.view",
-      "debts.view",
-      "buys.view", 
-      "sales.view"
+      "screen.dashboard",
+      "screen.accountant",
+      "screen.customer_accounts",
+      "screen.supplier_accounts",
+      "screen.reports",
+      "screen.payment_receipts"
     ],
-    "Description": "محاسب يمكنه عرض التقارير والحسابات",
+    "Description": "محاسب يمكنه عرض التقارير والحسابات المالية",
+    "IsActive": true
+  },
+  {
+    "RoleID": "role_warehouse_001",
+    "RoleName": "warehouse",
+    "DisplayName": "أمين مخزن",
+    "Permissions": [
+      "screen.dashboard",
+      "screen.products",
+      "screen.warehouse_dispatch",
+      "screen.damage_reports",
+      "screen.purchases"
+    ],
+    "Description": "أمين مخزن يمكنه إدارة المخزون والأصناف",
     "IsActive": true
   }
 ]

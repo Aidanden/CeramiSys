@@ -3,20 +3,16 @@
 import { useAppDispatch, useAppSelector } from "@/app/redux";
 import { setIsSidebarCollapsed } from "@/state";
 import { useGetCurrentUserQuery } from "@/state/authApi";
+import { useGetUserScreensQuery } from "@/state/permissionsApi";
+import { hasScreenAccess } from "@/types/permissions";
 import {
   Layout,
   LucideIcon,
-  Menu,
-  RepeatIcon,
   CircleDollarSign,
-  SquareUserRound,
-  DollarSign,
   UsersRound,
   ShoppingCart,
-  TrendingDown,
   CreditCard,
   FileText,
-  Shield,
   Home,
   Building2,
   ShoppingBag,
@@ -87,6 +83,34 @@ const Sidebar = () => {
   const user = userData?.data;
   const isParentCompany = user?.company?.parentId === null; // الشركة الأم ليس لها parentId
 
+  // جلب الشاشات المصرح بها للمستخدم
+  const { data: userScreensData, isLoading: isLoadingScreens, error: screensError } = useGetUserScreensQuery();
+  const authorizedScreens = React.useMemo(
+    () => userScreensData?.screens || [],
+    [userScreensData?.screens]
+  );
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('🔍 Sidebar Debug:', {
+      isLoading: isLoadingScreens,
+      hasError: !!screensError,
+      error: screensError,
+      dataReceived: !!userScreensData,
+      screensCount: authorizedScreens.length,
+      screens: authorizedScreens
+    });
+  }, [isLoadingScreens, screensError, userScreensData, authorizedScreens]);
+
+  // إذا كان هناك خطأ في جلب الشاشات، نعرض جميع الشاشات (fallback)
+  const canAccessScreen = (route: string) => {
+    // إذا كان هناك خطأ أو لا توجد بيانات بعد، نسمح بالوصول (لتجنب sidebar فارغ)
+    if (screensError || (isLoadingScreens && authorizedScreens.length === 0)) {
+      return true; // السماح بالوصول مؤقتاً
+    }
+    return hasScreenAccess(authorizedScreens, route);
+  };
+
   const toggleSidebar = () => {
     dispatch(setIsSidebarCollapsed(!isSidebarCollapsed));
   };
@@ -155,65 +179,75 @@ const Sidebar = () => {
       {/* NAVIGATION LINKS */}
       <div className="flex-grow py-6 overflow-y-auto overflow-x-hidden">
         <nav className="space-y-1">
-          <SidebarLink
-            href="/dashboard"
-            icon={Home}
-            label="الرئيسية"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
-            href="/companies"
-            icon={Building2}
-            label="إدارة الشركات"
-            isCollapsed={isSidebarCollapsed}
-          />
+          {canAccessScreen('/dashboard') && (
+            <SidebarLink
+              href="/dashboard"
+              icon={Home}
+              label="الرئيسية"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
+          {canAccessScreen('/companies') && (
+            <SidebarLink
+              href="/companies"
+              icon={Building2}
+              label="إدارة الشركات"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
          
-          <SidebarLink
-            href="/products"
-            icon={ShoppingBag}
-            label="الأصناف والمخزن"
-            isCollapsed={isSidebarCollapsed}
-          />
+          {canAccessScreen('/products') && (
+            <SidebarLink
+              href="/products"
+              icon={ShoppingBag}
+              label="الأصناف والمخزن"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
         
-          <SidebarLink
-            href="/sales"
-            icon={ShoppingCart}
-            label="المبيعات"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
-            href="/accountant"
-            icon={CreditCard}
-            label="مساحة عمل المحاسب"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
-            href="/customer-accounts"
-            icon={Wallet}
-            label="حسابات العملاء"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
-            href="/supplier-accounts"
-            icon={CircleDollarSign}
-            label="حسابات الموردين"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
-            href="/warehouse-dispatch"
-            icon={Layout}
-            label="أوامر صرف المخزن"
-            isCollapsed={isSidebarCollapsed}
-          />
-        {/*  <SidebarLink
-            href="/inter-company-sales"
-            icon={ArrowRightLeft}
-            label="مبيعات بين الشركات"
-            isCollapsed={isSidebarCollapsed}
-          /> */}
+          {canAccessScreen('/sales') && (
+            <SidebarLink
+              href="/sales"
+              icon={ShoppingCart}
+              label="المبيعات"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
+          {canAccessScreen('/accountant') && (
+            <SidebarLink
+              href="/accountant"
+              icon={CreditCard}
+              label="مساحة عمل المحاسب"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
+          {canAccessScreen('/customer-accounts') && (
+            <SidebarLink
+              href="/customer-accounts"
+              icon={Wallet}
+              label="حسابات العملاء"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
+          {canAccessScreen('/supplier-accounts') && (
+            <SidebarLink
+              href="/supplier-accounts"
+              icon={CircleDollarSign}
+              label="حسابات الموردين"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
+          {canAccessScreen('/warehouse-dispatch') && (
+            <SidebarLink
+              href="/warehouse-dispatch"
+              icon={Layout}
+              label="أوامر صرف المخزن"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
           
           {/* إخفاء شاشة "المبيعات من الشركة الأم" من الشركة الأم نفسها */}
-          {!isParentCompany && (
+          {!isParentCompany && canAccessScreen('/complex-inter-company-sales') && (
             <SidebarLink
               href="/complex-inter-company-sales"
               icon={ArrowRightLeft}
@@ -221,49 +255,47 @@ const Sidebar = () => {
               isCollapsed={isSidebarCollapsed}
             />
           )}
-          <SidebarLink
-            href="/sale-returns"
-            icon={Returns}
-            label="المردودات"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
-            href="/purchases"
-            icon={CreditCard}
-            label="المشتريات"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
-            href="/payment-receipts"
-            icon={Receipt}
-            label="إيصالات الدفع"
-            isCollapsed={isSidebarCollapsed}
-          />
-        
-         {/* <SidebarLink
-            href="/customers"
-            icon={SquareUserRound}
-            label="العملاء"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
-            href="/suppliers"
-            icon={UsersRound}
-            label="الموردين"
-            isCollapsed={isSidebarCollapsed}
-          /> */}
+          {canAccessScreen('/sale-returns') && (
             <SidebarLink
-            href="/damage-reports"
-            icon={FileText}
-            label="محاضر الإتلاف"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
-            href="/reports"
-            icon={BarChart3}
-            label="التقارير"
-            isCollapsed={isSidebarCollapsed}
-          />
+              href="/sale-returns"
+              icon={Returns}
+              label="المردودات"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
+          {canAccessScreen('/purchases') && (
+            <SidebarLink
+              href="/purchases"
+              icon={CreditCard}
+              label="المشتريات"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
+          {canAccessScreen('/payment-receipts') && (
+            <SidebarLink
+              href="/payment-receipts"
+              icon={Receipt}
+              label="إيصالات الدفع"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
+        
+          {canAccessScreen('/damage-reports') && (
+            <SidebarLink
+              href="/damage-reports"
+              icon={FileText}
+              label="محاضر الإتلاف"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
+          {canAccessScreen('/reports') && (
+            <SidebarLink
+              href="/reports"
+              icon={BarChart3}
+              label="التقارير"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
         </nav>
 
         {/* Settings Section */}
@@ -275,18 +307,22 @@ const Sidebar = () => {
               الإعدادات
             </h3>
           </div>
-          <SidebarLink
-            href="/users"
-            icon={UsersRound}
-            label="إدارة المستخدمين"
-            isCollapsed={isSidebarCollapsed}
-          />
-           <SidebarLink
-            href="/notifications"
-            icon={Bell}
-            label="الإشعارات"
-            isCollapsed={isSidebarCollapsed}
-          />
+          {canAccessScreen('/users') && (
+            <SidebarLink
+              href="/users"
+              icon={UsersRound}
+              label="إدارة المستخدمين"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
+          {canAccessScreen('/notifications') && (
+            <SidebarLink
+              href="/notifications"
+              icon={Bell}
+              label="الإشعارات"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
         </div>
       </div>
 

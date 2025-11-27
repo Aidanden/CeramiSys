@@ -25,6 +25,7 @@ import saleReturnRoutes from "./routes/saleReturnRoutes";
 import warehouseRoutes from "./routes/warehouseRoutes";
 import customerAccountRoutes from "./routes/customerAccountRoutes";
 import damageReportRoutes from "./routes/damageReportRoutes";
+import screensRoute from "./routes/screensRoute";
 
 
 /*CONFIGRATION*/
@@ -111,6 +112,7 @@ app.use('/api/warehouse', warehouseRoutes);
 app.use('/api/customer-accounts', customerAccountRoutes);
 app.use('/api/supplier-accounts', supplierAccountRoutes);
 app.use('/api/damage-reports', damageReportRoutes);
+app.use('/api', screensRoute);
 
 
 // Health check endpoint

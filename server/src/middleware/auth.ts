@@ -100,14 +100,32 @@ export const authenticateToken = async (
       return;
     }
 
+    // تحويل Permissions من JSON إلى array
+    // أولوية للـ Permissions المباشرة من المستخدم، ثم من الـ Role
+    let permissions: string[] = [];
+    const userPermissions = (user as any).Permissions;
+    const rolePermissions = user.Role?.Permissions;
+    
+    // استخدام permissions المستخدم إذا كانت موجودة، وإلا استخدم permissions الـ Role
+    const permissionsSource = userPermissions || rolePermissions;
+    
+    if (permissionsSource) {
+      if (Array.isArray(permissionsSource)) {
+        permissions = (permissionsSource as any[]).filter(p => typeof p === 'string') as string[];
+      } else if (typeof permissionsSource === 'object') {
+        // إذا كان JSON object، نحوله لـ array
+        permissions = Object.values(permissionsSource as any).filter(p => typeof p === 'string') as string[];
+      }
+    }
+
     // إضافة معلومات المستخدم إلى الطلب
     req.user = {
-      id: decoded.userId, // إضافة id للتوافق مع الكود الموجود
+      id: decoded.userId,
       userId: decoded.userId,
       companyId: decoded.companyId,
       roleId: decoded.roleId,
-      roleName: user.Role.RoleName,
-      permissions: user.Role.Permissions,
+      roleName: user.Role?.RoleName || 'مستخدم',
+      permissions: permissions,
       isSystemUser: decoded.isSystemUser || user.IsSystemUser,
     };
 
