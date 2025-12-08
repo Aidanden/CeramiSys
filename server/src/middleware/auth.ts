@@ -12,6 +12,13 @@ interface JwtPayload {
   isSystemUser?: boolean;
 }
 
+interface StoreJwtPayload {
+  id: string;
+  storeId: number;
+  username: string;
+  type: string;
+}
+
 // تعريف نوع AuthRequest
 export interface AuthRequest extends Request {
   user?: {
@@ -22,6 +29,11 @@ export interface AuthRequest extends Request {
     roleName?: string;
     permissions?: any;
     isSystemUser?: boolean;
+  };
+  storeUser?: {
+    id: string;
+    storeId: number;
+    username: string;
   };
 }
 
@@ -36,6 +48,11 @@ declare global {
         roleName?: string;
         permissions?: any;
         isSystemUser?: boolean;
+      };
+      storeUser?: {
+        id: string;
+        storeId: number;
+        username: string;
       };
     }
   }
@@ -105,10 +122,10 @@ export const authenticateToken = async (
     let permissions: string[] = [];
     const userPermissions = (user as any).Permissions;
     const rolePermissions = user.Role?.Permissions;
-    
+
     // استخدام permissions المستخدم إذا كانت موجودة، وإلا استخدم permissions الـ Role
     const permissionsSource = userPermissions || rolePermissions;
-    
+
     if (permissionsSource) {
       if (Array.isArray(permissionsSource)) {
         permissions = (permissionsSource as any[]).filter(p => typeof p === 'string') as string[];
@@ -127,6 +144,83 @@ export const authenticateToken = async (
       roleName: user.Role?.RoleName || 'مستخدم',
       permissions: permissions,
       isSystemUser: decoded.isSystemUser || user.IsSystemUser,
+    };
+
+    next();
+  } catch (error) {
+    if (error instanceof jwt.JsonWebTokenError) {
+      responseHelper.error(res, 'رمز المصادقة غير صحيح', 401);
+      return;
+    }
+    responseHelper.error(res, 'خطأ في المصادقة', 500);
+    return;
+  }
+};
+
+/**
+ * Middleware للمصادقة الخاصة بمستخدمي المحلات الخارجية
+ */
+export const authenticateStoreToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+      responseHelper.error(res, 'رمز المصادقة مطلوب', 401);
+      return;
+    }
+
+    const jwtSecret = process.env['JWT_SECRET'] || 'your-secret-key';
+    const decoded = jwt.verify(token, jwtSecret) as StoreJwtPayload;
+
+    // التحقق من أن التوكن من نوع store
+    if (decoded.type !== 'store') {
+      responseHelper.error(res, 'رمز المصادقة غير صحيح', 401);
+      return;
+    }
+
+    // التحقق من الجلسة
+    const session = await prisma.externalStoreSession.findFirst({
+      where: {
+        token,
+        isActive: true,
+        expiresAt: {
+          gt: new Date()
+        }
+      },
+      include: {
+        user: {
+          include: {
+            store: true
+          }
+        }
+      }
+    });
+
+    if (!session) {
+      responseHelper.error(res, 'الجلسة منتهية الصلاحية أو غير صحيحة', 401);
+      return;
+    }
+
+    if (!session.user.isActive) {
+      responseHelper.error(res, 'الحساب غير نشط', 403);
+      return;
+    }
+
+    if (!session.user.store.isActive) {
+      responseHelper.error(res, 'المحل غير نشط', 403);
+      return;
+    }
+
+    // إضافة معلومات مستخدم المحل إلى الطلب
+    req.storeUser = {
+      id: session.user.id,
+      storeId: session.user.storeId,
+      username: session.user.username,
     };
 
     next();

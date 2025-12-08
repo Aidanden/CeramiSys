@@ -26,6 +26,10 @@ import warehouseRoutes from "./routes/warehouseRoutes";
 import customerAccountRoutes from "./routes/customerAccountRoutes";
 import damageReportRoutes from "./routes/damageReportRoutes";
 import screensRoute from "./routes/screensRoute";
+import externalStoreRoutes from "./routes/externalStoreRoutes";
+import externalStoreAuthRoutes from "./routes/externalStoreAuthRoutes";
+import externalStorePortalRoutes from "./routes/externalStorePortalRoutes";
+import externalStoreInvoiceRoutes from "./routes/externalStoreInvoiceRoutes";
 
 
 /*CONFIGRATION*/
@@ -60,7 +64,7 @@ app.use('/api', (req, res, next) => {
   if (req.method === 'GET') {
     // تحسين الـ cache بناءً على نوع البيانات
     const path = req.path;
-    
+
     // بيانات ثابتة - cache طويل (5 دقائق)
     if (path.includes('/products') || path.includes('/company') || path.includes('/users')) {
       res.set('Cache-Control', 'public, max-age=300');
@@ -93,6 +97,12 @@ app.use((req, res, next) => {
 
 /*ROUTE */
 app.use('/api/auth', authRoute);
+// External Stores Routes - Must be before generic /api routes
+app.use('/api/external-stores', externalStoreRoutes);
+app.use('/api/store-portal', externalStoreAuthRoutes);
+app.use('/api/store-portal', externalStorePortalRoutes);
+app.use('/api/external-store-invoices', externalStoreInvoiceRoutes);
+
 app.use('/api/users', usersRoute);
 app.use('/api/company', companyRoutes);
 app.use('/api/products', productRoutes);
@@ -113,6 +123,7 @@ app.use('/api/customer-accounts', customerAccountRoutes);
 app.use('/api/supplier-accounts', supplierAccountRoutes);
 app.use('/api/damage-reports', damageReportRoutes);
 app.use('/api', screensRoute);
+// External Stores Routes moved up
 
 
 // Health check endpoint
@@ -129,18 +140,18 @@ app.use("*", (req, res) => {
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction): void => {
   console.error("Error details:", err);
   console.error("Error stack:", err.stack);
-  
+
   // Handle JSON parsing errors specifically
   if (err.type === 'entity.parse.failed') {
     console.error("JSON Parse Error - Raw body:", err.body);
-    res.status(400).json({ 
-      error: "Invalid JSON format", 
+    res.status(400).json({
+      error: "Invalid JSON format",
       details: err.message,
       position: err.message.match(/position (\d+)/)?.[1] || 'unknown'
     });
     return;
   }
-  
+
   res.status(500).json({ error: "Something went wrong!", details: err.message });
 });
 

@@ -33,6 +33,7 @@ declare module 'lucide-react' {
   export const UserPlus: LucideIcon;
   export const Phone: LucideIcon;
   export const FileText: LucideIcon;
+  export const Package: LucideIcon;
   export const ShoppingBag: LucideIcon;
   export const BarChart3: LucideIcon;
   export const Eye: LucideIcon;
@@ -55,7 +56,10 @@ declare module 'lucide-react' {
   export const Wallet: LucideIcon;
   export const Building2: LucideIcon;
   export const ArrowRightLeft: LucideIcon;
-  
+  export const MapPin: LucideIcon;
+  export const RefreshCw: LucideIcon;
+  export const AlertCircle: LucideIcon;
+
   // Additional icons for Users page
   export const Mail: LucideIcon;
   export const MoreVertical: LucideIcon;

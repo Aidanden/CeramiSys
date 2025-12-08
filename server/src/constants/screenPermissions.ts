@@ -6,37 +6,41 @@
 export const SCREEN_PERMISSIONS = {
   // الشاشة الرئيسية
   DASHBOARD: 'screen.dashboard',
-  
+
   // الإدارة الأساسية
   COMPANIES: 'screen.companies',
   PRODUCTS: 'screen.products',
-  
+
   // المبيعات
   SALES: 'screen.sales',
   SALE_RETURNS: 'screen.sale_returns',
   INTER_COMPANY_SALES: 'screen.inter_company_sales',
-  
+
   // المشتريات
   PURCHASES: 'screen.purchases',
   PAYMENT_RECEIPTS: 'screen.payment_receipts',
-  
+
   // المخزون
   WAREHOUSE_DISPATCH: 'screen.warehouse_dispatch',
   DAMAGE_REPORTS: 'screen.damage_reports',
-  
+
   // المحاسبة
   ACCOUNTANT: 'screen.accountant',
   CUSTOMER_ACCOUNTS: 'screen.customer_accounts',
   SUPPLIER_ACCOUNTS: 'screen.supplier_accounts',
-  
+
   // التقارير
   REPORTS: 'screen.reports',
-  
+
   // الإعدادات
   USERS: 'screen.users',
   PERMISSION_GROUPS: 'screen.permission_groups',
   NOTIFICATIONS: 'screen.notifications',
-  
+
+  // المحلات الخارجية
+  EXTERNAL_STORES: 'screen.external_stores',
+  EXTERNAL_STORE_INVOICES: 'screen.external_store_invoices',
+
   // صلاحية شاملة (للمدير)
   ALL: 'screen.all'
 } as const;
@@ -85,7 +89,7 @@ export const SCREEN_METADATA: ScreenMetadata[] = [
     description: 'إدارة المنتجات والمخزون',
     icon: 'ShoppingBag'
   },
-  
+
   // شاشات المبيعات
   {
     id: 'sales',
@@ -114,7 +118,7 @@ export const SCREEN_METADATA: ScreenMetadata[] = [
     description: 'المبيعات بين الشركات',
     icon: 'ArrowRightLeft'
   },
-  
+
   // شاشات المشتريات
   {
     id: 'purchases',
@@ -134,7 +138,7 @@ export const SCREEN_METADATA: ScreenMetadata[] = [
     description: 'إدارة إيصالات الدفع للموردين',
     icon: 'FileText'
   },
-  
+
   // شاشات المخزون
   {
     id: 'warehouse_dispatch',
@@ -154,7 +158,7 @@ export const SCREEN_METADATA: ScreenMetadata[] = [
     description: 'إدارة محاضر إتلاف البضائع',
     icon: 'FileText'
   },
-  
+
   // شاشات المحاسبة
   {
     id: 'accountant',
@@ -183,7 +187,27 @@ export const SCREEN_METADATA: ScreenMetadata[] = [
     description: 'إدارة حسابات الموردين',
     icon: 'CircleDollarSign'
   },
-  
+
+  // شاشات المحلات الخارجية
+  {
+    id: 'external_stores',
+    name: 'المحلات الخارجية',
+    route: '/external-stores',
+    permission: SCREEN_PERMISSIONS.EXTERNAL_STORES,
+    category: 'accounting',
+    description: 'إدارة المحلات الخارجية',
+    icon: 'Building2'
+  },
+  {
+    id: 'external_store_invoices',
+    name: 'فواتير المحلات',
+    route: '/external-store-invoices',
+    permission: SCREEN_PERMISSIONS.EXTERNAL_STORE_INVOICES,
+    category: 'accounting',
+    description: 'إدارة فواتير المحلات الخارجية',
+    icon: 'FileText'
+  },
+
   // التقارير
   {
     id: 'reports',
@@ -194,7 +218,7 @@ export const SCREEN_METADATA: ScreenMetadata[] = [
     description: 'عرض التقارير والإحصائيات',
     icon: 'BarChart3'
   },
-  
+
   // الإعدادات
   {
     id: 'users',
@@ -267,7 +291,7 @@ export function hasScreenAccess(userPermissions: string[], screenPermission: str
   if (userPermissions.includes(SCREEN_PERMISSIONS.ALL)) {
     return true;
   }
-  
+
   // التحقق من الصلاحية المحددة
   return userPermissions.includes(screenPermission);
 }
@@ -280,9 +304,9 @@ export function getAuthorizedScreens(userPermissions: string[]): ScreenMetadata[
   if (userPermissions.includes(SCREEN_PERMISSIONS.ALL)) {
     return SCREEN_METADATA;
   }
-  
+
   // فلترة الشاشات حسب الصلاحيات
-  return SCREEN_METADATA.filter(screen => 
+  return SCREEN_METADATA.filter(screen =>
     userPermissions.includes(screen.permission)
   );
 }

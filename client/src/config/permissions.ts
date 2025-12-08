@@ -8,7 +8,7 @@ export const PERMISSIONS = {
     DELETE: 'sales:delete',
     LIST: 'sales:list'
   },
-  
+
   // صلاحيات المشتريات
   BUYS: {
     CREATE: 'buys:create',
@@ -17,7 +17,7 @@ export const PERMISSIONS = {
     DELETE: 'buys:delete',
     LIST: 'buys:list'
   },
-  
+
   // صلاحيات العملاء
   CUSTOMERS: {
     CREATE: 'customers:create',
@@ -26,7 +26,7 @@ export const PERMISSIONS = {
     DELETE: 'customers:delete',
     LIST: 'customers:list'
   },
-  
+
   // صلاحيات الديون
   DEBTS: {
     CREATE: 'debts:create',
@@ -36,7 +36,7 @@ export const PERMISSIONS = {
     LIST: 'debts:list',
     PAYMENT: 'debts:payment'
   },
-  
+
   // صلاحيات الخزينة
   TREASURY: {
     CREATE: 'treasury:create',
@@ -45,7 +45,7 @@ export const PERMISSIONS = {
     DELETE: 'treasury:delete',
     LIST: 'treasury:list'
   },
-  
+
   // صلاحيات العملات
   CURRENCIES: {
     CREATE: 'currencies:create',
@@ -54,7 +54,7 @@ export const PERMISSIONS = {
     DELETE: 'currencies:delete',
     LIST: 'currencies:list'
   },
-  
+
   // صلاحيات المستخدمين
   USERS: {
     CREATE: 'users:create',
@@ -63,7 +63,7 @@ export const PERMISSIONS = {
     DELETE: 'users:delete',
     LIST: 'users:list'
   },
-  
+
   // صلاحيات التقارير
   REPORTS: {
     SALES: 'reports:sales',
@@ -73,13 +73,13 @@ export const PERMISSIONS = {
     TREASURY: 'reports:treasury',
     MONTHLY: 'reports:monthly'
   },
-  
+
   // صلاحيات لوحة التحكم
   DASHBOARD: {
     VIEW: 'dashboard:view',
     ANALYTICS: 'dashboard:analytics'
   },
-  
+
   // صلاحيات الجنسيات
   NATIONALITIES: {
     CREATE: 'nationalities:create',
@@ -87,6 +87,20 @@ export const PERMISSIONS = {
     UPDATE: 'nationalities:update',
     DELETE: 'nationalities:delete',
     LIST: 'nationalities:list'
+  },
+
+  // صلاحيات المحلات الخارجية
+  EXTERNAL_STORES: {
+    CREATE: 'external_stores:create',
+    READ: 'external_stores:read',
+    UPDATE: 'external_stores:update',
+    DELETE: 'external_stores:delete',
+    LIST: 'external_stores:list',
+    MANAGE_PRODUCTS: 'external_stores:manage_products',
+    MANAGE_USERS: 'external_stores:manage_users',
+    APPROVE_INVOICES: 'external_stores:approve_invoices',
+    REJECT_INVOICES: 'external_stores:reject_invoices',
+    VIEW_REPORTS: 'external_stores:view_reports'
   }
 } as const;
 
@@ -102,7 +116,7 @@ export const ROLES = {
 // صلاحيات كل دور
 export const ROLE_PERMISSIONS = {
   [ROLES.ADMIN]: ['*'], // جميع الصلاحيات
-  
+
   [ROLES.CASHIER]: [
     // الصراف يستطيع فقط إجراء المعاملات الأساسية
     PERMISSIONS.SALES.CREATE,
@@ -116,7 +130,7 @@ export const ROLE_PERMISSIONS = {
     PERMISSIONS.CURRENCIES.READ,
     PERMISSIONS.DASHBOARD.VIEW
   ],
-  
+
   [ROLES.MANAGER]: [
     // المدير يستطيع الوصول لمعظم الوظائف عدا إدارة المستخدمين
     ...Object.values(PERMISSIONS.SALES),
@@ -129,7 +143,7 @@ export const ROLE_PERMISSIONS = {
     ...Object.values(PERMISSIONS.DASHBOARD),
     ...Object.values(PERMISSIONS.NATIONALITIES)
   ],
-  
+
   [ROLES.ACCOUNTANT]: [
     // المحاسب يركز على التقارير والديون والخزينة
     PERMISSIONS.SALES.READ,
@@ -144,9 +158,11 @@ export const ROLE_PERMISSIONS = {
     PERMISSIONS.CURRENCIES.LIST,
     ...Object.values(PERMISSIONS.REPORTS),
     PERMISSIONS.DASHBOARD.VIEW,
-    PERMISSIONS.DASHBOARD.ANALYTICS
+    PERMISSIONS.DASHBOARD.ANALYTICS,
+    // صلاحيات المحلات الخارجية
+    ...Object.values(PERMISSIONS.EXTERNAL_STORES),
   ],
-  
+
   [ROLES.VIEWER]: [
     // المشاهد يستطيع فقط القراءة
     PERMISSIONS.SALES.READ,
@@ -172,10 +188,10 @@ export const ROLE_PERMISSIONS = {
 export const hasPermission = (userPermissions: string[], userRole: string, requiredPermission: string): boolean => {
   // المدير له جميع الصلاحيات
   if (userRole === ROLES.ADMIN) return true;
-  
+
   // التحقق من الصلاحية الشاملة
   if (userPermissions.includes('*')) return true;
-  
+
   // التحقق من الصلاحية المحددة
   return userPermissions.includes(requiredPermission);
 };

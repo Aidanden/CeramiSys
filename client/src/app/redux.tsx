@@ -37,6 +37,9 @@ import { warehouseApi } from "@/state/warehouseApi"; // إضافة warehouseApi
 import { customerAccountApi } from "@/state/customerAccountApi"; // إضافة customerAccountApi
 import { supplierAccountApi } from "@/state/supplierAccountApi"; // إضافة supplierAccountApi
 import { damageReportsApi } from "@/state/damageReportsApi"; // إضافة damageReportsApi
+import { externalStoresApi } from "@/state/externalStoresApi"; // إضافة externalStoresApi
+import { externalStoreInvoicesApi } from "@/state/externalStoreInvoicesApi"; // إضافة externalStoreInvoicesApi
+import { storePortalApi } from "@/state/storePortalApi"; // إضافة storePortalApi
 import { setupListeners } from "@reduxjs/toolkit/query";
 import {
   persistStore,
@@ -88,7 +91,7 @@ const rootReducer = combineReducers({
   users: usersReducer, // إضافة usersReducer
   complexInterCompanySales: complexInterCompanySalesReducer, // إضافة complexInterCompanySalesReducer
   saleReturns: saleReturnsReducer, // إضافة saleReturnsReducer
-  
+
   /*categories: categoriesReducer,  // إضافة reducer جديد */
   [authApi.reducerPath]: authApi.reducer, // إضافة authApi.reducer
   [usersApi.reducerPath]: usersApi.reducer, // إضافة usersApi.reducer
@@ -112,6 +115,9 @@ const rootReducer = combineReducers({
   [customerAccountApi.reducerPath]: customerAccountApi.reducer, // إضافة customerAccountApi.reducer
   [supplierAccountApi.reducerPath]: supplierAccountApi.reducer, // إضافة supplierAccountApi.reducer
   [damageReportsApi.reducerPath]: damageReportsApi.reducer, // إضافة damageReportsApi.reducer
+  [externalStoresApi.reducerPath]: externalStoresApi.reducer, // إضافة externalStoresApi.reducer
+  [externalStoreInvoicesApi.reducerPath]: externalStoreInvoicesApi.reducer, // إضافة externalStoreInvoicesApi.reducer
+  [storePortalApi.reducerPath]: storePortalApi.reducer, // إضافة storePortalApi.reducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -125,7 +131,7 @@ export const makeStore = () => {
         serializableCheck: {
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
-      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, purchaseExpenseApi.middleware, paymentReceiptsApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware, notificationsApi.middleware, saleReturnsApi.middleware, saleReturnApi.middleware, returnPaymentApi.middleware, warehouseApi.middleware, customerAccountApi.middleware, supplierAccountApi.middleware, damageReportsApi.middleware), // إضافة middleware الخاص بـ APIs
+      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, purchaseExpenseApi.middleware, paymentReceiptsApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware, notificationsApi.middleware, saleReturnsApi.middleware, saleReturnApi.middleware, returnPaymentApi.middleware, warehouseApi.middleware, customerAccountApi.middleware, supplierAccountApi.middleware, damageReportsApi.middleware, externalStoresApi.middleware, externalStoreInvoicesApi.middleware, storePortalApi.middleware), // إضافة middleware
   });
 };
 

@@ -16,20 +16,21 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   // Public routes that don't require authentication
   const publicRoutes = ['/login', '/unauthorized'];
   const isPublicRoute = publicRoutes.includes(pathname);
+  const isStorePortalRoute = pathname?.startsWith('/store-portal');
 
   // ThemeProvider يتولى تطبيق الثيم الآن، لذا لا نحتاج هذا useEffect
 
   useEffect(() => {
-    // Only redirect if we're not authenticated and not on a public route
+    // Only redirect if we're not authenticated and not on a public route or store portal route
     // The AuthProvider handles initial session validation
-    if (!isAuthenticated && !isPublicRoute) {
+    if (!isAuthenticated && !isPublicRoute && !isStorePortalRoute) {
       router.push('/login');
     }
-  }, [isAuthenticated, isPublicRoute, router]);
+  }, [isAuthenticated, isPublicRoute, isStorePortalRoute, router]);
 
   // Show loading spinner for protected routes when not authenticated
   // This provides a fallback while AuthProvider is validating the session
-  if (!isAuthenticated && !isPublicRoute) {
+  if (!isAuthenticated && !isPublicRoute && !isStorePortalRoute) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -40,10 +41,10 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  // For public routes, don't show sidebar and navbar
-  if (isPublicRoute) {
+  // For public routes or store portal, don't show sidebar and navbar
+  if (isPublicRoute || isStorePortalRoute) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className={isStorePortalRoute ? "" : "min-h-screen bg-gray-50"}>
         {children}
       </div>
     );
@@ -56,9 +57,8 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     >
       <Sidebar />
       <div
-        className={`transition-all duration-300 ease-in-out min-h-screen ${
-          isSidebarCollapsed ? "mr-0 md:mr-16" : "mr-0 md:mr-64"
-        }`}
+        className={`transition-all duration-300 ease-in-out min-h-screen ${isSidebarCollapsed ? "mr-0 md:mr-16" : "mr-0 md:mr-64"
+          }`}
       >
         <Navbar />
         <main className="p-6 bg-background-secondary min-h-screen transition-all duration-300">
