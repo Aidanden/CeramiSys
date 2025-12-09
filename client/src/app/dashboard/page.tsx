@@ -4,196 +4,167 @@ import React from "react";
 import { useAppSelector } from "@/app/redux";
 import {
   TrendingUp,
-  TrendingDown,
   DollarSign,
-  Users,
   ShoppingCart,
   CreditCard,
   Package,
-  Bell,
   Calendar,
   Clock,
-  ArrowUpRight,
-  ArrowDownRight,
-  MoreVertical,
-  Eye,
   AlertTriangle,
-  Star,
-  TrendingUp as TrendingUpIcon,
   BarChart3,
-  Activity
+  Wallet,
+  Receipt,
+  CircleDollarSign,
 } from "lucide-react";
-import { 
+import {
   useGetSalesStatsQuery
 } from "@/state/salesApi";
-import { 
+import {
   useGetPurchaseStatsQuery
 } from "@/state/purchaseApi";
-import { 
+import {
   useGetCreditSalesStatsQuery
 } from "@/state/salePaymentApi";
-import { 
+import {
   useGetTopSellingProductsQuery,
   useGetLowStockProductsQuery
 } from "@/state/productsApi";
-import { 
-  useGetRecentActivitiesQuery
-} from "@/state/activityApi";
-import { formatArabicNumber, formatArabicCurrency, convertToArabicNumbers } from "@/utils/formatArabicNumbers";
+import { formatArabicNumber, formatArabicCurrency } from "@/utils/formatArabicNumbers";
 
-interface StatCardProps {
+// ==========================================
+// مكون البطاقات الإحصائية الرئيسية
+// ==========================================
+interface MainStatCardProps {
   title: string;
   value: string;
-  change: string;
-  changeType: "increase" | "decrease";
+  subtitle?: string;
   icon: React.ComponentType<{ className?: string }>;
-  color: string;
+  iconBgColor: string;
+  isLoading?: boolean;
 }
 
-const StatCard = ({ title, value, change, changeType, icon: Icon, color }: StatCardProps) => {
+const MainStatCard = ({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  iconBgColor,
+  isLoading
+}: MainStatCardProps) => {
   return (
-    <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6 hover:shadow-lg hover:border-border-secondary transition-all duration-300">
-      <div className="flex items-center justify-between">
+    <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-6 hover:shadow-md hover:border-blue-200 transition-all duration-300">
+      <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-text-secondary mb-2">{title}</p>
-          <p className="text-2xl font-bold text-text-primary mb-2">{value}</p>
-          <div className="flex items-center gap-1">
-            {changeType === "increase" ? (
-              <ArrowUpRight className="w-4 h-4 text-success-500" />
+          <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
+          <p className="text-2xl font-bold text-slate-800">
+            {isLoading ? (
+              <span className="inline-block w-24 h-7 bg-slate-200 animate-pulse rounded"></span>
             ) : (
-              <ArrowDownRight className="w-4 h-4 text-error-500" />
+              value
             )}
-            <span
-              className={`text-sm font-medium ${
-                changeType === "increase" ? "text-success-600" : "text-error-600"
-              }`}
-            >
-              {change}
-            </span>
-            <span className="text-sm text-text-tertiary">من الشهر الماضي</span>
-          </div>
+          </p>
+          {subtitle && (
+            <p className="text-xs text-slate-400 mt-1">{subtitle}</p>
+          )}
         </div>
-        <div className={`w-12 h-12 ${color} rounded-xl flex items-center justify-center shadow-md`}>
-          <Icon className="w-6 h-6 text-white" />
+        <div className={`w-14 h-14 ${iconBgColor} rounded-xl flex items-center justify-center shadow-sm`}>
+          <Icon className="w-7 h-7 text-white" />
         </div>
       </div>
     </div>
   );
 };
 
-interface ActivityItem {
-  id: number;
-  type: "sale" | "purchase" | "payment" | "user";
+// ==========================================
+// مكون بطاقة العمليات (يومية/شهرية)
+// ==========================================
+interface OperationCardProps {
   title: string;
-  description: string;
-  time: string;
-  amount?: string;
+  period: "يوم" | "شهر";
+  stats: {
+    label: string;
+    value: string;
+    icon: React.ComponentType<{ className?: string }>;
+    color?: string;
+  }[];
+  headerColor: string;
+  isLoading?: boolean;
 }
 
-const ActivityFeed = () => {
-  const { data: activitiesData, isLoading } = useGetRecentActivitiesQuery({ limit: 10 });
-  
-  if (isLoading) {
-    return (
-      <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-text-primary">الأنشطة الأخيرة</h3>
-          <button className="text-primary-600 hover:text-primary-700 font-medium text-sm transition-colors duration-200">
-            عرض الكل
-          </button>
+const OperationCard = ({
+  title,
+  period,
+  stats,
+  headerColor,
+  isLoading
+}: OperationCardProps) => {
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-blue-100 overflow-hidden hover:shadow-md transition-all duration-300">
+      {/* Header */}
+      <div className={`${headerColor} px-6 py-4`}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold text-white">{title}</h3>
+          <div className="flex items-center gap-2 bg-white/20 rounded-full px-3 py-1">
+            {period === "يوم" ? (
+              <Clock className="w-4 h-4 text-white" />
+            ) : (
+              <Calendar className="w-4 h-4 text-white" />
+            )}
+            <span className="text-sm font-medium text-white">
+              {period === "يوم" ? "اليوم" : "هذا الشهر"}
+            </span>
+          </div>
         </div>
-        <div className="space-y-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={`activity-skeleton-${i}`} className="animate-pulse">
-              <div className="flex items-start gap-3 p-3 rounded-lg">
-                <div className="w-8 h-8 bg-background-tertiary rounded-lg"></div>
-                <div className="flex-1">
-                  <div className="h-4 bg-background-tertiary rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-background-tertiary rounded w-1/2 mb-1"></div>
-                  <div className="h-3 bg-background-tertiary rounded w-1/4"></div>
-                </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="p-5">
+        <div className="grid grid-cols-2 gap-4">
+          {stats.map((stat, index) => (
+            <div
+              key={index}
+              className="bg-slate-50 rounded-xl p-4 border border-slate-100 hover:bg-blue-50 hover:border-blue-100 transition-all duration-200"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <stat.icon className={`w-4 h-4 ${stat.color || 'text-blue-600'}`} />
+                <span className="text-xs font-medium text-slate-500">{stat.label}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {isLoading ? (
+                  <span className="inline-block w-20 h-6 bg-slate-200 animate-pulse rounded"></span>
+                ) : (
+                  <span className="text-lg font-bold text-slate-800">{stat.value}</span>
+                )}
               </div>
             </div>
           ))}
         </div>
       </div>
-    );
-  }
-
-  const activities = activitiesData?.data || [];
-
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case "sale":
-        return <ShoppingCart className="w-4 h-4 text-green-600" />;
-      case "purchase":
-        return <Package className="w-4 h-4 text-blue-600" />;
-      case "payment":
-        return <DollarSign className="w-4 h-4 text-emerald-600" />;
-      case "user":
-        return <Users className="w-4 h-4 text-purple-600" />;
-      case "product":
-        return <Package className="w-4 h-4 text-orange-600" />;
-      default:
-        return <Bell className="w-4 h-4 text-gray-600" />;
-    }
-  };
-
-  return (
-    <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-text-primary">الأنشطة الأخيرة</h3>
-        <button className="text-primary-600 hover:text-primary-700 font-medium text-sm transition-colors duration-200">
-          عرض الكل
-        </button>
-      </div>
-      <div className="space-y-4">
-        {activities.length > 0 ? (
-          activities.map((activity) => (
-          <div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-background-hover transition-all duration-200">
-            <div className="w-8 h-8 bg-background-secondary rounded-lg flex items-center justify-center flex-shrink-0">
-              {getActivityIcon(activity.type)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-text-primary">{activity.title}</p>
-              <p className="text-sm text-text-secondary">{activity.description}</p>
-              <p className="text-xs text-text-tertiary mt-1">{activity.time}</p>
-            </div>
-            {activity.amount && (
-              <span
-                className={`text-sm font-medium ${
-                  activity.amount.startsWith("+") ? "text-success-600" : "text-error-600"
-                }`}
-              >
-                {convertToArabicNumbers(activity.amount)}
-              </span>
-            )}
-          </div>
-          ))
-        ) : (
-          <div className="text-center py-8">
-            <Activity className="w-12 h-12 text-text-muted mx-auto mb-3" />
-            <p className="text-text-secondary">لا توجد أنشطة حديثة</p>
-          </div>
-        )}
-      </div>
     </div>
   );
 };
 
+// ==========================================
 // مكون الأصناف الأكثر مبيعاً
+// ==========================================
 const TopSellingProducts = () => {
   const { data: topProductsData, isLoading } = useGetTopSellingProductsQuery({ limit: 5 });
 
   if (isLoading) {
     return (
-      <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6">
-        <h3 className="text-lg font-semibold text-text-primary mb-6">الأصناف الأكثر مبيعاً</h3>
+      <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold text-slate-800">الأصناف الأكثر مبيعاً</h3>
+          <BarChart3 className="w-5 h-5 text-blue-500" />
+        </div>
         <div className="space-y-3">
-          {[...Array(3)].map((_, i) => (
-            <div key={`top-products-skeleton-${i}`} className="animate-pulse">
-              <div className="h-4 bg-background-tertiary rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-background-tertiary rounded w-1/2"></div>
+          {[...Array(5)].map((_, i) => (
+            <div key={`skeleton-${i}`} className="animate-pulse flex items-center gap-3 p-3 rounded-xl bg-slate-50">
+              <div className="w-8 h-8 bg-slate-200 rounded-lg"></div>
+              <div className="flex-1">
+                <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+              </div>
             </div>
           ))}
         </div>
@@ -204,54 +175,68 @@ const TopSellingProducts = () => {
   const topProducts = topProductsData?.data || [];
 
   return (
-    <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-text-primary">الأصناف الأكثر مبيعاً</h3>
-        <Star className="w-5 h-5 text-warning-500" />
+    <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-6 hover:shadow-md transition-all duration-300">
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-lg font-bold text-slate-800">الأصناف الأكثر مبيعاً</h3>
+        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+          <TrendingUp className="w-4 h-4 text-blue-600" />
+        </div>
       </div>
-      <div className="space-y-4">
-        {topProducts.length > 0 ? (
-          topProducts.map((product, index) => (
-            <div key={`top-product-${product.productId}-${index}`} className="flex items-center justify-between p-3 rounded-lg bg-background-secondary hover:bg-background-hover transition-all duration-200">
+
+      {topProducts.length > 0 ? (
+        <div className="space-y-3">
+          {topProducts.map((product, index) => (
+            <div
+              key={`product-${product.productId}-${index}`}
+              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-blue-50 hover:border-blue-100 transition-all duration-200"
+            >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-warning-100 dark:bg-warning-900/30 rounded-lg flex items-center justify-center">
-                  <span className="text-sm font-bold text-warning-600">#{index + 1}</span>
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                  {index + 1}
                 </div>
                 <div>
-                  <p className="font-medium text-text-primary">{product.productName}</p>
-                  <p className="text-sm text-text-secondary">{product.sku}</p>
+                  <p className="font-semibold text-slate-800 text-sm">{product.productName}</p>
+                  <p className="text-xs text-slate-500">{product.sku}</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="font-semibold text-text-primary">{formatArabicNumber(product.totalQuantitySold)} {product.unit}</p>
-                <p className="text-sm text-success-600">{formatArabicCurrency(product.totalRevenue)}</p>
+              <div className="text-left">
+                <p className="font-bold text-blue-600 text-sm">{formatArabicNumber(product.totalQuantitySold)} {product.unit}</p>
+                <p className="text-xs text-green-600">{formatArabicCurrency(product.totalRevenue)}</p>
               </div>
             </div>
-          ))
-        ) : (
-          <div className="text-center py-8">
-            <BarChart3 className="w-12 h-12 text-text-muted mx-auto mb-3" />
-            <p className="text-text-secondary">لا توجد بيانات مبيعات</p>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-10">
+          <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <p className="text-slate-500">لا توجد بيانات مبيعات</p>
+        </div>
+      )}
     </div>
   );
 };
 
-// مكون الأصناف التي ستنتهي قريباً
+// ==========================================
+// مكون الأصناف منخفضة المخزون
+// ==========================================
 const LowStockProducts = () => {
   const { data: lowStockData, isLoading } = useGetLowStockProductsQuery({ limit: 5 });
 
   if (isLoading) {
     return (
-      <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6">
-        <h3 className="text-lg font-semibold text-text-primary mb-6">الأصناف التي ستنتهي قريباً</h3>
+      <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold text-slate-800">تنبيهات المخزون</h3>
+          <AlertTriangle className="w-5 h-5 text-amber-500" />
+        </div>
         <div className="space-y-3">
-          {[...Array(3)].map((_, i) => (
-            <div key={`low-stock-skeleton-${i}`} className="animate-pulse">
-              <div className="h-4 bg-background-tertiary rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-background-tertiary rounded w-1/2"></div>
+          {[...Array(5)].map((_, i) => (
+            <div key={`skeleton-${i}`} className="animate-pulse flex items-center gap-3 p-3 rounded-xl bg-slate-50">
+              <div className="w-8 h-8 bg-slate-200 rounded-lg"></div>
+              <div className="flex-1">
+                <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+              </div>
             </div>
           ))}
         </div>
@@ -264,20 +249,20 @@ const LowStockProducts = () => {
   const getStockStatusColor = (status: string) => {
     switch (status) {
       case 'OUT_OF_STOCK':
-        return 'text-red-600 bg-red-100';
+        return 'bg-red-100 text-red-700 border-red-200';
       case 'CRITICAL':
-        return 'text-orange-600 bg-orange-100';
+        return 'bg-orange-100 text-orange-700 border-orange-200';
       case 'LOW':
-        return 'text-yellow-600 bg-yellow-100';
+        return 'bg-amber-100 text-amber-700 border-amber-200';
       default:
-        return 'text-slate-600 bg-slate-100';
+        return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
 
   const getStockStatusText = (status: string) => {
     switch (status) {
       case 'OUT_OF_STOCK':
-        return 'نفد المخزون';
+        return 'نفد';
       case 'CRITICAL':
         return 'حرج';
       case 'LOW':
@@ -288,103 +273,123 @@ const LowStockProducts = () => {
   };
 
   return (
-    <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-text-primary">الأصناف التي ستنتهي قريباً</h3>
-        <AlertTriangle className="w-5 h-5 text-warning-500" />
+    <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-6 hover:shadow-md transition-all duration-300">
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-lg font-bold text-slate-800">تنبيهات المخزون</h3>
+        <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+          <AlertTriangle className="w-4 h-4 text-amber-600" />
+        </div>
       </div>
-      <div className="space-y-4">
-        {lowStockProducts.length > 0 ? (
-          lowStockProducts.map((product, index) => (
-            <div key={`low-stock-product-${product.productId}-${index}`} className="flex items-center justify-between p-3 rounded-lg bg-background-secondary hover:bg-background-hover transition-all duration-200">
+
+      {lowStockProducts.length > 0 ? (
+        <div className="space-y-3">
+          {lowStockProducts.map((product, index) => (
+            <div
+              key={`low-stock-${product.productId}-${index}`}
+              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-amber-50 hover:border-amber-100 transition-all duration-200"
+            >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-warning-100 dark:bg-warning-900/30 rounded-lg flex items-center justify-center">
-                  <AlertTriangle className="w-4 h-4 text-warning-600" />
+                <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                  <Package className="w-4 h-4 text-amber-600" />
                 </div>
                 <div>
-                  <p className="font-medium text-text-primary">{product.productName}</p>
-                  <p className="text-sm text-text-secondary">{product.sku}</p>
+                  <p className="font-semibold text-slate-800 text-sm">{product.productName}</p>
+                  <p className="text-xs text-slate-500">{product.sku}</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="font-semibold text-text-primary">{formatArabicNumber(product.currentStock)} {product.unit}</p>
-                {product.unit !== 'صندوق' && product.unitsPerBox > 1 && (
-                  <p className="text-xs text-text-tertiary">
-                    ({formatArabicNumber(product.totalUnits)} {product.unit})
-                  </p>
-                )}
-                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStockStatusColor(product.stockStatus)}`}>
+              <div className="text-left flex items-center gap-2">
+                <span className="font-bold text-slate-700 text-sm">
+                  {formatArabicNumber(product.currentStock)} {product.unit}
+                </span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStockStatusColor(product.stockStatus)}`}>
                   {getStockStatusText(product.stockStatus)}
                 </span>
               </div>
             </div>
-          ))
-        ) : (
-          <div className="text-center py-8">
-            <Package className="w-12 h-12 text-text-muted mx-auto mb-3" />
-            <p className="text-text-secondary">جميع الأصناف متوفرة</p>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-10">
+          <Package className="w-12 h-12 text-green-300 mx-auto mb-3" />
+          <p className="text-green-600 font-medium">جميع الأصناف متوفرة</p>
+        </div>
+      )}
     </div>
   );
 };
 
-const QuickActions = () => {
-  const actions = [
-    { title: "عملية بيع جديدة", icon: ShoppingCart, color: "bg-success-500", href: "/sales/new" },
-    { title: "إضافة عميل", icon: Users, color: "bg-primary-500", href: "/customers/new" },
-    { title: "إدخال مصروف", icon: TrendingDown, color: "bg-error-500", href: "/expenses/new" },
-    { title: "حركة خزينة", icon: DollarSign, color: "bg-info-500", href: "/treasury/new" }
-  ];
-
-  return (
-    <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6">
-      <h3 className="text-lg font-semibold text-text-primary mb-6">الإجراءات السريعة</h3>
-      <div className="grid grid-cols-2 gap-4">
-        {actions.map((action, index) => (
-          <button
-            key={index}
-            className="flex items-center gap-3 p-4 rounded-lg border border-border-primary hover:border-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all duration-200 group"
-          >
-            <div className={`w-10 h-10 ${action.color} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-md`}>
-              <action.icon className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-sm font-medium text-text-secondary group-hover:text-primary-700 transition-colors duration-200">
-              {action.title}
-            </span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
-
+// ==========================================
+// الصفحة الرئيسية
+// ==========================================
 const Dashboard = () => {
   const { user } = useAppSelector((state) => state.auth);
-  
+
   // جلب البيانات من APIs
   const { data: salesStats, isLoading: salesLoading } = useGetSalesStatsQuery();
   const { data: purchaseStats, isLoading: purchaseLoading } = useGetPurchaseStatsQuery({});
   const { data: creditStats, isLoading: creditLoading } = useGetCreditSalesStatsQuery();
 
+  // تحضير بيانات عمليات اليوم
+  const dailyOperationsStats = [
+    {
+      label: "إجمالي المبيعات",
+      value: formatArabicCurrency(salesStats?.data?.todayRevenue || 0),
+      icon: ShoppingCart,
+      color: "text-blue-600"
+    },
+    {
+      label: "عدد الفواتير",
+      value: formatArabicNumber(salesStats?.data?.todaySales || 0),
+      icon: Receipt,
+      color: "text-indigo-600"
+    },
+  ];
+
+  // تحضير بيانات عمليات الشهر
+  const monthlyOperationsStats = [
+    {
+      label: "إجمالي المبيعات",
+      value: formatArabicCurrency(salesStats?.data?.monthRevenue || 0),
+      icon: BarChart3,
+      color: "text-blue-600"
+    },
+    {
+      label: "عدد الفواتير",
+      value: formatArabicNumber(salesStats?.data?.monthSales || 0),
+      icon: Receipt,
+      color: "text-indigo-600"
+    },
+    {
+      label: "إجمالي المشتريات",
+      value: formatArabicCurrency(purchaseStats?.totalAmount || 0),
+      icon: Package,
+      color: "text-purple-600"
+    },
+    {
+      label: "المدفوعات",
+      value: formatArabicCurrency(purchaseStats?.totalPaid || 0),
+      icon: Wallet,
+      color: "text-emerald-600"
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 dark:from-primary-700 dark:to-primary-800 rounded-xl p-6 text-white shadow-lg">
-        <div className="flex items-center justify-between">
+    <div className="space-y-6 p-1">
+      {/* ترحيب - Header */}
+      <div className="bg-gradient-to-l from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-lg">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold mb-2">
-              مرحباً، {user?.name || "المستخدم"}
+            <h1 className="text-2xl font-bold mb-1">
+              مرحباً، {user?.name || "المستخدم"} 👋
             </h1>
-            <p className="text-primary-100 dark:text-primary-200">
-              إليك ملخص أنشطة اليوم في نظام إدارة السيراميك والبورسلين
+            <p className="text-blue-100 text-sm">
+              نظام إدارة السيراميك والبورسلين - لوحة التحكم الرئيسية
             </p>
           </div>
-          <div className="hidden md:flex items-center gap-4 text-primary-100 dark:text-primary-200">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              <span className="text-sm">
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2">
+              <Calendar className="w-4 h-4" />
+              <span>
                 {new Date().toLocaleDateString("ar-LY", {
                   weekday: "long",
                   year: "numeric",
@@ -393,9 +398,9 @@ const Dashboard = () => {
                 })}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5" />
-              <span className="text-sm">
+            <div className="hidden sm:flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2">
+              <Clock className="w-4 h-4" />
+              <span>
                 {new Date().toLocaleTimeString("ar-LY", {
                   hour: "2-digit",
                   minute: "2-digit"
@@ -406,140 +411,66 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="مبيعات اليوم"
-          value={salesLoading ? "جاري التحميل..." : formatArabicCurrency(salesStats?.data?.todayRevenue || 0)}
-          change=""
-          changeType="increase"
+      {/* الإحصائيات الرئيسية - Main Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <MainStatCard
+          title="إجمالي المبيعات (سنوياً)"
+          value={formatArabicCurrency(salesStats?.data?.yearRevenue || 0)}
+          subtitle={`${formatArabicNumber(salesStats?.data?.yearSales || 0)} فاتورة`}
           icon={TrendingUp}
-          color="bg-gradient-to-r from-green-500 to-emerald-500"
+          iconBgColor="bg-gradient-to-br from-blue-500 to-blue-600"
+          isLoading={salesLoading}
         />
-        <StatCard
-          title="مبيعات الشهر"
-          value={salesLoading ? "جاري التحميل..." : formatArabicCurrency(salesStats?.data?.monthRevenue || 0)}
-          change=""
-          changeType="increase"
-          icon={BarChart3}
-          color="bg-gradient-to-r from-blue-500 to-indigo-500"
-        />
-        <StatCard
-          title="مبيعات السنة"
-          value={salesLoading ? "جاري التحميل..." : formatArabicCurrency(salesStats?.data?.yearRevenue || 0)}
-          change=""
-          changeType="increase"
-          icon={Activity}
-          color="bg-gradient-to-r from-purple-500 to-pink-500"
-        />
-        <StatCard
-          title="المبيعات الآجلة"
-          value={creditLoading ? "جاري التحميل..." : formatArabicCurrency(creditStats?.data?.totalRemaining || 0)}
-          change=""
-          changeType="increase"
-          icon={CreditCard}
-          color="bg-gradient-to-r from-orange-500 to-red-500"
-        />
-      </div>
-
-      {/* Purchase Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
+        <MainStatCard
           title="إجمالي المشتريات"
-          value={purchaseLoading ? "جاري التحميل..." : formatArabicCurrency(purchaseStats?.totalAmount || 0)}
-          change=""
-          changeType="increase"
+          value={formatArabicCurrency(purchaseStats?.totalAmount || 0)}
+          subtitle={`${formatArabicNumber(purchaseStats?.totalPurchases || 0)} عملية شراء`}
           icon={ShoppingCart}
-          color="bg-gradient-to-r from-indigo-500 to-purple-500"
+          iconBgColor="bg-gradient-to-br from-indigo-500 to-indigo-600"
+          isLoading={purchaseLoading}
         />
-        <StatCard
-          title="المبلغ المدفوع"
-          value={purchaseLoading ? "جاري التحميل..." : formatArabicCurrency(purchaseStats?.totalPaid || 0)}
-          change=""
-          changeType="increase"
-          icon={DollarSign}
-          color="bg-gradient-to-r from-emerald-500 to-teal-500"
+        <MainStatCard
+          title="المبيعات الآجلة المتبقية"
+          value={formatArabicCurrency(creditStats?.data?.totalRemaining || 0)}
+          icon={CreditCard}
+          iconBgColor="bg-gradient-to-br from-amber-500 to-orange-500"
+          isLoading={creditLoading}
         />
-        <StatCard
-          title="المبلغ المتبقي"
-          value={purchaseLoading ? "جاري التحميل..." : formatArabicCurrency(purchaseStats?.totalRemaining || 0)}
-          change=""
-          changeType="increase"
-          icon={AlertTriangle}
-          color="bg-gradient-to-r from-yellow-500 to-orange-500"
-        />
-        <StatCard
-          title="عدد المشتريات"
-          value={purchaseLoading ? "جاري التحميل..." : formatArabicNumber(purchaseStats?.totalPurchases || 0)}
-          change=""
-          changeType="increase"
-          icon={Package}
-          color="bg-gradient-to-r from-cyan-500 to-blue-500"
+        <MainStatCard
+          title="المبلغ المدفوع للموردين"
+          value={formatArabicCurrency(purchaseStats?.totalPaid || 0)}
+          subtitle={`المتبقي: ${formatArabicCurrency(purchaseStats?.totalRemaining || 0)}`}
+          icon={CircleDollarSign}
+          iconBgColor="bg-gradient-to-br from-emerald-500 to-green-600"
+          isLoading={purchaseLoading}
         />
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Top Selling Products - Takes 1 column */}
-        <div>
-          <TopSellingProducts />
-        </div>
-
-        {/* Low Stock Products - Takes 1 column */}
-        <div>
-          <LowStockProducts />
-        </div>
-
-        {/* Quick Actions - Takes 1 column */}
-        <div>
-          <QuickActions />
-        </div>
-      </div>
-
-      {/* Activity Feed */}
-      <div className="grid grid-cols-1">
-        <ActivityFeed />
-      </div>
-
-      {/* Charts Section */}
+      {/* كروت العمليات اليومية والشهرية */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Sales Chart Placeholder */}
-        <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-text-primary">مبيعات الشهر</h3>
-            <button className="p-2 hover:bg-background-hover rounded-lg transition-all duration-200">
-              <MoreVertical className="w-5 h-5 text-text-secondary" />
-            </button>
-          </div>
-          <div className="h-64 bg-background-secondary rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <TrendingUp className="w-12 h-12 text-text-muted mx-auto mb-3" />
-              <p className="text-text-secondary">رسم بياني للمبيعات</p>
-              <p className="text-sm text-text-tertiary">سيتم إضافة الرسوم البيانية قريباً</p>
-            </div>
-          </div>
-        </div>
+        <OperationCard
+          title="عمليات اليوم"
+          period="يوم"
+          stats={dailyOperationsStats}
+          headerColor="bg-gradient-to-l from-blue-500 to-blue-600"
+          isLoading={salesLoading}
+        />
+        <OperationCard
+          title="عمليات الشهر"
+          period="شهر"
+          stats={monthlyOperationsStats}
+          headerColor="bg-gradient-to-l from-indigo-500 to-indigo-600"
+          isLoading={salesLoading || purchaseLoading}
+        />
+      </div>
 
-        {/* Revenue Chart Placeholder */}
-        <div className="bg-surface-primary rounded-xl shadow-sm border border-border-primary p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-text-primary">الإيرادات الشهرية</h3>
-            <button className="p-2 hover:bg-background-hover rounded-lg transition-all duration-200">
-              <Eye className="w-5 h-5 text-text-secondary" />
-            </button>
-          </div>
-          <div className="h-64 bg-background-secondary rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <DollarSign className="w-12 h-12 text-text-muted mx-auto mb-3" />
-              <p className="text-text-secondary">رسم بياني للإيرادات</p>
-              <p className="text-sm text-text-tertiary">سيتم إضافة الرسوم البيانية قريباً</p>
-            </div>
-          </div>
-        </div>
+      {/* الأصناف الأكثر مبيعاً وتنبيهات المخزون */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TopSellingProducts />
+        <LowStockProducts />
       </div>
     </div>
   );
 };
 
 export default Dashboard;
-
