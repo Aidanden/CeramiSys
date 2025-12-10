@@ -29,8 +29,8 @@ export const createInterCompanySale = async (req: Request, res: Response): Promi
 
     // التحقق من أن الشركة لها شركة أم
     const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
-    
+    const prisma = require('../models/prismaClient').default; // Use singleton
+
     const branchCompany = await prisma.company.findUnique({
       where: { id: branchCompanyId },
       select: { parentId: true }

@@ -11,11 +11,11 @@ import { Decimal } from '@prisma/client/runtime/library';
 export class CreateProductDto {
   @IsString({ message: 'رمز الصنف يجب أن يكون نص' })
   @IsNotEmpty({ message: 'رمز الصنف مطلوب' })
-  sku: string;
+  sku!: string;
 
   @IsString({ message: 'اسم الصنف يجب أن يكون نص' })
   @IsNotEmpty({ message: 'اسم الصنف مطلوب' })
-  name: string;
+  name!: string;
 
   @IsOptional()
   @IsString({ message: 'الوحدة يجب أن تكون نص' })
@@ -30,7 +30,7 @@ export class CreateProductDto {
   @IsNumber({}, { message: 'معرف الشركة يجب أن يكون رقم' })
   @IsInt({ message: 'معرف الشركة يجب أن يكون رقم صحيح' })
   @Min(1, { message: 'معرف الشركة يجب أن يكون أكبر من صفر' })
-  createdByCompanyId: number;
+  createdByCompanyId!: number;
 
   @IsOptional()
   @Transform(({ value }) => parseFloat(value))
@@ -112,17 +112,17 @@ export class UpdateStockDto {
   @IsNumber({}, { message: 'معرف الصنف يجب أن يكون رقم' })
   @IsInt({ message: 'معرف الصنف يجب أن يكون رقم صحيح' })
   @Min(1, { message: 'معرف الصنف يجب أن يكون أكبر من صفر' })
-  productId: number;
+  productId!: number;
 
   @IsNumber({}, { message: 'معرف الشركة يجب أن يكون رقم' })
   @IsInt({ message: 'معرف الشركة يجب أن يكون رقم صحيح' })
   @Min(1, { message: 'معرف الشركة يجب أن يكون أكبر من صفر' })
-  companyId: number;
+  companyId!: number;
 
   @Transform(({ value }) => parseFloat(value))
   @IsNumber({ maxDecimalPlaces: 4 }, { message: 'الكمية يجب أن تكون رقم صالح' })
   @Min(0, { message: 'الكمية يجب أن تكون أكبر من أو تساوي صفر' })
-  quantity: number;
+  quantity!: number;
 }
 
 // DTO لتحديث السعر
@@ -130,17 +130,17 @@ export class UpdatePriceDto {
   @IsNumber({}, { message: 'معرف الصنف يجب أن يكون رقم' })
   @IsInt({ message: 'معرف الصنف يجب أن يكون رقم صحيح' })
   @Min(1, { message: 'معرف الصنف يجب أن يكون أكبر من صفر' })
-  productId: number;
+  productId!: number;
 
   @IsNumber({}, { message: 'معرف الشركة يجب أن يكون رقم' })
   @IsInt({ message: 'معرف الشركة يجب أن يكون رقم صحيح' })
   @Min(1, { message: 'معرف الشركة يجب أن يكون أكبر من صفر' })
-  companyId: number;
+  companyId!: number;
 
   @Transform(({ value }) => parseFloat(value))
   @IsNumber({ maxDecimalPlaces: 4 }, { message: 'سعر البيع يجب أن يكون رقم صالح' })
   @Min(0, { message: 'سعر البيع يجب أن يكون أكبر من أو يساوي صفر' })
-  sellPrice: number;
+  sellPrice!: number;
 }
 
 // Response DTOs

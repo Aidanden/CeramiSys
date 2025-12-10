@@ -53,11 +53,11 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div
       dir="rtl"
-      className="bg-background-primary text-text-primary w-full min-h-screen transition-all duration-300 ease-in-out"
+      className="bg-background-primary text-text-primary w-full min-h-screen"
     >
       <Sidebar />
       <div
-        className={`transition-all duration-300 ease-in-out min-h-screen ${isSidebarCollapsed ? "mr-0 md:mr-16" : "mr-0 md:mr-64"
+        className={`transition-[margin] duration-300 ease-in-out min-h-screen ${isSidebarCollapsed ? "mr-0 md:mr-16" : "mr-0 md:mr-64"
           }`}
       >
         <Navbar />

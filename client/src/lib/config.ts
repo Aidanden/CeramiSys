@@ -68,10 +68,10 @@ export const API_CACHE_CONFIG = {
     refetchOnFocus: false, // لا نجلب عند التركيز
     refetchOnReconnect: true, // جلب عند إعادة الاتصال
   },
-  // إعدادات المبيعات - فوري بدون كاش
+  // إعدادات المبيعات - كاش قصير مع تحديث عند الحاجة
   sales: {
-    keepUnusedDataFor: 0, // بدون كاش للتحديث الفوري
-    refetchOnMountOrArgChange: true, // جلب دائماً
+    keepUnusedDataFor: 60, // 60 ثانية كاش لتقليل الطلبات المتكررة
+    refetchOnMountOrArgChange: 30, // جلب كل 30 ثانية عند التنقل
     refetchOnFocus: false, // لا نجلب عند التركيز
     refetchOnReconnect: true, // جلب عند إعادة الاتصال
   },

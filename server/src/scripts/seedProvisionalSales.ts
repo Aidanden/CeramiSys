@@ -3,11 +3,9 @@
  * إدراج بيانات تجريبية للفواتير المبدئية
  */
 
-import { PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
-
-const prisma = new PrismaClient();
+import prisma from '../models/prismaClient';
 
 async function seedProvisionalSales() {
   try {
@@ -25,7 +23,7 @@ async function seedProvisionalSales() {
     // إدراج الفواتير المبدئية
     for (const saleData of provisionalSalesData) {
       const { lines, ...saleInfo } = saleData;
-      
+
       // إنشاء الفاتورة المبدئية
       const provisionalSale = await prisma.provisionalSale.create({
         data: {
@@ -58,7 +56,7 @@ async function seedProvisionalSales() {
     // عرض إحصائيات
     const totalSales = await prisma.provisionalSale.count();
     const totalLines = await prisma.provisionalSaleLine.count();
-    
+
     console.log(`📊 الإحصائيات:`);
     console.log(`   - إجمالي الفواتير المبدئية: ${totalSales}`);
     console.log(`   - إجمالي البنود: ${totalLines}`);

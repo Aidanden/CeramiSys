@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../models/prismaClient';
 import {
   CreateNotificationRequest,
   UpdateNotificationRequest,
@@ -11,11 +11,7 @@ import {
 } from '../dto/notificationDto';
 
 export class NotificationService {
-  private prisma: PrismaClient;
-
-  constructor() {
-    this.prisma = new PrismaClient();
-  }
+  private prisma = prisma; // Use singleton
 
   /**
    * تحويل نتيجة Prisma إلى NotificationResponse
@@ -131,7 +127,7 @@ export class NotificationService {
       if (!isSystemUser) {
         where.OR = [
           { userId: requestingUserId }, // إشعاراته الشخصية
-          { 
+          {
             companyId: userCompanyId,
             userId: { not: requestingUserId } // إشعارات الشركة للآخرين (اختياري)
           }
@@ -231,8 +227,8 @@ export class NotificationService {
       // إحصائيات عامة
       const [total, unread] = await Promise.all([
         this.prisma.notification.count({ where }),
-        this.prisma.notification.count({ 
-          where: { ...where, isRead: false } 
+        this.prisma.notification.count({
+          where: { ...where, isRead: false }
         })
       ]);
 

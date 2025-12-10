@@ -1,6 +1,5 @@
-import { PrismaClient, SupplierTransactionType, SupplierReferenceType } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { SupplierTransactionType, SupplierReferenceType } from '@prisma/client';
+import prisma from '../models/prismaClient';
 
 interface CreateSupplierAccountEntryInput {
   supplierId: number;
@@ -216,7 +215,7 @@ class SupplierAccountService {
     return suppliers.map(supplier => {
       const lastEntry = supplier.accountEntries[0];
       const currentBalance = lastEntry ? Number(lastEntry.balance) : 0;
-      
+
       return {
         id: supplier.id,
         name: supplier.name,

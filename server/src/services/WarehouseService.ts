@@ -3,7 +3,8 @@
  * خدمة أوامر صرف المخزن
  */
 
-import { PrismaClient, DispatchOrderStatus } from '@prisma/client';
+import { DispatchOrderStatus } from '@prisma/client';
+import prisma from '../models/prismaClient';
 import { PaymentMethod } from '../dto/salesDto';
 
 export interface CreateDispatchOrderDto {
@@ -26,11 +27,7 @@ export interface GetDispatchOrdersQueryDto {
 }
 
 export class WarehouseService {
-  private prisma: PrismaClient;
-
-  constructor() {
-    this.prisma = new PrismaClient();
-  }
+  private prisma = prisma; // Use singleton
 
   /**
    * الحصول على جميع أوامر الصرف
@@ -186,11 +183,11 @@ export class WarehouseService {
   async createDispatchOrder(data: CreateDispatchOrderDto) {
     try {
       console.log('🚀 بدء عملية إنشاء أمر صرف...');
-      
+
       // التحقق من وجود الفاتورة
       const sale = await this.prisma.sale.findUnique({
         where: { id: data.saleId },
-        include: { 
+        include: {
           company: true,
           lines: {
             include: {

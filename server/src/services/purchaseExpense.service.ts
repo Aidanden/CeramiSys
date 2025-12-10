@@ -1,7 +1,8 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import prisma from '../models/prismaClient';
 import SupplierAccountService from './SupplierAccountService';
-import { 
-  ApprovePurchaseRequest, 
+import {
+  ApprovePurchaseRequest,
   ApprovePurchaseResponse,
   CreateExpenseCategoryRequest,
   UpdateExpenseCategoryRequest,
@@ -11,15 +12,13 @@ import {
   SupplierPayable
 } from '../dto/purchaseExpenseDto';
 
-const prisma = new PrismaClient();
-
 export class PurchaseExpenseService {
   // ==================== فئات المصروفات ====================
-  
+
   // الحصول على جميع فئات المصروفات
   async getAllExpenseCategories(includeInactive = false) {
     const where = includeInactive ? {} : { isActive: true };
-    
+
     return await prisma.purchaseExpenseCategory.findMany({
       where,
       include: {
@@ -56,10 +55,10 @@ export class PurchaseExpenseService {
         ...categoryData,
         suppliers: supplierIds
           ? {
-              create: supplierIds.map((supplierId) => ({
-                supplierId,
-              })),
-            }
+            create: supplierIds.map((supplierId) => ({
+              supplierId,
+            })),
+          }
           : undefined,
       },
       include: {
@@ -89,10 +88,10 @@ export class PurchaseExpenseService {
         ...categoryData,
         suppliers: supplierIds
           ? {
-              create: supplierIds.map((supplierId) => ({
-                supplierId,
-              })),
-            }
+            create: supplierIds.map((supplierId) => ({
+              supplierId,
+            })),
+          }
           : undefined,
       },
       include: {
@@ -119,12 +118,8 @@ export class PurchaseExpenseService {
     data: ApprovePurchaseRequest,
     userId: string
   ): Promise<ApprovePurchaseResponse> {
-    console.log('🚀 بدء اعتماد الفاتورة - البيانات المستلمة:', {
-      purchaseId: data.purchaseId,
-      expenses: data.expenses,
-      userId
-    });
-    
+
+
     const { purchaseId, expenses } = data;
 
     // التحقق من وجود الفاتورة
@@ -145,35 +140,26 @@ export class PurchaseExpenseService {
       throw new Error('فاتورة المشتريات غير موجودة');
     }
 
-    console.log('✅ تم العثور على الفاتورة:', {
-      id: purchase.id,
-      isApproved: purchase.isApproved,
-      total: purchase.total,
-      supplier: purchase.supplier?.name
-    });
+
 
     // إذا كانت الفاتورة معتمدة بالفعل، نضيف المصروفات فقط بدون إعادة اعتماد
     if (purchase.isApproved) {
-      console.log('ℹ️ الفاتورة معتمدة بالفعل - إضافة مصروفات إضافية فقط - ID:', purchaseId);
-      
+
+
       // التحقق من وجود مصروفات للإضافة
       if (expenses.length === 0) {
         throw new Error('لا توجد مصروفات للإضافة');
       }
-      
-      console.log('📋 المصروفات المطلوب إضافتها:', expenses);
-      
+
+
+
       // حساب إجمالي المصروفات الجديدة
       const newExpensesTotal = expenses.reduce(
         (sum: number, expense: any) => sum + expense.amount,
         0
       );
 
-      console.log('💰 إضافة مصروفات جديدة:', {
-        expensesCount: expenses.length,
-        newExpensesTotal,
-        expenses: expenses
-      });
+
 
       // إضافة المصروفات الجديدة فقط
       const result = await prisma.$transaction(async (tx) => {
@@ -203,29 +189,22 @@ export class PurchaseExpenseService {
 
         // 3. إنشاء إيصالات دفع للمصروفات الجديدة فقط
         const paymentReceipts: SupplierPayable[] = [];
-        
-        console.log('🧾 بدء إنشاء إيصالات الدفع للمصروفات الجديدة...');
-        
+
+
+
         for (const expense of expenses) {
-          console.log('🔍 معالجة مصروف:', {
-            categoryId: expense.categoryId,
-            supplierId: expense.supplierId,
-            amount: expense.amount
-          });
-          
+
+
           if (expense.supplierId && expense.amount > 0) {
             const supplier = await tx.supplier.findUnique({
               where: { id: expense.supplierId },
             });
-            
+
             const category = await tx.purchaseExpenseCategory.findUnique({
               where: { id: expense.categoryId },
             });
 
-            console.log('📋 بيانات المورد والفئة:', {
-              supplier: supplier?.name,
-              category: category?.name
-            });
+
 
             if (supplier) {
               const receiptData = {
@@ -238,7 +217,7 @@ export class PurchaseExpenseService {
                 status: 'PENDING' as const,
               };
 
-              console.log('💳 إنشاء إيصال دفع:', receiptData);
+
 
               const createdReceipt = await tx.supplierPaymentReceipt.create({
                 data: receiptData,
@@ -247,7 +226,7 @@ export class PurchaseExpenseService {
               // إنشاء قيد في حساب المورد (خارج transaction)
               // سيتم إنشاؤه بعد انتهاء transaction
 
-              console.log('✅ تم إنشاء إيصال دفع وقيد حساب المورد بنجاح - ID:', createdReceipt.id);
+
 
               paymentReceipts.push({
                 id: createdReceipt.id,
@@ -259,23 +238,14 @@ export class PurchaseExpenseService {
                 categoryName: category?.name,
               });
             } else {
-              console.log('⚠️ لم يتم العثور على مورد للمصروف - ID:', expense.supplierId);
+
             }
           } else {
-            console.log('⚠️ مصروف بدون مورد أو مبلغ صفر:', {
-              supplierId: expense.supplierId,
-              amount: expense.amount
-            });
+
           }
         }
 
-        console.log('🎯 ملخص إيصالات الدفع المنشأة:', {
-          totalReceipts: paymentReceipts.length,
-          receipts: paymentReceipts.map(r => ({
-            supplier: r.supplierName,
-            amount: r.amount
-          }))
-        });
+
 
         return {
           purchase: updatedPurchase,
@@ -295,18 +265,13 @@ export class PurchaseExpenseService {
             description: receipt.description,
             transactionDate: new Date(),
           });
-          console.log(`✅ تم إنشاء قيد حساب المورد: ${receipt.supplierName} - ${receipt.amount}`);
+
         } catch (error) {
           console.error(`❌ خطأ في إنشاء قيد حساب المورد: ${receipt.supplierName}`, error);
         }
       }
 
-      console.log('🎉 تمت إضافة المصروفات بنجاح:', {
-        purchaseId: result.purchase.id,
-        newTotalExpenses: Number(result.purchase.totalExpenses),
-        newFinalTotal: Number(result.purchase.finalTotal),
-        paymentReceiptsCreated: result.paymentReceipts.length
-      });
+
 
       return {
         success: true,
@@ -328,16 +293,12 @@ export class PurchaseExpenseService {
       0
     );
 
-    console.log('💰 حساب المصروفات:', {
-      expensesCount: expenses.length,
-      totalExpenses,
-      purchaseTotal: Number(purchase.total)
-    });
+
 
     // حساب الإجمالي النهائي
     const finalTotal = Number(purchase.total) + totalExpenses;
-    
-    console.log('📊 الإجمالي النهائي:', finalTotal);
+
+
 
     // حساب نصيب كل وحدة من المصروفات
     const totalQuantity = purchase.lines.reduce(
@@ -397,7 +358,7 @@ export class PurchaseExpenseService {
       );
 
       // 4. تحديث المخزون للمنتجات (فقط عند الاعتماد)
-      console.log('📦 بدء تحديث المخزون للمنتجات...');
+
       for (const line of purchase.lines) {
         await tx.stock.upsert({
           where: {
@@ -417,17 +378,13 @@ export class PurchaseExpenseService {
             boxes: line.qty,
           },
         });
-        
-        console.log('✅ تم تحديث مخزون المنتج:', {
-          productId: line.productId,
-          productName: line.product.name,
-          quantity: Number(line.qty)
-        });
+
+
       }
 
       // 5. إنشاء إيصالات الدفع للموردين
       const paymentReceipts: SupplierPayable[] = [];
-      console.log('🎯 بدء إنشاء إيصالات الدفع للفاتورة:', purchaseId);
+
 
       // إيصال دفع للمورد الرئيسي (دائماً إذا كان هناك مورد)
       if (purchase.supplier) {
@@ -441,11 +398,11 @@ export class PurchaseExpenseService {
             status: 'PENDING',
           },
         });
-        
+
         // سيتم إنشاء قيد في حساب المورد بعد انتهاء transaction
-        
-        console.log('✅ تم إنشاء إيصال الفاتورة الرئيسية وقيد حساب المورد:', purchase.supplier.name);
-        
+
+
+
         paymentReceipts.push({
           id: mainReceipt.id,
           supplierId: purchase.supplier.id,
@@ -463,7 +420,7 @@ export class PurchaseExpenseService {
           const supplier = await tx.supplier.findUnique({
             where: { id: expense.supplierId },
           });
-          
+
           const category = await tx.purchaseExpenseCategory.findUnique({
             where: { id: expense.categoryId },
           });
@@ -484,7 +441,7 @@ export class PurchaseExpenseService {
 
             // سيتم إنشاء قيد في حساب المورد بعد انتهاء transaction
 
-            console.log('✅ تم إنشاء إيصال مصروف وقيد حساب المورد:', supplier.name, 'المبلغ:', expense.amount);
+
 
             paymentReceipts.push({
               id: expenseReceipt.id,
@@ -499,7 +456,7 @@ export class PurchaseExpenseService {
         }
       }
 
-      console.log('🎉 تم إنشاء', paymentReceipts.length, 'إيصال دفع إجمالي');
+
 
       return {
         purchase: updatedPurchase,
@@ -509,7 +466,7 @@ export class PurchaseExpenseService {
     });
 
     // إنشاء قيود حساب المورد بعد انتهاء transaction
-    console.log('📊 إنشاء قيود حساب الموردين...');
+
     for (const receipt of result.paymentReceipts) {
       try {
         await SupplierAccountService.createAccountEntry({
@@ -521,7 +478,7 @@ export class PurchaseExpenseService {
           description: receipt.description,
           transactionDate: new Date(),
         });
-        console.log(`✅ تم إنشاء قيد حساب المورد: ${receipt.supplierName} - ${receipt.amount} دينار`);
+
       } catch (error) {
         console.error(`❌ خطأ في إنشاء قيد حساب المورد: ${receipt.supplierName}`, error);
       }
@@ -574,16 +531,16 @@ export class PurchaseExpenseService {
 
     // التحقق من وجود إيصالات دفع مرتبطة بهذا المصروف
     // نبحث عن الإيصالات التي تطابق المورد والفاتورة والمبلغ والنوع
-    const relatedPayments = expense.supplierId 
+    const relatedPayments = expense.supplierId
       ? await prisma.supplierPaymentReceipt.findMany({
-          where: {
-            supplierId: expense.supplierId,
-            purchaseId: expense.purchaseId,
-            type: 'EXPENSE',
-            amount: expense.amount,
-            categoryName: expense.category?.name,
-          },
-        })
+        where: {
+          supplierId: expense.supplierId,
+          purchaseId: expense.purchaseId,
+          type: 'EXPENSE',
+          amount: expense.amount,
+          categoryName: expense.category?.name,
+        },
+      })
       : [];
 
     // حذف المصروف وإيصالات الدفع المرتبطة به في transaction

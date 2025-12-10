@@ -1,10 +1,8 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../models/prismaClient';
 import { AuthRequest } from '../middleware/auth';
-
-const prisma = new PrismaClient();
 
 // تسجيل الدخول
 export const login = async (req: Request, res: Response): Promise<void> => {
@@ -28,7 +26,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         Role: true
       }
     });
-    
+
     console.log('User found:', user ? 'Yes' : 'No');
     if (user) {
       console.log('User details:', {
@@ -70,10 +68,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     console.log('Checking password for user:', username);
     console.log('Stored hash:', user.Password);
     console.log('Input password:', password);
-    
+
     let isPasswordValid = await bcrypt.compare(password, user.Password);
     console.log('Password valid:', isPasswordValid);
-    
+
     // إصلاح مؤقت: إذا كانت كلمة المرور admin123 ولم تتطابق، قم بتحديث الـ hash
     if (!isPasswordValid && password === 'admin123') {
       console.log('Updating password hash for admin user');
@@ -112,7 +110,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     // إنشاء JWT token
     const tokenExpiry = rememberMe ? '30d' : '24h';
     const token = jwt.sign(
-      { 
+      {
         userId: user.UserID,
         companyId: user.CompanyID,
         roleId: user.RoleID,
@@ -326,7 +324,7 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
 
     // إلغاء تفعيل جميع الجلسات الأخرى
     await prisma.userSessions.updateMany({
-      where: { 
+      where: {
         UserID: req.user.id,
         IsActive: true
       },

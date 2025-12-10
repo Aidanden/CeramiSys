@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../models/prismaClient';
 import SupplierAccountLedgerService from './SupplierAccountService';
-
-const prisma = new PrismaClient();
 
 export class PaymentReceiptService {
   // الحصول على جميع إيصالات الدفع
@@ -131,8 +129,8 @@ export class PaymentReceiptService {
           (receipt.type === 'RETURN'
             ? `مرتجع للمورد رقم ${receipt.id}`
             : receipt.type === 'EXPENSE'
-            ? `مصروف على المورد رقم ${receipt.id}`
-            : `فاتورة مشتريات للمورد رقم ${receipt.id}`),
+              ? `مصروف على المورد رقم ${receipt.id}`
+              : `فاتورة مشتريات للمورد رقم ${receipt.id}`),
         transactionDate: receipt.createdAt,
       });
     }
@@ -173,8 +171,8 @@ export class PaymentReceiptService {
           (receipt.type === 'RETURN'
             ? `مرتجع للمورد رقم ${receipt.id}`
             : receipt.type === 'EXPENSE'
-            ? `مصروف على المورد رقم ${receipt.id}`
-            : `فاتورة مشتريات للمورد رقم ${receipt.id}`),
+              ? `مصروف على المورد رقم ${receipt.id}`
+              : `فاتورة مشتريات للمورد رقم ${receipt.id}`),
         transactionDate: receipt.createdAt,
       });
     }

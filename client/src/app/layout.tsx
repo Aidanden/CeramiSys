@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import "./globals.css";
 import "../styles/print.css";
 import DashboardWrapper from "./dashboardWrapper";
@@ -9,20 +9,22 @@ import { SessionTimeoutProvider } from "@/components/SessionTimeoutProvider";
 import { ToastProvider } from "@/components/ui/Toast";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
-const inter = Inter({ 
-  subsets: ["latin"],
-  variable: "--font-inter",
+const tajawal = localFont({
+  src: "./fonts/Tajawal-Regular.ttf",
+  variable: "--font-tajawal",
+  display: "swap",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+};
 
 export const metadata: Metadata = {
   title: "نظام إدارة السيراميك - CeramiSys",
   description: "نظام إدارة شامل لشركات السيراميك والبورسلين",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
 };
 
 export default function RootLayout({
@@ -32,7 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl">
-      <body className={`${inter.variable} antialiased`}>
+      <body className={`${tajawal.variable} antialiased`}>
         <StoreProvider>
           <ThemeProvider>
             <AuthProvider>

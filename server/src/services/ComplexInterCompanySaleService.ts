@@ -12,7 +12,7 @@
  *    - إنشاء فاتورة بيع للعميل من الإمارات (بهامش ربح)
  */
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../models/prismaClient';
 
 export interface ComplexInterCompanySaleLine {
   productId: number;
@@ -57,11 +57,7 @@ export interface ComplexInterCompanySaleResult {
 }
 
 export class ComplexInterCompanySaleService {
-  private prisma: PrismaClient;
-
-  constructor() {
-    this.prisma = new PrismaClient();
-  }
+  private prisma = prisma; // Use singleton
 
   /**
    * إنشاء عملية بيع معقدة بين الشركات
@@ -73,13 +69,8 @@ export class ComplexInterCompanySaleService {
   ): Promise<ComplexInterCompanySaleResult> {
     try {
       // التحقق من الصلاحيات - مؤقتاً معطل للاختبار
-      console.log('Authorization Debug (DISABLED FOR TESTING):', {
-        isSystemUser,
-        userCompanyId,
-        branchCompanyId: data.branchCompanyId,
-        parentCompanyId: data.parentCompanyId
-      });
-      
+
+
       // تم تعطيل التحقق من الصلاحيات مؤقتاً للاختبار
       // if (!isSystemUser) {
       //   // للمستخدمين العاديين: التحقق من أن الشركة الفرعية هي شركة المستخدم
@@ -87,7 +78,7 @@ export class ComplexInterCompanySaleService {
       //     throw new Error('غير مصرح لك بإنشاء عملية بيع لهذه الشركة');
       //   }
       // } else {
-      //   console.log('System User detected, skipping authorization check');
+
       // }
 
       // التحقق من وجود الشركات
@@ -106,11 +97,7 @@ export class ComplexInterCompanySaleService {
 
       // التحقق من أن الشركة الفرعية تابعة للشركة الأم
       if (branchCompany.parentId !== data.parentCompanyId) {
-        console.log('Company relationship check failed:', {
-          branchCompanyId: data.branchCompanyId,
-          branchCompanyParentId: branchCompany.parentId,
-          parentCompanyId: data.parentCompanyId
-        });
+
         throw new Error('الشركة الأم غير صحيحة');
       }
 
@@ -142,7 +129,7 @@ export class ComplexInterCompanySaleService {
         const customerPaidAmount = 0; // لم يُدفع شيء
         const customerRemainingAmount = customerSaleTotal; // المبلغ المتبقي = المجموع
         const customerIsFullyPaid = false;
-        
+
         const customerSale = await tx.sale.create({
           data: {
             companyId: data.branchCompanyId,
@@ -282,7 +269,7 @@ export class ComplexInterCompanySaleService {
 
       // إحصائيات المبيعات الآجلة للشركة الأم
       const parentSalesStats = await this.prisma.sale.aggregate({
-        where: { 
+        where: {
           companyId: company.parentId || userCompanyId,
           saleType: 'CREDIT'
         },

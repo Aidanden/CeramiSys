@@ -3,7 +3,7 @@
  * خدمة الأنشطة الأخيرة
  */
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../models/prismaClient';
 
 export interface ActivityItem {
   id: string;
@@ -16,11 +16,7 @@ export interface ActivityItem {
 }
 
 export class ActivityService {
-  private prisma: PrismaClient;
-
-  constructor() {
-    this.prisma = new PrismaClient();
-  }
+  private prisma = prisma; // Use singleton
 
   /**
    * تنسيق الأرقام بالطريقة العربية الصحيحة
@@ -28,31 +24,31 @@ export class ActivityService {
   private formatArabicNumber(number: number): string {
     // تحويل الرقم إلى سلسلة نصية
     const numStr = number.toFixed(2);
-    
+
     // تقسيم الرقم إلى أجزاء (قبل وبعد الفاصلة العشرية)
     const parts = numStr.split('.');
     const integerPart = parts[0] || '0';
     const decimalPart = parts[1] || '00';
-    
+
     // إضافة فواصل الآلاف
     const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    
+
     // دمج النتيجة مع الأرقام العربية
     const arabicNumbers = '٠١٢٣٤٥٦٧٨٩';
     const englishNumbers = '0123456789';
-    
+
     let result = formattedInteger;
     if (decimalPart && decimalPart !== '00') {
       result += '.' + decimalPart;
     }
-    
+
     // تحويل الأرقام الإنجليزية إلى عربية
     for (let i = 0; i < englishNumbers.length; i++) {
       const englishChar = englishNumbers.charAt(i);
       const arabicChar = arabicNumbers.charAt(i);
       result = result.replace(new RegExp(englishChar, 'g'), arabicChar);
     }
-    
+
     return result;
   }
 

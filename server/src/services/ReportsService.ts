@@ -1,7 +1,7 @@
-import { PrismaClient } from "@prisma/client";
-import { 
-  SalesReportQuery, 
-  StockReportQuery, 
+import prisma from '../models/prismaClient';
+import {
+  SalesReportQuery,
+  StockReportQuery,
   CustomerReportQuery,
   TopProductsReportQuery,
   SupplierReportQuery,
@@ -9,11 +9,7 @@ import {
 } from "../dto/reportsDto";
 
 export class ReportsService {
-  private prisma: PrismaClient;
-
-  constructor() {
-    this.prisma = new PrismaClient();
-  }
+  private prisma = prisma; // Use singleton
 
   /**
    * تقرير المبيعات
@@ -102,17 +98,17 @@ export class ReportsService {
       where,
       include: {
         company: { select: { id: true, name: true, code: true } },
-        product: { 
-          select: { 
-            id: true, 
-            sku: true, 
-            name: true, 
-            unit: true, 
+        product: {
+          select: {
+            id: true,
+            sku: true,
+            name: true,
+            unit: true,
             unitsPerBox: true,
             prices: {
               select: { companyId: true, sellPrice: true }
             }
-          } 
+          }
         }
       },
       orderBy: { boxes: "desc" }
@@ -143,7 +139,7 @@ export class ReportsService {
             sellPrice,
           },
           boxes: Number(stock.boxes),
-          totalUnits: stock.product.unitsPerBox 
+          totalUnits: stock.product.unitsPerBox
             ? Number(stock.boxes) * Number(stock.product.unitsPerBox)
             : Number(stock.boxes),
           updatedAt: stock.updatedAt,
@@ -189,7 +185,7 @@ export class ReportsService {
       customers: customers.map(customer => {
         const totalPurchases = customer.sales.reduce((sum: number, sale: any) => sum + Number(sale.total), 0);
         const totalSales = customer.sales.length;
-        
+
         return {
           id: customer.id,
           name: customer.name,
@@ -198,7 +194,7 @@ export class ReportsService {
           totalPurchases,
           totalSales,
           averagePurchase: totalSales > 0 ? totalPurchases / totalSales : 0,
-          lastPurchase: customer.sales.length > 0 
+          lastPurchase: customer.sales.length > 0
             ? customer.sales.sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime())[0]?.createdAt || null
             : null,
         };
@@ -206,7 +202,7 @@ export class ReportsService {
       stats: {
         totalCustomers: customers.length,
         activeCustomers: customers.filter(c => c.sales.length > 0).length,
-        totalRevenue: customers.reduce((sum: number, c: any) => 
+        totalRevenue: customers.reduce((sum: number, c: any) =>
           sum + c.sales.reduce((s: number, sale: any) => s + Number(sale.total), 0), 0
         ),
       }
@@ -255,7 +251,7 @@ export class ReportsService {
 
     saleLines.forEach(line => {
       const productId = line.productId;
-      
+
       if (!productData[productId]) {
         productData[productId] = {
           product: line.product,
@@ -328,8 +324,8 @@ export class ReportsService {
       const totalPaid = supplier.accountEntries
         .filter((a: any) => a.transactionType === 'DEBIT')
         .reduce((sum: number, a: any) => sum + Number(a.amount), 0);
-      const balance = supplier.accountEntries.length > 0 
-        ? Number(supplier.accountEntries[0].balance) 
+      const balance = supplier.accountEntries.length > 0
+        ? Number(supplier.accountEntries[0].balance)
         : 0;
 
       return {

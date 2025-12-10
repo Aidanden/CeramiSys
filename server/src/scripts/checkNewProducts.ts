@@ -7,7 +7,7 @@ async function checkNewProducts() {
     // جلب جميع المنتجات مع الأسعار والمخزون
     const products = await prisma.product.findMany({
       include: {
-        companyProductPrices: {
+        prices: {
           include: {
             company: true
           }
@@ -35,8 +35,8 @@ async function checkNewProducts() {
       console.log(`   الشركة المنشئة: ${product.createdByCompanyId}`);
       
       // عرض الأسعار
-      if (product.companyProductPrices.length > 0) {
-        product.companyProductPrices.forEach((price: any) => {
+      if (product.prices && product.prices.length > 0) {
+        product.prices.forEach((price: any) => {
           console.log(`   💰 السعر (${price.company.name}): ${price.sellPrice} د.ل`);
         });
       } else {
@@ -44,7 +44,7 @@ async function checkNewProducts() {
       }
       
       // عرض المخزون
-      if (product.stocks.length > 0) {
+      if (product.stocks && product.stocks.length > 0) {
         product.stocks.forEach((stock: any) => {
           console.log(`   📦 المخزون (${stock.company.name}): ${stock.boxes} صندوق`);
         });
@@ -57,8 +57,8 @@ async function checkNewProducts() {
     
     // إحصائيات عامة
     const totalProducts = products.length;
-    const productsWithPrices = products.filter((p: any) => p.companyProductPrices.length > 0).length;
-    const productsWithStock = products.filter((p: any) => p.stocks.length > 0).length;
+    const productsWithPrices = products.filter((p: any) => p.prices && p.prices.length > 0).length;
+    const productsWithStock = products.filter((p: any) => p.stocks && p.stocks.length > 0).length;
     const company1Products = products.filter(p => p.createdByCompanyId === 1).length;
     const company2Products = products.filter(p => p.createdByCompanyId === 2).length;
     

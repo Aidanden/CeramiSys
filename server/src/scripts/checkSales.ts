@@ -2,9 +2,7 @@
  * Script للتحقق من الفواتير الموجودة
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../models/prismaClient';
 
 async function checkSales() {
   try {
@@ -56,7 +54,7 @@ async function checkSales() {
     // فواتير اليوم
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const todaySales = allCashSales.filter(s => new Date(s.createdAt) >= today);
     console.log(`\n📅 فواتير اليوم: ${todaySales.length}`);
 

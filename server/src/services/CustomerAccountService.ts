@@ -1,6 +1,5 @@
-import { PrismaClient, CustomerTransactionType, CustomerReferenceType } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { CustomerTransactionType, CustomerReferenceType } from '@prisma/client';
+import prisma from '../models/prismaClient';
 
 interface CreateCustomerAccountEntryInput {
   customerId: number;
@@ -187,7 +186,7 @@ class CustomerAccountService {
 
     return customers.map(customer => {
       const currentBalance = customer.accountEntries.length > 0 && customer.accountEntries[0]
-        ? Number(customer.accountEntries[0].balance) 
+        ? Number(customer.accountEntries[0].balance)
         : 0;
 
       return {

@@ -3,15 +3,11 @@
  * خدمة المبيعات
  */
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../models/prismaClient';
 import { CreateSaleDto, UpdateSaleDto, GetSalesQueryDto, CreateCustomerDto, UpdateCustomerDto, GetCustomersQueryDto } from '../dto/salesDto';
 
 export class SalesService {
-  private prisma: PrismaClient;
-
-  constructor() {
-    this.prisma = new PrismaClient();
-  }
+  private prisma = prisma; // Use singleton instead of new instance
 
   /**
    * إنشاء فاتورة مبيعات جديدة (كفاتورة مبدئية)
@@ -60,7 +56,7 @@ export class SalesService {
 
       // توليد رقم الفاتورة تلقائياً
       const invoiceNumber = await this.generateInvoiceNumber(userCompanyId);
-      console.log('🧾 رقم الفاتورة المولد:', invoiceNumber);
+
 
       // حساب المجموع الإجمالي
       let total = 0;
@@ -114,7 +110,7 @@ export class SalesService {
 
       // ملاحظة: لا يتم خصم المخزون هنا لأن الفاتورة مبدئية
       // سيتم خصم المخزون عند اعتماد الفاتورة من المحاسب
-      console.log('📝 تم إنشاء فاتورة مبدئية بدون خصم مخزون');
+
 
       return {
         id: sale.id,
@@ -162,7 +158,7 @@ export class SalesService {
       // إذا تم تحديد companyId في الـ query، استخدمه (للمحاسب: فلتر حسب الشركة)
       if (query.companyId) {
         where.companyId = query.companyId;
-        console.log('🔍 فلترة الفواتير حسب الشركة:', query.companyId);
+
       }
 
       if (query.search) {
@@ -204,10 +200,10 @@ export class SalesService {
       if (query.todayOnly) {
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
-        
+
         const endOfDay = new Date();
         endOfDay.setHours(23, 59, 59, 999);
-        
+
         where.createdAt = {
           gte: startOfDay,
           lte: endOfDay
@@ -256,7 +252,7 @@ export class SalesService {
       // Debug: عرض الشركات في النتائج
       if (query.companyId) {
         const companies = [...new Set(sales.map(s => s.companyId))];
-        console.log(`✅ النتيجة: ${sales.length} فاتورة، الشركات: [${companies.join(', ')}]`);
+
       }
 
       const pages = Math.ceil(total / limit);
@@ -448,36 +444,49 @@ export class SalesService {
             unitsPerBox: true
           }
         });
-        
+
+        // 🟢 تحسين: تجميع طلبات تحديث المخزون (إرجاع المخزون)
+        // لا يمكننا تجميع التحديثات في استعلام واحد، لكن يمكننا تسريعها عبر transaction
+        const stockUpdates = [];
+
         for (const line of existingSale.lines) {
           const oldProduct = oldProducts.find(p => p.id === line.productId);
           if (!oldProduct) continue;
-          
+
           // حساب الصناديق المطلوبة:
           // للأصناف بوحدة "صندوق": line.qty = عدد الصناديق مباشرة
           // للأصناف الأخرى: line.qty = الكمية بالوحدة
           let boxesToIncrement = Number(line.qty);
-          
-          // استخدام upsert لضمان إنشاء السجل إذا لم يكن موجوداً
-          await this.prisma.stock.upsert({
-            where: {
-              companyId_productId: {
+
+          // إضافة عملية التحديث للقائمة
+          stockUpdates.push(
+            this.prisma.stock.upsert({
+              where: {
+                companyId_productId: {
+                  companyId: userCompanyId,
+                  productId: line.productId
+                }
+              },
+              update: {
+                boxes: {
+                  increment: boxesToIncrement
+                }
+              },
+              create: {
                 companyId: userCompanyId,
-                productId: line.productId
+                productId: line.productId,
+                boxes: boxesToIncrement
               }
-            },
-            update: {
-              boxes: {
-                increment: boxesToIncrement
-              }
-            },
-            create: {
-              companyId: userCompanyId,
-              productId: line.productId,
-              boxes: boxesToIncrement
-            }
-          });
+            })
+          );
         }
+
+        // تنفيذ جميع التحديثات دفعة واحدة
+        if (stockUpdates.length > 0) {
+          await this.prisma.$transaction(stockUpdates);
+        }
+
+
 
         // التحقق من توفر المخزون للبنود الجديدة
         const productIds = data.lines.map(line => line.productId);
@@ -498,41 +507,41 @@ export class SalesService {
           if (!product) continue;
 
           // للـ System User: نبحث عن المخزون في الشركة المحددة
-          const stock = isSystemUser 
+          const stock = isSystemUser
             ? product.stocks.find(s => s.companyId === userCompanyId)
             : product.stocks[0];
-          
+
           // حساب الصناديق المطلوبة:
           let requiredBoxes = line.qty;
           let actualMetersToSell = line.qty;
-          
+
           if (product.unit === 'صندوق' && product.unitsPerBox && Number(product.unitsPerBox) > 0) {
             // البيع بالمتر المربع: line.qty = عدد الأمتار المطلوبة
             const requestedMeters = line.qty;
             const unitsPerBox = Number(product.unitsPerBox);
-            
+
             // حساب عدد الصناديق (التقريب للأعلى)
             requiredBoxes = Math.ceil(requestedMeters / unitsPerBox);
-            
+
             // حساب الأمتار الفعلية (الصناديق الكاملة × الوحدات في الصندوق)
             actualMetersToSell = requiredBoxes * unitsPerBox;
           }
-          
+
           if (!stock || Number(stock.boxes) < requiredBoxes) {
             const availableBoxes = Number(stock?.boxes || 0);
             let availableUnits = '';
-            
+
             if (product.unit === 'صندوق' && product.unitsPerBox) {
               const availableMeters = availableBoxes * Number(product.unitsPerBox);
               availableUnits = `${availableMeters.toFixed(2)} ${product.unit || 'متر مربع'} (${availableBoxes} صندوق)`;
             } else {
               availableUnits = `${availableBoxes} صندوق`;
             }
-            
+
             const requestedUnits = product.unit === 'صندوق' && product.unitsPerBox
               ? `${actualMetersToSell.toFixed(2)} ${product.unit || 'متر مربع'} (${requiredBoxes} صندوق)`
               : `${requiredBoxes} صندوق`;
-            
+
             throw new Error(`المخزون غير كافي للصنف: ${product.name}. المتوفر: ${availableUnits}، المطلوب: ${requestedUnits}`);
           }
         }
@@ -596,6 +605,7 @@ export class SalesService {
       // تحديث المخزون للبنود الجديدة
       if (data.lines) {
         // الحصول على بيانات الأصناف للبنود الجديدة
+        // الحصول على بيانات الأصناف للبنود الجديدة مع المخزون
         const newProductIds = data.lines.map(line => line.productId);
         const newProducts = await this.prisma.product.findMany({
           where: {
@@ -607,53 +617,71 @@ export class SalesService {
             unitsPerBox: true
           }
         });
-        
+
+        // 🟢 تحسين: جلب المخزون الحالي دفعة واحدة لتجنب N+1
+        const stockKeys = data.lines.map(line => ({
+          companyId: userCompanyId,
+          productId: line.productId
+        }));
+
+        const existingStocks = await this.prisma.stock.findMany({
+          where: {
+            OR: stockKeys
+          }
+        });
+
+        // تحويل المخزون إلى Map لسهولة الوصول
+        const stocksMap = new Map();
+        existingStocks.forEach(stock => {
+          stocksMap.set(`${stock.companyId}-${stock.productId}`, stock);
+        });
+
+        const newStockUpdates = [];
+
         for (const line of data.lines) {
           const product = newProducts.find((p: any) => p.id === line.productId);
           if (!product) continue;
-          
-          // حساب الصناديق المطلوبة:
-          // للأصناف بوحدة "صندوق": line.qty = عدد الصناديق مباشرة
-          // للأصناف الأخرى: line.qty = الكمية بالوحدة
+
           let boxesToDecrement = Number(line.qty);
-          
-          // الحصول على المخزون الحالي
-          const currentStock = await this.prisma.stock.findUnique({
-            where: {
-              companyId_productId: {
-                companyId: userCompanyId,
-                productId: line.productId
-              }
-            }
-          });
-          
+
+          // الحصول على المخزون الحالي من Map المحملة مسبقاً
+          const stockKey = `${userCompanyId}-${line.productId}`;
+          const currentStock = stocksMap.get(stockKey);
+
           const currentBoxes = currentStock ? Number(currentStock.boxes) : 0;
           const newBoxes = Math.max(0, currentBoxes - boxesToDecrement);
-          
-          // استخدام upsert لضمان التعامل مع الحالة حتى لو لم يكن السجل موجوداً
-          await this.prisma.stock.upsert({
-            where: {
-              companyId_productId: {
+
+          // إضافة للتحديثات المجمعة
+          newStockUpdates.push(
+            this.prisma.stock.upsert({
+              where: {
+                companyId_productId: {
+                  companyId: userCompanyId,
+                  productId: line.productId
+                }
+              },
+              update: {
+                boxes: newBoxes
+              },
+              create: {
                 companyId: userCompanyId,
-                productId: line.productId
+                productId: line.productId,
+                boxes: 0 // إذا لم يكن موجوداً، نبدأ من 0
               }
-            },
-            update: {
-              boxes: newBoxes
-            },
-            create: {
-              companyId: userCompanyId,
-              productId: line.productId,
-              boxes: 0 // إذا لم يكن موجوداً، نبدأ من 0
-            }
-          });
+            })
+          );
+        }
+
+        // تنفيذ التحديثات دفعة واحدة
+        if (newStockUpdates.length > 0) {
+          await this.prisma.$transaction(newStockUpdates);
         }
       }
 
       // 🔄 تحديث فاتورة التقازي وفاتورة المشتريات المرتبطة إذا كانت موجودة
       if (data.lines && existingSale.relatedParentSaleId) {
-        console.log('🔄 تحديث فاتورة التقازي وفاتورة المشتريات...');
-        
+
+
         // جلب فاتورة التقازي القديمة للحصول على الأسعار الأصلية (سعر الجملة الثابت)
         const oldParentSale = await this.prisma.sale.findUnique({
           where: { id: existingSale.relatedParentSaleId },
@@ -672,6 +700,21 @@ export class SalesService {
             where: { saleId: existingSale.relatedParentSaleId }
           });
 
+          // 🟢 تحسين: جلب أسعار المنتجات (الجملة) دفعة واحدة لتجنب N+1
+          // نحتاج لسعر البيع للشركة الأم (ID: 1)
+          const productIdsToCheck = parentCompanyLines.map(l => l.productId);
+          const pricesMap = new Map();
+
+          // جلب سجلات الأسعار
+          const priceRecords = await this.prisma.companyProductPrice.findMany({
+            where: {
+              companyId: 1, // التقازي
+              productId: { in: productIdsToCheck }
+            }
+          });
+
+          priceRecords.forEach(p => pricesMap.set(p.productId, Number(p.sellPrice)));
+
           // حساب المجموع الجديد لفاتورة التقازي (الكمية فقط، السعر ثابت)
           let parentSaleTotal = 0;
           const parentSaleNewLines = [];
@@ -683,23 +726,16 @@ export class SalesService {
             // ✅ استخدام السعر الأصلي من فاتورة التقازي القديمة (سعر الجملة الثابت)
             const oldLine = oldParentSale.lines.find(l => l.productId === line.productId);
             let originalPrice;
-            
+
             if (oldLine) {
               // الصنف موجود في الفاتورة القديمة → استخدم سعره القديم
               originalPrice = Number(oldLine.unitPrice);
             } else {
-              // صنف جديد → احصل على سعر الجملة من CompanyProductPrice للتقازي (ID=1)
-              const priceRecord = await this.prisma.companyProductPrice.findUnique({
-                where: {
-                  companyId_productId: {
-                    companyId: 1, // التقازي
-                    productId: line.productId
-                  }
-                }
-              });
-              originalPrice = priceRecord ? Number(priceRecord.sellPrice) : line.unitPrice;
+              // صنف جديد → احصل على سعر الجملة من Map المحمل مسبقاً
+              const priceFromMap = pricesMap.get(line.productId);
+              originalPrice = priceFromMap !== undefined ? priceFromMap : line.unitPrice;
             }
-            
+
             // ✅ الكمية الجديدة × السعر الأصلي (الجملة)
             const lineTotal = line.qty * originalPrice;
             parentSaleTotal += lineTotal;
@@ -723,12 +759,12 @@ export class SalesService {
               }
             }
           });
-          console.log('✅ تم تحديث فاتورة التقازي بنجاح (الكمية فقط، السعر ثابت)');
+
 
           // 🔄 تحديث فاتورة المشتريات أيضاً
           if (existingSale.relatedBranchPurchaseId) {
-            console.log('🔄 تحديث فاتورة المشتريات المرتبطة...');
-            
+
+
             // حذف البنود القديمة من فاتورة المشتريات
             await this.prisma.purchaseLine.deleteMany({
               where: { purchaseId: existingSale.relatedBranchPurchaseId }
@@ -750,10 +786,10 @@ export class SalesService {
                 }
               }
             });
-            console.log('✅ تم تحديث فاتورة المشتريات بنجاح');
+
           }
         } else {
-          console.log('⚠️ لا توجد أصناف تقازي في التعديل الجديد');
+
         }
       }
 
@@ -831,15 +867,15 @@ export class SalesService {
         );
       }
 
-      console.log('🗑️ بدء حذف الفاتورة وجميع الفواتير المرتبطة...');
+
 
       // 1. حذف الفواتير المرتبطة (Cascade Delete) إذا كانت فاتورة معقدة
       if (existingSale.relatedParentSaleId || existingSale.relatedBranchPurchaseId || existingSale.relatedPurchaseFromParentId) {
-        console.log('🔗 فاتورة معقدة - سيتم حذف الفواتير المرتبطة');
+
 
         // حذف فاتورة الشركة الأم
         if (existingSale.relatedParentSaleId) {
-          console.log(`📄 حذف فاتورة الشركة الأم (ID: ${existingSale.relatedParentSaleId})...`);
+
           const parentSale = await this.prisma.sale.findUnique({
             where: { id: existingSale.relatedParentSaleId },
             include: { lines: true }
@@ -872,13 +908,13 @@ export class SalesService {
             await this.prisma.saleLine.deleteMany({ where: { saleId: parentSale.id } });
             await this.prisma.salePayment.deleteMany({ where: { saleId: parentSale.id } });
             await this.prisma.sale.delete({ where: { id: parentSale.id } });
-            console.log('✅ تم حذف فاتورة الشركة الأم');
+
           }
         }
 
         // حذف فاتورة مشتريات الشركة التابعة
         if (existingSale.relatedBranchPurchaseId) {
-          console.log(`📄 حذف فاتورة مشتريات الشركة التابعة (ID: ${existingSale.relatedBranchPurchaseId})...`);
+
           const branchPurchase = await this.prisma.purchase.findUnique({
             where: { id: existingSale.relatedBranchPurchaseId },
             include: { lines: true }
@@ -891,13 +927,13 @@ export class SalesService {
             await this.prisma.purchaseLine.deleteMany({ where: { purchaseId: branchPurchase.id } });
             await this.prisma.purchasePayment.deleteMany({ where: { purchaseId: branchPurchase.id } });
             await this.prisma.purchase.delete({ where: { id: branchPurchase.id } });
-            console.log('✅ تم حذف فاتورة مشتريات الشركة التابعة');
+
           }
         }
 
         // حذف سجل PurchaseFromParent
         if (existingSale.relatedPurchaseFromParentId) {
-          console.log(`📄 حذف سجل PurchaseFromParent (ID: ${existingSale.relatedPurchaseFromParentId})...`);
+
           const purchaseFromParent = await this.prisma.purchaseFromParent.findUnique({
             where: { id: existingSale.relatedPurchaseFromParentId }
           });
@@ -907,56 +943,48 @@ export class SalesService {
             await this.prisma.purchaseFromParentLine.deleteMany({ where: { purchaseId: purchaseFromParent.id } });
             await this.prisma.purchaseFromParentReceipt.deleteMany({ where: { purchaseId: purchaseFromParent.id } });
             await this.prisma.purchaseFromParent.delete({ where: { id: purchaseFromParent.id } });
-            console.log('✅ تم حذف سجل PurchaseFromParent');
+
           }
         }
       }
 
       // 2. إرجاع مخزون الفاتورة الأصلية
-      console.log('🔄 بدء إرجاع المخزون للفاتورة الأصلية...');
+
+      // 2. إرجاع مخزون الفاتورة الأصلية
+      const stockUpdates = [];
+
       for (const line of existingSale.lines) {
-        const currentStock = await this.prisma.stock.findUnique({
-          where: {
-            companyId_productId: {
-              companyId: existingSale.companyId,
-              productId: line.productId
-            }
-          }
-        });
-        
+        // حساب الصناديق التي سترجع للمخزون
         const boxesToIncrement = Number(line.qty);
-        
-        console.log('📦 Stock Return:', {
-          productId: line.productId,
-          qtyFromDB: line.qty,
-          boxesToIncrement,
-          currentStockBoxes: currentStock?.boxes ? Number(currentStock.boxes) : 0,
-          afterReturn: currentStock?.boxes ? Number(currentStock.boxes) + boxesToIncrement : boxesToIncrement
-        });
-        
-        // استخدام upsert لضمان إنشاء السجل إذا لم يكن موجوداً
-        await this.prisma.stock.upsert({
-          where: {
-            companyId_productId: {
+
+        // إضافة عملية التحديث للقائمة
+        stockUpdates.push(
+          this.prisma.stock.upsert({
+            where: {
+              companyId_productId: {
+                companyId: existingSale.companyId,
+                productId: line.productId
+              }
+            },
+            update: {
+              boxes: {
+                increment: boxesToIncrement
+              }
+            },
+            create: {
               companyId: existingSale.companyId,
-              productId: line.productId
+              productId: line.productId,
+              boxes: boxesToIncrement
             }
-          },
-          update: {
-            boxes: {
-              increment: boxesToIncrement
-            }
-          },
-          create: {
-            companyId: existingSale.companyId,
-            productId: line.productId,
-            boxes: boxesToIncrement
-          }
-        });
-        
-        console.log(`✅ تم إرجاع ${boxesToIncrement} إلى المخزون للصنف: ${line.productId}`);
+          })
+        );
       }
-      console.log('✅ تم إرجاع المخزون بنجاح');
+
+      // تنفيذ جميع التحديثات دفعة واحدة
+      if (stockUpdates.length > 0) {
+        await this.prisma.$transaction(stockUpdates);
+      }
+
 
       // 3. حذف البنود والإيصالات
       await this.prisma.saleLine.deleteMany({
@@ -972,7 +1000,7 @@ export class SalesService {
         where: { id }
       });
 
-      console.log('✅ تم حذف الفاتورة وجميع الفواتير المرتبطة بنجاح');
+
       return { message: 'تم حذف الفاتورة وجميع الفواتير المرتبطة بنجاح' };
     } catch (error) {
       console.error('خطأ في حذف الفاتورة:', error);
@@ -1032,7 +1060,7 @@ export class SalesService {
         }
       });
 
-      console.log(`✅ تم إصدار إيصال قبض للفاتورة #${saleId} بواسطة ${userName}`);
+
 
       return {
         success: true,
@@ -1176,7 +1204,7 @@ export class SalesService {
       });
 
       // تحويل إلى مصفوفة مرتبة
-      const chartData = Object.values(dailyData).sort((a, b) => 
+      const chartData = Object.values(dailyData).sort((a, b) =>
         new Date(a.date).getTime() - new Date(b.date).getTime()
       );
 
@@ -1212,41 +1240,41 @@ export class SalesService {
       return customer;
     } catch (error: any) {
       console.error('خطأ في إنشاء العميل:', error);
-      
+
       // إذا كانت المشكلة في الـ unique constraint على id
       if (error.code === 'P2002' && error.meta?.target?.includes('id')) {
         // إصلاح الـ sequence في قاعدة البيانات
         try {
-          console.log('🔧 محاولة إصلاح الـ sequence...');
-          
+
+
           // الحصول على أعلى ID موجود
           const lastCustomer = await this.prisma.customer.findFirst({
             orderBy: { id: 'desc' }
           });
-          
+
           const maxId = lastCustomer?.id || 0;
-          console.log(`📊 أعلى ID موجود: ${maxId}`);
-          
+
+
           // إصلاح الـ sequence
           await this.prisma.$executeRawUnsafe(
             `SELECT setval(pg_get_serial_sequence('"Customer"', 'id'), ${maxId}, true);`
           );
-          
-          console.log('✅ تم إصلاح الـ sequence، إعادة المحاولة...');
-          
+
+
+
           // إعادة المحاولة بدون تحديد ID
           const customer = await this.prisma.customer.create({
             data: customerData
           });
-          
-          console.log('✅ تم إنشاء العميل بنجاح بعد إصلاح الـ sequence');
+
+
           return customer;
         } catch (retryError) {
           console.error('❌ فشلت إعادة المحاولة:', retryError);
           throw new Error('فشل في إنشاء العميل. يرجى المحاولة مرة أخرى.');
         }
       }
-      
+
       throw error;
     }
   }
@@ -1398,7 +1426,7 @@ export class SalesService {
       });
 
       let nextNumber = 1;
-      
+
       if (lastSale?.invoiceNumber) {
         // استخراج الرقم من آخر فاتورة
         const lastNumber = parseInt(lastSale.invoiceNumber);
@@ -1421,24 +1449,24 @@ export class SalesService {
    * @param bypassAutoGeneratedCheck - السماح باعتماد الفواتير التلقائية برمجياً (للاستخدام الداخلي فقط)
    */
   async approveSale(
-    id: number, 
+    id: number,
     approvalData: { saleType: 'CASH' | 'CREDIT'; paymentMethod?: 'CASH' | 'BANK' | 'CARD' },
-    userCompanyId: number, 
+    userCompanyId: number,
     approvedBy: string,
     isSystemUser: boolean = false,
     bypassAutoGeneratedCheck: boolean = false
   ) {
     try {
-      console.log(`🔍 محاولة اعتماد الفاتورة #${id}...`);
-      
+
+
       // أولاً: جلب الفاتورة للتحقق من حالتها
       const saleCheck = await this.prisma.sale.findUnique({
         where: { id },
-        select: { 
-          status: true, 
-          companyId: true, 
+        select: {
+          status: true,
+          companyId: true,
           invoiceNumber: true,
-          isAutoGenerated: true 
+          isAutoGenerated: true
         }
       });
 
@@ -1446,7 +1474,7 @@ export class SalesService {
         throw new Error('الفاتورة غير موجودة');
       }
 
-      console.log(`📋 حالة الفاتورة: ${saleCheck.status}, تلقائية: ${saleCheck.isAutoGenerated}`);
+
 
       // التحقق: الفاتورة التلقائية لا يمكن اعتمادها يدوياً (إلا إذا تم تجاوز الفحص)
       if (saleCheck.isAutoGenerated && !bypassAutoGeneratedCheck) {
@@ -1455,7 +1483,7 @@ export class SalesService {
 
       // التحقق: الفاتورة معتمدة بالفعل
       if (saleCheck.status === 'APPROVED') {
-        console.log('⚠️ الفاتورة معتمدة بالفعل، تخطي الاعتماد');
+
         throw new Error('الفاتورة معتمدة بالفعل');
       }
 
@@ -1486,12 +1514,12 @@ export class SalesService {
         throw new Error('الفاتورة غير موجودة أو ليس لديك صلاحية لاعتمادها');
       }
 
-      console.log(`🏢 اعتماد فاتورة للشركة: ${existingSale.company.name} (ID: ${existingSale.companyId})`);
+
 
       // جلب معلومات الشركة الأم إذا كانت الشركة الحالية فرعية
       let parentCompanyId: number | null = null;
       let parentCompanyName = '';
-      
+
       if (existingSale.company.parentId) {
         parentCompanyId = existingSale.company.parentId;
         const parentCompany = await this.prisma.company.findUnique({
@@ -1499,42 +1527,50 @@ export class SalesService {
           select: { name: true }
         });
         parentCompanyName = parentCompany?.name || '';
-        console.log(`   الشركة الأم: ${parentCompanyName} (ID: ${parentCompanyId})`);
+
       }
 
       // التحقق من توفر المخزون قبل الاعتماد
+      // التحقق من توفر المخزون قبل الاعتماد
+      // 🟢 تحسين: جلب جميع المخزونات ذات الصلة دفعة واحدة
+      const stockKeys = existingSale.lines.map(line => {
+        const stockCompanyId = line.isFromParentCompany && parentCompanyId
+          ? parentCompanyId
+          : existingSale.companyId;
+
+        return {
+          companyId: stockCompanyId,
+          productId: line.productId
+        };
+      });
+
+      const stocks = await this.prisma.stock.findMany({
+        where: {
+          OR: stockKeys
+        }
+      });
+
+      const stocksMap = new Map();
+      stocks.forEach(stock => {
+        stocksMap.set(`${stock.companyId}-${stock.productId}`, Number(stock.boxes));
+      });
+
       for (const line of existingSale.lines) {
-        console.log(`📦 التحقق من مخزون: ${line.product.name} (ID: ${line.productId})`);
-        console.log(`   الكمية المطلوبة: ${line.qty} صندوق`);
-        console.log(`   من الشركة الأم؟: ${line.isFromParentCompany ? 'نعم' : 'لا'}`);
-        
         // تحديد من أي شركة سيتم خصم المخزون
-        const stockCompanyId = line.isFromParentCompany && parentCompanyId 
+        const stockCompanyId = line.isFromParentCompany && parentCompanyId
           ? parentCompanyId  // خصم من الشركة الأم
           : existingSale.companyId;  // خصم من الشركة الحالية
-        
+
         const stockCompanyName = line.isFromParentCompany && parentCompanyName
           ? parentCompanyName
           : existingSale.company.name;
-        
-        console.log(`   سيتم الخصم من: ${stockCompanyName} (ID: ${stockCompanyId})`);
-        
-        // جلب المخزون من الشركة المناسبة
-        const stock = await this.prisma.stock.findUnique({
-          where: {
-            companyId_productId: {
-              companyId: stockCompanyId,
-              productId: line.productId
-            }
-          }
-        });
 
+        // التحقق من المخزون باستخدام Map
+        const stockKey = `${stockCompanyId}-${line.productId}`;
+        const availableBoxes = stocksMap.get(stockKey) || 0;
         const requiredBoxes = Number(line.qty);
-        const availableBoxes = Number(stock?.boxes || 0);
-        
-        console.log(`   المتوفر في ${stockCompanyName}: ${availableBoxes} صندوق`);
-        
-        if (!stock || availableBoxes < requiredBoxes) {
+
+        if (availableBoxes < requiredBoxes) {
           throw new Error(`المخزون غير كافي للصنف: ${line.product.name}. المتوفر في ${stockCompanyName}: ${availableBoxes} صندوق، المطلوب: ${requiredBoxes} صندوق`);
         }
       }
@@ -1574,62 +1610,52 @@ export class SalesService {
       });
 
       // خصم المخزون
-      console.log('🔄 بدء خصم المخزون بعد اعتماد الفاتورة...');
+
+      // خصم المخزون
+      const stockDecrementUpdates = [];
+
       for (const line of existingSale.lines) {
         const boxesToDecrement = Number(line.qty);
-        
+
         // تحديد من أي شركة سيتم خصم المخزون (نفس المنطق المستخدم في التحقق)
-        const stockCompanyId = line.isFromParentCompany && parentCompanyId 
+        const stockCompanyId = line.isFromParentCompany && parentCompanyId
           ? parentCompanyId  // خصم من الشركة الأم
           : existingSale.companyId;  // خصم من الشركة الحالية
-        
-        const stockCompanyName = line.isFromParentCompany && parentCompanyName
-          ? parentCompanyName
-          : existingSale.company.name;
-        
-        console.log(`   خصم ${boxesToDecrement} صندوق من ${line.product.name} في ${stockCompanyName}`);
-        
-        // الحصول على المخزون الحالي
-        const currentStock = await this.prisma.stock.findUnique({
-          where: {
-            companyId_productId: {
+
+        // إضافة عملية التحديث للقائمة
+        stockDecrementUpdates.push(
+          this.prisma.stock.upsert({
+            where: {
+              companyId_productId: {
+                companyId: stockCompanyId,
+                productId: line.productId
+              }
+            },
+            update: {
+              boxes: {
+                decrement: boxesToDecrement
+              }
+            },
+            // نظرياً المفروض لا نصل لـ create هنا لأننا تحققنا من التوفر، لكن للأمان
+            create: {
               companyId: stockCompanyId,
-              productId: line.productId
+              productId: line.productId,
+              boxes: -boxesToDecrement
             }
-          }
-        });
-        
-        const currentBoxes = currentStock ? Number(currentStock.boxes) : 0;
-        const newBoxes = Math.max(0, currentBoxes - boxesToDecrement);
-        
-        console.log(`   المخزون قبل الخصم: ${currentBoxes} صندوق، بعد الخصم: ${newBoxes} صندوق`);
-        
-        // استخدام upsert لضمان إنشاء السجل إذا لم يكن موجوداً
-        await this.prisma.stock.upsert({
-          where: {
-            companyId_productId: {
-              companyId: stockCompanyId,
-              productId: line.productId
-            }
-          },
-          update: {
-            boxes: newBoxes
-          },
-          create: {
-            companyId: existingSale.companyId,
-            productId: line.productId,
-            boxes: 0 // إذا لم يكن موجوداً، نبدأ من 0 (تم البيع بالفعل)
-          }
-        });
-        
-        console.log(`✅ تم خصم ${boxesToDecrement} صندوق من المخزون للصنف: ${line.product.name}`);
+          })
+        );
       }
-      console.log('✅ تم خصم المخزون بنجاح');
+
+      // تنفيذ جميع التحديثات دفعة واحدة
+      if (stockDecrementUpdates.length > 0) {
+        await this.prisma.$transaction(stockDecrementUpdates);
+      }
+
 
       // 🔄 إنشاء الفواتير التلقائية (إذا كانت هناك أصناف من الشركة الأم)
       const linesFromParent = existingSale.lines.filter(line => line.isFromParentCompany);
       if (linesFromParent.length > 0 && parentCompanyId) {
-        console.log('\n🔄 إنشاء الفواتير التلقائية للأصناف من الشركة الأم...');
+
         try {
           await this.createAutoGeneratedInvoices(
             existingSale,
@@ -1637,7 +1663,7 @@ export class SalesService {
             parentCompanyId,
             parentCompanyName
           );
-          console.log('✅ تم إنشاء الفواتير التلقائية بنجاح\n');
+
         } catch (error: any) {
           console.error('❌ خطأ في إنشاء الفواتير التلقائية:', error.message);
           // لا نوقف العملية، الفاتورة الأساسية تم اعتمادها بنجاح
@@ -1656,7 +1682,7 @@ export class SalesService {
           description: `فاتورة مبيعات آجلة رقم ${approvedSale.invoiceNumber || approvedSale.id}`,
           transactionDate: new Date()
         });
-        console.log(`✅ تم تسجيل قيد محاسبي (عليه) بمبلغ ${total} دينار في حساب العميل`);
+
       }
 
       return {
@@ -1702,14 +1728,14 @@ export class SalesService {
     parentCompanyId: number,
     parentCompanyName: string
   ) {
-    console.log(`   📋 إنشاء فواتير تلقائية لـ ${linesFromParent.length} صنف من ${parentCompanyName}`);
+
 
     // حساب إجمالي الأصناف من الشركة الأم
-    const parentSaleTotal = linesFromParent.reduce((sum, line) => 
+    const parentSaleTotal = linesFromParent.reduce((sum, line) =>
       sum + (Number(line.qty) * Number(line.parentUnitPrice || 0)), 0
     );
 
-    console.log(`   💰 إجمالي قيمة الأصناف من الشركة الأم: ${parentSaleTotal} دينار`);
+
 
     // 1️⃣ إنشاء أو الحصول على عميل وهمي يمثل الشركة الفرعية
     let branchAsCustomer = await this.prisma.customer.findFirst({
@@ -1726,7 +1752,7 @@ export class SalesService {
           note: `عميل وهمي يمثل ${branchSale.company.name}`
         }
       });
-      console.log(`   ✅ تم إنشاء عميل وهمي: ${branchAsCustomer.name}`);
+
     }
 
     // 2️⃣ إنشاء فاتورة بيع تلقائية من التقازي للإمارات (آجلة دائماً)
@@ -1756,7 +1782,7 @@ export class SalesService {
       }
     });
 
-    console.log(`   ✅ فاتورة بيع تلقائية: ${parentSale.invoiceNumber} (${parentSaleTotal} دينار)`);
+
 
     // 3️⃣ تسجيل قيد محاسبي في حساب العميل (الإمارات كعميل للتقازي)
     const CustomerAccountService = (await import('./CustomerAccountService')).default;
@@ -1770,7 +1796,7 @@ export class SalesService {
       transactionDate: new Date()
     });
 
-    console.log(`   ✅ قيد محاسبي: ${parentSaleTotal} دينار (عليه ${branchSale.company.name})`);
+
 
     // 4️⃣ إنشاء مورد وهمي يمثل الشركة الأم
     let parentAsSupplier = await this.prisma.supplier.findFirst({
@@ -1787,7 +1813,7 @@ export class SalesService {
           note: `مورد وهمي يمثل ${parentCompanyName}`
         }
       });
-      console.log(`   ✅ تم إنشاء مورد وهمي: ${parentAsSupplier.name}`);
+
     }
 
     // 5️⃣ إنشاء فاتورة مشتريات للإمارات من التقازي
@@ -1815,7 +1841,7 @@ export class SalesService {
       }
     });
 
-    console.log(`   ✅ فاتورة مشتريات: ${branchPurchase.invoiceNumber} (${parentSaleTotal} دينار)`);
+
 
     // 6️⃣ ربط الفواتير مع بعضها
     await this.prisma.sale.update({
@@ -1826,6 +1852,6 @@ export class SalesService {
       }
     });
 
-    console.log(`   ✅ تم ربط الفواتير بنجاح`);
+
   }
 }

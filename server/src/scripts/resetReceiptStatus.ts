@@ -3,9 +3,7 @@
  * يستخدم لإنشاء بيانات اختبار
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../models/prismaClient';
 
 async function resetReceiptStatus() {
   try {
@@ -40,7 +38,7 @@ async function resetReceiptStatus() {
 
     // إعادة تعيين نصف الفواتير إلى "معلقة"
     const salesToReset = issuedSales.slice(0, Math.ceil(issuedSales.length / 2));
-    
+
     console.log(`\n🔄 سيتم إعادة تعيين ${salesToReset.length} فاتورة إلى "معلقة"...`);
     console.log('📋 الفواتير:');
     salesToReset.forEach((sale, index) => {

@@ -1,7 +1,6 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import prisma from '../models/prismaClient';
 import SupplierAccountLedgerService from './SupplierAccountService';
-
-const prisma = new PrismaClient();
 
 export interface CreateInstallmentDto {
   paymentReceiptId: number;
@@ -42,7 +41,7 @@ class PaymentInstallmentService {
 
       // حساب المبلغ المدفوع حتى الآن
       const totalPaid = paymentReceipt.installments.reduce(
-        (sum, inst) => sum + Number(inst.amount), 
+        (sum, inst) => sum + Number(inst.amount),
         0
       );
 
@@ -85,7 +84,7 @@ class PaymentInstallmentService {
       if (newTotalPaid >= Number(paymentReceipt.amount)) {
         await prisma.supplierPaymentReceipt.update({
           where: { id: data.paymentReceiptId },
-          data: { 
+          data: {
             status: 'PAID',
             paidAt: new Date()
           }
@@ -175,7 +174,7 @@ class PaymentInstallmentService {
         inst => inst.id !== id
       );
       const totalPaid = remainingInstallments.reduce(
-        (sum, inst) => sum + Number(inst.amount), 
+        (sum, inst) => sum + Number(inst.amount),
         0
       );
 
@@ -185,7 +184,7 @@ class PaymentInstallmentService {
 
       await prisma.supplierPaymentReceipt.update({
         where: { id: installment.paymentReceiptId },
-        data: { 
+        data: {
           status: newStatus,
           paidAt: newStatus === 'PAID' ? new Date() : null
         }

@@ -3,11 +3,12 @@
  * خدمة إدارة الأصناف
  */
 
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import prisma from '../models/prismaClient';
 import QRCode from 'qrcode';
-import { 
-  CreateProductDto, 
-  UpdateProductDto, 
+import {
+  CreateProductDto,
+  UpdateProductDto,
   GetProductsQueryDto,
   UpdateStockDto,
   UpdatePriceDto,
@@ -17,11 +18,7 @@ import {
 } from '../dto/productDto';
 
 export class ProductService {
-  private prisma: PrismaClient;
-
-  constructor() {
-    this.prisma = new PrismaClient();
-  }
+  private prisma = prisma; // Use singleton instead of new instance
 
   /**
    * الحصول على جميع الأصناف مع التصفية والبحث
@@ -36,7 +33,7 @@ export class ProductService {
 
       // بناء شروط الشركة
       let companyConditions: Prisma.ProductWhereInput[] = [];
-      
+
       if (isSystemUser) {
         // مستخدم النظام: يمكنه فلترة بأي شركة أو رؤية الكل
         if (companyId) {
@@ -67,12 +64,12 @@ export class ProductService {
 
       // بناء شروط البحث
       const searchConditions: Prisma.ProductWhereInput[] = [];
-      
+
       // البحث بالاسم
       if (search) {
         searchConditions.push({ name: { contains: search, mode: Prisma.QueryMode.insensitive } });
       }
-      
+
       // البحث بالكود (SKU) - بحث دقيق تماماً
       if (sku) {
         whereConditions.sku = { equals: sku, mode: Prisma.QueryMode.insensitive };
@@ -180,7 +177,7 @@ export class ProductService {
   async getProductById(id: number, userCompanyId: number, isSystemUser?: boolean): Promise<ProductResponseDto> {
     try {
       const product = await this.prisma.product.findFirst({
-        where: { 
+        where: {
           id,
           // مستخدمو النظام يمكنهم الوصول لجميع الأصناف، المستخدمون العاديون للشركة فقط
           ...(isSystemUser !== true && { createdByCompanyId: userCompanyId })
@@ -329,21 +326,8 @@ export class ProductService {
 
       // إنشاء مخزون أولي (افتراضياً 0 إذا لم يتم تحديد قيمة)
       const initialBoxes = data.initialBoxes !== undefined ? data.initialBoxes : 0;
-      
-      // Enhanced debug logging
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('ProductService - Create Stock Debug:', { 
-          receivedInitialBoxes: data.initialBoxes, 
-          typeOfReceived: typeof data.initialBoxes, 
-          finalInitialBoxes: initialBoxes,
-          typeOfFinal: typeof initialBoxes,
-          willCreateStockWith: {
-            companyId: data.createdByCompanyId,
-            productId: 'will be set after product creation',
-            boxes: initialBoxes
-          }
-        });
-      }
+
+
       await this.prisma.stock.create({
         data: {
           companyId: data.createdByCompanyId,
@@ -689,7 +673,7 @@ export class ProductService {
       });
 
       const productIdsWithStock = new Set(productsWithStockRecords.map(s => s.productId));
-      
+
       // المنتجات بدون مخزون = المنتجات التي لها boxes = 0 + المنتجات بدون سجل مخزون
       const productsWithoutStock = stocksWithZeroBoxes.length + (totalProducts - productIdsWithStock.size);
 
@@ -751,7 +735,7 @@ export class ProductService {
   async getTopSellingProducts(userCompanyId: number, isSystemUser?: boolean, limit: number = 10, companyId?: number): Promise<any> {
     try {
       const whereConditions: any = {};
-      
+
       // تحديد الشركة للبحث
       if (companyId) {
         whereConditions.companyId = companyId;
@@ -857,7 +841,7 @@ export class ProductService {
       const result = products.map(product => {
         const stock = product.stocks[0];
         const price = product.prices[0];
-        
+
         return {
           id: product.id,
           name: product.name,
@@ -887,7 +871,7 @@ export class ProductService {
   async getLowStockProducts(userCompanyId: number, isSystemUser?: boolean, limit: number = 10, companyId?: number): Promise<any> {
     try {
       const whereConditions: any = {};
-      
+
       // تحديد الشركة للبحث
       if (companyId) {
         whereConditions.companyId = companyId;
@@ -926,9 +910,9 @@ export class ProductService {
         const currentStock = Number(stock.boxes);
         const unitsPerBox = Number(stock.product.unitsPerBox || 1);
         const totalUnits = currentStock * unitsPerBox;
-        
+
         let stockStatus: 'LOW' | 'CRITICAL' | 'OUT_OF_STOCK' = 'LOW';
-        
+
         if (currentStock === 0) {
           stockStatus = 'OUT_OF_STOCK';
         } else if (currentStock <= 5) {

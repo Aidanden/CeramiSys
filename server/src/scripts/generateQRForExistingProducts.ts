@@ -3,10 +3,8 @@
  * يتم تشغيله مرة واحدة لتحديث الأصناف القديمة
  */
 
-import { PrismaClient } from '@prisma/client';
 import QRCode from 'qrcode';
-
-const prisma = new PrismaClient();
+import prisma from '../models/prismaClient';
 
 async function generateQRForExistingProducts() {
   try {

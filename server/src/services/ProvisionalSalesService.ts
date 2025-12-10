@@ -3,18 +3,17 @@
  * خدمة الفواتير المبدئية
  */
 
-import { PrismaClient, ProvisionalSale, ProvisionalSaleLine, Prisma } from '@prisma/client';
-import { 
-  CreateProvisionalSaleDto, 
-  UpdateProvisionalSaleDto, 
+import { ProvisionalSale, ProvisionalSaleLine, Prisma } from '@prisma/client';
+import prisma from '../models/prismaClient';
+import {
+  CreateProvisionalSaleDto,
+  UpdateProvisionalSaleDto,
   GetProvisionalSalesQueryDto,
   ConvertToSaleDto,
   ProvisionalSaleResponseDto,
   ProvisionalSalesListResponseDto,
   ProvisionalSaleStatus
 } from '../dto/provisionalSalesDto';
-
-const prisma = new PrismaClient();
 
 export class ProvisionalSalesService {
 
@@ -238,10 +237,10 @@ export class ProvisionalSalesService {
       if (todayOnly) {
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
-        
+
         const endOfDay = new Date();
         endOfDay.setHours(23, 59, 59, 999);
-        
+
         where.createdAt = {
           gte: startOfDay,
           lte: endOfDay
@@ -377,8 +376,8 @@ export class ProvisionalSalesService {
 
   async convertToSale(id: number, data: ConvertToSaleDto): Promise<ProvisionalSaleResponseDto> {
     try {
-      console.log('🚀 بدء عملية ترحيل الفاتورة المبدئية:', { id, saleType: data.saleType, paymentMethod: data.paymentMethod });
-      
+
+
       // التحقق من وجود الفاتورة المبدئية
       const provisionalSale = await prisma.provisionalSale.findUnique({
         where: { id },
@@ -390,13 +389,8 @@ export class ProvisionalSalesService {
           }
         }
       });
-      
-      console.log('📋 الفاتورة المبدئية:', {
-        id: provisionalSale?.id,
-        companyId: provisionalSale?.companyId,
-        linesCount: provisionalSale?.lines.length,
-        isConverted: provisionalSale?.isConverted
-      });
+
+
 
       if (!provisionalSale) {
         throw new Error('الفاتورة المبدئية غير موجودة');
@@ -419,8 +413,8 @@ export class ProvisionalSalesService {
       }
 
       // إنشاء فاتورة مبيعات عادية
-      console.log('📝 إنشاء فاتورة مبيعات من الفاتورة المبدئية...');
-      
+
+
       const sale = await prisma.sale.create({
         data: {
           companyId: provisionalSale.companyId,
@@ -442,17 +436,17 @@ export class ProvisionalSalesService {
           }
         }
       });
-      
-      console.log('✅ تم إنشاء فاتورة المبيعات:', { saleId: sale.id, invoiceNumber: sale.invoiceNumber });
+
+
 
       // تحديث المخزون (خصم الكميات)
       // ملاحظة: line.qty في الفاتورة المبدئية يمثل عدد الصناديق مباشرة
-      console.log('🔄 بدء تحديث المخزون للفاتورة المبدئية:', id);
-      
+
+
       for (const line of provisionalSale.lines) {
         const boxesToDecrement = Number(line.qty);
-        
-        console.log(`📦 خصم من المخزون - المنتج: ${line.productId}, الكمية: ${boxesToDecrement} صندوق`);
+
+
 
         // الحصول على المخزون الحالي قبل التحديث
         const currentStock = await prisma.stock.findUnique({
@@ -463,8 +457,8 @@ export class ProvisionalSalesService {
             }
           }
         });
-        
-        console.log(`📊 المخزون قبل الخصم:`, currentStock ? `${currentStock.boxes} صندوق` : 'غير موجود');
+
+
 
         const updatedStock = await prisma.stock.upsert({
           where: {
@@ -484,11 +478,11 @@ export class ProvisionalSalesService {
             boxes: -boxesToDecrement
           }
         });
-        
-        console.log(`✅ المخزون بعد الخصم: ${updatedStock.boxes} صندوق`);
+
+
       }
-      
-      console.log('✅ تم تحديث المخزون بنجاح');
+
+
 
       // تحديث الفاتورة المبدئية
       const updatedProvisionalSale = await prisma.provisionalSale.update({

@@ -3,15 +3,11 @@
  * خدمة دفعات المبيعات الآجلة
  */
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../models/prismaClient';
 import { CreateSalePaymentDto, UpdateSalePaymentDto, GetSalePaymentsQueryDto, GetCreditSalesQueryDto } from '../dto/salePaymentDto';
 
 export class SalePaymentService {
-  private prisma: PrismaClient;
-
-  constructor() {
-    this.prisma = new PrismaClient();
-  }
+  private prisma = prisma; // Use singleton
 
   /**
    * الحصول على جميع المبيعات الآجلة
@@ -388,7 +384,7 @@ export class SalePaymentService {
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
-    
+
     // جلب آخر إيصال لهذه الشركة في هذا الشهر
     const lastPayment = await this.prisma.salePayment.findFirst({
       where: {
@@ -447,18 +443,18 @@ export class SalePaymentService {
       ] = await Promise.all([
         this.prisma.sale.count({ where }),
         this.prisma.sale.count({ where: { ...where, isFullyPaid: true } }),
-        this.prisma.sale.count({ 
-          where: { 
-            ...where, 
+        this.prisma.sale.count({
+          where: {
+            ...where,
             isFullyPaid: false,
             paidAmount: { gt: 0 }
-          } 
+          }
         }),
-        this.prisma.sale.count({ 
-          where: { 
-            ...where, 
+        this.prisma.sale.count({
+          where: {
+            ...where,
             paidAmount: 0
-          } 
+          }
         }),
         this.prisma.sale.aggregate({
           where,

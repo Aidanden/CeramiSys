@@ -66,7 +66,7 @@ body,
 #root,
 .app {
   font-size: 16px;
-  font-family: "Tajawal", sans-serif;
+  font-family: var(--font-tajawal), "Tajawal", sans-serif;
   background-color: var(--primary-bg);
   color: var(--primary-text);
 }

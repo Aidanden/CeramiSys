@@ -1,7 +1,6 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import prisma from '../models/prismaClient';
 import SupplierAccountService from './SupplierAccountService';
-
-const prisma = new PrismaClient();
 
 export interface AddExpenseRequest {
   categoryId: number;
@@ -19,11 +18,7 @@ export class AddExpensesToApprovedPurchaseService {
   async addExpensesToApprovedPurchase(data: AddExpensesToApprovedPurchaseRequest, userId: string) {
     const { purchaseId, expenses } = data;
 
-    console.log('🚀 بدء إضافة مصروفات لفاتورة معتمدة:', {
-      purchaseId,
-      expenses,
-      userId
-    });
+
 
     // التحقق من وجود الفاتورة
     const purchase = await prisma.purchase.findUnique({
@@ -41,11 +36,7 @@ export class AddExpensesToApprovedPurchaseService {
       throw new Error('الفاتورة غير معتمدة');
     }
 
-    console.log('✅ تم العثور على الفاتورة المعتمدة:', {
-      id: purchase.id,
-      total: purchase.total,
-      supplier: purchase.supplier?.name
-    });
+
 
     // التحقق من وجود مصروفات للإضافة
     if (expenses.length === 0) {
@@ -58,15 +49,12 @@ export class AddExpensesToApprovedPurchaseService {
       0
     );
 
-    console.log('💰 حساب المصروفات الجديدة:', {
-      expensesCount: expenses.length,
-      newExpensesTotal
-    });
+
 
     // إضافة المصروفات الجديدة
     const result = await prisma.$transaction(async (tx) => {
-      console.log('📝 بدء إضافة المصروفات...');
-      
+
+
       // 1. إضافة المصروفات الجديدة
       const createdExpenses = await tx.purchaseExpense.createMany({
         data: expenses.map((expense: AddExpenseRequest) => ({
@@ -78,7 +66,7 @@ export class AddExpensesToApprovedPurchaseService {
         })),
       });
 
-      console.log('✅ تم إضافة المصروفات:', createdExpenses);
+
 
       // 2. تحديث إجمالي المصروفات والإجمالي النهائي
       const currentTotalExpenses = Number(purchase.totalExpenses || 0);
@@ -93,20 +81,17 @@ export class AddExpensesToApprovedPurchaseService {
         },
       });
 
-      console.log('✅ تم تحديث الفاتورة:', {
-        newTotalExpenses,
-        newFinalTotal
-      });
+
 
       // 3. إنشاء إيصالات دفع للمصروفات الجديدة
       const paymentReceipts = [];
-      
+
       for (const expense of expenses) {
         if (expense.supplierId && expense.amount > 0) {
           const supplier = await tx.supplier.findUnique({
             where: { id: expense.supplierId },
           });
-          
+
           const category = await tx.purchaseExpenseCategory.findUnique({
             where: { id: expense.categoryId },
           });
@@ -126,7 +111,7 @@ export class AddExpensesToApprovedPurchaseService {
 
             // سيتم إنشاء قيد في حساب المورد بعد انتهاء transaction
 
-            console.log('✅ تم إنشاء إيصال دفع وقيد حساب المورد - ID:', createdReceipt.id);
+
 
             paymentReceipts.push({
               id: createdReceipt.id,
@@ -160,19 +145,13 @@ export class AddExpensesToApprovedPurchaseService {
           description: receipt.description,
           transactionDate: new Date(),
         });
-        console.log(`✅ تم إنشاء قيد حساب المورد: ${receipt.supplierName} - ${receipt.amount}`);
+
       } catch (error) {
         console.error(`❌ خطأ في إنشاء قيد حساب المورد: ${receipt.supplierName}`, error);
       }
     }
 
-    console.log('🎉 تمت إضافة المصروفات بنجاح:', {
-      purchaseId: result.purchase.id,
-      expensesAdded: result.expensesAdded,
-      paymentReceiptsCreated: result.paymentReceipts.length,
-      newTotalExpenses: Number(result.purchase.totalExpenses),
-      newFinalTotal: Number(result.purchase.finalTotal)
-    });
+
 
     return {
       success: true,

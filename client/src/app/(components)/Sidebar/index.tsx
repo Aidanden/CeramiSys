@@ -33,7 +33,7 @@ interface SidebarLinkProps {
   isCollapsed: boolean;
 }
 
-const SidebarLink = ({
+const SidebarLink = React.memo(({
   href,
   icon: Icon,
   label,
@@ -67,7 +67,9 @@ const SidebarLink = ({
       </div>
     </Link>
   );
-};
+});
+
+SidebarLink.displayName = 'SidebarLink';
 
 const Sidebar = () => {
   const dispatch = useAppDispatch();
@@ -87,17 +89,12 @@ const Sidebar = () => {
     [userScreensData?.screens]
   );
 
-  // Debug logging
-  React.useEffect(() => {
-    console.log('🔍 Sidebar Debug:', {
-      isLoading: isLoadingScreens,
-      hasError: !!screensError,
-      error: screensError,
-      dataReceived: !!userScreensData,
-      screensCount: authorizedScreens.length,
-      screens: authorizedScreens
-    });
-  }, [isLoadingScreens, screensError, userScreensData, authorizedScreens]);
+  // Debug logging - معطل في الإنتاج لتحسين الأداء
+  // React.useEffect(() => {
+  //   if (process.env.NODE_ENV === 'development') {
+  //     console.log('🔍 Sidebar Debug:', { isLoading: isLoadingScreens, screensCount: authorizedScreens.length });
+  //   }
+  // }, [isLoadingScreens, authorizedScreens]);
 
   // إذا كان هناك خطأ في جلب الشاشات، نعرض جميع الشاشات (fallback)
   const canAccessScreen = (route: string) => {

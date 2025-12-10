@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import prisma from '../models/prismaClient';
 import { AuthRequest } from '../middleware/auth';
-
-const prisma = new PrismaClient();
 
 // الحصول على جميع المستخدمين
 const normalizePermissions = (permissions: any): string[] => {
@@ -172,7 +171,7 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
 
     // تحديد الشركة
     let finalCompanyId;
-    
+
     if (isSystemUser) {
       // مستخدم نظام - يمكن أن يكون له أي شركة أو الشركة الافتراضية
       // إذا لم يتم تحديد companyId، نستخدم الشركة الافتراضية
@@ -186,9 +185,9 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
         });
         return;
       }
-      
+
       finalCompanyId = companyId;
-      
+
       // التحقق من وجود الشركة للمستخدمين العاديين
       const company = await prisma.company.findUnique({
         where: { id: finalCompanyId }

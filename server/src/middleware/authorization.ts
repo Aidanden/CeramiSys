@@ -33,7 +33,7 @@ export const authorizePermissions = (requiredPermissions: string[]) => {
       }
 
       const userPermissions = req.user.permissions as string[] || [];
-      
+
       console.log('🔐 Authorization Check:', {
         userId: req.user.userId,
         userPermissions,
@@ -49,7 +49,7 @@ export const authorizePermissions = (requiredPermissions: string[]) => {
       }
 
       // التحقق من أن المستخدم لديه واحدة على الأقل من الصلاحيات المطلوبة
-      const hasPermission = requiredPermissions.some(permission => 
+      const hasPermission = requiredPermissions.some(permission =>
         userPermissions.includes(permission)
       );
 
@@ -58,7 +58,7 @@ export const authorizePermissions = (requiredPermissions: string[]) => {
         responseHelper.error(res, 'ليس لديك الصلاحيات المطلوبة لهذا الإجراء', 403);
         return;
       }
-      
+
       console.log('✅ Access granted: User has required permission');
 
       next();
@@ -78,9 +78,9 @@ export const authorizeCompanyAccess = (allowParentCompany: boolean = true) => {
         return;
       }
 
-      const targetCompanyId = parseInt(req.params['companyId'] as string) || 
-                             parseInt(req.body.companyId) || 
-                             req.user.companyId;
+      const targetCompanyId = parseInt(req.params['companyId'] as string) ||
+        parseInt(req.body.companyId) ||
+        req.user.companyId;
 
       // إذا كان المستخدم من نفس الشركة
       if (req.user.companyId === targetCompanyId) {
@@ -90,8 +90,7 @@ export const authorizeCompanyAccess = (allowParentCompany: boolean = true) => {
 
       // إذا كان allowParentCompany = true، تحقق من أن الشركة المستهدفة تابعة للشركة الأم
       if (allowParentCompany) {
-        const { PrismaClient } = await import('@prisma/client');
-        const prisma = new PrismaClient();
+        const { default: prisma } = await import('../models/prismaClient'); // Dynamic import for singleton
 
         const userCompany = await prisma.company.findUnique({
           where: { id: req.user.companyId }
@@ -103,12 +102,9 @@ export const authorizeCompanyAccess = (allowParentCompany: boolean = true) => {
 
         // إذا كان المستخدم من شركة أم والشركة المستهدفة تابعة لها
         if (userCompany?.isParent && targetCompany?.parentId === req.user.companyId) {
-          await prisma.$disconnect();
           next();
           return;
         }
-
-        await prisma.$disconnect();
       }
 
       responseHelper.error(res, 'ليس لديك صلاحية للوصول إلى بيانات هذه الشركة', 403);

@@ -1,7 +1,7 @@
-import { PrismaClient } from '@prisma/client';
-import { 
-  CreatePurchaseRequest, 
-  UpdatePurchaseRequest, 
+import prisma from '../models/prismaClient';
+import {
+  CreatePurchaseRequest,
+  UpdatePurchaseRequest,
   CreatePurchasePaymentRequest,
   CreateSupplierRequest,
   UpdateSupplierRequest,
@@ -11,8 +11,6 @@ import {
   PurchaseStats,
   Supplier
 } from '../dto/purchaseDto';
-
-const prisma = new PrismaClient();
 
 export class PurchaseService {
   // Generate invoice number
@@ -25,7 +23,7 @@ export class PurchaseService {
       });
 
       let nextNumber = 1;
-      
+
       if (lastPurchase?.invoiceNumber) {
         // استخراج الرقم من آخر فاتورة
         const lastNumber = parseInt(lastPurchase.invoiceNumber);
@@ -54,7 +52,7 @@ export class PurchaseService {
 
     // Calculate total
     const total = lines.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0);
-    
+
     // For cash purchases, mark as fully paid
     const isFullyPaid = purchaseType === 'CASH';
     const paidAmount = isFullyPaid ? total : 0;
@@ -129,7 +127,7 @@ export class PurchaseService {
         description: `فاتورة مشتريات آجلة رقم ${invoiceNumber || purchase.id}`,
         transactionDate: new Date()
       });
-      console.log(`✅ تم تسجيل قيد محاسبي (له المورد) بمبلغ ${total} دينار في حساب المورد`);
+
     }
 
     return {
@@ -155,13 +153,13 @@ export class PurchaseService {
 
   // Get purchases with filters
   static async getPurchases(query: GetPurchasesQuery) {
-    const { 
-      page, 
-      limit, 
-      companyId, 
-      supplierId, 
-      purchaseType, 
-      isFullyPaid, 
+    const {
+      page,
+      limit,
+      companyId,
+      supplierId,
+      purchaseType,
+      isFullyPaid,
       search,
       startDate,
       endDate,
@@ -430,14 +428,33 @@ export class PurchaseService {
     if (data.lines) {
       // Revert old stock changes only if purchase was approved
       if (existingPurchase.isApproved) {
-        for (const line of existingPurchase.lines) {
-          await this.updateStock(existingPurchase.companyId, line.productId, -line.qty);
-        }
+        const revertStockUpdates = existingPurchase.lines.map(line =>
+          prisma.stock.upsert({
+            where: {
+              companyId_productId: {
+                companyId: existingPurchase.companyId,
+                productId: line.productId,
+              },
+            },
+            update: {
+              boxes: {
+                decrement: line.qty
+              },
+            },
+            create: {
+              companyId: existingPurchase.companyId,
+              productId: line.productId,
+              boxes: -line.qty,
+            },
+          })
+        );
+
+        await prisma.$transaction(revertStockUpdates);
       }
 
       // Calculate new total
       const total = data.lines.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0);
-      
+
       // Update purchase with new lines
       const purchase = await prisma.purchase.update({
         where: { id },
@@ -483,9 +500,28 @@ export class PurchaseService {
 
       // Apply new stock changes only if purchase is approved
       if (existingPurchase.isApproved) {
-        for (const line of data.lines) {
-          await this.updateStock(existingPurchase.companyId, line.productId, line.qty);
-        }
+        const applyStockUpdates = data.lines.map(line =>
+          prisma.stock.upsert({
+            where: {
+              companyId_productId: {
+                companyId: existingPurchase.companyId,
+                productId: line.productId,
+              },
+            },
+            update: {
+              boxes: {
+                increment: line.qty,
+              },
+            },
+            create: {
+              companyId: existingPurchase.companyId,
+              productId: line.productId,
+              boxes: line.qty,
+            },
+          })
+        );
+
+        await prisma.$transaction(applyStockUpdates);
       }
 
       return {
@@ -574,7 +610,7 @@ export class PurchaseService {
   static async deletePurchase(id: number): Promise<void> {
     const purchase = await prisma.purchase.findUnique({
       where: { id },
-      include: { 
+      include: {
         lines: true,
         payments: true,
         expenses: true,
@@ -649,8 +685,8 @@ export class PurchaseService {
 
       // إرجاع المخزون إذا كانت الفاتورة معتمدة (أي أثرت على المخزون)
       if (purchase.isApproved) {
-        for (const line of purchase.lines) {
-          await tx.stock.upsert({
+        const stockUpdates = purchase.lines.map(line =>
+          tx.stock.upsert({
             where: {
               companyId_productId: {
                 companyId: purchase.companyId,
@@ -667,8 +703,10 @@ export class PurchaseService {
               productId: line.productId,
               boxes: -line.qty,
             },
-          });
-        }
+          })
+        );
+
+        await Promise.all(stockUpdates);
       }
 
       // تحديث حساب المورد إذا كان موجود
@@ -746,7 +784,7 @@ export class PurchaseService {
         description: `دفعة لفاتورة مشتريات ${purchase.invoiceNumber || purchase.id} - إيصال رقم ${receiptNumber}`,
         transactionDate: paymentDate ? new Date(paymentDate) : new Date()
       });
-      console.log(`✅ تم تسجيل قيد محاسبي (عليه المورد) بمبلغ ${amount} دينار في حساب المورد`);
+
     }
 
     return { payment, updatedPurchase };

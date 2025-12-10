@@ -3,15 +3,13 @@
  * خدمة المردودات
  */
 
-import { PrismaClient } from '@prisma/client';
-import { 
-  CreateSaleReturnDto, 
+import prisma from '../models/prismaClient';
+import {
+  CreateSaleReturnDto,
   GetSaleReturnsQueryDto,
   CreateReturnPaymentDto,
   GetReturnPaymentsQueryDto
 } from '../dto/saleReturnDto';
-
-const prisma = new PrismaClient();
 
 export class SaleReturnService {
   /**
@@ -52,7 +50,7 @@ export class SaleReturnService {
       if (!saleLine) {
         throw new Error(`الصنف غير موجود في الفاتورة الأصلية`);
       }
-      
+
       // يمكن إضافة تحقق إضافي للكمية المسموح بإرجاعها
       if (returnLine.qty > Number(saleLine.qty)) {
         throw new Error(`الكمية المردودة للصنف ${saleLine.product.name} أكبر من الكمية المباعة`);
@@ -126,11 +124,11 @@ export class SaleReturnService {
           branchCompanyReturnValue,
           splitReturn: true
         };
-        
+
         await tx.saleReturn.update({
           where: { id: newReturn.id },
           data: {
-            notes: data.notes 
+            notes: data.notes
               ? `${data.notes}\n[قيمة الرد - التقازي: ${parentCompanyReturnValue} | الإمارات: ${branchCompanyReturnValue}]`
               : `[قيمة الرد - التقازي: ${parentCompanyReturnValue} | الإمارات: ${branchCompanyReturnValue}]`
           }
@@ -232,9 +230,9 @@ export class SaleReturnService {
    */
   async getSaleReturnById(id: number, companyId: number) {
     const saleReturn = await prisma.saleReturn.findFirst({
-      where: { 
+      where: {
         id,
-        companyId 
+        companyId
       },
       include: {
         lines: {
@@ -302,58 +300,64 @@ export class SaleReturnService {
       });
 
       // إرجاع المنتجات إلى المخزون
-      // المنتجات يجب أن ترجع لمخزون الشركة التي أنشأتها (التقازي أو الإمارات)
-      for (const line of updatedReturn.lines) {
-        // الحصول على معلومات المنتج الكاملة لمعرفة الشركة المنشئة
-        const product = await tx.product.findUnique({
-          where: { id: line.productId },
-          include: {
-            createdByCompany: true
-          }
-        });
+      // 🟢 تحسين: معالجة مجمعة لتجنب N+1
 
-        if (!product) {
-          throw new Error(`المنتج ${line.productId} غير موجود`);
+      // 1. جلب جميع المنتجات دفعة واحدة لمعرفة الشركة المنشئة
+      const productIds = updatedReturn.lines.map(l => l.productId);
+      const products = await tx.product.findMany({
+        where: { id: { in: productIds } },
+        include: { createdByCompany: true }
+      });
+
+      const productsMap = new Map();
+      products.forEach(p => productsMap.set(p.id, p));
+
+      // 2. تحديد مفاتيح المخزون (Product + Company)
+      const stockKeys = updatedReturn.lines.map(line => {
+        const product = productsMap.get(line.productId);
+        if (!product) throw new Error(`المنتج ${line.productId} غير موجود`);
+        return {
+          productId: line.productId,
+          companyId: product.createdByCompanyId
+        };
+      });
+
+      // 3. جلب المخزون الحالي دفعة واحدة
+      const stocks = await tx.stock.findMany({
+        where: {
+          OR: stockKeys
         }
+      });
 
-        // تحديد الشركة التي يجب إرجاع المخزون لها
-        // إذا كان المنتج من التقازي، يُرجع لمخزون التقازي
-        // إذا كان من الإمارات، يُرجع لمخزون الإمارات
+      const stocksMap = new Map(); // Key: "productId-companyId"
+      stocks.forEach(s => stocksMap.set(`${s.productId}-${s.companyId}`, s));
+
+      // 4. إعداد التحديثات المجمعة
+      const stockUpdates = updatedReturn.lines.map(line => {
+        const product = productsMap.get(line.productId);
         const targetCompanyId = product.createdByCompanyId;
+        const boxesToAdd = Number(line.qty);
 
-        // البحث عن المخزون في الشركة الصحيحة
-        const stock = await tx.stock.findFirst({
+        return tx.stock.upsert({
           where: {
+            companyId_productId: {
+              companyId: targetCompanyId,
+              productId: line.productId
+            }
+          },
+          update: {
+            boxes: { increment: boxesToAdd }
+          },
+          create: {
+            companyId: targetCompanyId,
             productId: line.productId,
-            companyId: targetCompanyId
+            boxes: boxesToAdd
           }
         });
+      });
 
-        if (stock) {
-          // إضافة الكمية المرجعة إلى المخزون الموجود
-          const currentBoxes = Number(stock.boxes);
-          const returnedQty = Number(line.qty);
-          const newBoxes = currentBoxes + returnedQty;
-          
-          console.log(`📦 إرجاع مخزون - المنتج: ${line.productId}, الكمية الحالية: ${currentBoxes}, الكمية المرجعة: ${returnedQty}, الكمية الجديدة: ${newBoxes}`);
-          
-          await tx.stock.update({
-            where: { id: stock.id },
-            data: {
-              boxes: newBoxes
-            }
-          });
-        } else {
-          // إنشاء سجل مخزون جديد في الشركة الصحيحة
-          await tx.stock.create({
-            data: {
-              productId: line.productId,
-              companyId: targetCompanyId,
-              boxes: line.qty
-            }
-          });
-        }
-      }
+      // 5. تنفيذ التحديثات
+      await Promise.all(stockUpdates);
 
       return updatedReturn;
     });
@@ -527,9 +531,9 @@ export class SaleReturnService {
    */
   async deleteReturnPayment(paymentId: number, companyId: number) {
     const payment = await prisma.returnPayment.findFirst({
-      where: { 
+      where: {
         id: paymentId,
-        companyId 
+        companyId
       },
       include: {
         saleReturn: true

@@ -3,15 +3,12 @@
  * خدمة المبيعات بين الشركات
  */
 
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import prisma from '../models/prismaClient';
 import { CreateInterCompanySaleDto, GetInterCompanySalesQueryDto } from '../dto/interCompanySaleDto';
 
 export class InterCompanySaleService {
-  private prisma: PrismaClient;
-
-  constructor() {
-    this.prisma = new PrismaClient();
-  }
+  private prisma = prisma; // Use singleton
 
   /**
    * إنشاء فاتورة مبيعات بين الشركات

@@ -3,12 +3,12 @@ import { CompanyService } from '../services/CompanyService';
 import { CreateCompanyDto, UpdateCompanyDto, GetCompaniesQueryDto } from '../dto/CompanyDto';
 import { responseHelper } from '../utils/responseHelper';
 import { PrismaClient } from '@prisma/client';
+import prisma from '../models/prismaClient';
 
 export class CompanyController {
   private companyService: CompanyService;
 
   constructor() {
-    const prisma = new PrismaClient();
     this.companyService = new CompanyService(prisma);
   }
 
@@ -19,7 +19,7 @@ export class CompanyController {
       const validatedData = CreateCompanyDto.parse(req.body);
       console.log('✅ Validated Data:', validatedData);
       const company = await this.companyService.createCompany(validatedData);
-      
+
       responseHelper.success(res, company, 'تم إنشاء الشركة بنجاح', 201);
     } catch (error: any) {
       if (error.name === 'ZodError') {
@@ -35,7 +35,7 @@ export class CompanyController {
     try {
       const validatedQuery = GetCompaniesQueryDto.parse(req.query);
       const result = await this.companyService.getCompanies(validatedQuery);
-      
+
       responseHelper.success(res, result, 'تم الحصول على الشركات بنجاح');
     } catch (error: any) {
       if (error.name === 'ZodError') {
@@ -50,14 +50,14 @@ export class CompanyController {
   getCompanyById = async (req: Request, res: Response): Promise<void> => {
     try {
       const id = parseInt(req.params['id'] as string);
-      
+
       if (isNaN(id)) {
         responseHelper.error(res, 'معرف الشركة غير صحيح', 400);
         return;
       }
 
       const company = await this.companyService.getCompanyById(id);
-      
+
       if (!company) {
         responseHelper.error(res, 'الشركة غير موجودة', 404);
         return;
@@ -73,7 +73,7 @@ export class CompanyController {
   updateCompany = async (req: Request, res: Response): Promise<void> => {
     try {
       const id = parseInt(req.params['id'] as string);
-      
+
       if (isNaN(id)) {
         responseHelper.error(res, 'معرف الشركة غير صحيح', 400);
         return;
@@ -81,7 +81,7 @@ export class CompanyController {
 
       const validatedData = UpdateCompanyDto.parse(req.body);
       const company = await this.companyService.updateCompany(id, validatedData);
-      
+
       responseHelper.success(res, company, 'تم تحديث الشركة بنجاح');
     } catch (error: any) {
       if (error.name === 'ZodError') {
@@ -97,7 +97,7 @@ export class CompanyController {
     try {
       console.log('🗑️ Delete Company Request - ID:', req.params.id);
       const id = parseInt(req.params['id'] as string);
-      
+
       if (isNaN(id)) {
         console.log('❌ Invalid ID provided:', req.params.id);
         responseHelper.error(res, 'معرف الشركة غير صحيح', 400);
@@ -106,7 +106,7 @@ export class CompanyController {
 
       console.log('🔍 Attempting to delete company with ID:', id);
       await this.companyService.deleteCompany(id);
-      
+
       responseHelper.success(res, null, 'تم حذف الشركة بنجاح');
     } catch (error: any) {
       responseHelper.error(res, error.message, 400);
@@ -117,7 +117,7 @@ export class CompanyController {
   getCompanyHierarchy = async (req: Request, res: Response): Promise<void> => {
     try {
       const hierarchy = await this.companyService.getCompanyHierarchy();
-      
+
       responseHelper.success(res, hierarchy, 'تم الحصول على الهيكل الهرمي بنجاح');
     } catch (error: any) {
       responseHelper.error(res, error.message, 400);
@@ -130,7 +130,7 @@ export class CompanyController {
       console.log('📊 CompanyController.getCompanyStats - Request received');
       const stats = await this.companyService.getCompanyStats();
       console.log('✅ CompanyController.getCompanyStats - Stats retrieved:', stats);
-      
+
       responseHelper.success(res, stats, 'تم الحصول على إحصائيات الشركات بنجاح');
     } catch (error: any) {
       console.error('❌ CompanyController.getCompanyStats - Error:', error);
@@ -142,14 +142,14 @@ export class CompanyController {
   getBranchCompanies = async (req: Request, res: Response): Promise<void> => {
     try {
       const parentId = parseInt(req.params['parentId'] as string);
-      
+
       if (isNaN(parentId)) {
         responseHelper.error(res, 'معرف الشركة الأم غير صحيح', 400);
         return;
       }
 
       const branches = await this.companyService.getBranchCompanies(parentId);
-      
+
       responseHelper.success(res, branches, 'تم الحصول على الشركات التابعة بنجاح');
     } catch (error: any) {
       responseHelper.error(res, error.message, 400);

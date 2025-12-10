@@ -3,9 +3,7 @@
  * يستخدم للاختبار فقط
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../models/prismaClient';
 
 async function updateReceiptStatus() {
   try {
@@ -40,7 +38,7 @@ async function updateReceiptStatus() {
 
     // تحديث نصف الفواتير فقط للاختبار (أول 9 فواتير)
     const salesToUpdate = cashSales.slice(0, Math.ceil(cashSales.length / 2));
-    
+
     console.log(`\n🔄 سيتم تحديث ${salesToUpdate.length} فاتورة إلى "تم إصدار إيصال قبض"...`);
 
     const result = await prisma.sale.updateMany({
