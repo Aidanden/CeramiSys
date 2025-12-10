@@ -55,6 +55,8 @@ const ProductsPage = () => {
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
+  const [isBulkPrintMode, setIsBulkPrintMode] = useState(false);
 
   // وحدة القياس في نماذج الإضافة والتعديل
   const [createUnit, setCreateUnit] = useState<'صندوق' | 'قطعة' | 'كيس' | 'لتر'>('صندوق');
@@ -452,6 +454,200 @@ const ProductsPage = () => {
     printWindow.document.close();
   };
 
+  // طباعة QR codes متعددة على ورقة A4 (12 ملصق - 2 أعمدة × 6 صفوف)
+  // حجم الملصق: 102×49.5 مم
+  const handleBulkPrintQR = () => {
+    const selectedProductsList = products.filter(p => selectedProducts.has(p.id) && p.qrCode);
+    
+    if (selectedProductsList.length === 0) {
+      notifications.custom.error('خطأ', 'لم يتم اختيار أي أصناف أو الأصناف المختارة لا تحتوي على QR Code');
+      return;
+    }
+
+    // تكرار الأصناف لملء 12 ملصق (2 أعمدة × 6 صفوف)
+    const labelsToFill = 12;
+    const labels = [];
+    for (let i = 0; i < labelsToFill; i++) {
+      if (i < selectedProductsList.length) {
+        labels.push(selectedProductsList[i]);
+      } else {
+        // إذا كان عدد الأصناف أقل من 12، نكرر الأصناف
+        labels.push(selectedProductsList[i % selectedProductsList.length]);
+      }
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const labelsHTML = labels.map((product, index) => `
+      <div class="label">
+        <div class="qr-section">
+          <img src="${product.qrCode}" alt="QR Code" class="qr-image" />
+        </div>
+        <div class="info-section">
+          <div class="product-name">${product.name}</div>
+          <div class="product-sku">${product.sku}</div>
+          ${product.unitsPerBox ? `<div class="product-details">${product.unitsPerBox} م²/صندوق</div>` : ''}
+          ${product.price?.sellPrice ? `<div class="product-price">${product.price.sellPrice} د.ل/م²</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl">
+        <head>
+          <meta charset="UTF-8">
+          <title>طباعة QR Codes - ${selectedProductsList.length} صنف</title>
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            
+            @page {
+              size: A4;
+              margin: 0;
+            }
+            
+            body {
+              font-family: 'Arial', sans-serif;
+              background: white;
+              width: 210mm;
+              height: 297mm;
+            }
+            
+            .labels-container {
+              display: grid;
+              grid-template-columns: repeat(2, 102mm);
+              grid-template-rows: repeat(6, 49.5mm);
+              width: 210mm;
+              height: 297mm;
+              padding: 0;
+              margin: 0 auto;
+              justify-content: center;
+            }
+            
+            .label {
+              width: 102mm;
+              height: 49.5mm;
+              display: flex;
+              flex-direction: row;
+              align-items: center;
+              justify-content: flex-start;
+              padding: 2mm 3mm;
+              background: white;
+              overflow: hidden;
+              gap: 3mm;
+            }
+            
+            .qr-section {
+              flex-shrink: 0;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            
+            .qr-image {
+              width: 42mm;
+              height: 42mm;
+            }
+            
+            .info-section {
+              flex: 1;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              text-align: right;
+              overflow: hidden;
+              padding-right: 2mm;
+            }
+            
+            .product-name {
+              font-size: 11pt;
+              font-weight: bold;
+              color: #000;
+              line-height: 1.2;
+              margin-bottom: 2mm;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              display: -webkit-box;
+              -webkit-line-clamp: 2;
+              -webkit-box-orient: vertical;
+              max-height: 14mm;
+            }
+            
+            .product-sku {
+              font-size: 10pt;
+              color: #333;
+              font-weight: 600;
+              margin-bottom: 1.5mm;
+            }
+            
+            .product-details {
+              font-size: 8pt;
+              color: #555;
+              margin-bottom: 1mm;
+            }
+            
+            .product-price {
+              font-size: 11pt;
+              color: #000;
+              font-weight: bold;
+              margin-top: 1mm;
+            }
+            
+            @media print {
+              body {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+              }
+              
+              .labels-container {
+                page-break-inside: avoid;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="labels-container">
+            ${labelsHTML}
+          </div>
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+              }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+  };
+
+  // تحديد/إلغاء تحديد صنف
+  const toggleProductSelection = (productId: number) => {
+    const newSelection = new Set(selectedProducts);
+    if (newSelection.has(productId)) {
+      newSelection.delete(productId);
+    } else {
+      newSelection.add(productId);
+    }
+    setSelectedProducts(newSelection);
+  };
+
+  // تحديد/إلغاء تحديد الكل
+  const toggleSelectAll = () => {
+    if (selectedProducts.size === products.length) {
+      setSelectedProducts(new Set());
+    } else {
+      setSelectedProducts(new Set(products.map(p => p.id)));
+    }
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto" dir="rtl">
       {/* Header */}
@@ -464,13 +660,46 @@ const ProductsPage = () => {
               <p className="text-text-secondary">إدارة أصناف المنتجات والمخزون والأسعار الخاصة بشركتك</p>
             </div>
           </div>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-all duration-200 shadow-md hover:shadow-lg"
-          >
-            <Plus className="w-5 h-5" />
-            إضافة صنف جديد
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                setIsBulkPrintMode(!isBulkPrintMode);
+                if (isBulkPrintMode) {
+                  setSelectedProducts(new Set());
+                }
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg ${
+                isBulkPrintMode
+                  ? 'bg-orange-600 text-white hover:bg-orange-700'
+                  : 'bg-gray-600 text-white hover:bg-gray-700'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {isBulkPrintMode ? 'إلغاء الاختيار' : 'طباعة متعددة'}
+            </button>
+            
+            {isBulkPrintMode && selectedProducts.size > 0 && (
+              <button
+                onClick={handleBulkPrintQR}
+                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                طباعة ({selectedProducts.size})
+              </button>
+            )}
+            
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-all duration-200 shadow-md hover:shadow-lg"
+            >
+              <Plus className="w-5 h-5" />
+              إضافة صنف جديد
+            </button>
+          </div>
         </div>
       </div>
 
@@ -733,6 +962,16 @@ const ProductsPage = () => {
           <table className="min-w-full table-auto">
             <thead className="bg-background-secondary">
               <tr>
+                {isBulkPrintMode && (
+                  <th className="px-3 sm:px-4 lg:px-6 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider w-[50px]">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.size === products.length && products.length > 0}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                  </th>
+                )}
                 <th className="px-3 sm:px-4 lg:px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider min-w-[200px]">
                   الصنف
                 </th>
@@ -811,7 +1050,20 @@ const ProductsPage = () => {
                 </tr>
               ) : (
                 products.map((product) => (
-                  <tr key={product.id} className="hover:bg-background-hover transition-all duration-200">
+                  <tr key={product.id} className={`hover:bg-background-hover transition-all duration-200 ${
+                    selectedProducts.has(product.id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                  }`}>
+                    {isBulkPrintMode && (
+                      <td className="px-3 sm:px-4 lg:px-6 py-4 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedProducts.has(product.id)}
+                          onChange={() => toggleProductSelection(product.id)}
+                          disabled={!product.qrCode}
+                          className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 disabled:opacity-50"
+                        />
+                      </td>
+                    )}
                     <td className="px-3 sm:px-4 lg:px-6 py-4">
                       <div className="flex items-center space-x-3 space-x-reverse">
                         <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10">
