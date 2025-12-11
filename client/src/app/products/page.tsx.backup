@@ -1048,7 +1048,13 @@ const ProductsPage = () => {
                 </tr>
               ) : (
                 products.map((product) => (
-                  <tr key={product.id} className={`hover:bg-background-hover transition-all duration-200 ${selectedProducts.has(product.id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
+<<<<<<< HEAD
+                  <tr key={product.id} className={`hover:bg-background-hover transition-all duration-200 ${selectedProducts.has(product.id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                    }`}>
+=======
+                  <tr key={product.id} className={`hover:bg-background-hover transition-all duration-200 ${selectedProducts.has(product.id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                      }`}>
+>>>>>>> 46500c8c8db4c7dd9ce83808788f2d793d89a857
                       {isBulkPrintMode && (
                         <td className="px-3 sm:px-4 lg:px-6 py-4 text-center">
                           <input
