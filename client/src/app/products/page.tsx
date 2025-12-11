@@ -490,7 +490,7 @@ const ProductsPage = () => {
           <img src="${product.qrCode}" alt="QR Code" class="qr-image" />
         </div>
         <div class="info-section">
-          <div class="store-name">الامارات لسيراميك</div>
+          <div class="store-name">الامارات للسيراميك</div>
           <div class="product-name">${product.name}</div>
           <div class="product-sku">${product.sku}</div>
         </div>
@@ -596,7 +596,7 @@ const ProductsPage = () => {
             }
             
             .store-name {
-              font-size: 12pt;
+              font-size: 14pt;
               color: #000;
               font-weight: bold;
               margin-bottom: 3mm;
