@@ -596,10 +596,10 @@ const ProductsPage = () => {
             }
             
             .store-name {
-              font-size: 10pt;
-              color: #333;
+              font-size: 12pt;
+              color: #000;
               font-weight: bold;
-              margin-top: 2mm;
+              margin-bottom: 3mm;
             }
             
             @media print {
