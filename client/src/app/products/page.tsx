@@ -2,18 +2,18 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash2, 
-  ShoppingBag, 
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  ShoppingBag,
   DollarSign,
   Filter,
   Eye
 } from 'lucide-react';
-import { 
-  useGetProductsQuery, 
+import {
+  useGetProductsQuery,
   useCreateProductMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
@@ -32,10 +32,10 @@ import useNotifications from '@/hooks/useNotifications';
 const ProductsPage = () => {
   const router = useRouter();
   const notifications = useNotifications();
-  
+
   // Get current user info
   const currentUser = useSelector((state: RootState) => state.auth.user);
-  
+
   // State للتصفية والبحث
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,7 +45,7 @@ const ProductsPage = () => {
   const [stockFilter, setStockFilter] = useState<'all' | 'out' | 'low' | 'available'>('all');
   const [lowStockThreshold, setLowStockThreshold] = useState(10);
   const [pollingInterval, setPollingInterval] = useState<number | undefined>(undefined);
-  
+
   // State للمودالز
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -55,6 +55,8 @@ const ProductsPage = () => {
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
+  const [isBulkPrintMode, setIsBulkPrintMode] = useState(false);
 
   // وحدة القياس في نماذج الإضافة والتعديل
   const [createUnit, setCreateUnit] = useState<'صندوق' | 'قطعة' | 'كيس' | 'لتر'>('صندوق');
@@ -88,7 +90,7 @@ const ProductsPage = () => {
   // RTK Query hooks - نرسل جميع الفلاتر المدعومة في الـ API
   const { data: productsData, isLoading: isLoadingProducts, error: productsError, refetch } = useGetProductsQuery({
     page: currentPage,
-    limit: 10,
+    limit: 12,
     search: searchTerm || undefined,
     sku: searchSKU || undefined,
     unit: selectedUnit || undefined,
@@ -104,7 +106,7 @@ const ProductsPage = () => {
   });
 
   const { data: companiesData, isLoading: isLoadingCompanies } = useGetCompaniesQuery({ limit: 100 });
-  
+
   const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
   const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
   const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation();
@@ -120,7 +122,7 @@ const ProductsPage = () => {
   if (stockFilter !== 'all') {
     products = products.filter(product => {
       const stockBoxes = product.stock?.[0]?.boxes || 0;
-      
+
       if (stockFilter === 'out') {
         return stockBoxes === 0;
       }
@@ -130,7 +132,7 @@ const ProductsPage = () => {
       if (stockFilter === 'available') {
         return stockBoxes > 0;
       }
-      
+
       return true;
     });
   }
@@ -151,30 +153,30 @@ const ProductsPage = () => {
       if (result.success) {
         notifications.products.createSuccess(productData.name);
         setIsCreateModalOpen(false);
-        
+
         // إعادة تعيين النموذج
         const form = document.querySelector('#create-product-form') as HTMLFormElement;
         if (form) form.reset();
         setCreateUnit('صندوق');
-        
+
         // مسح جميع الفلاتر لضمان ظهور الصنف الجديد
         setSearchTerm('');
         setSearchSKU('');
         setSelectedCompany('');
         setSelectedUnit('');
         setStockFilter('all');
-        
+
         // الانتقال للصفحة الأولى
         setCurrentPage(1);
-        
+
         // تفعيل polling لمدة 10 ثواني لضمان التحديث
         setPollingInterval(500); // كل نصف ثانية
-        
+
         // إعادة جلب فورية
         setTimeout(() => {
           refetch();
         }, 100);
-        
+
         // إيقاف polling بعد 10 ثواني
         setTimeout(() => {
           setPollingInterval(undefined);
@@ -188,13 +190,13 @@ const ProductsPage = () => {
   // معالجة تحديث صنف
   const handleUpdateProduct = async (productData: UpdateProductRequest) => {
     if (!selectedProduct) return;
-    
+
     try {
-      const result = await updateProduct({ 
-        id: selectedProduct.id, 
-        productData 
+      const result = await updateProduct({
+        id: selectedProduct.id,
+        productData
       }).unwrap();
-      
+
       if (result.success) {
         notifications.products.updateSuccess(selectedProduct.name);
         setIsEditModalOpen(false);
@@ -209,7 +211,7 @@ const ProductsPage = () => {
   // معالجة حذف صنف
   const handleDeleteProduct = async () => {
     if (!selectedProduct) return;
-    
+
     try {
       const result = await deleteProduct(selectedProduct.id).unwrap();
       if (result.success) {
@@ -225,7 +227,7 @@ const ProductsPage = () => {
   // معالجة تحديث المخزون
   const handleUpdateStock = async (boxes: number) => {
     if (!selectedProduct || !currentUser?.companyId) return;
-    
+
     try {
       await updateStock({
         companyId: currentUser.companyId,
@@ -244,7 +246,7 @@ const ProductsPage = () => {
   // معالجة تحديث السعر
   const handleUpdatePrice = async (sellPrice: number) => {
     if (!selectedProduct || !currentUser?.companyId) return;
-    
+
     try {
       await updatePrice({
         companyId: currentUser.companyId,
@@ -452,6 +454,206 @@ const ProductsPage = () => {
     printWindow.document.close();
   };
 
+  // طباعة QR codes متعددة على ورقة A4 (12 ملصق - 2 أعمدة × 6 صفوف)
+  // حجم الملصق: 102×49.5 مم
+  const handleBulkPrintQR = () => {
+    const selectedProductsList = products.filter(p => selectedProducts.has(p.id) && p.qrCode);
+
+    if (selectedProductsList.length === 0) {
+      notifications.custom.error('خطأ', 'لم يتم اختيار أي أصناف أو الأصناف المختارة لا تحتوي على QR Code');
+      return;
+    }
+
+    // تكرار الأصناف لملء 12 ملصق (2 أعمدة × 6 صفوف)
+    const labelsToFill = 12;
+    const labels = [];
+    // نملأ المصفوفة بالأصناف المختارة فقط، والباقي نتركه فارغاً (null)
+    for (let i = 0; i < labelsToFill; i++) {
+      if (i < selectedProductsList.length) {
+        labels.push(selectedProductsList[i]);
+      } else {
+        labels.push(null);
+      }
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const labelsHTML = labels.map((product) => {
+      // إذا كان العنصر فارغاً، نعرض ملصق فارغ للحفاظ على التخطيط
+      if (!product) {
+        return '<div class="label"></div>';
+      }
+
+      return `
+      <div class="label">
+        <div class="qr-section">
+          <img src="${product.qrCode}" alt="QR Code" class="qr-image" />
+        </div>
+        <div class="info-section">
+          <div class="product-name">${product.name}</div>
+          <div class="product-sku">${product.sku}</div>
+          ${product.unitsPerBox ? `<div class="product-details">${product.unitsPerBox} م²/صندوق</div>` : ''}
+          ${product.price?.sellPrice ? `<div class="product-price">${product.price.sellPrice} د.ل/م²</div>` : ''}
+        </div>
+      </div>
+    `}).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl">
+        <head>
+          <meta charset="UTF-8">
+          <title>طباعة QR Codes - ${selectedProductsList.length} صنف</title>
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            
+            @page {
+              size: A4;
+              margin: 0;
+            }
+            
+            body {
+              font-family: 'Arial', sans-serif;
+              background: white;
+              width: 210mm;
+              height: 297mm;
+            }
+            
+            .labels-container {
+              display: grid;
+              grid-template-columns: repeat(2, 102mm);
+              grid-template-rows: repeat(6, 49.5mm);
+              width: 210mm;
+              height: 297mm;
+              padding: 0;
+              margin: 0 auto;
+              justify-content: center;
+            }
+            
+            .label {
+              width: 102mm;
+              height: 49.5mm;
+              display: flex;
+              flex-direction: row;
+              align-items: center;
+              justify-content: flex-start;
+              padding: 2mm 3mm;
+              background: white;
+              overflow: hidden;
+              gap: 3mm;
+            }
+            
+            .qr-section {
+              flex-shrink: 0;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            
+            .qr-image {
+              width: 42mm;
+              height: 42mm;
+            }
+            
+            .info-section {
+              flex: 1;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              text-align: right;
+              overflow: hidden;
+              padding-right: 2mm;
+            }
+            
+            .product-name {
+              font-size: 11pt;
+              font-weight: bold;
+              color: #000;
+              line-height: 1.2;
+              margin-bottom: 2mm;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              display: -webkit-box;
+              -webkit-line-clamp: 2;
+              -webkit-box-orient: vertical;
+              max-height: 14mm;
+            }
+            
+            .product-sku {
+              font-size: 10pt;
+              color: #333;
+              font-weight: 600;
+              margin-bottom: 1.5mm;
+            }
+            
+            .product-details {
+              font-size: 8pt;
+              color: #555;
+              margin-bottom: 1mm;
+            }
+            
+            .product-price {
+              font-size: 11pt;
+              color: #000;
+              font-weight: bold;
+              margin-top: 1mm;
+            }
+            
+            @media print {
+              body {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+              }
+              
+              .labels-container {
+                page-break-inside: avoid;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="labels-container">
+            ${labelsHTML}
+          </div>
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+              }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+  };
+
+  // تحديد/إلغاء تحديد صنف
+  const toggleProductSelection = (productId: number) => {
+    const newSelection = new Set(selectedProducts);
+    if (newSelection.has(productId)) {
+      newSelection.delete(productId);
+    } else {
+      newSelection.add(productId);
+    }
+    setSelectedProducts(newSelection);
+  };
+
+  // تحديد/إلغاء تحديد الكل
+  const toggleSelectAll = () => {
+    if (selectedProducts.size === products.length) {
+      setSelectedProducts(new Set());
+    } else {
+      setSelectedProducts(new Set(products.map(p => p.id)));
+    }
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto" dir="rtl">
       {/* Header */}
@@ -464,13 +666,45 @@ const ProductsPage = () => {
               <p className="text-text-secondary">إدارة أصناف المنتجات والمخزون والأسعار الخاصة بشركتك</p>
             </div>
           </div>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-all duration-200 shadow-md hover:shadow-lg"
-          >
-            <Plus className="w-5 h-5" />
-            إضافة صنف جديد
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                setIsBulkPrintMode(!isBulkPrintMode);
+                if (isBulkPrintMode) {
+                  setSelectedProducts(new Set());
+                }
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg ${isBulkPrintMode
+                ? 'bg-orange-600 text-white hover:bg-orange-700'
+                : 'bg-gray-600 text-white hover:bg-gray-700'
+                }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {isBulkPrintMode ? 'إلغاء الاختيار' : 'طباعة متعددة'}
+            </button>
+
+            {isBulkPrintMode && selectedProducts.size > 0 && (
+              <button
+                onClick={handleBulkPrintQR}
+                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                طباعة ({selectedProducts.size})
+              </button>
+            )}
+
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-all duration-200 shadow-md hover:shadow-lg"
+            >
+              <Plus className="w-5 h-5" />
+              إضافة صنف جديد
+            </button>
+          </div>
         </div>
       </div>
 
@@ -482,11 +716,10 @@ const ProductsPage = () => {
               setStockFilter('all');
               setCurrentPage(1);
             }}
-            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-              stockFilter === 'all'
-                ? 'bg-primary-600 text-white shadow-md'
-                : 'bg-background-secondary text-text-secondary hover:bg-background-hover'
-            }`}
+            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${stockFilter === 'all'
+              ? 'bg-primary-600 text-white shadow-md'
+              : 'bg-background-secondary text-text-secondary hover:bg-background-hover'
+              }`}
           >
             جميع الأصناف ({totalCount})
           </button>
@@ -495,11 +728,10 @@ const ProductsPage = () => {
               setStockFilter('available');
               setCurrentPage(1);
             }}
-            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-              stockFilter === 'available'
-                ? 'bg-success-600 text-white shadow-md'
-                : 'bg-background-secondary text-text-secondary hover:bg-background-hover'
-            }`}
+            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${stockFilter === 'available'
+              ? 'bg-success-600 text-white shadow-md'
+              : 'bg-background-secondary text-text-secondary hover:bg-background-hover'
+              }`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -511,11 +743,10 @@ const ProductsPage = () => {
               setStockFilter('out');
               setCurrentPage(1);
             }}
-            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-              stockFilter === 'out'
-                ? 'bg-error-600 text-white shadow-md'
-                : 'bg-background-secondary text-text-secondary hover:bg-background-hover'
-            }`}
+            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${stockFilter === 'out'
+              ? 'bg-error-600 text-white shadow-md'
+              : 'bg-background-secondary text-text-secondary hover:bg-background-hover'
+              }`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -527,11 +758,10 @@ const ProductsPage = () => {
               setStockFilter('low');
               setCurrentPage(1);
             }}
-            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-              stockFilter === 'low'
-                ? 'bg-warning-600 text-white shadow-md'
-                : 'bg-background-secondary text-text-secondary hover:bg-background-hover'
-            }`}
+            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${stockFilter === 'low'
+              ? 'bg-warning-600 text-white shadow-md'
+              : 'bg-background-secondary text-text-secondary hover:bg-background-hover'
+              }`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h-2v-2h2v2zm0-4h-2V7h2v6zm-1-9C6.48 4 2 8.48 2 14s4.48 10 10 10 10-4.48 10-10S17.52 4 12 4z" />
@@ -567,7 +797,7 @@ const ProductsPage = () => {
             </button>
           )}
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Search by Name */}
           <div className="relative">
@@ -577,9 +807,8 @@ const ProductsPage = () => {
               placeholder="البحث بالاسم..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200 ${
-                searchTerm ? 'border-blue-500 ring-2 ring-blue-100' : 'border-border-primary'
-              }`}
+              className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200 ${searchTerm ? 'border-blue-500 ring-2 ring-blue-100' : 'border-border-primary'
+                }`}
             />
             {searchTerm && (
               <button
@@ -603,9 +832,8 @@ const ProductsPage = () => {
               placeholder="البحث بالكود..."
               value={searchSKU}
               onChange={(e) => setSearchSKU(e.target.value)}
-              className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200 ${
-                searchSKU ? 'border-blue-500 ring-2 ring-blue-100' : 'border-border-primary'
-              }`}
+              className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200 ${searchSKU ? 'border-blue-500 ring-2 ring-blue-100' : 'border-border-primary'
+                }`}
             />
             {searchSKU && (
               <button
@@ -625,9 +853,8 @@ const ProductsPage = () => {
             <select
               value={selectedCompany}
               onChange={(e) => setSelectedCompany(e.target.value)}
-              className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary transition-all duration-200 appearance-none ${
-                selectedCompany ? 'border-blue-500 ring-2 ring-blue-100 font-medium' : 'border-border-primary'
-              }`}
+              className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary transition-all duration-200 appearance-none ${selectedCompany ? 'border-blue-500 ring-2 ring-blue-100 font-medium' : 'border-border-primary'
+                }`}
             >
               <option value="">جميع الشركات</option>
               {companiesData?.data?.companies.map((company) => (
@@ -649,9 +876,8 @@ const ProductsPage = () => {
             <select
               value={selectedUnit}
               onChange={(e) => setSelectedUnit(e.target.value)}
-              className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary transition-all duration-200 appearance-none ${
-                selectedUnit ? 'border-blue-500 ring-2 ring-blue-100 font-medium' : 'border-border-primary'
-              }`}
+              className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary transition-all duration-200 appearance-none ${selectedUnit ? 'border-blue-500 ring-2 ring-blue-100 font-medium' : 'border-border-primary'
+                }`}
             >
               <option value="">جميع الوحدات</option>
               <option value="صندوق">صندوق</option>
@@ -678,7 +904,7 @@ const ProductsPage = () => {
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
-            </button>
+                  </button>
                 </span>
               )}
               {searchSKU && (
@@ -733,6 +959,16 @@ const ProductsPage = () => {
           <table className="min-w-full table-auto">
             <thead className="bg-background-secondary">
               <tr>
+                {isBulkPrintMode && (
+                  <th className="px-3 sm:px-4 lg:px-6 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider w-[50px]">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.size === products.length && products.length > 0}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                  </th>
+                )}
                 <th className="px-3 sm:px-4 lg:px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider min-w-[200px]">
                   الصنف
                 </th>
@@ -776,12 +1012,12 @@ const ProductsPage = () => {
                       <div className="text-error-500 text-center">
                         <p className="text-base sm:text-lg font-semibold mb-2">خطأ في تحميل البيانات</p>
                         <p className="text-xs sm:text-sm text-text-secondary max-w-md">
-                          {(productsError as any)?.status === 401 
+                          {(productsError as any)?.status === 401
                             ? 'انتهت صلاحية جلستك، يرجى تسجيل الدخول مرة أخرى'
                             : 'حدث خطأ أثناء تحميل قائمة الأصناف'}
                         </p>
                       </div>
-                      <button 
+                      <button
                         onClick={() => window.location.reload()}
                         className="px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-all duration-200 text-sm sm:text-base"
                       >
@@ -811,7 +1047,19 @@ const ProductsPage = () => {
                 </tr>
               ) : (
                 products.map((product) => (
-                  <tr key={product.id} className="hover:bg-background-hover transition-all duration-200">
+                  <tr key={product.id} className={`hover:bg-background-hover transition-all duration-200 ${selectedProducts.has(product.id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                    }`}>
+                    {isBulkPrintMode && (
+                      <td className="px-3 sm:px-4 lg:px-6 py-4 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedProducts.has(product.id)}
+                          onChange={() => toggleProductSelection(product.id)}
+                          disabled={!product.qrCode}
+                          className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 disabled:opacity-50"
+                        />
+                      </td>
+                    )}
                     <td className="px-3 sm:px-4 lg:px-6 py-4">
                       <div className="flex items-center space-x-3 space-x-reverse">
                         <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10">
@@ -841,11 +1089,10 @@ const ProductsPage = () => {
                     </td>
                     <td className="px-3 sm:px-4 lg:px-6 py-4 text-sm text-text-primary">
                       <div className="flex flex-col items-start">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          (product.stock?.[0]?.boxes || 0) > 0 
-                            ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-200' 
-                            : 'bg-error-100 dark:bg-error-900/30 text-error-800 dark:text-error-200'
-                        }`}>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${(product.stock?.[0]?.boxes || 0) > 0
+                          ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-200'
+                          : 'bg-error-100 dark:bg-error-900/30 text-error-800 dark:text-error-200'
+                          }`}>
                           {formatArabicQuantity(product.stock?.[0]?.boxes || 0)}
                         </span>
                         <span className="text-xs text-text-secondary mt-1">
@@ -869,8 +1116,8 @@ const ProductsPage = () => {
                     </td>
                     <td className="px-3 sm:px-4 lg:px-6 py-4 text-sm text-gray-900">
                       <div className="font-medium text-green-600">
-                        {product.price?.sellPrice 
-                          ? formatArabicCurrency(product.price.sellPrice) 
+                        {product.price?.sellPrice
+                          ? formatArabicCurrency(product.price.sellPrice)
                           : '-'}
                       </div>
                     </td>
@@ -902,7 +1149,7 @@ const ProductsPage = () => {
                         >
                           <ShoppingBag className="w-4 h-4" />
                         </button>
-                        
+
                         {/* الأزرار الإضافية - تظهر في الشاشات المتوسطة وما فوق */}
                         <button
                           onClick={() => {
@@ -933,7 +1180,7 @@ const ProductsPage = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                           </svg>
                         </button>
-                        
+
                         {/* زر الحذف - يظهر في الشاشات الكبيرة فقط */}
                         <button
                           onClick={() => {
@@ -978,7 +1225,7 @@ const ProductsPage = () => {
                 التالي
               </button>
             </div>
-            
+
             {/* للشاشات الكبيرة */}
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
@@ -991,7 +1238,7 @@ const ProductsPage = () => {
               <div>
                 <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
                   {/* زر الصفحة الأولى */}
-                    <button
+                  <button
                     onClick={() => setCurrentPage(1)}
                     disabled={currentPage === 1}
                     className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1001,7 +1248,7 @@ const ProductsPage = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
                     </svg>
                   </button>
-                  
+
                   {/* زر السابق */}
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
@@ -1020,29 +1267,28 @@ const ProductsPage = () => {
                     const pages = pagination.pages;
                     let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
                     let endPage = Math.min(pages, startPage + maxButtons - 1);
-                    
+
                     if (endPage - startPage < maxButtons - 1) {
                       startPage = Math.max(1, endPage - maxButtons + 1);
                     }
 
                     const buttons = [];
-                    
+
                     for (let i = startPage; i <= endPage; i++) {
                       buttons.push(
                         <button
                           key={i}
                           onClick={() => setCurrentPage(i)}
-                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                            currentPage === i
-                          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                      }`}
-                    >
+                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === i
+                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            }`}
+                        >
                           {formatArabicNumber(i)}
-                    </button>
+                        </button>
                       );
                     }
-                    
+
                     return buttons;
                   })()}
 
@@ -1057,7 +1303,7 @@ const ProductsPage = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-                  
+
                   {/* زر الصفحة الأخيرة */}
                   <button
                     onClick={() => setCurrentPage(pagination.pages)}
@@ -1089,25 +1335,25 @@ const ProductsPage = () => {
                 ×
               </button>
             </div>
-            
+
             <form id="create-product-form" onSubmit={(e) => {
               e.preventDefault();
-              
+
               // التحقق من تحميل الشركات
               if (isLoadingCompanies) {
                 notifications.general.validationError('قائمة الشركات');
                 return;
               }
-              
+
               const formData = new FormData(e.currentTarget);
               const companyId = formData.get('companyId');
-              
+
               // التحقق من اختيار الشركة
               if (!companyId) {
                 notifications.general.validationError('الشركة');
                 return;
               }
-              
+
               const productData = {
                 sku: formData.get('sku') as string,
                 name: formData.get('name') as string,
@@ -1133,7 +1379,7 @@ const ProductsPage = () => {
                     placeholder="أدخل رمز الصنف"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     اسم الصنف *
@@ -1146,7 +1392,7 @@ const ProductsPage = () => {
                     placeholder="أدخل اسم الصنف"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     الشركة *
@@ -1171,10 +1417,10 @@ const ProductsPage = () => {
                   ) : (
                     <>
                       <input type="hidden" name="companyId" value={currentUser?.companyId || ''} />
-                      <input 
-                        type="text" 
-                        value={companiesData?.data?.companies?.find(c => c.id === currentUser?.companyId)?.name || 'جاري التحميل...'} 
-                        readOnly 
+                      <input
+                        type="text"
+                        value={companiesData?.data?.companies?.find(c => c.id === currentUser?.companyId)?.name || 'جاري التحميل...'}
+                        readOnly
                         className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600 cursor-not-allowed"
                       />
                       <p className="text-xs text-gray-500 mt-1">
@@ -1216,7 +1462,7 @@ const ProductsPage = () => {
                     />
                   </div>
                 )}
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     سعر البيع (للمتر الواحد)
@@ -1233,7 +1479,7 @@ const ProductsPage = () => {
                     أدخل سعر المتر الواحد (ليس سعر الصندوق)
                   </p>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     {createUnit === 'صندوق' ? 'عدد الصناديق الأولية' : `الكمية الأولية (${createUnit})`}
@@ -1247,14 +1493,14 @@ const ProductsPage = () => {
                     placeholder={createUnit === 'صندوق' ? 'عدد الصناديق' : `الكمية بال${createUnit}`}
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    {createUnit === 'صندوق' 
+                    {createUnit === 'صندوق'
                       ? 'إذا تركت هذا الحقل فارغاً، سيتم إنشاء الصنف بمخزون 0 صندوق'
                       : `إذا تركت هذا الحقل فارغاً، سيتم إنشاء الصنف بمخزون 0 ${createUnit}`
                     }
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex justify-end gap-3 mt-6">
                 <button
                   type="button"
@@ -1292,17 +1538,17 @@ const ProductsPage = () => {
                 ×
               </button>
             </div>
-            
+
             <form onSubmit={(e) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
-              
+
               const productData: any = {
                 sku: formData.get('sku') as string,
                 name: formData.get('name') as string,
                 unit: formData.get('unit') as string || undefined,
               };
-              
+
               // إرسال unitsPerBox فقط للصندوق
               if (editUnit === 'صندوق') {
                 const unitsPerBoxValue = formData.get('unitsPerBox');
@@ -1310,13 +1556,13 @@ const ProductsPage = () => {
                   productData.unitsPerBox = Number(unitsPerBoxValue);
                 }
               }
-              
+
               // إرسال السعر
               const sellPriceValue = formData.get('sellPrice');
               if (sellPriceValue) {
                 productData.sellPrice = Number(sellPriceValue);
               }
-              
+
               handleUpdateProduct(productData);
             }}>
               <div className="space-y-4">
@@ -1333,7 +1579,7 @@ const ProductsPage = () => {
                     placeholder="أدخل رمز الصنف"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     اسم الصنف *
@@ -1347,7 +1593,7 @@ const ProductsPage = () => {
                     placeholder="أدخل اسم الصنف"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     الوحدة
@@ -1364,7 +1610,7 @@ const ProductsPage = () => {
                     <option value="لتر">لتر</option>
                   </select>
                 </div>
-                
+
                 {/* حقل unitsPerBox يظهر فقط للصندوق */}
                 {editUnit === 'صندوق' && (
                   <div>
@@ -1382,7 +1628,7 @@ const ProductsPage = () => {
                     />
                   </div>
                 )}
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     السعر
@@ -1398,7 +1644,7 @@ const ProductsPage = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="flex justify-end gap-3 mt-6">
                 <button
                   type="button"
@@ -1439,7 +1685,7 @@ const ProductsPage = () => {
                 ×
               </button>
             </div>
-            
+
             <div className="mb-6">
               <p className="text-gray-700 mb-2">
                 هل أنت متأكد من حذف الصنف التالي؟
@@ -1452,7 +1698,7 @@ const ProductsPage = () => {
                 ⚠️ هذا الإجراء لا يمكن التراجع عنه
               </p>
             </div>
-            
+
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => {
@@ -1491,7 +1737,7 @@ const ProductsPage = () => {
                 ×
               </button>
             </div>
-            
+
             <div className="mb-4">
               <div className="bg-gray-50 p-3 rounded-md">
                 <p className="font-medium text-gray-900">{selectedProduct.name}</p>
@@ -1518,7 +1764,7 @@ const ProductsPage = () => {
                 </div>
               </div>
             </div>
-            
+
             <form onSubmit={(e) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
@@ -1547,7 +1793,7 @@ const ProductsPage = () => {
                   )}
                 </div>
               </div>
-              
+
               <div className="flex justify-end gap-3 mt-6">
                 <button
                   type="button"
@@ -1587,7 +1833,7 @@ const ProductsPage = () => {
                 ×
               </button>
             </div>
-            
+
             <div className="mb-4">
               <div className="bg-gray-50 p-3 rounded-md">
                 <p className="font-medium text-gray-900">{selectedProduct.name}</p>
@@ -1608,7 +1854,7 @@ const ProductsPage = () => {
                 </div>
               </div>
             </div>
-            
+
             <form onSubmit={(e) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
@@ -1635,7 +1881,7 @@ const ProductsPage = () => {
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex justify-end gap-3 mt-6">
                 <button
                   type="button"
@@ -1681,7 +1927,7 @@ const ProductsPage = () => {
                 ×
               </button>
             </div>
-            
+
             <div className="space-y-4">
               {/* معلومات الصنف */}
               <div className="bg-gray-50 p-4 rounded-lg">
@@ -1713,9 +1959,9 @@ const ProductsPage = () => {
 
               {/* QR Code */}
               <div className="flex justify-center bg-white p-4 border-2 border-gray-200 rounded-lg">
-                <img 
-                  src={qrCodeUrl} 
-                  alt="QR Code" 
+                <img
+                  src={qrCodeUrl}
+                  alt="QR Code"
                   className="w-64 h-64"
                 />
               </div>

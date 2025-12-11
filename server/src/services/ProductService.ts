@@ -70,9 +70,9 @@ export class ProductService {
         searchConditions.push({ name: { contains: search, mode: Prisma.QueryMode.insensitive } });
       }
 
-      // البحث بالكود (SKU) - بحث دقيق تماماً
+      // البحث بالكود (SKU) - بحث جزئي (Like)
       if (sku) {
-        whereConditions.sku = { equals: sku, mode: Prisma.QueryMode.insensitive };
+        whereConditions.sku = { contains: sku, mode: Prisma.QueryMode.insensitive };
       }
 
       // دمج شروط الشركة والبحث

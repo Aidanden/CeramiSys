@@ -34,7 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl">
-      <body className={`${tajawal.variable} antialiased`}>
+      <body className={`${tajawal.variable} antialiased`} suppressHydrationWarning={true}>
         <StoreProvider>
           <ThemeProvider>
             <AuthProvider>
