@@ -490,10 +490,9 @@ const ProductsPage = () => {
           <img src="${product.qrCode}" alt="QR Code" class="qr-image" />
         </div>
         <div class="info-section">
+          <div class="store-name">الامارات لسيراميك</div>
           <div class="product-name">${product.name}</div>
           <div class="product-sku">${product.sku}</div>
-          ${product.unitsPerBox ? `<div class="product-details">${product.unitsPerBox} م²/صندوق</div>` : ''}
-          ${product.price?.sellPrice ? `<div class="product-price">${product.price.sellPrice} د.ل/م²</div>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -596,11 +595,11 @@ const ProductsPage = () => {
               margin-bottom: 1mm;
             }
             
-            .product-price {
-              font-size: 11pt;
-              color: #000;
+            .store-name {
+              font-size: 10pt;
+              color: #333;
               font-weight: bold;
-              margin-top: 1mm;
+              margin-top: 2mm;
             }
             
             @media print {
