@@ -121,7 +121,7 @@ const ProductsPage = () => {
   // تطبيق فلاتر المخزون على الـ client-side (لأنها غير مدعومة في الـ API)
   if (stockFilter !== 'all') {
     products = products.filter(product => {
-      const stockBoxes = product.stock?.[0]?.boxes || 0;
+      const stockBoxes = (product.stock as any)?.[0]?.boxes || 0;
 
       if (stockFilter === 'out') {
         return stockBoxes === 0;
@@ -954,9 +954,9 @@ const ProductsPage = () => {
 
 
       {/* Products Table */}
-      <div className="bg-surface-primary rounded-lg shadow-sm border border-border-primary overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full table-auto">
+      <div className="bg-surface-primary rounded-lg shadow-sm border border-border-primary overflow-hidden w-full">
+        <div className="w-full">
+          <table className="w-full table-fixed">
             <thead className="bg-background-secondary">
               <tr>
                 {isBulkPrintMode && (
@@ -969,28 +969,31 @@ const ProductsPage = () => {
                     />
                   </th>
                 )}
-                <th className="px-3 sm:px-4 lg:px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider min-w-[200px]">
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{width: '22%'}}>
                   الصنف
                 </th>
-                <th className="px-3 sm:px-4 lg:px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider min-w-[100px]">
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{width: '6%'}}>
                   الرمز
                 </th>
-                <th className="px-3 sm:px-4 lg:px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider min-w-[80px] hidden sm:table-cell">
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden sm:table-cell" style={{width: '6%'}}>
                   الوحدة
                 </th>
-                <th className="px-3 sm:px-4 lg:px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider min-w-[120px]">
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{width: '7%'}}>
                   المخزون
                 </th>
-                <th className="px-3 sm:px-4 lg:px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider min-w-[120px] hidden md:table-cell">
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden md:table-cell" style={{width: '10%'}}>
                   الكمية (م²)
                 </th>
-                <th className="px-3 sm:px-4 lg:px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider min-w-[100px]">
-                  السعر (د.ل/م²)
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{width: '9%'}}>
+                  السعر
                 </th>
-                <th className="px-3 sm:px-4 lg:px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider min-w-[120px] hidden lg:table-cell">
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden md:table-cell" style={{width: '9%'}}>
+                  التكلفة
+                </th>
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden lg:table-cell" style={{width: '13%'}}>
                   الشركة
                 </th>
-                <th className="px-3 sm:px-4 lg:px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider min-w-[140px]">
+                <th className="px-2 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{width: '18%'}}>
                   الإجراءات
                 </th>
               </tr>
@@ -998,7 +1001,7 @@ const ProductsPage = () => {
             <tbody className="bg-surface-primary divide-y divide-border-primary">
               {isLoadingProducts ? (
                 <tr>
-                  <td colSpan={8} className="px-3 sm:px-6 py-8 sm:py-12 text-center text-text-secondary">
+                  <td colSpan={9} className="px-3 sm:px-6 py-8 sm:py-12 text-center text-text-secondary">
                     <div className="flex flex-col items-center gap-3">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                       <p className="text-sm sm:text-base">جاري التحميل...</p>
@@ -1007,7 +1010,7 @@ const ProductsPage = () => {
                 </tr>
               ) : productsError ? (
                 <tr>
-                  <td colSpan={8} className="px-3 sm:px-6 py-8 sm:py-12 text-center">
+                  <td colSpan={9} className="px-3 sm:px-6 py-8 sm:py-12 text-center">
                     <div className="flex flex-col items-center gap-4">
                       <div className="text-error-500 text-center">
                         <p className="text-base sm:text-lg font-semibold mb-2">خطأ في تحميل البيانات</p>
@@ -1028,7 +1031,7 @@ const ProductsPage = () => {
                 </tr>
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-3 sm:px-6 py-8 sm:py-12 text-center text-text-secondary">
+                  <td colSpan={9} className="px-3 sm:px-6 py-8 sm:py-12 text-center text-text-secondary">
                     <div className="flex flex-col items-center gap-3">
                       <ShoppingBag className="w-10 h-10 sm:w-12 sm:h-12 text-text-tertiary" />
                       <div className="text-center">
@@ -1059,15 +1062,15 @@ const ProductsPage = () => {
                           />
                         </td>
                       )}
-                      <td className="px-3 sm:px-4 lg:px-6 py-4">
-                        <div className="flex items-center space-x-3 space-x-reverse">
-                          <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10">
-                            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 flex items-center justify-center">
-                              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <td className="px-2 py-3">
+                        <div className="flex items-center space-x-2 space-x-reverse">
+                          <div className="flex-shrink-0 h-7 w-7">
+                            <div className="h-7 w-7 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 flex items-center justify-center">
+                              <ShoppingBag className="w-3.5 h-3.5" />
                             </div>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="text-sm font-medium text-text-primary truncate">
+                            <div className="text-xs font-medium text-text-primary whitespace-normal break-words" title={product.name}>
                               {product.name}
                             </div>
                             <div className="text-xs text-text-secondary sm:hidden">
@@ -1076,57 +1079,64 @@ const ProductsPage = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-4 text-sm text-text-primary">
-                        <code className="bg-background-tertiary px-2 py-1 rounded text-xs font-mono">
+                      <td className="px-2 py-3 text-sm text-text-primary">
+                        <code className="bg-background-tertiary px-1.5 py-0.5 rounded text-xs font-mono">
                           {product.sku}
                         </code>
                       </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-4 text-sm text-text-primary hidden sm:table-cell">
-                        <span className="inline-flex px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-800 rounded-full">
+                      <td className="px-2 py-3 text-sm text-text-primary hidden sm:table-cell">
+                        <span className="inline-flex px-1.5 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 rounded-full">
                           {product.unit || '-'}
                         </span>
                       </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-4 text-sm text-text-primary">
+                      <td className="px-2 py-3 text-sm text-text-primary">
                         <div className="flex flex-col items-start">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${(product.stock?.[0]?.boxes || 0) > 0
+                          <span className={`inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full ${((product.stock as any)?.[0]?.boxes || 0) > 0
                             ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-200'
                             : 'bg-error-100 dark:bg-error-900/30 text-error-800 dark:text-error-200'
                             }`}>
-                            {formatArabicQuantity(product.stock?.[0]?.boxes || 0)}
+                            {formatArabicQuantity((product.stock as any)?.[0]?.boxes || 0)}
                           </span>
-                          <span className="text-xs text-text-secondary mt-1">
+                          <span className="text-xs text-text-secondary mt-0.5">
                             {product.unit === 'صندوق' ? 'صندوق' : (product.unit || 'وحدة')}
                           </span>
                         </div>
                       </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-4 text-sm text-gray-900 hidden md:table-cell">
+                      <td className="px-2 py-3 text-sm text-gray-900 hidden md:table-cell">
                         {product.unit === 'صندوق' && product.unitsPerBox ? (
                           <div className="text-center">
                             <div className="font-medium text-blue-600 text-sm">
-                              {formatArabicArea(Number(product.stock?.[0]?.boxes || 0) * Number(product.unitsPerBox))} م²
+                              {formatArabicArea(Number((product.stock as any)?.[0]?.boxes || 0) * Number(product.unitsPerBox))} م²
                             </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {formatArabicArea(product.unitsPerBox)} م² × {formatArabicQuantity(product.stock?.[0]?.boxes || 0)}
+                            <div className="text-xs text-gray-500 mt-0.5">
+                              {formatArabicArea(product.unitsPerBox)} م² × {formatArabicQuantity((product.stock as any)?.[0]?.boxes || 0)}
                             </div>
                           </div>
                         ) : (
                           <span className="text-gray-400 text-center block">-</span>
                         )}
                       </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-4 text-sm text-gray-900">
+                      <td className="px-2 py-3 text-sm text-gray-900">
                         <div className="font-medium text-green-600">
                           {product.price?.sellPrice
                             ? formatArabicCurrency(product.price.sellPrice)
                             : '-'}
                         </div>
                       </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-4 text-sm text-gray-900 hidden lg:table-cell">
-                        <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full">
+                      <td className="px-2 py-3 text-sm text-gray-900 hidden md:table-cell">
+                        <div className="font-medium text-orange-600">
+                          {product.cost !== undefined && product.cost !== null
+                            ? formatArabicCurrency(product.cost)
+                            : '0'}
+                        </div>
+                      </td>
+                      <td className="px-2 py-3 text-sm text-gray-900 hidden lg:table-cell">
+                        <span className="inline-block max-w-full px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full truncate" title={product.createdByCompany.name}>
                           {product.createdByCompany.name}
                         </span>
                       </td>
-                      <td className="px-3 sm:px-4 lg:px-6 py-4 text-right text-sm font-medium">
-                        <div className="flex items-center justify-end gap-1 sm:gap-2">
+                      <td className="px-2 py-3 text-center text-sm font-medium">
+                        <div className="flex items-center justify-center gap-1 flex-wrap">
                           {/* الأزرار الأساسية - تظهر دائماً */}
                           <button
                             onClick={() => {

@@ -102,39 +102,8 @@ export default function AccountantWorkspace() {
     }
   );
   
-  // جلب الفواتير المعلقة للإحصائيات (فلتر حسب الشركة)
-  const { data: pendingData, refetch: refetchPending } = useGetSalesQuery(
-    {
-      page: 1,
-      limit: 1000,
-      companyId: activeCompanyId, // ✅ فلتر حسب الشركة
-      receiptIssued: false,
-      startDate: startDate || undefined,
-      endDate: endDate || undefined
-    },
-    {
-      refetchOnMountOrArgChange: 5,
-      refetchOnFocus: true,
-      refetchOnReconnect: true
-    }
-  );
-  
-  // جلب الفواتير المصدرة للإحصائيات (فلتر حسب الشركة)
-  const { data: issuedData, refetch: refetchIssued } = useGetSalesQuery(
-    {
-      page: 1,
-      limit: 1000,
-      companyId: activeCompanyId, // ✅ فلتر حسب الشركة
-      receiptIssued: true,
-      startDate: startDate || undefined,
-      endDate: endDate || undefined
-    },
-    {
-      refetchOnMountOrArgChange: 5,
-      refetchOnFocus: true,
-      refetchOnReconnect: true
-    }
-  );
+  // حساب الإحصائيات من البيانات الرئيسية (بدون queries إضافية)
+  // سيتم حساب الإحصائيات من salesData.pagination.total
 
   const [issueReceipt, { isLoading: isIssuing }] = useIssueReceiptMutation();
   const [createDispatchOrder, { isLoading: isCreatingDispatch }] = useCreateDispatchOrderMutation();
@@ -146,8 +115,12 @@ export default function AccountantWorkspace() {
   const { data: creditStatsData } = useGetCreditSalesStatsQuery();
   const [createPayment, { isLoading: isCreatingPayment }] = useCreatePaymentMutation();
   const [deletePayment] = useDeletePaymentMutation();
-  const { data: companiesData } = useGetCompaniesQuery({ limit: 1000 });
-  const { data: productsData } = useGetProductsQuery({ limit: 1000 });
+  const { data: companiesData } = useGetCompaniesQuery({ limit: 100 });
+  // تحميل المنتجات فقط عند فتح مودال التعديل
+  const { data: productsData } = useGetProductsQuery(
+    { limit: 500 },
+    { skip: !showEditModal }
+  );
 
   /**
    * طباعة الفاتورة - Print Invoice
@@ -267,8 +240,8 @@ export default function AccountantWorkspace() {
       // إعادة جلب جميع البيانات بعد إصدار الإيصال
       setTimeout(() => {
         refetch();
-        refetchPending();
-        refetchIssued();
+        
+        
       }, 500);
     } catch (err: any) {
       showError(err?.data?.message || 'حدث خطأ أثناء إصدار إيصال القبض');
@@ -348,7 +321,7 @@ export default function AccountantWorkspace() {
       
       // تحديث البيانات
       console.log('🔄 جاري تحديث البيانات...');
-      await Promise.all([refetch(), refetchPending(), refetchIssued()]);
+      await refetch();
       console.log('✅ تم تحديث البيانات بنجاح');
       
     } catch (err: any) {
@@ -557,8 +530,8 @@ ${itemsText}
       
       // Refresh data
       refetch();
-      refetchPending();
-      refetchIssued();
+      
+      
     } catch (err: any) {
       showError(err?.data?.message || 'حدث خطأ أثناء اعتماد الفاتورة');
     }
@@ -615,8 +588,8 @@ ${itemsText}
       
       // Refresh data
       refetch();
-      refetchPending();
-      refetchIssued();
+      
+      
     } catch (err: any) {
       showError(err?.data?.message || 'حدث خطأ أثناء تعديل الفاتورة');
     }
@@ -659,8 +632,8 @@ ${itemsText}
   useEffect(() => {
     console.log('🔄 تغيير الشركة النشطة:', activeCompanyId);
     refetch();
-    refetchPending();
-    refetchIssued();
+    
+    
     setCurrentPage(1); // إعادة تعيين الصفحة للأولى
   }, [activeCompanyId]);
   
@@ -867,16 +840,15 @@ ${itemsText}
     }
   }, [sales]);
   
-  // الإحصائيات
-  const pendingCount = pendingData?.data?.pagination?.total || 0;
-  const issuedCount = issuedData?.data?.pagination?.total || 0;
-  const totalCount = pendingCount + issuedCount;
+  // الإحصائيات - حساب من البيانات المحملة في الصفحة الحالية
+  const totalCount = salesData?.data?.pagination?.total || 0;
+  const currentSales = salesData?.data?.sales || [];
+  const pendingCount = currentSales.filter(s => !s.receiptIssued).length;
+  const issuedCount = currentSales.filter(s => s.receiptIssued).length;
   
-  const pendingSales = pendingData?.data?.sales || [];
-  const issuedSales = issuedData?.data?.sales || [];
-  const pendingTotal = pendingSales.reduce((sum, sale) => sum + sale.total, 0);
-  const issuedTotal = issuedSales.reduce((sum, sale) => sum + sale.total, 0);
-  const grandTotal = pendingTotal + issuedTotal;
+  const pendingTotal = currentSales.filter(s => !s.receiptIssued).reduce((sum, sale) => sum + sale.total, 0);
+  const issuedTotal = currentSales.filter(s => s.receiptIssued).reduce((sum, sale) => sum + sale.total, 0);
+  const grandTotal = currentSales.reduce((sum, sale) => sum + sale.total, 0);
   
   // Debug: تتبع الفواتير المحملة
   useEffect(() => {

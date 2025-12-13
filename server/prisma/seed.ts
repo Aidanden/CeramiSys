@@ -7,6 +7,41 @@ const path = require("path");
 // Map لحفظ الأصناف المُنشأة للاستخدام في Stock و CompanyProductPrice
 const createdProductsMap = new Map<number, number>(); // oldId -> newId
 
+// Map لحفظ التكلفة من ملف product_seed_
+const productCostMap = new Map<string, number>(); // sku -> cost
+
+// قراءة التكلفة من ملف product_seed_
+function loadProductCosts() {
+  const seedFilePath = path.resolve("prisma", "product_seed_");
+  if (!fs.existsSync(seedFilePath)) {
+    console.log("⚠️ ملف product_seed_ غير موجود، سيتم تخطي التكلفة");
+    return;
+  }
+  
+  const content = fs.readFileSync(seedFilePath, "utf-8");
+  const lines = content.split("\n");
+  
+  // تخطي السطر الأول (العناوين)
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    
+    // تقسيم السطر بالتاب
+    const parts = line.split("\t");
+    if (parts.length >= 5) {
+      const sku = parts[0].trim();
+      const costStr = parts[4].trim();
+      const cost = parseFloat(costStr);
+      
+      if (sku && !isNaN(cost) && cost > 0) {
+        productCostMap.set(sku, cost);
+      }
+    }
+  }
+  
+  console.log(`✅ تم تحميل ${productCostMap.size} تكلفة من ملف product_seed_`);
+}
+
 
 async function deleteAllData() {
   // Delete in reverse order to handle foreign key constraints
@@ -61,6 +96,9 @@ async function deleteAllData() {
 }
 
 async function main() {
+  // تحميل التكلفة من ملف product_seed_
+  loadProductCosts();
+  
   const dataDirectory = path.resolve("prisma", "seedData");
 
   const orderedFileNames = [
@@ -150,10 +188,19 @@ async function main() {
             margin: 1
           });
 
-          // إنشاء الصنف مع QR Code
+          // الحصول على التكلفة - أولاً من الـ JSON ثم من ملف product_seed_
+          const costFromJson = data.cost;
+          const costFromFile = productCostMap.get(data.sku);
+          const cost = costFromJson !== undefined ? costFromJson : costFromFile;
+          
+          // إزالة cost من data لأننا سنضيفها بشكل منفصل
+          const { cost: _, ...dataWithoutCost } = data;
+          
+          // إنشاء الصنف مع QR Code والتكلفة
           const createdProduct = await model.create({
             data: {
-              ...data,
+              ...dataWithoutCost,
+              cost: cost || null, // إضافة التكلفة إذا وجدت
               qrCode: qrCodeDataUrl
             },
           });
@@ -185,7 +232,8 @@ async function main() {
           });
 
           productCount++;
-          console.log(`  ✅ [${productCount}/${jsonData.length}] تم إنشاء الصنف مع QR Code: ${createdProduct.name} (${createdProduct.sku}) - ID: ${createdProduct.id}`);
+          const costInfo = cost ? ` - التكلفة: ${cost}` : '';
+          console.log(`  ✅ [${productCount}/${jsonData.length}] تم إنشاء الصنف مع QR Code: ${createdProduct.name} (${createdProduct.sku}) - ID: ${createdProduct.id}${costInfo}`);
         } catch (error) {
           console.error(`  ❌ فشل في إنشاء الصنف: ${data.name}`, error);
         }

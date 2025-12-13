@@ -37,9 +37,10 @@ model Company {
 
 model Product {
   id                        Int                        @id @default(autoincrement())
-  sku                       String                     @unique
+  sku                       String
   name                      String
   unit                      String?
+  cost                      Decimal?                   @db.Decimal(18, 4) // تكلفة المنتج
   createdByCompanyId        Int
   createdAt                 DateTime                   @default(now())
   updatedAt                 DateTime                   @updatedAt
@@ -56,6 +57,11 @@ model Product {
   damageReportLines         DamageReportLine[]
   externalStoreProducts     ExternalStoreProduct[]
   externalStoreInvoiceLines ExternalStoreInvoiceLine[]
+
+  @@unique([sku, createdByCompanyId]) // الكود فريد على مستوى الشركة فقط
+  @@index([createdByCompanyId])
+  @@index([createdAt])
+  @@index([name])
 }
 
 model Stock {
@@ -202,6 +208,8 @@ model Sale {
   @@index([saleType])
   @@index([isFullyPaid])
   @@index([receiptIssued])
+  @@index([createdAt])
+  @@index([companyId, createdAt])
 }
 
 model SaleLine {

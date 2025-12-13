@@ -13,6 +13,7 @@ export interface Product {
   sku: string;
   name: string;
   unit?: string;
+  cost?: number; // تكلفة المنتج
   unitsPerBox?: number; // عدد الوحدات في الصندوق الواحد
   qrCode?: string; // QR Code كـ Data URL
   createdByCompanyId: number;

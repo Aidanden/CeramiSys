@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+/** @type {import('next').NextConfig} */
 
 const nextConfig: NextConfig = {
   env: {
@@ -21,6 +22,11 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+    allowedDevOrigins: ['https://tg-em.com'],
+
 };
+
+
+
 
 export default nextConfig;

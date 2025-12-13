@@ -34,33 +34,31 @@ export class ProductService {
       // بناء شروط الشركة
       let companyConditions: Prisma.ProductWhereInput[] = [];
 
-      if (isSystemUser) {
-        // مستخدم النظام: يمكنه فلترة بأي شركة أو رؤية الكل
-        if (companyId) {
-          if (companyId === 1) {
-            // إذا اختار التقازي، أظهر أصناف التقازي فقط
-            companyConditions = [{ createdByCompanyId: 1 }];
-          } else {
-            // إذا اختار شركة أخرى، أظهر أصنافها + أصناف التقازي
-            companyConditions = [
-              { createdByCompanyId: companyId },
-              { createdByCompanyId: 1 }
-            ];
-          }
-        }
-      } else {
-        // مستخدم عادي: يرى أصناف شركته + أصناف التقازي
-        if (userCompanyId === 1) {
-          // إذا كان من التقازي، أظهر أصناف التقازي فقط
+      // منطق جلب الأصناف:
+      // - إذا تم تمرير companyId=1 (التقازي): أصناف التقازي فقط
+      // - إذا لم يتم تمرير companyId: جميع الأصناف (لجميع المستخدمين)
+      // - إذا تم تمرير companyId آخر: أصناف تلك الشركة + التقازي
+      if (companyId) {
+        if (companyId === 1) {
+          // التقازي فقط
           companyConditions = [{ createdByCompanyId: 1 }];
         } else {
-          // إذا كان من شركة أخرى، أظهر أصنافه + أصناف التقازي
+          // شركة أخرى + التقازي
           companyConditions = [
-            { createdByCompanyId: userCompanyId },
+            { createdByCompanyId: companyId },
             { createdByCompanyId: 1 }
           ];
         }
       }
+      // إذا لم يتم تمرير companyId، لا نضيف شروط (جميع الأصناف)
+      
+      // Debug logging
+      console.log('ProductService Debug:', {
+        companyId,
+        userCompanyId,
+        isSystemUser,
+        companyConditionsCount: companyConditions.length
+      });
 
       // بناء شروط البحث
       const searchConditions: Prisma.ProductWhereInput[] = [];
@@ -70,9 +68,9 @@ export class ProductService {
         searchConditions.push({ name: { contains: search, mode: Prisma.QueryMode.insensitive } });
       }
 
-      // البحث بالكود (SKU) - بحث جزئي (Like)
+      // البحث بالكود (SKU) - بحث مطابق تماماً
       if (sku) {
-        whereConditions.sku = { contains: sku, mode: Prisma.QueryMode.insensitive };
+        searchConditions.push({ sku: { equals: sku, mode: Prisma.QueryMode.insensitive } });
       }
 
       // دمج شروط الشركة والبحث
@@ -146,6 +144,7 @@ export class ProductService {
           unit: product.unit ?? undefined,
           unitsPerBox: product.unitsPerBox ? Number(product.unitsPerBox) : undefined,
           qrCode: product.qrCode ?? undefined,
+          cost: product.cost ? Number(product.cost) : 0,
           createdByCompanyId: product.createdByCompanyId,
           createdByCompany: product.createdByCompany,
           createdAt: product.createdAt,
@@ -247,13 +246,18 @@ export class ProductService {
    */
   async createProduct(data: CreateProductDto): Promise<ProductResponseDto> {
     try {
-      // التحقق من عدم وجود SKU مكرر
+      // التحقق من عدم وجود SKU مكرر لنفس الشركة
       const existingProduct = await this.prisma.product.findUnique({
-        where: { sku: data.sku }
+        where: { 
+          sku_createdByCompanyId: {
+            sku: data.sku,
+            createdByCompanyId: data.createdByCompanyId
+          }
+        }
       });
 
       if (existingProduct) {
-        throw new Error(`رمز الصنف "${data.sku}" موجود مسبقاً`);
+        throw new Error(`رمز الصنف "${data.sku}" موجود مسبقاً لهذه الشركة`);
       }
 
       // التحقق من وجود الشركة
@@ -372,14 +376,19 @@ export class ProductService {
         throw new Error('ليس لديك صلاحية لتعديل هذا الصنف');
       }
 
-      // التحقق من عدم وجود SKU مكرر (إذا تم تغييره)
+      // التحقق من عدم وجود SKU مكرر لنفس الشركة (إذا تم تغييره)
       if (data.sku && data.sku !== existingProduct.sku) {
         const duplicateSku = await this.prisma.product.findUnique({
-          where: { sku: data.sku }
+          where: { 
+            sku_createdByCompanyId: {
+              sku: data.sku,
+              createdByCompanyId: existingProduct.createdByCompanyId
+            }
+          }
         });
 
         if (duplicateSku) {
-          throw new Error(`رمز الصنف "${data.sku}" موجود مسبقاً`);
+          throw new Error(`رمز الصنف "${data.sku}" موجود مسبقاً لهذه الشركة`);
         }
       }
 

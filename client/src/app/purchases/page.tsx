@@ -84,8 +84,8 @@ const PurchasesPage = () => {
   });
 
   // Product search states
-  const [productSearchTerm, setProductSearchTerm] = useState('');
-  const [productCodeSearch, setProductCodeSearch] = useState('');
+  const [productNameSearch, setProductNameSearch] = useState(''); // البحث بالاسم (like)
+  const [productCodeSearch, setProductCodeSearch] = useState(''); // البحث بالكود (=)
   const [isSearching, setIsSearching] = useState(false);
   const [showProductDropdown, setShowProductDropdown] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -144,7 +144,7 @@ const PurchasesPage = () => {
   const { data: suppliersData, isLoading: suppliersLoading, error: suppliersError, refetch: refetchSuppliers } = useGetSuppliersQuery({ limit: 1000 });
   const { data: companiesData, isLoading: companiesLoading } = useGetCompaniesQuery({ limit: 1000 });
   const { data: productsData, isLoading: productsLoading } = useGetProductsQuery({ 
-    limit: 1000
+    limit: 10000  // زيادة الحد لجلب جميع الأصناف (754 + 1890 = 2644)
   });
   
   const [createPurchase, { isLoading: isCreating }] = useCreatePurchaseMutation();
@@ -178,18 +178,58 @@ const PurchasesPage = () => {
     }
   }, [user?.companyId]);
 
-  // Filter products by selected company
-  const filteredProducts = productsData?.data?.products?.filter(product => 
-    product.createdByCompanyId === selectedCompanyId
-  ) || [];
+  // Filter products by selected company only
+  // كل شركة تبحث عن أصنافها فقط
+  const filteredProducts = productsData?.data?.products?.filter(product => {
+    if (!selectedCompanyId) return false;
+    return product.createdByCompanyId === selectedCompanyId;
+  }) || [];
+  
+  // Debug: عرض عدد الأصناف المتاحة للشركة
+  console.log('📦 إجمالي الأصناف من API:', productsData?.data?.products?.length || 0);
+  console.log('🏢 الشركة المختارة:', selectedCompanyId, '| عدد أصنافها:', filteredProducts.length);
 
-  // Filter products by search term (name or SKU)
-  const searchFilteredProducts = filteredProducts.filter((product: any) => {
-    if (!productCodeSearch) return true;
-    const matchesName = product.name.toLowerCase().includes(productCodeSearch.toLowerCase());
-    const matchesCode = product.sku.toLowerCase().includes(productCodeSearch.toLowerCase());
-    return matchesName || matchesCode;
-  });
+  // Filter products by search term (name: starts with, code: exact match =)
+  const searchFilteredProducts = (() => {
+    // إذا لم يكن هناك بحث، لا تعرض شيء
+    if (!productNameSearch && !productCodeSearch) return [];
+    
+    const results = filteredProducts.filter((product: any) => {
+      // البحث بالكود (مطابقة تامة =)
+      if (productCodeSearch) {
+        const match = product.sku.toLowerCase() === productCodeSearch.toLowerCase();
+        return match;
+      }
+      // البحث بالاسم (يبدأ بـ)
+      if (productNameSearch) {
+        const match = product.name.toLowerCase().startsWith(productNameSearch.toLowerCase());
+        return match;
+      }
+      return false;
+    });
+    
+    // Debug
+    if (productCodeSearch) {
+      console.log('🔍 بحث بالكود:', productCodeSearch, '| النتائج:', results.length, '| الأكواد المتاحة:', filteredProducts.map((p: any) => p.sku).slice(0, 10));
+    }
+    if (productNameSearch) {
+      console.log('🔍 بحث بالاسم:', productNameSearch, '| النتائج:', results.length);
+    }
+    
+    return results;
+  })();
+
+  // دالة البحث بالكود
+  const handleProductCodeSearch = (code: string) => {
+    setProductCodeSearch(code);
+    setShowProductDropdown(code.length > 0 || productNameSearch.length > 0);
+  };
+  
+  // دالة البحث بالاسم
+  const handleProductNameSearch = (name: string) => {
+    setProductNameSearch(name);
+    setShowProductDropdown(name.length > 0 || productCodeSearch.length > 0);
+  };
 
   // دالة اختيار الصنف من القائمة المنسدلة
   const handleSelectProductFromDropdown = (product: any) => {
@@ -210,6 +250,7 @@ const PurchasesPage = () => {
     // إغلاق القائمة المنسدلة ومسح البحث
     setShowProductDropdown(false);
     setProductCodeSearch('');
+    setProductNameSearch('');
     
     success('تم الإضافة', `تم إضافة ${product.name} إلى الفاتورة`);
   };
@@ -1521,98 +1562,113 @@ const PurchasesPage = () => {
                         </div>
                         {selectedCompanyId && (
                           <span className="text-xs text-blue-700 font-medium bg-blue-100 px-2 py-1 rounded">
-                            أصناف {companiesData?.data?.companies?.find(c => c.id === selectedCompanyId)?.name} فقط
+                            أصناف {companiesData?.data?.companies?.find(c => c.id === selectedCompanyId)?.name} ({filteredProducts.length} صنف)
                           </span>
                         )}
                       </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">
-                          اختيار الصنف
-                        </label>
-                        <div className="relative product-dropdown-container">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
+                        {/* البحث بالكود */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            🔢 البحث بالكود
+                          </label>
                           <input
                             type="text"
                             value={productCodeSearch}
-                            onChange={(e) => {
-                              setProductCodeSearch(e.target.value);
-                              setShowProductDropdown(e.target.value.length > 0);
-                            }}
-                            onFocus={() => setShowProductDropdown(productCodeSearch.length > 0)}
+                            onChange={(e) => handleProductCodeSearch(e.target.value)}
+                            onFocus={() => setShowProductDropdown(productCodeSearch.length > 0 || productNameSearch.length > 0)}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
                                 e.preventDefault();
-                                // إضافة أول صنف من نتائج البحث
                                 if (searchFilteredProducts.length > 0) {
                                   handleSelectProductFromDropdown(searchFilteredProducts[0]);
                                 }
                               }
                             }}
-                            placeholder="ابحث بالاسم أو الكود..."
+                            placeholder="ابحث بالكود..."
+                            className="w-full px-3 py-2 border-2 border-blue-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono"
+                          />
+                        </div>
+                        {/* البحث بالاسم */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            🔍 البحث بالاسم
+                          </label>
+                          <input
+                            type="text"
+                            value={productNameSearch}
+                            onChange={(e) => handleProductNameSearch(e.target.value)}
+                            onFocus={() => setShowProductDropdown(productNameSearch.length > 0 || productCodeSearch.length > 0)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (searchFilteredProducts.length > 0) {
+                                  handleSelectProductFromDropdown(searchFilteredProducts[0]);
+                                }
+                              }
+                            }}
+                            placeholder="ابحث بجزء من الاسم..."
                             className="w-full px-3 py-2 border-2 border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           />
-                          
-                          {/* القائمة المنسدلة للأصناف */}
-                          {showProductDropdown && productCodeSearch && (
-                            <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                              {searchFilteredProducts.length > 0 ? (
-                                searchFilteredProducts.slice(0, 10).map((product: any) => (
-                                  <button
-                                    key={product.id}
-                                    type="button"
-                                    onClick={() => handleSelectProductFromDropdown(product)}
-                                    className="w-full px-3 py-2 text-right hover:bg-blue-50 focus:bg-blue-50 focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors"
-                                  >
-                                    <div className="flex justify-between items-center gap-3">
-                                      <div className="text-sm flex-1">
-                                        <div className="font-medium text-gray-900">
-                                          {product.name}
-                                        </div>
-                                        <div className="text-xs text-gray-500 flex items-center gap-2">
-                                          <span>كود: {product.sku}</span>
-                                          {/* عرض الكمية في المخزون */}
-                                          {product.stock && product.stock.length > 0 && (
-                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">
-                                              📦 {(() => {
-                                                // البحث عن المخزون في الشركة المالكة للصنف أولاً
-                                                let stock = product.stock.find((s: any) => s.companyId === product.createdByCompanyId);
-                                                if (!stock || stock.boxes === 0) {
-                                                  stock = product.stock.find((s: any) => s.companyId === selectedCompanyId);
-                                                }
-                                                return stock?.boxes || 0;
-                                              })()} {product.unit || 'وحدة'}
-                                            </span>
-                                          )}
-                                        </div>
+                        </div>
+                        
+                        {/* القائمة المنسدلة للأصناف - تظهر تحت كلا الخانتين */}
+                        {showProductDropdown && (productNameSearch || productCodeSearch) && (
+                          <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {searchFilteredProducts.length > 0 ? (
+                              searchFilteredProducts.slice(0, 10).map((product: any) => (
+                                <button
+                                  key={product.id}
+                                  type="button"
+                                  onClick={() => handleSelectProductFromDropdown(product)}
+                                  className="w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors hover:bg-blue-50"
+                                >
+                                  <div className="flex justify-between items-center gap-3">
+                                    <div className="text-sm flex-1">
+                                      <div className="font-medium text-gray-900">
+                                        {product.name}
                                       </div>
-                                      <div className="text-xs font-medium text-blue-600 whitespace-nowrap">
-                                        {product.latestPricing?.purchasePrice 
-                                          ? `${Number(product.latestPricing.purchasePrice).toFixed(2)} د.ل` 
-                                          : 'غير محدد'}
+                                      <div className="text-xs text-gray-500 flex items-center gap-2">
+                                        <span>كود: {product.sku}</span>
+                                        {/* عرض الكمية في المخزون */}
+                                        {product.stock && product.stock.length > 0 && (
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">
+                                            📦 {(() => {
+                                              const stock = product.stock.find((s: any) => s.companyId === selectedCompanyId);
+                                              return stock?.boxes || 0;
+                                            })()} {product.unit || 'وحدة'}
+                                          </span>
+                                        )}
                                       </div>
                                     </div>
-                                  </button>
-                                ))
-                              ) : (
-                                <div className="px-3 py-2 text-sm text-gray-500 text-center">
-                                  لا توجد أصناف مطابقة
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                          💡 ابحث واختر الصنف لإضافته تلقائياً للفاتورة
-                        </p>
+                                    <div className="text-xs font-medium whitespace-nowrap text-blue-600">
+                                      {product.latestPricing?.purchasePrice 
+                                        ? `${Number(product.latestPricing.purchasePrice).toFixed(2)} د.ل` 
+                                        : 'غير محدد'}
+                                    </div>
+                                  </div>
+                                </button>
+                              ))
+                            ) : (
+                              <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                                لا توجد أصناف مطابقة
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      {productCodeSearch && (
+                      {(productCodeSearch || productNameSearch) && (
                         <div className="mt-3 flex justify-between items-center p-2 bg-white rounded-md border border-blue-200">
                           <div className="text-xs font-medium text-gray-600">
                             📊 عرض {searchFilteredProducts.length} منتج من أصل {filteredProducts.length}
+                            {productCodeSearch && <span className="text-blue-600 mr-2">| كود: {productCodeSearch}</span>}
+                            {productNameSearch && <span className="text-green-600 mr-2">| اسم: {productNameSearch}</span>}
                           </div>
                           <button
                             type="button"
                             onClick={() => {
                               setProductCodeSearch('');
+                              setProductNameSearch('');
                               setShowProductDropdown(false);
                             }}
                             className="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 hover:bg-blue-50 rounded transition-colors"
