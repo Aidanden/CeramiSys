@@ -1,0 +1,10916 @@
+[
+  {
+    "productSku": "1",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 44.75
+  },
+  {
+    "productSku": "2",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 44.75
+  },
+  {
+    "productSku": "3",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 28.75
+  },
+  {
+    "productSku": "4",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 34.5
+  },
+  {
+    "productSku": "5",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 34.5
+  },
+  {
+    "productSku": "6",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 34.5
+  },
+  {
+    "productSku": "7",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 26.295
+  },
+  {
+    "productSku": "8",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 26.295
+  },
+  {
+    "productSku": "9",
+    "companyId": 2,
+    "sellPrice": 140,
+    "cost": 26.295
+  },
+  {
+    "productSku": "10",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 34.5
+  },
+  {
+    "productSku": "11",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 34.5
+  },
+  {
+    "productSku": "12",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 23.5
+  },
+  {
+    "productSku": "13",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 59
+  },
+  {
+    "productSku": "14",
+    "companyId": 2,
+    "sellPrice": 35,
+    "cost": 64
+  },
+  {
+    "productSku": "15",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 59
+  },
+  {
+    "productSku": "16",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 48
+  },
+  {
+    "productSku": "17",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 62
+  },
+  {
+    "productSku": "18",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 93.25
+  },
+  {
+    "productSku": "19",
+    "companyId": 2,
+    "sellPrice": 35,
+    "cost": 65.5
+  },
+  {
+    "productSku": "20",
+    "companyId": 2,
+    "sellPrice": 90,
+    "cost": 243
+  },
+  {
+    "productSku": "21",
+    "companyId": 2,
+    "sellPrice": 35,
+    "cost": 74
+  },
+  {
+    "productSku": "22",
+    "companyId": 2,
+    "sellPrice": 30,
+    "cost": 45.5
+  },
+  {
+    "productSku": "23",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 32.5
+  },
+  {
+    "productSku": "24",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 32.5
+  },
+  {
+    "productSku": "25",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 94.25
+  },
+  {
+    "productSku": "26",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 24.5
+  },
+  {
+    "productSku": "27",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 65
+  },
+  {
+    "productSku": "28",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 132
+  },
+  {
+    "productSku": "29",
+    "companyId": 2,
+    "sellPrice": 20,
+    "cost": 10
+  },
+  {
+    "productSku": "30",
+    "companyId": 2,
+    "sellPrice": 60,
+    "cost": 55.75
+  },
+  {
+    "productSku": "31",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 10
+  },
+  {
+    "productSku": "32",
+    "companyId": 2,
+    "sellPrice": 20,
+    "cost": 10
+  },
+  {
+    "productSku": "33",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 43.25
+  },
+  {
+    "productSku": "34",
+    "companyId": 2,
+    "sellPrice": 60,
+    "cost": 55.75
+  },
+  {
+    "productSku": "35",
+    "companyId": 2,
+    "sellPrice": 35,
+    "cost": 28
+  },
+  {
+    "productSku": "36",
+    "companyId": 2,
+    "sellPrice": 35,
+    "cost": 28
+  },
+  {
+    "productSku": "37",
+    "companyId": 2,
+    "sellPrice": 35,
+    "cost": 28
+  },
+  {
+    "productSku": "38",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 75.75
+  },
+  {
+    "productSku": "39",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 43.25
+  },
+  {
+    "productSku": "40",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 43.25
+  },
+  {
+    "productSku": "41",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 73.25
+  },
+  {
+    "productSku": "42",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 75
+  },
+  {
+    "productSku": "43",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 62.25
+  },
+  {
+    "productSku": "44",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 49
+  },
+  {
+    "productSku": "45",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 49
+  },
+  {
+    "productSku": "46",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 65.25
+  },
+  {
+    "productSku": "47",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 35.75
+  },
+  {
+    "productSku": "48",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 34.5
+  },
+  {
+    "productSku": "49",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 34.5
+  },
+  {
+    "productSku": "50",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 76
+  },
+  {
+    "productSku": "51",
+    "companyId": 2,
+    "sellPrice": 35,
+    "cost": 30
+  },
+  {
+    "productSku": "52",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 33
+  },
+  {
+    "productSku": "53",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 56.5
+  },
+  {
+    "productSku": "54",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 65.5
+  },
+  {
+    "productSku": "55",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 110
+  },
+  {
+    "productSku": "56",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 65.5
+  },
+  {
+    "productSku": "57",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 69.5
+  },
+  {
+    "productSku": "58",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 65.5
+  },
+  {
+    "productSku": "59",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 65.5
+  },
+  {
+    "productSku": "60",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 23
+  },
+  {
+    "productSku": "61",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 109.818
+  },
+  {
+    "productSku": "62",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 117.25
+  },
+  {
+    "productSku": "63",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 85.75
+  },
+  {
+    "productSku": "64",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 85.75
+  },
+  {
+    "productSku": "65",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 59
+  },
+  {
+    "productSku": "66",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 59
+  },
+  {
+    "productSku": "67",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 59
+  },
+  {
+    "productSku": "68",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 59
+  },
+  {
+    "productSku": "69",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 59
+  },
+  {
+    "productSku": "70",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 79.75
+  },
+  {
+    "productSku": "71",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 79.75
+  },
+  {
+    "productSku": "72",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 79.75
+  },
+  {
+    "productSku": "73",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 31
+  },
+  {
+    "productSku": "74",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 43.353
+  },
+  {
+    "productSku": "75",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 31
+  },
+  {
+    "productSku": "76",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 124.75
+  },
+  {
+    "productSku": "77",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 1
+  },
+  {
+    "productSku": "78",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 119.25
+  },
+  {
+    "productSku": "79",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 28
+  },
+  {
+    "productSku": "80",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 69.094
+  },
+  {
+    "productSku": "81",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 89.474
+  },
+  {
+    "productSku": "82",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 1
+  },
+  {
+    "productSku": "83",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 49.75
+  },
+  {
+    "productSku": "84",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 27.888
+  },
+  {
+    "productSku": "85",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 65.25
+  },
+  {
+    "productSku": "86",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 56.5
+  },
+  {
+    "productSku": "87",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 65.25
+  },
+  {
+    "productSku": "88",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 76
+  },
+  {
+    "productSku": "89",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 76
+  },
+  {
+    "productSku": "90",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 76
+  },
+  {
+    "productSku": "91",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 76
+  },
+  {
+    "productSku": "92",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 65.25
+  },
+  {
+    "productSku": "93",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 65.25
+  },
+  {
+    "productSku": "94",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 27.5
+  },
+  {
+    "productSku": "95",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 49
+  },
+  {
+    "productSku": "96",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 44.25
+  },
+  {
+    "productSku": "97",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 76
+  },
+  {
+    "productSku": "98",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 16.5
+  },
+  {
+    "productSku": "99",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 21.75
+  },
+  {
+    "productSku": "100",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 21.75
+  },
+  {
+    "productSku": "101",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 21.75
+  },
+  {
+    "productSku": "102",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 21.75
+  },
+  {
+    "productSku": "103",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 54.25
+  },
+  {
+    "productSku": "104",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 43.5
+  },
+  {
+    "productSku": "105",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 21.25
+  },
+  {
+    "productSku": "106",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 21.75
+  },
+  {
+    "productSku": "107",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 43.5
+  },
+  {
+    "productSku": "108",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 35.75
+  },
+  {
+    "productSku": "109",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 77.114
+  },
+  {
+    "productSku": "110",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 34.5
+  },
+  {
+    "productSku": "111",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 34.5
+  },
+  {
+    "productSku": "112",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 55.5
+  },
+  {
+    "productSku": "113",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 55.5
+  },
+  {
+    "productSku": "114",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 55.5
+  },
+  {
+    "productSku": "115",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 49.729
+  },
+  {
+    "productSku": "116",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 36
+  },
+  {
+    "productSku": "117",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 60
+  },
+  {
+    "productSku": "118",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 55.5
+  },
+  {
+    "productSku": "119",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 59
+  },
+  {
+    "productSku": "120",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 59
+  },
+  {
+    "productSku": "121",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 59
+  },
+  {
+    "productSku": "122",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 59
+  },
+  {
+    "productSku": "123",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 59
+  },
+  {
+    "productSku": "124",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 73.251
+  },
+  {
+    "productSku": "125",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 117.25
+  },
+  {
+    "productSku": "126",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 14.1
+  },
+  {
+    "productSku": "127",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 160.002
+  },
+  {
+    "productSku": "128",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 105
+  },
+  {
+    "productSku": "129",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 119.2
+  },
+  {
+    "productSku": "130",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 126.041
+  },
+  {
+    "productSku": "131",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 33.25
+  },
+  {
+    "productSku": "132",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 22.75
+  },
+  {
+    "productSku": "133",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 75.75
+  },
+  {
+    "productSku": "134",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 27.888
+  },
+  {
+    "productSku": "135",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 35.651
+  },
+  {
+    "productSku": "136",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 35.651
+  },
+  {
+    "productSku": "137",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 35.651
+  },
+  {
+    "productSku": "138",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 33.75
+  },
+  {
+    "productSku": "139",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 27.347
+  },
+  {
+    "productSku": "140",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 27
+  },
+  {
+    "productSku": "141",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 28.424
+  },
+  {
+    "productSku": "142",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 41.5
+  },
+  {
+    "productSku": "143",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 41.5
+  },
+  {
+    "productSku": "144",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 41.5
+  },
+  {
+    "productSku": "145",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 41.5
+  },
+  {
+    "productSku": "146",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 37
+  },
+  {
+    "productSku": "147",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 37
+  },
+  {
+    "productSku": "148",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 37
+  },
+  {
+    "productSku": "149",
+    "companyId": 2,
+    "sellPrice": 60,
+    "cost": 37
+  },
+  {
+    "productSku": "150",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 37
+  },
+  {
+    "productSku": "151",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 75.75
+  },
+  {
+    "productSku": "152",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 51.25
+  },
+  {
+    "productSku": "153",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 51.25
+  },
+  {
+    "productSku": "154",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 51.25
+  },
+  {
+    "productSku": "155",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 51.25
+  },
+  {
+    "productSku": "156",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 52.75
+  },
+  {
+    "productSku": "157",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 35.183
+  },
+  {
+    "productSku": "158",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 25
+  },
+  {
+    "productSku": "159",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 43.5
+  },
+  {
+    "productSku": "160",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 43.5
+  },
+  {
+    "productSku": "161",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 117.25
+  },
+  {
+    "productSku": "162",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 34.5
+  },
+  {
+    "productSku": "163",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 49
+  },
+  {
+    "productSku": "164",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 34.5
+  },
+  {
+    "productSku": "165",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 44.5
+  },
+  {
+    "productSku": "166",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 65.25
+  },
+  {
+    "productSku": "167",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 54.25
+  },
+  {
+    "productSku": "168",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 106.25
+  },
+  {
+    "productSku": "169",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 54.25
+  },
+  {
+    "productSku": "170",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 17.5
+  },
+  {
+    "productSku": "171",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 20
+  },
+  {
+    "productSku": "172",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 76
+  },
+  {
+    "productSku": "173",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 20
+  },
+  {
+    "productSku": "174",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 76
+  },
+  {
+    "productSku": "175",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 16.5
+  },
+  {
+    "productSku": "176",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 45.5
+  },
+  {
+    "productSku": "177",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 75.75
+  },
+  {
+    "productSku": "178",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 76
+  },
+  {
+    "productSku": "179",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 72.75
+  },
+  {
+    "productSku": "180",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 35
+  },
+  {
+    "productSku": "181",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 65.25
+  },
+  {
+    "productSku": "182",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 75.75
+  },
+  {
+    "productSku": "183",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 43.5
+  },
+  {
+    "productSku": "184",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 43.5
+  },
+  {
+    "productSku": "185",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 43.5
+  },
+  {
+    "productSku": "186",
+    "companyId": 2,
+    "sellPrice": 20,
+    "cost": 32.75
+  },
+  {
+    "productSku": "187",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 106.25
+  },
+  {
+    "productSku": "188",
+    "companyId": 2,
+    "sellPrice": 60,
+    "cost": 40.71
+  },
+  {
+    "productSku": "189",
+    "companyId": 2,
+    "sellPrice": 88,
+    "cost": 55.011
+  },
+  {
+    "productSku": "190",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 30.25
+  },
+  {
+    "productSku": "191",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 29.504
+  },
+  {
+    "productSku": "192",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 31.065
+  },
+  {
+    "productSku": "193",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 32.09
+  },
+  {
+    "productSku": "194",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 32.09
+  },
+  {
+    "productSku": "195",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 32.09
+  },
+  {
+    "productSku": "196",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 32.09
+  },
+  {
+    "productSku": "197",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 32.09
+  },
+  {
+    "productSku": "198",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 32.09
+  },
+  {
+    "productSku": "199",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 19
+  },
+  {
+    "productSku": "200",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 22
+  },
+  {
+    "productSku": "201",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 35.75
+  },
+  {
+    "productSku": "202",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 61.4
+  },
+  {
+    "productSku": "203",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 56.067
+  },
+  {
+    "productSku": "204",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 45.41
+  },
+  {
+    "productSku": "205",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 105
+  },
+  {
+    "productSku": "206",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 130
+  },
+  {
+    "productSku": "207",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 135
+  },
+  {
+    "productSku": "208",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 132.768
+  },
+  {
+    "productSku": "209",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 36.25
+  },
+  {
+    "productSku": "210",
+    "companyId": 2,
+    "sellPrice": 450,
+    "cost": 229.25
+  },
+  {
+    "productSku": "211",
+    "companyId": 2,
+    "sellPrice": 450,
+    "cost": 229.25
+  },
+  {
+    "productSku": "212",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 79.75
+  },
+  {
+    "productSku": "213",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 56.75
+  },
+  {
+    "productSku": "214",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 79.75
+  },
+  {
+    "productSku": "215",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 71.75
+  },
+  {
+    "productSku": "216",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 113.58
+  },
+  {
+    "productSku": "217",
+    "companyId": 2,
+    "sellPrice": 450,
+    "cost": 229.25
+  },
+  {
+    "productSku": "218",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 60.295
+  },
+  {
+    "productSku": "219",
+    "companyId": 2,
+    "sellPrice": 60,
+    "cost": 37
+  },
+  {
+    "productSku": "220",
+    "companyId": 2,
+    "sellPrice": 60,
+    "cost": 38
+  },
+  {
+    "productSku": "221",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 42.75
+  },
+  {
+    "productSku": "222",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 34.25
+  },
+  {
+    "productSku": "223",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 34.25
+  },
+  {
+    "productSku": "224",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 72.25
+  },
+  {
+    "productSku": "225",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 83.897
+  },
+  {
+    "productSku": "226",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 40.25
+  },
+  {
+    "productSku": "227",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 40.25
+  },
+  {
+    "productSku": "228",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 56.5
+  },
+  {
+    "productSku": "229",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 68.894
+  },
+  {
+    "productSku": "230",
+    "companyId": 2,
+    "sellPrice": 90,
+    "cost": 47.91
+  },
+  {
+    "productSku": "231",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 62.927
+  },
+  {
+    "productSku": "232",
+    "companyId": 2,
+    "sellPrice": 150,
+    "cost": 106.75
+  },
+  {
+    "productSku": "233",
+    "companyId": 2,
+    "sellPrice": 150,
+    "cost": 106.75
+  },
+  {
+    "productSku": "234",
+    "companyId": 2,
+    "sellPrice": 25,
+    "cost": 13.25
+  },
+  {
+    "productSku": "235",
+    "companyId": 2,
+    "sellPrice": 25,
+    "cost": 13.25
+  },
+  {
+    "productSku": "236",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 57.25
+  },
+  {
+    "productSku": "237",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 57.25
+  },
+  {
+    "productSku": "238",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 57.25
+  },
+  {
+    "productSku": "239",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 27.888
+  },
+  {
+    "productSku": "240",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 59
+  },
+  {
+    "productSku": "241",
+    "companyId": 2,
+    "sellPrice": 35,
+    "cost": 64
+  },
+  {
+    "productSku": "242",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 34.5
+  },
+  {
+    "productSku": "243",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 23.5
+  },
+  {
+    "productSku": "244",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 46.25
+  },
+  {
+    "productSku": "245",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 37.25
+  },
+  {
+    "productSku": "246",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 37.25
+  },
+  {
+    "productSku": "247",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 37.25
+  },
+  {
+    "productSku": "248",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 37.25
+  },
+  {
+    "productSku": "249",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 36.813
+  },
+  {
+    "productSku": "250",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 20.75
+  },
+  {
+    "productSku": "251",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 26.5
+  },
+  {
+    "productSku": "252",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 39
+  },
+  {
+    "productSku": "253",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 36.75
+  },
+  {
+    "productSku": "254",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 30.75
+  },
+  {
+    "productSku": "255",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 30.75
+  },
+  {
+    "productSku": "256",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 56.5
+  },
+  {
+    "productSku": "257",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 65.75
+  },
+  {
+    "productSku": "258",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 56.5
+  },
+  {
+    "productSku": "259",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 65.75
+  },
+  {
+    "productSku": "260",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 39
+  },
+  {
+    "productSku": "261",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 39
+  },
+  {
+    "productSku": "262",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 105
+  },
+  {
+    "productSku": "263",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 26
+  },
+  {
+    "productSku": "264",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 26
+  },
+  {
+    "productSku": "265",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 59
+  },
+  {
+    "productSku": "266",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 66
+  },
+  {
+    "productSku": "267",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 58.25
+  },
+  {
+    "productSku": "268",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 58.25
+  },
+  {
+    "productSku": "269",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 4.2
+  },
+  {
+    "productSku": "270",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 58.25
+  },
+  {
+    "productSku": "271",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 34.25
+  },
+  {
+    "productSku": "272",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 30.25
+  },
+  {
+    "productSku": "273",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 61
+  },
+  {
+    "productSku": "274",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 74.75
+  },
+  {
+    "productSku": "275",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 57.25
+  },
+  {
+    "productSku": "276",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 26
+  },
+  {
+    "productSku": "277",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 26
+  },
+  {
+    "productSku": "278",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 26
+  },
+  {
+    "productSku": "279",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 26
+  },
+  {
+    "productSku": "280",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 26
+  },
+  {
+    "productSku": "281",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 50.744
+  },
+  {
+    "productSku": "282",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 30.25
+  },
+  {
+    "productSku": "283",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 30.25
+  },
+  {
+    "productSku": "284",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 30.25
+  },
+  {
+    "productSku": "285",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 56.325
+  },
+  {
+    "productSku": "286",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 40.75
+  },
+  {
+    "productSku": "287",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 65
+  },
+  {
+    "productSku": "288",
+    "companyId": 2,
+    "sellPrice": 90,
+    "cost": 65
+  },
+  {
+    "productSku": "289",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 55
+  },
+  {
+    "productSku": "290",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 30.25
+  },
+  {
+    "productSku": "291",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 34.25
+  },
+  {
+    "productSku": "292",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 34.25
+  },
+  {
+    "productSku": "293",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 30.25
+  },
+  {
+    "productSku": "294",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 30.25
+  },
+  {
+    "productSku": "295",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 41.25
+  },
+  {
+    "productSku": "296",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 30.25
+  },
+  {
+    "productSku": "297",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 81.75
+  },
+  {
+    "productSku": "298",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 42.624
+  },
+  {
+    "productSku": "299",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 66
+  },
+  {
+    "productSku": "300",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 71.5
+  },
+  {
+    "productSku": "301",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 74.75
+  },
+  {
+    "productSku": "302",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 31
+  },
+  {
+    "productSku": "303",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 28.5
+  },
+  {
+    "productSku": "304",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 42.624
+  },
+  {
+    "productSku": "305",
+    "companyId": 2,
+    "sellPrice": 60,
+    "cost": 70
+  },
+  {
+    "productSku": "306",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 28.5
+  },
+  {
+    "productSku": "307",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 42.624
+  },
+  {
+    "productSku": "308",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 31
+  },
+  {
+    "productSku": "309",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 28.5
+  },
+  {
+    "productSku": "310",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 29
+  },
+  {
+    "productSku": "311",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 28.5
+  },
+  {
+    "productSku": "312",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 28.5
+  },
+  {
+    "productSku": "313",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 46.75
+  },
+  {
+    "productSku": "314",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 31.25
+  },
+  {
+    "productSku": "315",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 31.25
+  },
+  {
+    "productSku": "316",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 31
+  },
+  {
+    "productSku": "317",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 55.312
+  },
+  {
+    "productSku": "318",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 28.5
+  },
+  {
+    "productSku": "319",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 42.624
+  },
+  {
+    "productSku": "320",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 31
+  },
+  {
+    "productSku": "321",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 28.5
+  },
+  {
+    "productSku": "322",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 28.5
+  },
+  {
+    "productSku": "323",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 42.624
+  },
+  {
+    "productSku": "324",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "325",
+    "companyId": 2,
+    "sellPrice": 450,
+    "cost": 124.25
+  },
+  {
+    "productSku": "326",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 28.5
+  },
+  {
+    "productSku": "327",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 74.593
+  },
+  {
+    "productSku": "328",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 113.25
+  },
+  {
+    "productSku": "329",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 113.25
+  },
+  {
+    "productSku": "330",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 57.25
+  },
+  {
+    "productSku": "331",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 60.295
+  },
+  {
+    "productSku": "332",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 45.5
+  },
+  {
+    "productSku": "333",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 65
+  },
+  {
+    "productSku": "334",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 65
+  },
+  {
+    "productSku": "335",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 5
+  },
+  {
+    "productSku": "336",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 110
+  },
+  {
+    "productSku": "337",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 74.593
+  },
+  {
+    "productSku": "338",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 105
+  },
+  {
+    "productSku": "339",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 35.75
+  },
+  {
+    "productSku": "340",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 35.75
+  },
+  {
+    "productSku": "341",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 27.25
+  },
+  {
+    "productSku": "342",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 553
+  },
+  {
+    "productSku": "343",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 71.75
+  },
+  {
+    "productSku": "344",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 71.75
+  },
+  {
+    "productSku": "345",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 94.5
+  },
+  {
+    "productSku": "346",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 476.42
+  },
+  {
+    "productSku": "347",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 71.75
+  },
+  {
+    "productSku": "348",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 553
+  },
+  {
+    "productSku": "349",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 30.75
+  },
+  {
+    "productSku": "350",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 30.75
+  },
+  {
+    "productSku": "351",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 30.75
+  },
+  {
+    "productSku": "352",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 30.75
+  },
+  {
+    "productSku": "353",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 30.75
+  },
+  {
+    "productSku": "354",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 30.75
+  },
+  {
+    "productSku": "355",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 30.75
+  },
+  {
+    "productSku": "356",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 30.75
+  },
+  {
+    "productSku": "357",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 56.325
+  },
+  {
+    "productSku": "358",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 36
+  },
+  {
+    "productSku": "359",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 36
+  },
+  {
+    "productSku": "360",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 45.5
+  },
+  {
+    "productSku": "361",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 45.5
+  },
+  {
+    "productSku": "362",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 38.5
+  },
+  {
+    "productSku": "363",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 38.5
+  },
+  {
+    "productSku": "364",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 41.25
+  },
+  {
+    "productSku": "365",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 41.25
+  },
+  {
+    "productSku": "366",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 45.5
+  },
+  {
+    "productSku": "367",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 42.624
+  },
+  {
+    "productSku": "368",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 41.25
+  },
+  {
+    "productSku": "369",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 41.25
+  },
+  {
+    "productSku": "370",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 41.25
+  },
+  {
+    "productSku": "371",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 41.25
+  },
+  {
+    "productSku": "372",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 36
+  },
+  {
+    "productSku": "373",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 36
+  },
+  {
+    "productSku": "374",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 92
+  },
+  {
+    "productSku": "375",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 199.375
+  },
+  {
+    "productSku": "376",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 92
+  },
+  {
+    "productSku": "377",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 93.75
+  },
+  {
+    "productSku": "378",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 93.75
+  },
+  {
+    "productSku": "379",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 93.75
+  },
+  {
+    "productSku": "380",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 98
+  },
+  {
+    "productSku": "381",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 84.75
+  },
+  {
+    "productSku": "382",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 84.75
+  },
+  {
+    "productSku": "383",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 84.75
+  },
+  {
+    "productSku": "384",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 92.5
+  },
+  {
+    "productSku": "385",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 94.25
+  },
+  {
+    "productSku": "386",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 94.25
+  },
+  {
+    "productSku": "387",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 78.5
+  },
+  {
+    "productSku": "388",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 97
+  },
+  {
+    "productSku": "389",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 80.75
+  },
+  {
+    "productSku": "390",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 94.25
+  },
+  {
+    "productSku": "391",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 97
+  },
+  {
+    "productSku": "392",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 97
+  },
+  {
+    "productSku": "393",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 31
+  },
+  {
+    "productSku": "394",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 51.251
+  },
+  {
+    "productSku": "395",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 51.251
+  },
+  {
+    "productSku": "396",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 37.75
+  },
+  {
+    "productSku": "397",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 56.325
+  },
+  {
+    "productSku": "398",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 36
+  },
+  {
+    "productSku": "399",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 45.5
+  },
+  {
+    "productSku": "400",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 36
+  },
+  {
+    "productSku": "401",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 36
+  },
+  {
+    "productSku": "402",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 2750
+  },
+  {
+    "productSku": "403",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 21
+  },
+  {
+    "productSku": "404",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 21
+  },
+  {
+    "productSku": "405",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 57.25
+  },
+  {
+    "productSku": "406",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 57.25
+  },
+  {
+    "productSku": "407",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 57.25
+  },
+  {
+    "productSku": "408",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 36.25
+  },
+  {
+    "productSku": "409",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 73.251
+  },
+  {
+    "productSku": "410",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 95.75
+  },
+  {
+    "productSku": "411",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 95.75
+  },
+  {
+    "productSku": "412",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 56.067
+  },
+  {
+    "productSku": "413",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 85.601
+  },
+  {
+    "productSku": "414",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 88.347
+  },
+  {
+    "productSku": "415",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 112.151
+  },
+  {
+    "productSku": "416",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 45.41
+  },
+  {
+    "productSku": "417",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 41.25
+  },
+  {
+    "productSku": "418",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 31
+  },
+  {
+    "productSku": "419",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 21
+  },
+  {
+    "productSku": "420",
+    "companyId": 2,
+    "sellPrice": 110,
+    "cost": 80.75
+  },
+  {
+    "productSku": "421",
+    "companyId": 2,
+    "sellPrice": 110,
+    "cost": 81.75
+  },
+  {
+    "productSku": "422",
+    "companyId": 2,
+    "sellPrice": 110,
+    "cost": 48.834
+  },
+  {
+    "productSku": "423",
+    "companyId": 2,
+    "sellPrice": 110,
+    "cost": 80.75
+  },
+  {
+    "productSku": "424",
+    "companyId": 2,
+    "sellPrice": 110,
+    "cost": 49.729
+  },
+  {
+    "productSku": "425",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 36
+  },
+  {
+    "productSku": "426",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 36
+  },
+  {
+    "productSku": "427",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 48.834
+  },
+  {
+    "productSku": "428",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 29
+  },
+  {
+    "productSku": "429",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 44.147
+  },
+  {
+    "productSku": "430",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 50
+  },
+  {
+    "productSku": "431",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 53.319
+  },
+  {
+    "productSku": "432",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 58.8
+  },
+  {
+    "productSku": "433",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 31
+  },
+  {
+    "productSku": "434",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 31
+  },
+  {
+    "productSku": "435",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 36
+  },
+  {
+    "productSku": "436",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 95.096
+  },
+  {
+    "productSku": "437",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 62
+  },
+  {
+    "productSku": "438",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 62
+  },
+  {
+    "productSku": "439",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 138.5
+  },
+  {
+    "productSku": "440",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 87.5
+  },
+  {
+    "productSku": "441",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 194.712
+  },
+  {
+    "productSku": "442",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 62
+  },
+  {
+    "productSku": "443",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 62
+  },
+  {
+    "productSku": "444",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 128.657
+  },
+  {
+    "productSku": "445",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 160.5
+  },
+  {
+    "productSku": "446",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 62
+  },
+  {
+    "productSku": "447",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 87.5
+  },
+  {
+    "productSku": "448",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 138.5
+  },
+  {
+    "productSku": "449",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 138.5
+  },
+  {
+    "productSku": "450",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 87.5
+  },
+  {
+    "productSku": "451",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 87.5
+  },
+  {
+    "productSku": "452",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 219.005
+  },
+  {
+    "productSku": "453",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 212.075
+  },
+  {
+    "productSku": "454",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 160.5
+  },
+  {
+    "productSku": "455",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 95.096
+  },
+  {
+    "productSku": "456",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 95.096
+  },
+  {
+    "productSku": "457",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 87.5
+  },
+  {
+    "productSku": "458",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 138.5
+  },
+  {
+    "productSku": "459",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 180.344
+  },
+  {
+    "productSku": "460",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 174.665
+  },
+  {
+    "productSku": "461",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 131.25
+  },
+  {
+    "productSku": "462",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 118.514
+  },
+  {
+    "productSku": "463",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 122.353
+  },
+  {
+    "productSku": "464",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 122.353
+  },
+  {
+    "productSku": "465",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 118.514
+  },
+  {
+    "productSku": "466",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 118.514
+  },
+  {
+    "productSku": "467",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 214.591
+  },
+  {
+    "productSku": "468",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 131.25
+  },
+  {
+    "productSku": "469",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 45.5
+  },
+  {
+    "productSku": "470",
+    "companyId": 2,
+    "sellPrice": 60,
+    "cost": 42.75
+  },
+  {
+    "productSku": "471",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 70
+  },
+  {
+    "productSku": "472",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 130
+  },
+  {
+    "productSku": "473",
+    "companyId": 2,
+    "sellPrice": 110,
+    "cost": 76.5
+  },
+  {
+    "productSku": "474",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 94.25
+  },
+  {
+    "productSku": "475",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 49.5
+  },
+  {
+    "productSku": "476",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 76.5
+  },
+  {
+    "productSku": "477",
+    "companyId": 2,
+    "sellPrice": 110,
+    "cost": 70
+  },
+  {
+    "productSku": "478",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 81.379
+  },
+  {
+    "productSku": "479",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 88.75
+  },
+  {
+    "productSku": "480",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 88.75
+  },
+  {
+    "productSku": "481",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 43.75
+  },
+  {
+    "productSku": "482",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 43.75
+  },
+  {
+    "productSku": "483",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 88.75
+  },
+  {
+    "productSku": "484",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 85
+  },
+  {
+    "productSku": "485",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 49.5
+  },
+  {
+    "productSku": "486",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 29.504
+  },
+  {
+    "productSku": "487",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 22
+  },
+  {
+    "productSku": "488",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 32.09
+  },
+  {
+    "productSku": "489",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 32.09
+  },
+  {
+    "productSku": "490",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 32.09
+  },
+  {
+    "productSku": "491",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 32.09
+  },
+  {
+    "productSku": "492",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 22
+  },
+  {
+    "productSku": "493",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 32.09
+  },
+  {
+    "productSku": "494",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 22
+  },
+  {
+    "productSku": "495",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 22
+  },
+  {
+    "productSku": "496",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 24.75
+  },
+  {
+    "productSku": "497",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 46.716
+  },
+  {
+    "productSku": "498",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 32.09
+  },
+  {
+    "productSku": "499",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 22
+  },
+  {
+    "productSku": "500",
+    "companyId": 2,
+    "sellPrice": 57,
+    "cost": 32.09
+  },
+  {
+    "productSku": "501",
+    "companyId": 2,
+    "sellPrice": 98,
+    "cost": 60.742
+  },
+  {
+    "productSku": "502",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 98.5
+  },
+  {
+    "productSku": "503",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 105
+  },
+  {
+    "productSku": "504",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 650.25
+  },
+  {
+    "productSku": "505",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 401.117
+  },
+  {
+    "productSku": "506",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 650.25
+  },
+  {
+    "productSku": "507",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 650.25
+  },
+  {
+    "productSku": "508",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 119.25
+  },
+  {
+    "productSku": "509",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 85.601
+  },
+  {
+    "productSku": "510",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 70
+  },
+  {
+    "productSku": "511",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 42.624
+  },
+  {
+    "productSku": "512",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 70
+  },
+  {
+    "productSku": "513",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 78.5
+  },
+  {
+    "productSku": "514",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 42.624
+  },
+  {
+    "productSku": "515",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 78.5
+  },
+  {
+    "productSku": "516",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 80.75
+  },
+  {
+    "productSku": "517",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 80.75
+  },
+  {
+    "productSku": "518",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 80.75
+  },
+  {
+    "productSku": "519",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 80.75
+  },
+  {
+    "productSku": "520",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 78.5
+  },
+  {
+    "productSku": "521",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 78.5
+  },
+  {
+    "productSku": "522",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 42.624
+  },
+  {
+    "productSku": "523",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 179.441
+  },
+  {
+    "productSku": "524",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 105
+  },
+  {
+    "productSku": "525",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 105
+  },
+  {
+    "productSku": "526",
+    "companyId": 2,
+    "sellPrice": 170,
+    "cost": 140.75
+  },
+  {
+    "productSku": "527",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 105
+  },
+  {
+    "productSku": "528",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 55.312
+  },
+  {
+    "productSku": "529",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 85.75
+  },
+  {
+    "productSku": "530",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 85.75
+  },
+  {
+    "productSku": "531",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 95.75
+  },
+  {
+    "productSku": "532",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 95.75
+  },
+  {
+    "productSku": "533",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 95.75
+  },
+  {
+    "productSku": "534",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 68.5
+  },
+  {
+    "productSku": "535",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 144.75
+  },
+  {
+    "productSku": "536",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 60.5
+  },
+  {
+    "productSku": "537",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 84.286
+  },
+  {
+    "productSku": "538",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 68.5
+  },
+  {
+    "productSku": "539",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 98.042
+  },
+  {
+    "productSku": "540",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 98.042
+  },
+  {
+    "productSku": "541",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 98.042
+  },
+  {
+    "productSku": "542",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 60.5
+  },
+  {
+    "productSku": "543",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 60.5
+  },
+  {
+    "productSku": "544",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 177
+  },
+  {
+    "productSku": "545",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 177
+  },
+  {
+    "productSku": "546",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 119.5
+  },
+  {
+    "productSku": "547",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 176.684
+  },
+  {
+    "productSku": "548",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 144.75
+  },
+  {
+    "productSku": "549",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 177
+  },
+  {
+    "productSku": "550",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 84.286
+  },
+  {
+    "productSku": "551",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 214.591
+  },
+  {
+    "productSku": "552",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 175.666
+  },
+  {
+    "productSku": "553",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 153
+  },
+  {
+    "productSku": "554",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 68.75
+  },
+  {
+    "productSku": "555",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 61.75
+  },
+  {
+    "productSku": "556",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 118.551
+  },
+  {
+    "productSku": "557",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 118.551
+  },
+  {
+    "productSku": "558",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 61.75
+  },
+  {
+    "productSku": "559",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 65
+  },
+  {
+    "productSku": "560",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 39.5
+  },
+  {
+    "productSku": "561",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 39.5
+  },
+  {
+    "productSku": "562",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 39.5
+  },
+  {
+    "productSku": "563",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 39.5
+  },
+  {
+    "productSku": "564",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 83.568
+  },
+  {
+    "productSku": "565",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 61.75
+  },
+  {
+    "productSku": "566",
+    "companyId": 2,
+    "sellPrice": 150,
+    "cost": 88.07
+  },
+  {
+    "productSku": "567",
+    "companyId": 2,
+    "sellPrice": 150,
+    "cost": 88.07
+  },
+  {
+    "productSku": "568",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 68.75
+  },
+  {
+    "productSku": "569",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 85.728
+  },
+  {
+    "productSku": "570",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 39.5
+  },
+  {
+    "productSku": "571",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 85.728
+  },
+  {
+    "productSku": "572",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 85.728
+  },
+  {
+    "productSku": "573",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 85.728
+  },
+  {
+    "productSku": "574",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 85.728
+  },
+  {
+    "productSku": "575",
+    "companyId": 2,
+    "sellPrice": 150,
+    "cost": 88.07
+  },
+  {
+    "productSku": "576",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 86.449
+  },
+  {
+    "productSku": "577",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 89.662
+  },
+  {
+    "productSku": "578",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 89.662
+  },
+  {
+    "productSku": "579",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 95.17
+  },
+  {
+    "productSku": "580",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 95.17
+  },
+  {
+    "productSku": "581",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 87.5
+  },
+  {
+    "productSku": "582",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 120.552
+  },
+  {
+    "productSku": "583",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 174.665
+  },
+  {
+    "productSku": "584",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 87.704
+  },
+  {
+    "productSku": "585",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 65
+  },
+  {
+    "productSku": "586",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 88.175
+  },
+  {
+    "productSku": "587",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 65
+  },
+  {
+    "productSku": "588",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 87.704
+  },
+  {
+    "productSku": "589",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 86.449
+  },
+  {
+    "productSku": "590",
+    "companyId": 2,
+    "sellPrice": 35,
+    "cost": 24.25
+  },
+  {
+    "productSku": "592",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 35
+  },
+  {
+    "productSku": "595",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 40
+  },
+  {
+    "productSku": "600",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 30
+  },
+  {
+    "productSku": "602",
+    "companyId": 2,
+    "sellPrice": 30,
+    "cost": 0
+  },
+  {
+    "productSku": "603",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 0
+  },
+  {
+    "productSku": "604",
+    "companyId": 2,
+    "sellPrice": 30,
+    "cost": 0
+  },
+  {
+    "productSku": "605",
+    "companyId": 2,
+    "sellPrice": 30,
+    "cost": 0
+  },
+  {
+    "productSku": "596",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 42
+  },
+  {
+    "productSku": "597",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 0
+  },
+  {
+    "productSku": "598",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 0
+  },
+  {
+    "productSku": "599",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 0
+  },
+  {
+    "productSku": "606",
+    "companyId": 2,
+    "sellPrice": 30,
+    "cost": 0
+  },
+  {
+    "productSku": "607",
+    "companyId": 2,
+    "sellPrice": 30,
+    "cost": 0
+  },
+  {
+    "productSku": "608",
+    "companyId": 2,
+    "sellPrice": 30,
+    "cost": 0
+  },
+  {
+    "productSku": "609",
+    "companyId": 2,
+    "sellPrice": 30,
+    "cost": 0
+  },
+  {
+    "productSku": "610",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 0
+  },
+  {
+    "productSku": "611",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 0
+  },
+  {
+    "productSku": "612",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 0
+  },
+  {
+    "productSku": "613",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 0
+  },
+  {
+    "productSku": "614",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 0
+  },
+  {
+    "productSku": "601",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 30
+  },
+  {
+    "productSku": "615",
+    "companyId": 2,
+    "sellPrice": 60,
+    "cost": 0
+  },
+  {
+    "productSku": "616",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 0
+  },
+  {
+    "productSku": "617",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 26
+  },
+  {
+    "productSku": "618",
+    "companyId": 2,
+    "sellPrice": 35,
+    "cost": 32
+  },
+  {
+    "productSku": "619",
+    "companyId": 2,
+    "sellPrice": 2.5,
+    "cost": 1
+  },
+  {
+    "productSku": "620",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 5
+  },
+  {
+    "productSku": "621",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 45
+  },
+  {
+    "productSku": "622",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 131.877
+  },
+  {
+    "productSku": "623",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 119.659
+  },
+  {
+    "productSku": "624",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 163.658
+  },
+  {
+    "productSku": "625",
+    "companyId": 2,
+    "sellPrice": 1450,
+    "cost": 1139.456
+  },
+  {
+    "productSku": "626",
+    "companyId": 2,
+    "sellPrice": 1450,
+    "cost": 1139.456
+  },
+  {
+    "productSku": "627",
+    "companyId": 2,
+    "sellPrice": 1450,
+    "cost": 1139.456
+  },
+  {
+    "productSku": "628",
+    "companyId": 2,
+    "sellPrice": 1450,
+    "cost": 1139.456
+  },
+  {
+    "productSku": "629",
+    "companyId": 2,
+    "sellPrice": 1450,
+    "cost": 1139.456
+  },
+  {
+    "productSku": "630",
+    "companyId": 2,
+    "sellPrice": 1450,
+    "cost": 1139.456
+  },
+  {
+    "productSku": "631",
+    "companyId": 2,
+    "sellPrice": 1450,
+    "cost": 1139.456
+  },
+  {
+    "productSku": "632",
+    "companyId": 2,
+    "sellPrice": 1450,
+    "cost": 1139.456
+  },
+  {
+    "productSku": "633",
+    "companyId": 2,
+    "sellPrice": 1450,
+    "cost": 1139.456
+  },
+  {
+    "productSku": "634",
+    "companyId": 2,
+    "sellPrice": 1450,
+    "cost": 1139.456
+  },
+  {
+    "productSku": "635",
+    "companyId": 2,
+    "sellPrice": 35,
+    "cost": 25.576
+  },
+  {
+    "productSku": "636",
+    "companyId": 2,
+    "sellPrice": 35,
+    "cost": 25.576
+  },
+  {
+    "productSku": "637",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 31.7
+  },
+  {
+    "productSku": "638",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 57.627
+  },
+  {
+    "productSku": "639",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 57.627
+  },
+  {
+    "productSku": "640",
+    "companyId": 2,
+    "sellPrice": 35,
+    "cost": 30
+  },
+  {
+    "productSku": "641",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 77.785
+  },
+  {
+    "productSku": "642",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 77.785
+  },
+  {
+    "productSku": "643",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 57.627
+  },
+  {
+    "productSku": "712",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 188.694
+  },
+  {
+    "productSku": "713",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 127.903
+  },
+  {
+    "productSku": "644",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 60.447
+  },
+  {
+    "productSku": "645",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 59.374
+  },
+  {
+    "productSku": "646",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 194.712
+  },
+  {
+    "productSku": "647",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 194.712
+  },
+  {
+    "productSku": "648",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 194.712
+  },
+  {
+    "productSku": "649",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 131.877
+  },
+  {
+    "productSku": "650",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 88.375
+  },
+  {
+    "productSku": "651",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 88.375
+  },
+  {
+    "productSku": "652",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 88.375
+  },
+  {
+    "productSku": "653",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 88.375
+  },
+  {
+    "productSku": "654",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 88.375
+  },
+  {
+    "productSku": "655",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 88.375
+  },
+  {
+    "productSku": "656",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 88.375
+  },
+  {
+    "productSku": "657",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 88.375
+  },
+  {
+    "productSku": "658",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 88.375
+  },
+  {
+    "productSku": "659",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 88.375
+  },
+  {
+    "productSku": "660",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 88.375
+  },
+  {
+    "productSku": "661",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 88.375
+  },
+  {
+    "productSku": "662",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 98.042
+  },
+  {
+    "productSku": "663",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 98.042
+  },
+  {
+    "productSku": "664",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 98.042
+  },
+  {
+    "productSku": "665",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 98.042
+  },
+  {
+    "productSku": "666",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 98.042
+  },
+  {
+    "productSku": "667",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 112.543
+  },
+  {
+    "productSku": "668",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 112.543
+  },
+  {
+    "productSku": "669",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 112.543
+  },
+  {
+    "productSku": "670",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 112.543
+  },
+  {
+    "productSku": "671",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 122.21
+  },
+  {
+    "productSku": "672",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 122.21
+  },
+  {
+    "productSku": "673",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 122.21
+  },
+  {
+    "productSku": "674",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 122.21
+  },
+  {
+    "productSku": "675",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 122.21
+  },
+  {
+    "productSku": "676",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 122.21
+  },
+  {
+    "productSku": "677",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 93.209
+  },
+  {
+    "productSku": "678",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 93.209
+  },
+  {
+    "productSku": "679",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 98.042
+  },
+  {
+    "productSku": "680",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 98.042
+  },
+  {
+    "productSku": "681",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 98.042
+  },
+  {
+    "productSku": "682",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 98.042
+  },
+  {
+    "productSku": "683",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 218.879
+  },
+  {
+    "productSku": "684",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 194.712
+  },
+  {
+    "productSku": "685",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 194.712
+  },
+  {
+    "productSku": "686",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 194.712
+  },
+  {
+    "productSku": "687",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 194.712
+  },
+  {
+    "productSku": "688",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 131.877
+  },
+  {
+    "productSku": "689",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 131.877
+  },
+  {
+    "productSku": "690",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 131.877
+  },
+  {
+    "productSku": "691",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 131.877
+  },
+  {
+    "productSku": "692",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 85
+  },
+  {
+    "productSku": "693",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 112.814
+  },
+  {
+    "productSku": "694",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 103.768
+  },
+  {
+    "productSku": "695",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 130
+  },
+  {
+    "productSku": "696",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 112.814
+  },
+  {
+    "productSku": "697",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 53.214
+  },
+  {
+    "productSku": "698",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 67
+  },
+  {
+    "productSku": "699",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 53.214
+  },
+  {
+    "productSku": "700",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 103.768
+  },
+  {
+    "productSku": "701",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 112.814
+  },
+  {
+    "productSku": "702",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 53.214
+  },
+  {
+    "productSku": "703",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 53.214
+  },
+  {
+    "productSku": "704",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 53.214
+  },
+  {
+    "productSku": "705",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 98.042
+  },
+  {
+    "productSku": "706",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 88.934
+  },
+  {
+    "productSku": "707",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 81.415
+  },
+  {
+    "productSku": "708",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 35.651
+  },
+  {
+    "productSku": "709",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 31.762
+  },
+  {
+    "productSku": "710",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 26.295
+  },
+  {
+    "productSku": "711",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 26.295
+  },
+  {
+    "productSku": "714",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 118.551
+  },
+  {
+    "productSku": "715",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 118.551
+  },
+  {
+    "productSku": "716",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 85.817
+  },
+  {
+    "productSku": "717",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 95.17
+  },
+  {
+    "productSku": "718",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 95.17
+  },
+  {
+    "productSku": "719",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 95.096
+  },
+  {
+    "productSku": "720",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 127.903
+  },
+  {
+    "productSku": "722",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 109.198
+  },
+  {
+    "productSku": "723",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 174.665
+  },
+  {
+    "productSku": "724",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 139.772
+  },
+  {
+    "productSku": "725",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 192.194
+  },
+  {
+    "productSku": "726",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 130.239
+  },
+  {
+    "productSku": "727",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 130.239
+  },
+  {
+    "productSku": "728",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 87.341
+  },
+  {
+    "productSku": "729",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 87.341
+  },
+  {
+    "productSku": "730",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 87.341
+  },
+  {
+    "productSku": "731",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 87.341
+  },
+  {
+    "productSku": "732",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 87.341
+  },
+  {
+    "productSku": "733",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 87.341
+  },
+  {
+    "productSku": "734",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 87.341
+  },
+  {
+    "productSku": "735",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 95.096
+  },
+  {
+    "productSku": "736",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 95.096
+  },
+  {
+    "productSku": "737",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 108.847
+  },
+  {
+    "productSku": "738",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 120.706
+  },
+  {
+    "productSku": "739",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 120.706
+  },
+  {
+    "productSku": "740",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 120.706
+  },
+  {
+    "productSku": "741",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 108.847
+  },
+  {
+    "productSku": "742",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 120.706
+  },
+  {
+    "productSku": "743",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 111.173
+  },
+  {
+    "productSku": "744",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 111.173
+  },
+  {
+    "productSku": "745",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 111.173
+  },
+  {
+    "productSku": "746",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 111.173
+  },
+  {
+    "productSku": "747",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 62.398
+  },
+  {
+    "productSku": "748",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 99.628
+  },
+  {
+    "productSku": "749",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 83.897
+  },
+  {
+    "productSku": "750",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 94.384
+  },
+  {
+    "productSku": "751",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 62.398
+  },
+  {
+    "productSku": "752",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 89.14
+  },
+  {
+    "productSku": "753",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 99.628
+  },
+  {
+    "productSku": "754",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 127.903
+  },
+  {
+    "productSku": "755",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 127.903
+  },
+  {
+    "productSku": "756",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 129.301
+  },
+  {
+    "productSku": "757",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 86.655
+  },
+  {
+    "productSku": "758",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 86.655
+  },
+  {
+    "productSku": "759",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 96.132
+  },
+  {
+    "productSku": "760",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 84.286
+  },
+  {
+    "productSku": "761",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 100.87
+  },
+  {
+    "productSku": "762",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 91.394
+  },
+  {
+    "productSku": "763",
+    "companyId": 2,
+    "sellPrice": 150,
+    "cost": 91.394
+  },
+  {
+    "productSku": "764",
+    "companyId": 2,
+    "sellPrice": 150,
+    "cost": 91.394
+  },
+  {
+    "productSku": "765",
+    "companyId": 2,
+    "sellPrice": 150,
+    "cost": 91.394
+  },
+  {
+    "productSku": "766",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 91.394
+  },
+  {
+    "productSku": "767",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 189.798
+  },
+  {
+    "productSku": "768",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 128.56
+  },
+  {
+    "productSku": "769",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 86.165
+  },
+  {
+    "productSku": "770",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 86.165
+  },
+  {
+    "productSku": "771",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 100.297
+  },
+  {
+    "productSku": "772",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 100.297
+  },
+  {
+    "productSku": "773",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 100.297
+  },
+  {
+    "productSku": "774",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 137.982
+  },
+  {
+    "productSku": "775",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 137.982
+  },
+  {
+    "productSku": "776",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 137.982
+  },
+  {
+    "productSku": "777",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 137.982
+  },
+  {
+    "productSku": "778",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 137.982
+  },
+  {
+    "productSku": "779",
+    "companyId": 2,
+    "sellPrice": 150,
+    "cost": 90.876
+  },
+  {
+    "productSku": "780",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 145
+  },
+  {
+    "productSku": "781",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 53.69
+  },
+  {
+    "productSku": "782",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 72.256
+  },
+  {
+    "productSku": "783",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 75
+  },
+  {
+    "productSku": "784",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 100
+  },
+  {
+    "productSku": "785",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 110.39
+  },
+  {
+    "productSku": "786",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 86.305
+  },
+  {
+    "productSku": "787",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 106.376
+  },
+  {
+    "productSku": "788",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 115
+  },
+  {
+    "productSku": "789",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 48.672
+  },
+  {
+    "productSku": "790",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 83.797
+  },
+  {
+    "productSku": "791",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 120.426
+  },
+  {
+    "productSku": "792",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 48.672
+  },
+  {
+    "productSku": "793",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 110.39
+  },
+  {
+    "productSku": "794",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 106.376
+  },
+  {
+    "productSku": "795",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 218.272
+  },
+  {
+    "productSku": "796",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 218.272
+  },
+  {
+    "productSku": "797",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 60
+  },
+  {
+    "productSku": "798",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 64.729
+  },
+  {
+    "productSku": "799",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 112.899
+  },
+  {
+    "productSku": "800",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 97.846
+  },
+  {
+    "productSku": "801",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 60
+  },
+  {
+    "productSku": "802",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 120.426
+  },
+  {
+    "productSku": "803",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 53.69
+  },
+  {
+    "productSku": "804",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 0
+  },
+  {
+    "productSku": "806",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 99.791
+  },
+  {
+    "productSku": "807",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 99.791
+  },
+  {
+    "productSku": "808",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 150
+  },
+  {
+    "productSku": "809",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 150
+  },
+  {
+    "productSku": "810",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 90.636
+  },
+  {
+    "productSku": "811",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 95.214
+  },
+  {
+    "productSku": "812",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 90.636
+  },
+  {
+    "productSku": "813",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 95.214
+  },
+  {
+    "productSku": "814",
+    "companyId": 2,
+    "sellPrice": 35,
+    "cost": 31
+  },
+  {
+    "productSku": "815",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 27.199
+  },
+  {
+    "productSku": "816",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 20
+  },
+  {
+    "productSku": "819",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 67
+  },
+  {
+    "productSku": "820",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 54.233
+  },
+  {
+    "productSku": "821",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 0
+  },
+  {
+    "productSku": "822",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 54.233
+  },
+  {
+    "productSku": "823",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 67
+  },
+  {
+    "productSku": "824",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 54.233
+  },
+  {
+    "productSku": "825",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 54.233
+  },
+  {
+    "productSku": "826",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 54.233
+  },
+  {
+    "productSku": "827",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 65.439
+  },
+  {
+    "productSku": "828",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 65.439
+  },
+  {
+    "productSku": "829",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 65.439
+  },
+  {
+    "productSku": "830",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 85
+  },
+  {
+    "productSku": "831",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 98.408
+  },
+  {
+    "productSku": "832",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 98.408
+  },
+  {
+    "productSku": "833",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 98.408
+  },
+  {
+    "productSku": "834",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 130
+  },
+  {
+    "productSku": "835",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 100
+  },
+  {
+    "productSku": "836",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 110
+  },
+  {
+    "productSku": "837",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 128.38
+  },
+  {
+    "productSku": "838",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 80.925
+  },
+  {
+    "productSku": "839",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 110
+  },
+  {
+    "productSku": "840",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 75.929
+  },
+  {
+    "productSku": "841",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 75.929
+  },
+  {
+    "productSku": "842",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 65.439
+  },
+  {
+    "productSku": "843",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 65.439
+  },
+  {
+    "productSku": "844",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 55.948
+  },
+  {
+    "productSku": "845",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 55.948
+  },
+  {
+    "productSku": "846",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 59.944
+  },
+  {
+    "productSku": "847",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 113.394
+  },
+  {
+    "productSku": "848",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 113.394
+  },
+  {
+    "productSku": "849",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 105
+  },
+  {
+    "productSku": "851",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 86.919
+  },
+  {
+    "productSku": "852",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 106.9
+  },
+  {
+    "productSku": "853",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 106.9
+  },
+  {
+    "productSku": "854",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 86.919
+  },
+  {
+    "productSku": "855",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 59.528
+  },
+  {
+    "productSku": "856",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 59.528
+  },
+  {
+    "productSku": "857",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 59.528
+  },
+  {
+    "productSku": "858",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 59.528
+  },
+  {
+    "productSku": "859",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 59.528
+  },
+  {
+    "productSku": "860",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 137.248
+  },
+  {
+    "productSku": "861",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 137.248
+  },
+  {
+    "productSku": "862",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 38
+  },
+  {
+    "productSku": "863",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 81.924
+  },
+  {
+    "productSku": "864",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 137.248
+  },
+  {
+    "productSku": "865",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 137.248
+  },
+  {
+    "productSku": "866",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 137.248
+  },
+  {
+    "productSku": "867",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 137.248
+  },
+  {
+    "productSku": "868",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 194.842
+  },
+  {
+    "productSku": "1730",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 64.753
+  },
+  {
+    "productSku": "869",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 80.836
+  },
+  {
+    "productSku": "870",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 89.662
+  },
+  {
+    "productSku": "871",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 89.662
+  },
+  {
+    "productSku": "872",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 89.662
+  },
+  {
+    "productSku": "873",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 89.662
+  },
+  {
+    "productSku": "874",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 80.836
+  },
+  {
+    "productSku": "875",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 80.836
+  },
+  {
+    "productSku": "876",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 80.836
+  },
+  {
+    "productSku": "877",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 111.726
+  },
+  {
+    "productSku": "878",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 111.726
+  },
+  {
+    "productSku": "879",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 111.726
+  },
+  {
+    "productSku": "880",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 89.662
+  },
+  {
+    "productSku": "881",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 120.552
+  },
+  {
+    "productSku": "882",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 164.681
+  },
+  {
+    "productSku": "883",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 164.681
+  },
+  {
+    "productSku": "885",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 89.662
+  },
+  {
+    "productSku": "886",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 199.985
+  },
+  {
+    "productSku": "887",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 199.985
+  },
+  {
+    "productSku": "888",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 155.856
+  },
+  {
+    "productSku": "889",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 155.856
+  },
+  {
+    "productSku": "890",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 155.856
+  },
+  {
+    "productSku": "891",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 155.856
+  },
+  {
+    "productSku": "892",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 155.856
+  },
+  {
+    "productSku": "893",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 164.681
+  },
+  {
+    "productSku": "894",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 164.681
+  },
+  {
+    "productSku": "895",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 199.985
+  },
+  {
+    "productSku": "896",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 199.985
+  },
+  {
+    "productSku": "897",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 199.985
+  },
+  {
+    "productSku": "898",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 199.985
+  },
+  {
+    "productSku": "899",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 199.985
+  },
+  {
+    "productSku": "900",
+    "companyId": 2,
+    "sellPrice": 225,
+    "cost": 177.92
+  },
+  {
+    "productSku": "901",
+    "companyId": 2,
+    "sellPrice": 1450,
+    "cost": 1078.314
+  },
+  {
+    "productSku": "902",
+    "companyId": 2,
+    "sellPrice": 1450,
+    "cost": 1078.314
+  },
+  {
+    "productSku": "903",
+    "companyId": 2,
+    "sellPrice": 1400,
+    "cost": 1161.26
+  },
+  {
+    "productSku": "904",
+    "companyId": 2,
+    "sellPrice": 1400,
+    "cost": 1161.26
+  },
+  {
+    "productSku": "905",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 85.006
+  },
+  {
+    "productSku": "906",
+    "companyId": 2,
+    "sellPrice": 60,
+    "cost": 36.852
+  },
+  {
+    "productSku": "884",
+    "companyId": 2,
+    "sellPrice": 215,
+    "cost": 164.681
+  },
+  {
+    "productSku": "907",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 85.006
+  },
+  {
+    "productSku": "908",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 85.006
+  },
+  {
+    "productSku": "909",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 65
+  },
+  {
+    "productSku": "910",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 75
+  },
+  {
+    "productSku": "911",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 125
+  },
+  {
+    "productSku": "912",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 84.514
+  },
+  {
+    "productSku": "913",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 47.662
+  },
+  {
+    "productSku": "914",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 47.662
+  },
+  {
+    "productSku": "944",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 50.887
+  },
+  {
+    "productSku": "945",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 35.621
+  },
+  {
+    "productSku": "946",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 100
+  },
+  {
+    "productSku": "947",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 69.715
+  },
+  {
+    "productSku": "915",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 110
+  },
+  {
+    "productSku": "916",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 105
+  },
+  {
+    "productSku": "917",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 80.475
+  },
+  {
+    "productSku": "918",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 105.313
+  },
+  {
+    "productSku": "919",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 105
+  },
+  {
+    "productSku": "920",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 80.475
+  },
+  {
+    "productSku": "921",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 80.475
+  },
+  {
+    "productSku": "922",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 80.475
+  },
+  {
+    "productSku": "923",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 105
+  },
+  {
+    "productSku": "924",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 64.082
+  },
+  {
+    "productSku": "925",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 105
+  },
+  {
+    "productSku": "926",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 105
+  },
+  {
+    "productSku": "927",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 83.456
+  },
+  {
+    "productSku": "928",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 83.456
+  },
+  {
+    "productSku": "929",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 100
+  },
+  {
+    "productSku": "930",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 71.533
+  },
+  {
+    "productSku": "931",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 95
+  },
+  {
+    "productSku": "932",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 83.456
+  },
+  {
+    "productSku": "933",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 105
+  },
+  {
+    "productSku": "934",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 120
+  },
+  {
+    "productSku": "935",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 71.533
+  },
+  {
+    "productSku": "936",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 64.082
+  },
+  {
+    "productSku": "937",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 100
+  },
+  {
+    "productSku": "938",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 80.475
+  },
+  {
+    "productSku": "939",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 110
+  },
+  {
+    "productSku": "940",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 80.475
+  },
+  {
+    "productSku": "941",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 83.456
+  },
+  {
+    "productSku": "942",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 80.475
+  },
+  {
+    "productSku": "943",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 80.475
+  },
+  {
+    "productSku": "961",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 105
+  },
+  {
+    "productSku": "962",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 137
+  },
+  {
+    "productSku": "963",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 91.551
+  },
+  {
+    "productSku": "964",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 115
+  },
+  {
+    "productSku": "965",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 81.379
+  },
+  {
+    "productSku": "966",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 115
+  },
+  {
+    "productSku": "967",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 92.737
+  },
+  {
+    "productSku": "968",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 137
+  },
+  {
+    "productSku": "969",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 91.551
+  },
+  {
+    "productSku": "970",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 91.551
+  },
+  {
+    "productSku": "948",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 67
+  },
+  {
+    "productSku": "949",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 88.544
+  },
+  {
+    "productSku": "950",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 35.621
+  },
+  {
+    "productSku": "951",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 50.887
+  },
+  {
+    "productSku": "952",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 115
+  },
+  {
+    "productSku": "953",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 108.898
+  },
+  {
+    "productSku": "954",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 55.976
+  },
+  {
+    "productSku": "955",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 85
+  },
+  {
+    "productSku": "956",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 74.295
+  },
+  {
+    "productSku": "957",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 108.898
+  },
+  {
+    "productSku": "958",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 108.898
+  },
+  {
+    "productSku": "959",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 45
+  },
+  {
+    "productSku": "960",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 69.715
+  },
+  {
+    "productSku": "971",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 86.465
+  },
+  {
+    "productSku": "972",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 91.551
+  },
+  {
+    "productSku": "973",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 115
+  },
+  {
+    "productSku": "974",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 209.132
+  },
+  {
+    "productSku": "976",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 81.045
+  },
+  {
+    "productSku": "977",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 81.045
+  },
+  {
+    "productSku": "978",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 109.146
+  },
+  {
+    "productSku": "979",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 109.146
+  },
+  {
+    "productSku": "980",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 109.146
+  },
+  {
+    "productSku": "981",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 123.197
+  },
+  {
+    "productSku": "982",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 123.197
+  },
+  {
+    "productSku": "983",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 123.197
+  },
+  {
+    "productSku": "984",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 123.197
+  },
+  {
+    "productSku": "985",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 123.197
+  },
+  {
+    "productSku": "986",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 123.197
+  },
+  {
+    "productSku": "987",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 134.772
+  },
+  {
+    "productSku": "988",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 102.594
+  },
+  {
+    "productSku": "989",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 102.594
+  },
+  {
+    "productSku": "990",
+    "companyId": 2,
+    "sellPrice": 40,
+    "cost": 35
+  },
+  {
+    "productSku": "991",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 95
+  },
+  {
+    "productSku": "992",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 85
+  },
+  {
+    "productSku": "993",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 85
+  },
+  {
+    "productSku": "994",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 85
+  },
+  {
+    "productSku": "995",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 79.278
+  },
+  {
+    "productSku": "996",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 102.594
+  },
+  {
+    "productSku": "997",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 79.278
+  },
+  {
+    "productSku": "998",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 85
+  },
+  {
+    "productSku": "999",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 109.828
+  },
+  {
+    "productSku": "1000",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 106.474
+  },
+  {
+    "productSku": "1001",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 83.568
+  },
+  {
+    "productSku": "1002",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 86.292
+  },
+  {
+    "productSku": "1003",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 90.259
+  },
+  {
+    "productSku": "1004",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 83.453
+  },
+  {
+    "productSku": "1005",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 90.259
+  },
+  {
+    "productSku": "1006",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 68.124
+  },
+  {
+    "productSku": "1007",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 391.05
+  },
+  {
+    "productSku": "1008",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 90
+  },
+  {
+    "productSku": "1009",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 384.015
+  },
+  {
+    "productSku": "1010",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 391.05
+  },
+  {
+    "productSku": "1011",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 11.7
+  },
+  {
+    "productSku": "1012",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 49.729
+  },
+  {
+    "productSku": "1013",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 49.729
+  },
+  {
+    "productSku": "1014",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 93.137
+  },
+  {
+    "productSku": "1015",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 61.4
+  },
+  {
+    "productSku": "1016",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 49.729
+  },
+  {
+    "productSku": "1017",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 60.385
+  },
+  {
+    "productSku": "1018",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 49.729
+  },
+  {
+    "productSku": "1019",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 100
+  },
+  {
+    "productSku": "1020",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 100.087
+  },
+  {
+    "productSku": "1021",
+    "companyId": 2,
+    "sellPrice": 60,
+    "cost": 70
+  },
+  {
+    "productSku": "1022",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 61.4
+  },
+  {
+    "productSku": "1023",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 42.624
+  },
+  {
+    "productSku": "1024",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 95
+  },
+  {
+    "productSku": "1025",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 42.624
+  },
+  {
+    "productSku": "1026",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 49.729
+  },
+  {
+    "productSku": "1027",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 110
+  },
+  {
+    "productSku": "1028",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 112.135
+  },
+  {
+    "productSku": "1029",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 74.593
+  },
+  {
+    "productSku": "1030",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 49.729
+  },
+  {
+    "productSku": "1031",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 48.834
+  },
+  {
+    "productSku": "1032",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 93.137
+  },
+  {
+    "productSku": "1033",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 60.385
+  },
+  {
+    "productSku": "1034",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 137
+  },
+  {
+    "productSku": "1035",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 74.593
+  },
+  {
+    "productSku": "1036",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 60.385
+  },
+  {
+    "productSku": "1037",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 112.135
+  },
+  {
+    "productSku": "1038",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 114.915
+  },
+  {
+    "productSku": "1039",
+    "companyId": 2,
+    "sellPrice": 90,
+    "cost": 100
+  },
+  {
+    "productSku": "1040",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 74.593
+  },
+  {
+    "productSku": "1041",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 72.056
+  },
+  {
+    "productSku": "1042",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 72.056
+  },
+  {
+    "productSku": "1043",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 50.744
+  },
+  {
+    "productSku": "1044",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 81.479
+  },
+  {
+    "productSku": "1045",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 42.624
+  },
+  {
+    "productSku": "1046",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 49.729
+  },
+  {
+    "productSku": "1047",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 426.482
+  },
+  {
+    "productSku": "1048",
+    "companyId": 2,
+    "sellPrice": 850,
+    "cost": 391.05
+  },
+  {
+    "productSku": "1049",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 51.251
+  },
+  {
+    "productSku": "1050",
+    "companyId": 2,
+    "sellPrice": 850,
+    "cost": 360.969
+  },
+  {
+    "productSku": "1051",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 44.147
+  },
+  {
+    "productSku": "1052",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 93.137
+  },
+  {
+    "productSku": "1053",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 44.147
+  },
+  {
+    "productSku": "1054",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 38.058
+  },
+  {
+    "productSku": "1055",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 42.624
+  },
+  {
+    "productSku": "1056",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 120
+  },
+  {
+    "productSku": "1057",
+    "companyId": 2,
+    "sellPrice": 90,
+    "cost": 42.624
+  },
+  {
+    "productSku": "1058",
+    "companyId": 2,
+    "sellPrice": 90,
+    "cost": 42.624
+  },
+  {
+    "productSku": "1059",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 44.147
+  },
+  {
+    "productSku": "1060",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 44.147
+  },
+  {
+    "productSku": "1061",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 44.147
+  },
+  {
+    "productSku": "1062",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 44.147
+  },
+  {
+    "productSku": "1063",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 44.147
+  },
+  {
+    "productSku": "1064",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 49.729
+  },
+  {
+    "productSku": "1065",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 100.087
+  },
+  {
+    "productSku": "1066",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 41.858
+  },
+  {
+    "productSku": "1067",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 38.058
+  },
+  {
+    "productSku": "1068",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 56.325
+  },
+  {
+    "productSku": "1069",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 49.729
+  },
+  {
+    "productSku": "1070",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 49.729
+  },
+  {
+    "productSku": "1071",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 84.389
+  },
+  {
+    "productSku": "1072",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 74.593
+  },
+  {
+    "productSku": "1073",
+    "companyId": 2,
+    "sellPrice": 60,
+    "cost": 50
+  },
+  {
+    "productSku": "1074",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 76.629
+  },
+  {
+    "productSku": "1075",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 76.629
+  },
+  {
+    "productSku": "1076",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 96.514
+  },
+  {
+    "productSku": "1077",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 81.479
+  },
+  {
+    "productSku": "1078",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 76.629
+  },
+  {
+    "productSku": "1079",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 76.629
+  },
+  {
+    "productSku": "1080",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 81.479
+  },
+  {
+    "productSku": "1081",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 81.479
+  },
+  {
+    "productSku": "1082",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 81.479
+  },
+  {
+    "productSku": "1083",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 93.118
+  },
+  {
+    "productSku": "1084",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 43.353
+  },
+  {
+    "productSku": "1085",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 93.118
+  },
+  {
+    "productSku": "1086",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 93.118
+  },
+  {
+    "productSku": "1087",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 90.356
+  },
+  {
+    "productSku": "1088",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 114.915
+  },
+  {
+    "productSku": "1089",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 48.834
+  },
+  {
+    "productSku": "1090",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 93.137
+  },
+  {
+    "productSku": "1091",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 114.915
+  },
+  {
+    "productSku": "1092",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 116.768
+  },
+  {
+    "productSku": "1093",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 94.99
+  },
+  {
+    "productSku": "1094",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 578.281
+  },
+  {
+    "productSku": "1095",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 426.482
+  },
+  {
+    "productSku": "1096",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 547.921
+  },
+  {
+    "productSku": "1097",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 93.137
+  },
+  {
+    "productSku": "1098",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 440.939
+  },
+  {
+    "productSku": "1099",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 440.939
+  },
+  {
+    "productSku": "1100",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 440.939
+  },
+  {
+    "productSku": "1101",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 455.396
+  },
+  {
+    "productSku": "1102",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 426.482
+  },
+  {
+    "productSku": "1103",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 426.482
+  },
+  {
+    "productSku": "1104",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 130
+  },
+  {
+    "productSku": "1105",
+    "companyId": 2,
+    "sellPrice": 1350,
+    "cost": 0
+  },
+  {
+    "productSku": "1106",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 426.482
+  },
+  {
+    "productSku": "1107",
+    "companyId": 2,
+    "sellPrice": 1350,
+    "cost": 578.281
+  },
+  {
+    "productSku": "1108",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 51.434
+  },
+  {
+    "productSku": "1109",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 91.937
+  },
+  {
+    "productSku": "1110",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 163.917
+  },
+  {
+    "productSku": "1111",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 112.89
+  },
+  {
+    "productSku": "1112",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 137
+  },
+  {
+    "productSku": "1113",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 100
+  },
+  {
+    "productSku": "1114",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 125
+  },
+  {
+    "productSku": "1115",
+    "companyId": 2,
+    "sellPrice": 175,
+    "cost": 125
+  },
+  {
+    "productSku": "1116",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 105
+  },
+  {
+    "productSku": "1117",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 622.046
+  },
+  {
+    "productSku": "1118",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 100
+  },
+  {
+    "productSku": "1119",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 83.797
+  },
+  {
+    "productSku": "1120",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 110
+  },
+  {
+    "productSku": "1121",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 80.108
+  },
+  {
+    "productSku": "1122",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 594.659
+  },
+  {
+    "productSku": "1123",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 594.659
+  },
+  {
+    "productSku": "1124",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 594.659
+  },
+  {
+    "productSku": "1125",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 120
+  },
+  {
+    "productSku": "1126",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 100
+  },
+  {
+    "productSku": "1127",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 594.659
+  },
+  {
+    "productSku": "1128",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 105
+  },
+  {
+    "productSku": "1129",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 98.737
+  },
+  {
+    "productSku": "1130",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 28.424
+  },
+  {
+    "productSku": "1131",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 27.888
+  },
+  {
+    "productSku": "1132",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 28.424
+  },
+  {
+    "productSku": "1133",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 27.888
+  },
+  {
+    "productSku": "1134",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 28.424
+  },
+  {
+    "productSku": "1135",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 27.888
+  },
+  {
+    "productSku": "1136",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 68.192
+  },
+  {
+    "productSku": "1137",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 27.888
+  },
+  {
+    "productSku": "1138",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 22.793
+  },
+  {
+    "productSku": "1139",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 22.793
+  },
+  {
+    "productSku": "1140",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 28.424
+  },
+  {
+    "productSku": "1141",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 27.888
+  },
+  {
+    "productSku": "1142",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 28.424
+  },
+  {
+    "productSku": "1143",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 63.547
+  },
+  {
+    "productSku": "1144",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 72.67
+  },
+  {
+    "productSku": "1145",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 68.192
+  },
+  {
+    "productSku": "1146",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 77.983
+  },
+  {
+    "productSku": "1147",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 68.192
+  },
+  {
+    "productSku": "1148",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 71.061
+  },
+  {
+    "productSku": "1149",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 26.295
+  },
+  {
+    "productSku": "1150",
+    "companyId": 2,
+    "sellPrice": 180,
+    "cost": 123.789
+  },
+  {
+    "productSku": "1151",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 75.72
+  },
+  {
+    "productSku": "1152",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 80.513
+  },
+  {
+    "productSku": "1153",
+    "companyId": 2,
+    "sellPrice": 130,
+    "cost": 94.89
+  },
+  {
+    "productSku": "1154",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 92.973
+  },
+  {
+    "productSku": "1155",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 123.58
+  },
+  {
+    "productSku": "1156",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 80.513
+  },
+  {
+    "productSku": "1157",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 87.035
+  },
+  {
+    "productSku": "1158",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 125
+  },
+  {
+    "productSku": "1159",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 120
+  },
+  {
+    "productSku": "1160",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 67
+  },
+  {
+    "productSku": "1161",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 97.914
+  },
+  {
+    "productSku": "1162",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 53.309
+  },
+  {
+    "productSku": "1163",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 68.54
+  },
+  {
+    "productSku": "1164",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 53.309
+  },
+  {
+    "productSku": "1165",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 105
+  },
+  {
+    "productSku": "1166",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 97.914
+  },
+  {
+    "productSku": "1167",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 87.035
+  },
+  {
+    "productSku": "1168",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 97.914
+  },
+  {
+    "productSku": "1169",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 72
+  },
+  {
+    "productSku": "1170",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 53.309
+  },
+  {
+    "productSku": "1171",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 60
+  },
+  {
+    "productSku": "1172",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 53.309
+  },
+  {
+    "productSku": "1173",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 62
+  },
+  {
+    "productSku": "1174",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 67
+  },
+  {
+    "productSku": "1175",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 53.309
+  },
+  {
+    "productSku": "1176",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 92.474
+  },
+  {
+    "productSku": "1177",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 53.309
+  },
+  {
+    "productSku": "1178",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 62
+  },
+  {
+    "productSku": "1179",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 62
+  },
+  {
+    "productSku": "1180",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 53.309
+  },
+  {
+    "productSku": "1181",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 53.309
+  },
+  {
+    "productSku": "1182",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 62
+  },
+  {
+    "productSku": "1183",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 53.309
+  },
+  {
+    "productSku": "1184",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 53.309
+  },
+  {
+    "productSku": "1185",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 67
+  },
+  {
+    "productSku": "1186",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 53.309
+  },
+  {
+    "productSku": "1187",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 60
+  },
+  {
+    "productSku": "1188",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 67
+  },
+  {
+    "productSku": "1189",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 48.834
+  },
+  {
+    "productSku": "1190",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 48.834
+  },
+  {
+    "productSku": "1191",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 90
+  },
+  {
+    "productSku": "1192",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 401.117
+  },
+  {
+    "productSku": "1193",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 48.834
+  },
+  {
+    "productSku": "1194",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 401.117
+  },
+  {
+    "productSku": "1195",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 401.117
+  },
+  {
+    "productSku": "1196",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 384.015
+  },
+  {
+    "productSku": "1197",
+    "companyId": 2,
+    "sellPrice": 550,
+    "cost": 384.015
+  },
+  {
+    "productSku": "1198",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 401.117
+  },
+  {
+    "productSku": "1199",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 41.858
+  },
+  {
+    "productSku": "1200",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 43.353
+  },
+  {
+    "productSku": "1201",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 60.295
+  },
+  {
+    "productSku": "1202",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 48.834
+  },
+  {
+    "productSku": "1203",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 48.834
+  },
+  {
+    "productSku": "1204",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 73.251
+  },
+  {
+    "productSku": "1205",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 48.834
+  },
+  {
+    "productSku": "1206",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 45
+  },
+  {
+    "productSku": "1207",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 48.834
+  },
+  {
+    "productSku": "1208",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 48.834
+  },
+  {
+    "productSku": "1209",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 48.834
+  },
+  {
+    "productSku": "1210",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 48.834
+  },
+  {
+    "productSku": "1211",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 60.295
+  },
+  {
+    "productSku": "1212",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 48.834
+  },
+  {
+    "productSku": "1213",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 48.834
+  },
+  {
+    "productSku": "1214",
+    "companyId": 2,
+    "sellPrice": 1050,
+    "cost": 401.117
+  },
+  {
+    "productSku": "1215",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 43.353
+  },
+  {
+    "productSku": "1216",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 43.353
+  },
+  {
+    "productSku": "1217",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 43.353
+  },
+  {
+    "productSku": "1218",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 43.353
+  },
+  {
+    "productSku": "1219",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 70.76
+  },
+  {
+    "productSku": "1220",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 41.858
+  },
+  {
+    "productSku": "1221",
+    "companyId": 2,
+    "sellPrice": 250,
+    "cost": 202.007
+  },
+  {
+    "productSku": "1222",
+    "companyId": 2,
+    "sellPrice": 250,
+    "cost": 202.007
+  },
+  {
+    "productSku": "1223",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 58.872
+  },
+  {
+    "productSku": "1224",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 48.452
+  },
+  {
+    "productSku": "1225",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 100
+  },
+  {
+    "productSku": "1226",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 48.452
+  },
+  {
+    "productSku": "1227",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 60
+  },
+  {
+    "productSku": "1228",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 75
+  },
+  {
+    "productSku": "1229",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 105
+  },
+  {
+    "productSku": "1230",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 115
+  },
+  {
+    "productSku": "1231",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 58.872
+  },
+  {
+    "productSku": "1232",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 58.872
+  },
+  {
+    "productSku": "1233",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 100
+  },
+  {
+    "productSku": "1234",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 93.779
+  },
+  {
+    "productSku": "1235",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 60
+  },
+  {
+    "productSku": "1236",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 58.872
+  },
+  {
+    "productSku": "1237",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 65
+  },
+  {
+    "productSku": "1238",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 51.057
+  },
+  {
+    "productSku": "1239",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 80
+  },
+  {
+    "productSku": "1240",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 60
+  },
+  {
+    "productSku": "1241",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 58.872
+  },
+  {
+    "productSku": "1242",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 58.872
+  },
+  {
+    "productSku": "1243",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 92.737
+  },
+  {
+    "productSku": "1244",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 100
+  },
+  {
+    "productSku": "1245",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 51.057
+  },
+  {
+    "productSku": "1246",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 60
+  },
+  {
+    "productSku": "1247",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 58.872
+  },
+  {
+    "productSku": "1248",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 58.872
+  },
+  {
+    "productSku": "1249",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 68
+  },
+  {
+    "productSku": "1250",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 58.872
+  },
+  {
+    "productSku": "1251",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 105
+  },
+  {
+    "productSku": "1252",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 51.057
+  },
+  {
+    "productSku": "1253",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 60
+  },
+  {
+    "productSku": "1254",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 86.292
+  },
+  {
+    "productSku": "1255",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 86.292
+  },
+  {
+    "productSku": "1256",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 49.456
+  },
+  {
+    "productSku": "1257",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 62
+  },
+  {
+    "productSku": "1258",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 138.476
+  },
+  {
+    "productSku": "1259",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 65
+  },
+  {
+    "productSku": "1260",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 57
+  },
+  {
+    "productSku": "1261",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 98.912
+  },
+  {
+    "productSku": "1262",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 59.232
+  },
+  {
+    "productSku": "1263",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 34.63
+  },
+  {
+    "productSku": "1264",
+    "companyId": 2,
+    "sellPrice": 200,
+    "cost": 126.067
+  },
+  {
+    "productSku": "1265",
+    "companyId": 2,
+    "sellPrice": 250,
+    "cost": 183.371
+  },
+  {
+    "productSku": "1266",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 57.074
+  },
+  {
+    "productSku": "1267",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 51.057
+  },
+  {
+    "productSku": "1268",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 51.057
+  },
+  {
+    "productSku": "1269",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 77.107
+  },
+  {
+    "productSku": "1270",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 77.107
+  },
+  {
+    "productSku": "1271",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 87.527
+  },
+  {
+    "productSku": "1272",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 62
+  },
+  {
+    "productSku": "1273",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 137
+  },
+  {
+    "productSku": "1274",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 92.737
+  },
+  {
+    "productSku": "1275",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 58.872
+  },
+  {
+    "productSku": "1276",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 51.057
+  },
+  {
+    "productSku": "1277",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 92.737
+  },
+  {
+    "productSku": "1278",
+    "companyId": 2,
+    "sellPrice": 195,
+    "cost": 97.946
+  },
+  {
+    "productSku": "1279",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 58.872
+  },
+  {
+    "productSku": "1280",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 105
+  },
+  {
+    "productSku": "1281",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 58.872
+  },
+  {
+    "productSku": "1282",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 145
+  },
+  {
+    "productSku": "1283",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 156.962
+  },
+  {
+    "productSku": "1284",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 126.617
+  },
+  {
+    "productSku": "1288",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 0
+  },
+  {
+    "productSku": "1289",
+    "companyId": 2,
+    "sellPrice": 216,
+    "cost": 0
+  },
+  {
+    "productSku": "1290",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 0
+  },
+  {
+    "productSku": "1291",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 120
+  },
+  {
+    "productSku": "1292",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 85
+  },
+  {
+    "productSku": "1293",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 85
+  },
+  {
+    "productSku": "1294",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 85
+  },
+  {
+    "productSku": "1295",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 65
+  },
+  {
+    "productSku": "1296",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 70
+  },
+  {
+    "productSku": "1297",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 85
+  },
+  {
+    "productSku": "1285",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 126.617
+  },
+  {
+    "productSku": "1286",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 126.617
+  },
+  {
+    "productSku": "1287",
+    "companyId": 2,
+    "sellPrice": 1500,
+    "cost": 1091.523
+  },
+  {
+    "productSku": "1298",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 70
+  },
+  {
+    "productSku": "1299",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 75
+  },
+  {
+    "productSku": "1300",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 75
+  },
+  {
+    "productSku": "1301",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 107
+  },
+  {
+    "productSku": "1302",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 65
+  },
+  {
+    "productSku": "1303",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 75
+  },
+  {
+    "productSku": "1304",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 102
+  },
+  {
+    "productSku": "1305",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 0
+  },
+  {
+    "productSku": "1306",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 65
+  },
+  {
+    "productSku": "1307",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 75
+  },
+  {
+    "productSku": "1308",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 85
+  },
+  {
+    "productSku": "1309",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 75
+  },
+  {
+    "productSku": "1310",
+    "companyId": 2,
+    "sellPrice": 42,
+    "cost": 43
+  },
+  {
+    "productSku": "1311",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 85
+  },
+  {
+    "productSku": "1312",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 85
+  },
+  {
+    "productSku": "1313",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 75
+  },
+  {
+    "productSku": "1314",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 0
+  },
+  {
+    "productSku": "1315",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 70
+  },
+  {
+    "productSku": "1316",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 65
+  },
+  {
+    "productSku": "1317",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 70
+  },
+  {
+    "productSku": "1318",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 70
+  },
+  {
+    "productSku": "1319",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 85
+  },
+  {
+    "productSku": "1320",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 70
+  },
+  {
+    "productSku": "1321",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 75
+  },
+  {
+    "productSku": "1322",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 0
+  },
+  {
+    "productSku": "1323",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 70
+  },
+  {
+    "productSku": "1324",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 65
+  },
+  {
+    "productSku": "1325",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 75
+  },
+  {
+    "productSku": "1326",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 45
+  },
+  {
+    "productSku": "1327",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 65
+  },
+  {
+    "productSku": "1328",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 80
+  },
+  {
+    "productSku": "1329",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 80
+  },
+  {
+    "productSku": "1330",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 85
+  },
+  {
+    "productSku": "1331",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 75
+  },
+  {
+    "productSku": "1332",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 70
+  },
+  {
+    "productSku": "1333",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 70
+  },
+  {
+    "productSku": "1334",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 85
+  },
+  {
+    "productSku": "1335",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 70
+  },
+  {
+    "productSku": "1336",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 70
+  },
+  {
+    "productSku": "1337",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 75
+  },
+  {
+    "productSku": "1338",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 70
+  },
+  {
+    "productSku": "1339",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 85
+  },
+  {
+    "productSku": "1340",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 115
+  },
+  {
+    "productSku": "1341",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 0
+  },
+  {
+    "productSku": "1342",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 75
+  },
+  {
+    "productSku": "1343",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 75
+  },
+  {
+    "productSku": "1344",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 75
+  },
+  {
+    "productSku": "1345",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 75
+  },
+  {
+    "productSku": "1346",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 80
+  },
+  {
+    "productSku": "1347",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 85
+  },
+  {
+    "productSku": "1348",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 75
+  },
+  {
+    "productSku": "1349",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 95
+  },
+  {
+    "productSku": "1350",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 85
+  },
+  {
+    "productSku": "1351",
+    "companyId": 2,
+    "sellPrice": 90,
+    "cost": 90
+  },
+  {
+    "productSku": "1352",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 65
+  },
+  {
+    "productSku": "1353",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 55
+  },
+  {
+    "productSku": "1354",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 80
+  },
+  {
+    "productSku": "1355",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 75
+  },
+  {
+    "productSku": "1356",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 75
+  },
+  {
+    "productSku": "1357",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 75
+  },
+  {
+    "productSku": "1358",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 65
+  },
+  {
+    "productSku": "1359",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 70
+  },
+  {
+    "productSku": "1360",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 65
+  },
+  {
+    "productSku": "1361",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 65
+  },
+  {
+    "productSku": "1362",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 65
+  },
+  {
+    "productSku": "1363",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 65
+  },
+  {
+    "productSku": "1364",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 65
+  },
+  {
+    "productSku": "1365",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 65
+  },
+  {
+    "productSku": "1366",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 65
+  },
+  {
+    "productSku": "1367",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 65
+  },
+  {
+    "productSku": "1368",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 65
+  },
+  {
+    "productSku": "1369",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 65
+  },
+  {
+    "productSku": "1370",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 65
+  },
+  {
+    "productSku": "1371",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 65
+  },
+  {
+    "productSku": "1372",
+    "companyId": 2,
+    "sellPrice": 56,
+    "cost": 45
+  },
+  {
+    "productSku": "1373",
+    "companyId": 2,
+    "sellPrice": 56,
+    "cost": 45
+  },
+  {
+    "productSku": "1374",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 43
+  },
+  {
+    "productSku": "1375",
+    "companyId": 2,
+    "sellPrice": 56,
+    "cost": 40
+  },
+  {
+    "productSku": "1376",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 43
+  },
+  {
+    "productSku": "1377",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 43
+  },
+  {
+    "productSku": "1378",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 34
+  },
+  {
+    "productSku": "1379",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 37
+  },
+  {
+    "productSku": "1380",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 43
+  },
+  {
+    "productSku": "1381",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 43
+  },
+  {
+    "productSku": "1382",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 34
+  },
+  {
+    "productSku": "1383",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 34
+  },
+  {
+    "productSku": "1384",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 43
+  },
+  {
+    "productSku": "1385",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 43
+  },
+  {
+    "productSku": "1386",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 34
+  },
+  {
+    "productSku": "1408",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 55
+  },
+  {
+    "productSku": "1409",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 50
+  },
+  {
+    "productSku": "1410",
+    "companyId": 2,
+    "sellPrice": 78,
+    "cost": 78
+  },
+  {
+    "productSku": "1411",
+    "companyId": 2,
+    "sellPrice": 78,
+    "cost": 83
+  },
+  {
+    "productSku": "1412",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 0
+  },
+  {
+    "productSku": "1413",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 0
+  },
+  {
+    "productSku": "1414",
+    "companyId": 2,
+    "sellPrice": 45,
+    "cost": 0
+  },
+  {
+    "productSku": "1415",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 0
+  },
+  {
+    "productSku": "1416",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 120
+  },
+  {
+    "productSku": "1417",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 125
+  },
+  {
+    "productSku": "1418",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 110
+  },
+  {
+    "productSku": "1419",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1387",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 43
+  },
+  {
+    "productSku": "1420",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 0
+  },
+  {
+    "productSku": "1421",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 120
+  },
+  {
+    "productSku": "1422",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 125
+  },
+  {
+    "productSku": "1423",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 0
+  },
+  {
+    "productSku": "1424",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 0
+  },
+  {
+    "productSku": "1425",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 105
+  },
+  {
+    "productSku": "1426",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 0
+  },
+  {
+    "productSku": "1427",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 0
+  },
+  {
+    "productSku": "1428",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 137
+  },
+  {
+    "productSku": "1429",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 0
+  },
+  {
+    "productSku": "1430",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 0
+  },
+  {
+    "productSku": "1431",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 0
+  },
+  {
+    "productSku": "1388",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 34
+  },
+  {
+    "productSku": "1432",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 0
+  },
+  {
+    "productSku": "1433",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 115
+  },
+  {
+    "productSku": "1434",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 125
+  },
+  {
+    "productSku": "1435",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 80
+  },
+  {
+    "productSku": "1436",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 85
+  },
+  {
+    "productSku": "1437",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 0
+  },
+  {
+    "productSku": "1438",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 112
+  },
+  {
+    "productSku": "1439",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 0
+  },
+  {
+    "productSku": "1440",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 0
+  },
+  {
+    "productSku": "1441",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 115
+  },
+  {
+    "productSku": "1442",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 100
+  },
+  {
+    "productSku": "1389",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 43
+  },
+  {
+    "productSku": "1443",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 0
+  },
+  {
+    "productSku": "1460",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 117.054
+  },
+  {
+    "productSku": "1461",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 90.042
+  },
+  {
+    "productSku": "1462",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 90.042
+  },
+  {
+    "productSku": "1463",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 90.042
+  },
+  {
+    "productSku": "1464",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 91.937
+  },
+  {
+    "productSku": "1465",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 91.937
+  },
+  {
+    "productSku": "1466",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 114.211
+  },
+  {
+    "productSku": "1467",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 86.25
+  },
+  {
+    "productSku": "1468",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 86.25
+  },
+  {
+    "productSku": "1469",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 86.25
+  },
+  {
+    "productSku": "1470",
+    "companyId": 2,
+    "sellPrice": 130,
+    "cost": 90.042
+  },
+  {
+    "productSku": "1390",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 34
+  },
+  {
+    "productSku": "1444",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 110
+  },
+  {
+    "productSku": "1445",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 110
+  },
+  {
+    "productSku": "1446",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 110
+  },
+  {
+    "productSku": "1447",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 0
+  },
+  {
+    "productSku": "1448",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 105
+  },
+  {
+    "productSku": "1449",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 0
+  },
+  {
+    "productSku": "1450",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 0
+  },
+  {
+    "productSku": "1451",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 137
+  },
+  {
+    "productSku": "1452",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 0
+  },
+  {
+    "productSku": "1453",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 110
+  },
+  {
+    "productSku": "1454",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 105
+  },
+  {
+    "productSku": "1455",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 85
+  },
+  {
+    "productSku": "1391",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 34
+  },
+  {
+    "productSku": "1456",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 85
+  },
+  {
+    "productSku": "1457",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 137
+  },
+  {
+    "productSku": "1458",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 0
+  },
+  {
+    "productSku": "1459",
+    "companyId": 2,
+    "sellPrice": 105,
+    "cost": 0
+  },
+  {
+    "productSku": "1471",
+    "companyId": 2,
+    "sellPrice": 130,
+    "cost": 90.042
+  },
+  {
+    "productSku": "1472",
+    "companyId": 2,
+    "sellPrice": 15,
+    "cost": 0
+  },
+  {
+    "productSku": "1473",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 43
+  },
+  {
+    "productSku": "1474",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 43
+  },
+  {
+    "productSku": "1475",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 60
+  },
+  {
+    "productSku": "1476",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 55
+  },
+  {
+    "productSku": "1477",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 50
+  },
+  {
+    "productSku": "1478",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 65
+  },
+  {
+    "productSku": "1392",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 34
+  },
+  {
+    "productSku": "1479",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 65
+  },
+  {
+    "productSku": "1480",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 65
+  },
+  {
+    "productSku": "1481",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 55
+  },
+  {
+    "productSku": "1482",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 65
+  },
+  {
+    "productSku": "1483",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 65
+  },
+  {
+    "productSku": "1484",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 65
+  },
+  {
+    "productSku": "1485",
+    "companyId": 2,
+    "sellPrice": 48,
+    "cost": 38
+  },
+  {
+    "productSku": "1486",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 53
+  },
+  {
+    "productSku": "1487",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 65
+  },
+  {
+    "productSku": "1488",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 55
+  },
+  {
+    "productSku": "1489",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 62
+  },
+  {
+    "productSku": "1490",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 78
+  },
+  {
+    "productSku": "1393",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 34
+  },
+  {
+    "productSku": "1491",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1492",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1493",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 110
+  },
+  {
+    "productSku": "1494",
+    "companyId": 2,
+    "sellPrice": 110,
+    "cost": 1
+  },
+  {
+    "productSku": "1495",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 1
+  },
+  {
+    "productSku": "1496",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 85
+  },
+  {
+    "productSku": "1497",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 70
+  },
+  {
+    "productSku": "1498",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 1
+  },
+  {
+    "productSku": "1499",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 102
+  },
+  {
+    "productSku": "1500",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 1
+  },
+  {
+    "productSku": "1501",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1502",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 1
+  },
+  {
+    "productSku": "1394",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 43
+  },
+  {
+    "productSku": "1395",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 34
+  },
+  {
+    "productSku": "1396",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 34
+  },
+  {
+    "productSku": "1397",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 43
+  },
+  {
+    "productSku": "1398",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 34
+  },
+  {
+    "productSku": "1399",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 43
+  },
+  {
+    "productSku": "1400",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 43
+  },
+  {
+    "productSku": "1401",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 34
+  },
+  {
+    "productSku": "1402",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 43
+  },
+  {
+    "productSku": "1403",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 48
+  },
+  {
+    "productSku": "1404",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 43
+  },
+  {
+    "productSku": "1405",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 34
+  },
+  {
+    "productSku": "1406",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 34
+  },
+  {
+    "productSku": "1407",
+    "companyId": 2,
+    "sellPrice": 43,
+    "cost": 34
+  },
+  {
+    "productSku": "1504",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 73
+  },
+  {
+    "productSku": "1505",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1506",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 60
+  },
+  {
+    "productSku": "1507",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 37
+  },
+  {
+    "productSku": "1508",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 78
+  },
+  {
+    "productSku": "1509",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 70
+  },
+  {
+    "productSku": "1510",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1511",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 70
+  },
+  {
+    "productSku": "1512",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 1
+  },
+  {
+    "productSku": "1513",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1514",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 1
+  },
+  {
+    "productSku": "1515",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 1
+  },
+  {
+    "productSku": "1516",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 1
+  },
+  {
+    "productSku": "1517",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 70
+  },
+  {
+    "productSku": "1518",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 1
+  },
+  {
+    "productSku": "1519",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 75
+  },
+  {
+    "productSku": "1520",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 1
+  },
+  {
+    "productSku": "1521",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 70
+  },
+  {
+    "productSku": "1522",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1523",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 1
+  },
+  {
+    "productSku": "1524",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1525",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1526",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1527",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1528",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 1
+  },
+  {
+    "productSku": "1529",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 75
+  },
+  {
+    "productSku": "1530",
+    "companyId": 2,
+    "sellPrice": 90,
+    "cost": 75
+  },
+  {
+    "productSku": "1531",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1532",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 1
+  },
+  {
+    "productSku": "1533",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 1
+  },
+  {
+    "productSku": "1548",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 65
+  },
+  {
+    "productSku": "1549",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1550",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 70
+  },
+  {
+    "productSku": "1551",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1552",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 1
+  },
+  {
+    "productSku": "1553",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 1
+  },
+  {
+    "productSku": "1554",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1534",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 70
+  },
+  {
+    "productSku": "1535",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 1
+  },
+  {
+    "productSku": "1536",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 1
+  },
+  {
+    "productSku": "1537",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 1
+  },
+  {
+    "productSku": "1538",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 1
+  },
+  {
+    "productSku": "1539",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1540",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 80
+  },
+  {
+    "productSku": "1541",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1542",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1543",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1544",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1545",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1546",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1547",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1564",
+    "companyId": 2,
+    "sellPrice": 90,
+    "cost": 1
+  },
+  {
+    "productSku": "1565",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 1
+  },
+  {
+    "productSku": "1566",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 1
+  },
+  {
+    "productSku": "1567",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 1
+  },
+  {
+    "productSku": "1568",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 1
+  },
+  {
+    "productSku": "1569",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 1
+  },
+  {
+    "productSku": "1570",
+    "companyId": 2,
+    "sellPrice": 60,
+    "cost": 53
+  },
+  {
+    "productSku": "1571",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 62
+  },
+  {
+    "productSku": "1572",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 1
+  },
+  {
+    "productSku": "1573",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 1
+  },
+  {
+    "productSku": "1574",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 1
+  },
+  {
+    "productSku": "1575",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 50
+  },
+  {
+    "productSku": "1555",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 1
+  },
+  {
+    "productSku": "1556",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 1
+  },
+  {
+    "productSku": "1557",
+    "companyId": 2,
+    "sellPrice": 125,
+    "cost": 1
+  },
+  {
+    "productSku": "1558",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 70
+  },
+  {
+    "productSku": "1559",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1560",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1561",
+    "companyId": 2,
+    "sellPrice": 110,
+    "cost": 1
+  },
+  {
+    "productSku": "1562",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 1
+  },
+  {
+    "productSku": "1563",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 0
+  },
+  {
+    "productSku": "1576",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 1
+  },
+  {
+    "productSku": "1577",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 1
+  },
+  {
+    "productSku": "1578",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 1
+  },
+  {
+    "productSku": "1579",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 55
+  },
+  {
+    "productSku": "1580",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 1
+  },
+  {
+    "productSku": "1581",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 48
+  },
+  {
+    "productSku": "1582",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 58
+  },
+  {
+    "productSku": "1583",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 1
+  },
+  {
+    "productSku": "1596",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1597",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1598",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1599",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1600",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1601",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1602",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1603",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1604",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1584",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1585",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1586",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 80
+  },
+  {
+    "productSku": "1587",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 80
+  },
+  {
+    "productSku": "1588",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1589",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1590",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1591",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1592",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1593",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1594",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 1
+  },
+  {
+    "productSku": "1595",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 70
+  },
+  {
+    "productSku": "1605",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1606",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1607",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1608",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1609",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1610",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1611",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1612",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1613",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1614",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1615",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1616",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1617",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1618",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1619",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1660",
+    "companyId": 2,
+    "sellPrice": 70,
+    "cost": 48
+  },
+  {
+    "productSku": "1661",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1662",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 35
+  },
+  {
+    "productSku": "1663",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 100
+  },
+  {
+    "productSku": "1664",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1665",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1666",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1667",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1668",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1669",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1670",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1620",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1621",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1622",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1623",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1624",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1625",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1626",
+    "companyId": 2,
+    "sellPrice": 75,
+    "cost": 1
+  },
+  {
+    "productSku": "1627",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1628",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1629",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1630",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1631",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1632",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1633",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1634",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1635",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1636",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1637",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1638",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1639",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1640",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1641",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1642",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1643",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1644",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1645",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1646",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1647",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1648",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1649",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1650",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1651",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1652",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 635
+  },
+  {
+    "productSku": "1653",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1654",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1655",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1656",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 95
+  },
+  {
+    "productSku": "1657",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 1
+  },
+  {
+    "productSku": "1658",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1659",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1671",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1672",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 70
+  },
+  {
+    "productSku": "1673",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1674",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 75
+  },
+  {
+    "productSku": "1675",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 80
+  },
+  {
+    "productSku": "1676",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 1
+  },
+  {
+    "productSku": "1677",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 70
+  },
+  {
+    "productSku": "1678",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 70
+  },
+  {
+    "productSku": "1679",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1680",
+    "companyId": 2,
+    "sellPrice": 85,
+    "cost": 1
+  },
+  {
+    "productSku": "1681",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 70
+  },
+  {
+    "productSku": "1682",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1683",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 1
+  },
+  {
+    "productSku": "1684",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 730
+  },
+  {
+    "productSku": "1685",
+    "companyId": 2,
+    "sellPrice": 115,
+    "cost": 1
+  },
+  {
+    "productSku": "1686",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1687",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1688",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 75
+  },
+  {
+    "productSku": "1689",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 1
+  },
+  {
+    "productSku": "1690",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 70
+  },
+  {
+    "productSku": "1691",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 65
+  },
+  {
+    "productSku": "1692",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 115
+  },
+  {
+    "productSku": "1693",
+    "companyId": 2,
+    "sellPrice": 80,
+    "cost": 65
+  },
+  {
+    "productSku": "1694",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 125
+  },
+  {
+    "productSku": "1698",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 110
+  },
+  {
+    "productSku": "1699",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 90
+  },
+  {
+    "productSku": "1700",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 90
+  },
+  {
+    "productSku": "1701",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 90
+  },
+  {
+    "productSku": "1702",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 70
+  },
+  {
+    "productSku": "1703",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 110
+  },
+  {
+    "productSku": "1704",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 110
+  },
+  {
+    "productSku": "1705",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 90
+  },
+  {
+    "productSku": "1706",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 70
+  },
+  {
+    "productSku": "1707",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 95
+  },
+  {
+    "productSku": "1708",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 140
+  },
+  {
+    "productSku": "1709",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 90
+  },
+  {
+    "productSku": "1710",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 115
+  },
+  {
+    "productSku": "1711",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 70
+  },
+  {
+    "productSku": "1712",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 70
+  },
+  {
+    "productSku": "1713",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 95
+  },
+  {
+    "productSku": "1714",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 125
+  },
+  {
+    "productSku": "1715",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 125
+  },
+  {
+    "productSku": "1716",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 95
+  },
+  {
+    "productSku": "1717",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 85
+  },
+  {
+    "productSku": "1718",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 86
+  },
+  {
+    "productSku": "1719",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 91
+  },
+  {
+    "productSku": "1720",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 125
+  },
+  {
+    "productSku": "1721",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 125
+  },
+  {
+    "productSku": "1722",
+    "companyId": 2,
+    "sellPrice": 100,
+    "cost": 86
+  },
+  {
+    "productSku": "1723",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 95
+  },
+  {
+    "productSku": "1724",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 125
+  },
+  {
+    "productSku": "1725",
+    "companyId": 2,
+    "sellPrice": 155,
+    "cost": 130
+  },
+  {
+    "productSku": "1726",
+    "companyId": 2,
+    "sellPrice": 135,
+    "cost": 90
+  },
+  {
+    "productSku": "1727",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 137
+  },
+  {
+    "productSku": "1728",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 125
+  },
+  {
+    "productSku": "1729",
+    "companyId": 2,
+    "sellPrice": 950,
+    "cost": 1
+  },
+  {
+    "productSku": "1731",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 55
+  },
+  {
+    "productSku": "1732",
+    "companyId": 2,
+    "sellPrice": 50,
+    "cost": 45
+  },
+  {
+    "productSku": "1733",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 70
+  },
+  {
+    "productSku": "1734",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 55
+  },
+  {
+    "productSku": "1735",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 48
+  },
+  {
+    "productSku": "1736",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 48
+  },
+  {
+    "productSku": "1737",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 58
+  },
+  {
+    "productSku": "1738",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 48
+  },
+  {
+    "productSku": "1739",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 53
+  },
+  {
+    "productSku": "1740",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 48
+  },
+  {
+    "productSku": "1741",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 48
+  },
+  {
+    "productSku": "1742",
+    "companyId": 2,
+    "sellPrice": 65,
+    "cost": 58
+  },
+  {
+    "productSku": "1743",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 63
+  },
+  {
+    "productSku": "1744",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 48
+  },
+  {
+    "productSku": "1745",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 48
+  },
+  {
+    "productSku": "1746",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 48
+  },
+  {
+    "productSku": "1747",
+    "companyId": 2,
+    "sellPrice": 55,
+    "cost": 48
+  },
+  {
+    "productSku": "1748",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 132
+  },
+  {
+    "productSku": "1751",
+    "companyId": 2,
+    "sellPrice": 165,
+    "cost": 145
+  },
+  {
+    "productSku": "1753",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1754",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 110
+  },
+  {
+    "productSku": "1755",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1756",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 85
+  },
+  {
+    "productSku": "1757",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 85
+  },
+  {
+    "productSku": "1758",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 85
+  },
+  {
+    "productSku": "1759",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 85
+  },
+  {
+    "productSku": "1760",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1761",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1762",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1763",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1764",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1765",
+    "companyId": 2,
+    "sellPrice": 90,
+    "cost": 75
+  },
+  {
+    "productSku": "1766",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 85
+  },
+  {
+    "productSku": "1767",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 85
+  },
+  {
+    "productSku": "1768",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 85
+  },
+  {
+    "productSku": "1769",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1770",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1771",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1772",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1773",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1774",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1775",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 85
+  },
+  {
+    "productSku": "1776",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 85
+  },
+  {
+    "productSku": "1777",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1778",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 85
+  },
+  {
+    "productSku": "1779",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1780",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1781",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1782",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1783",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1784",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 85
+  },
+  {
+    "productSku": "1785",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 85
+  },
+  {
+    "productSku": "1786",
+    "companyId": 2,
+    "sellPrice": 90,
+    "cost": 75
+  },
+  {
+    "productSku": "1787",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1788",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1789",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1790",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 85
+  },
+  {
+    "productSku": "1791",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1792",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1793",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1794",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1795",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1796",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 85
+  },
+  {
+    "productSku": "1797",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1798",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1799",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1800",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1801",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1802",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1803",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1804",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1805",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1806",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1807",
+    "companyId": 2,
+    "sellPrice": 90,
+    "cost": 75
+  },
+  {
+    "productSku": "1808",
+    "companyId": 2,
+    "sellPrice": 95,
+    "cost": 85
+  },
+  {
+    "productSku": "1809",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1810",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1811",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1812",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1813",
+    "companyId": 2,
+    "sellPrice": 90,
+    "cost": 75
+  },
+  {
+    "productSku": "1814",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1815",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1816",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1817",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1818",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1819",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1820",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1821",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1822",
+    "companyId": 2,
+    "sellPrice": 90,
+    "cost": 75
+  },
+  {
+    "productSku": "1823",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1824",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1825",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1826",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1827",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1828",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1829",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1830",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1831",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1832",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1833",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  },
+  {
+    "productSku": "1834",
+    "companyId": 2,
+    "sellPrice": 120,
+    "cost": 120
+  },
+  {
+    "productSku": "1835",
+    "companyId": 2,
+    "sellPrice": 145,
+    "cost": 120
+  }
+]
