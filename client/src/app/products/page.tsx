@@ -44,6 +44,8 @@ const ProductsPage = () => {
   const [selectedCompany, setSelectedCompany] = useState('');
   const [stockFilter, setStockFilter] = useState<'all' | 'out' | 'low' | 'available'>('all');
   const [lowStockThreshold, setLowStockThreshold] = useState(10);
+  const [stockFromQty, setStockFromQty] = useState<string>('');
+  const [stockToQty, setStockToQty] = useState<string>('');
   const [pollingInterval, setPollingInterval] = useState<number | undefined>(undefined);
 
   // State للمودالز
@@ -81,10 +83,11 @@ const ProductsPage = () => {
   // إعادة تعيين الصفحة إلى الأولى عند تغيير الفلاتر
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, searchSKU, selectedCompany, selectedUnit, stockFilter]);
+  }, [searchTerm, searchSKU, selectedCompany, selectedUnit, stockFilter, stockFromQty, stockToQty]);
 
   // تحديد ما إذا كان هناك أي فلاتر نشطة
-  const hasActiveFilters = searchTerm || searchSKU || selectedCompany || selectedUnit || stockFilter !== 'all';
+  const hasActiveFilters = searchTerm || searchSKU || selectedCompany || selectedUnit || stockFilter !== 'all' || stockFromQty || stockToQty;
+  const hasStockRangeFilter = stockFromQty || stockToQty;
   const hasSearchFilters = searchTerm || searchSKU;
 
   // RTK Query hooks - نرسل جميع الفلاتر المدعومة في الـ API
@@ -137,6 +140,30 @@ const ProductsPage = () => {
     });
   }
 
+  // تطبيق فلتر نطاق الكمية (من - إلى)
+  if (stockFromQty || stockToQty) {
+    products = products.filter(product => {
+      const stockBoxes = Number((product.stock as any)?.[0]?.boxes || 0);
+      const fromQty = stockFromQty ? Number(stockFromQty) : null;
+      const toQty = stockToQty ? Number(stockToQty) : null;
+
+      // إذا تم تحديد "من" فقط: الكمية >= من
+      if (fromQty !== null && toQty === null) {
+        return stockBoxes >= fromQty;
+      }
+      // إذا تم تحديد "إلى" فقط: الكمية <= إلى
+      if (fromQty === null && toQty !== null) {
+        return stockBoxes <= toQty;
+      }
+      // إذا تم تحديد كلاهما: من <= الكمية <= إلى
+      if (fromQty !== null && toQty !== null) {
+        return stockBoxes >= fromQty && stockBoxes <= toQty;
+      }
+
+      return true;
+    });
+  }
+
   // إحصائيات المخزون من جميع الأصناف
   const totalCount = allProducts.length;
   const outOfStockCount = allProducts.filter((p: any) => (p.stock?.[0]?.boxes || 0) === 0).length;
@@ -165,6 +192,8 @@ const ProductsPage = () => {
         setSelectedCompany('');
         setSelectedUnit('');
         setStockFilter('all');
+        setStockFromQty('');
+        setStockToQty('');
 
         // الانتقال للصفحة الأولى
         setCurrentPage(1);
@@ -786,6 +815,8 @@ const ProductsPage = () => {
                 setSelectedCompany('');
                 setSelectedUnit('');
                 setStockFilter('all');
+                setStockFromQty('');
+                setStockToQty('');
                 setCurrentPage(1);
               }}
               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all duration-200"
@@ -798,7 +829,7 @@ const ProductsPage = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {/* Search by Name */}
           <div className="relative">
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-tertiary w-5 h-5" />
@@ -889,6 +920,52 @@ const ProductsPage = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </div>
+
+          {/* Stock Quantity Range Filter */}
+          <div className="relative">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-tertiary w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                <input
+                  type="number"
+                  placeholder="من كمية..."
+                  value={stockFromQty}
+                  onChange={(e) => setStockFromQty(e.target.value)}
+                  min="0"
+                  className={`w-full pr-9 pl-2 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200 text-sm ${stockFromQty ? 'border-cyan-500 ring-2 ring-cyan-100' : 'border-border-primary'
+                    }`}
+                />
+              </div>
+              <span className="text-text-tertiary text-sm font-medium">إلى</span>
+              <div className="relative flex-1">
+                <input
+                  type="number"
+                  placeholder="إلى كمية..."
+                  value={stockToQty}
+                  onChange={(e) => setStockToQty(e.target.value)}
+                  min="0"
+                  className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200 text-sm ${stockToQty ? 'border-cyan-500 ring-2 ring-cyan-100' : 'border-border-primary'
+                    }`}
+                />
+              </div>
+              {(stockFromQty || stockToQty) && (
+                <button
+                  onClick={() => {
+                    setStockFromQty('');
+                    setStockToQty('');
+                  }}
+                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  title="مسح نطاق الكمية"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* مؤشر الفلاتر النشطة */}
@@ -941,6 +1018,19 @@ const ProductsPage = () => {
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
                   {stockFilter === 'available' ? 'متوفرة' : stockFilter === 'out' ? 'منتهية' : 'شارفت على الانتهاء'}
                   <button onClick={() => setStockFilter('all')} className="hover:text-orange-900">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {(stockFromQty || stockToQty) && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-cyan-100 text-cyan-800 rounded-full text-sm">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                  كمية: {stockFromQty || '0'} - {stockToQty || '∞'}
+                  <button onClick={() => { setStockFromQty(''); setStockToQty(''); }} className="hover:text-cyan-900">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>

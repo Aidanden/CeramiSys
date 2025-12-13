@@ -1,0 +1,142 @@
+# الأصناف التي تحتوي على أكواد أصناف أخرى بين أقواس
+
+تم إنشاء هذا الملف تلقائياً لتوثيق الأصناف التي تحتوي في اسمها على رقم كود (SKU) موجود فعلاً في صنف آخر.
+
+---
+
+## الأصناف التي تحتوي على أكواد موجودة فعلاً:
+
+| # | كود الصنف | اسم الصنف | الكود المرجعي | اسم الصنف المرجعي |
+|---|-----------|-----------|---------------|-------------------|
+| 1 | 132 | NICKON TAUPE RECT (214) 60×120 | 214 | IC MODULOR AVORIO (1256) 60×60 |
+| 2 | 134 | ARTWORK 120 WHITE (143) 60×120 | 143 | PRIS ETNA PERLA (925) 60×120 |
+| 3 | 136 | HALDEN STEEL LAPADO RECT (61) 60×120 | 61 | SHENLONG BEIGE MATE 60×120 STN |
+| 4 | 137 | ABSTRACT SILVER LAPADO REC (357) 60×120 | 357 | DIAMOND GOLD MATE RECT 120×120 SPAINCER |
+| 5 | 139 | LETO GREY PUL RECT (473) 60×120 | 473 | HEL ALMOND MT 60×120 STN |
+| 6 | 140 | ARAL PEARL PUL RECT (208) 60×120 | 208 | AR OUT LIVING LIGHT (954) 20×120 |
+| 7 | 157 | DIAMOND GOLD PUL (55) 60×120 | 55 | INOUT LAURENT CENENTO MT 75×75 STN |
+| 8 | 182 | SAHARA WHITE PO RECT (262) 60×120 | 262 | PRIS BRIGHTON GREY (920) 120×120 |
+| 9 | 183 | SENSATION PUL RECT (472) 60×120 | 472 | ANTID POPEYE LIGHT 20M MT 40×120 STN |
+| 10 | 193 | CAESAR WHITE PUL (484) 90×90 | 484 | INOUT DENEB PEARL LIGHT REC 100×100 STN |
+| 11 | 198 | HELIOS NATURAL GLOSSY (226) 75×75 | 226 | NAVONA WHITE PO MATE (1185) 60×60 |
+| 12 | 257 | CREAM CHAMBER NATURAL (336) 120×120 | 336 | CONCORDE EXTREM PEARL 20M REC MT 60×120 SPAINCER |
+| 13 | 263 | DS LE BLANC (701) 120×120 | 701 | - |
+| 14 | 267 | HERA WHITE PUL (224) 120×120 | 224 | STATUARIO LUXE PO (1163) 60×60 |
+| 15 | 268 | EOS PEARL PUL (54) 120×120 | 54 | MYSORE WHITE MT 60×120 STN |
+| 16 | 270 | ETER GREEN RECT (57) 120×120 | 57 | INOUT VENDELA SAND MT 60×120 STN |
+| 17 | 272 | RAVENA NATURAL (338) 120×120 | 338 | GOLDONI BIANCO PO RECT MATE 90×90 SPAINCER |
+| 18 | 288 | GRAND ANTIQUE PUL (474) 120×120 | 474 | SLIPSTOP ALCANDER BEIGE MT 120×120 STN |
+| 19 | 301 | BIANCO CARRARA BRILLO (481) 33.3×100 | 481 | IVAR NATURAL MT 60×120 STN |
+| 20 | 302 | FINE RLV BIANC CARRARA BRI(482) 33.3×100 | 482 | SVANTEVIT GREY MT 120×120 STN |
+| 21 | 314 | KARMA LEAD (369) 7.5×30 | 369 | ANTID BELLEVUE GREY (9ق) 33.3×33.3 STN |
+| 22 | 315 | BRISBANE CREAM (289) 15×30 | 289 | FIOR DI BOSCO PUL (1243) 120×120 |
+| 23 | 317 | EVOKE CREAM (287) 25×25 | 287 | CCE BLUE BROWN (831) 120×120 |
+| 24 | 318 | CEMENTINE EVOKA CREAM (288) 25×25 | 288 | GRAND ANTIQUE PUL (474) 120×120 |
+| 25 | 409 | RLV URBANA BEIGE (48) 31.6×45.2 | 48 | CLETUS WHITE MT 120×120 STN |
+
+---
+
+## الأصناف التي تحتوي على أرقام بين أقواس (عدد القطع):
+
+هذه الأصناف تحتوي على `(رقمق)` وهي تشير إلى عدد القطع في الصندوق وليس كود صنف آخر:
+
+| # | كود الصنف | اسم الصنف | عدد القطع |
+|---|-----------|-----------|-----------|
+| 1 | 67 | BLANCO BRILLO (45ق) 10×20 CASA TILES*17 | 45 قطعة |
+| 2 | 68 | BLANCO MATE (45ق) 10×20 CASA TILES*17 | 45 قطعة |
+| 3 | 69 | BLANCO BRILLO (25ق) 20×20 CASA TILES*17 | 25 قطعة |
+| 4 | 70 | GRIS CLARO BRILLO (45ق) 10×20 CASA TILES*17 | 45 قطعة |
+| 5 | 71 | VERDE OSCURO BRILLO (25ق) 20×20 CASA TILES*17 | 25 قطعة |
+| 6 | 72 | NEGRO MATE (25 ق) 20×20 CASA TILES*17 | 25 قطعة |
+| 7 | 73 | NEGRO BRILLO (25 ق) 20×20 CASA TILES*17 | 25 قطعة |
+| 8 | 74 | AUQ BRILLO (25 ق) 20×20 CASA TILES*17 | 25 قطعة |
+| 9 | 75 | TURQUESA BRILLO (25 ق) 20×20 CASA TILES*17 | 25 قطعة |
+| 10 | 76 | GRIS OSCURO MT (25 ق) 20×20 CASA TILES*17 | 25 قطعة |
+| 11 | 77 | GRIS CLARO MT (25 ق) 20×20 CASA TILES*17 | 25 قطعة |
+| 12 | 78 | AZUL BRILLO OK (25 ق) 20×20 CASA TILES*17 | 25 قطعة |
+| 13 | 79 | NORDIC ANTRA OK (25 ق) 20×20 CASA TILES*17 | 25 قطعة |
+| 14 | 80 | ROJO BRILLO (25 ق) 20×20 CASA TILES*17 | 25 قطعة |
+| 15 | 364 | BLANCO BRILLO (7ق) 60×30 STN | 7 قطع |
+| 16 | 365 | BLANCO BRILLO (10ق) 60×30 STN | 10 قطع |
+| 17 | 366 | CB BLA (16ق) 40×25 STN | 16 قطعة |
+| 18 | 367 | BLANCO BRILLO (13ق) 50×25 STN | 13 قطعة |
+| 19 | 368 | OM RUS (9ق) 33.3×33.3 STN | 9 قطع |
+| 20 | 369 | ANTID BELLEVUE GREY (9ق) 33.3×33.3 STN | 9 قطع |
+| 21 | 370 | ANTID RANON GREY MT (9ق) 33.3×33.3 STN | 9 قطع |
+| 22 | 429 | WHITE GLOSS STD 25×25 (ق10) شركة صقر القولف | 10 قطع |
+| 23 | 428 | WHITE GLOSS STD 25×25 (ق15) شركة صقر القولف | 15 قطعة |
+
+---
+
+## الأصناف التي تحتوي على أرقام مرجعية داخلية:
+
+هذه الأصناف تحتوي على أرقام بين أقواس تبدو كأكواد مرجعية داخلية للشركة المصنعة (غير موجودة كأصناف مستقلة):
+
+| # | كود الصنف | اسم الصنف | الرقم المرجعي |
+|---|-----------|-----------|---------------|
+| 1 | 120 | PRIS SUN SAND (919) 60×120 | 919 |
+| 2 | 121 | PRIS BAHREIN GOLD (1128) 60×120 | 1128 |
+| 3 | 122 | CALACATTA PUL PO RECT PUL (1157) 60×120 | 1157 |
+| 4 | 123 | GALANA PUL RECT (1244) 60×120 | 1244 |
+| 5 | 124 | BIANCO CARRARA PUL PO RECT (1280) 60×120 | 1280 |
+| 6 | 125 | EC MIDLAND COTTO (830) 60×120 | 830 |
+| 7 | 126 | EC MIDLAND PERLA (828) 60×120 | 828 |
+| 8 | 127 | ESS RLV ROMAGNA GRIS (930) 60×120 | 930 |
+| 9 | 128 | ONYX WHITE PO RECT (1165) 60×120 | 1165 |
+| 10 | 129 | INDUSTRIAL HALL LIGHT GREY (1190) 60×120 | 1190 |
+| 11 | 130 | EC ALASKA MATE (842) 60×120 | 842 |
+| 12 | 131 | MG CALLELA LIGHT (936) 60×120 | 936 |
+| 13 | 133 | PRIS SENA CREMA (932) 60×120 | 932 |
+| 14 | 135 | EC DREAMBLUE CREAM (841) 60×120 | 841 |
+| 15 | 138 | ESS BR ICE WHITE (911) 60×120 | 911 |
+| 16 | 141 | PRIS ETNA MARFIL (923) 60×120 | 923 |
+| 17 | 142 | PRIS ETNA MARENGO (926) 60×120 | 926 |
+| 18 | 143 | PRIS ETNA PERLA (925) 60×120 | 925 |
+| 19 | 144 | TESSINO IVORY PUL RECT (1015) 60×120 | 1015 |
+| 20 | 145 | EC MANLEY (843) 60×120 | 843 |
+| 21 | 146 | POR STYLE ABUJARDADO VISON (641) 60×120 | 641 |
+| 22 | 147 | INDUSTRIAL HALL OFF WHITE(1191) 60×120 | 1191 |
+| 23 | 148 | EC CV HANOI BLANCO (955) 60×120 | 955 |
+| 24 | 149 | PRIS STATUARIET WHITE(mate) (961) 60×120 | 961 |
+| 25 | 150 | DIAMOND GOLD MATE (1281) 60×120 | 1281 |
+| 26 | 151 | PRIS CREPUSCOLO PEARL (1119) 60×120 | 1119 |
+| 27 | 152 | PRIS NEPAL (1113) 60×120 | 1113 |
+| 28 | 153 | ESS GALES IVORY (1126) 60×120 | 1126 |
+| 29 | 154 | MEDICI WHITE PUL (533) 60×120 | 533 |
+| 30 | 155 | PRIS PONER COLD (1118) 60×120 | 1118 |
+| 31 | 156 | EC PUCCINI MARFIL (952) 60×120 | 952 |
+| 32 | 158 | EC PUCCINI BLANCO (949) 60×120 | 949 |
+| 33 | 159 | ARAN LIGHT GREY PUL (966) 60×120 | 966 |
+| 34 | 160 | EC ZIRANPOL WHITE (854) 60×120 | 854 |
+| 35 | 161 | ESS BR STATUARI (692) 60×120 | 692 |
+| 36 | 162 | LISTONE NOBILE NOGAL (1076) 33.3×100 | 1076 |
+| 37 | 163 | LISTONE NOBILE ROBILE (1220) 33.3×100 | 1220 |
+| 38 | 164 | EWOOD ROVERE RECT (1024) 40×120 | 1024 |
+| 39 | 165 | PRIS CALACATTA BLANCO (933) 60×120 | 933 |
+| 40 | 166 | HALIMA BLANC RECT (1055) 60×120 | 1055 |
+| 41 | 167 | PRIS SUN PEARL (916) 60×120 | 916 |
+| 42 | 168 | PRIS NAPLES WHITE (929) 60×120 | 929 |
+| 43 | 169 | PRIS CREPUSCOLO CREAM (937) 60×120 | 937 |
+| 44 | 170 | GOLDONI BIANCO PO MATE (973) 60×120 | 973 |
+| 45 | 171 | ESS BERCY BIANCO (931) 60×120 | 931 |
+| 46 | 172 | EC ICELAND MINT (834) 60×120 | 834 |
+| 47 | 173 | EC ICELAND WHITE (833) 60×120 | 833 |
+| 48 | 174 | AR MARMI WHITE (863) 60×120 | 863 |
+| 49 | 175 | MYSTICA BLACK PUL (1230) 60×120 | 1230 |
+| 50 | 176 | PRIS STATUARIET WHITE (786) 60×120 | 786 |
+| ... | ... | (والمزيد من الأصناف) | ... |
+
+---
+
+## ملخص:
+
+| النوع | العدد |
+|-------|-------|
+| أصناف تحتوي على أكواد موجودة فعلاً | 25 |
+| أصناف تحتوي على عدد القطع (رقمق) | 23 |
+| أصناف تحتوي على أرقام مرجعية داخلية | 100+ |
+
+---
+
+## تاريخ الإنشاء:
+تم إنشاء هذا الملف في: 2024-12-13
