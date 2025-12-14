@@ -491,9 +491,11 @@ export class ExternalStoreInvoiceController {
                 return res.status(401).json({ error: 'Not authenticated' });
             }
 
+            const storeId = req.storeUser.storeId;
+
             // الحصول على قائمة المنتجات المخصصة للمحل
             const storeProducts = await prisma.externalStoreProduct.findMany({
-                where: { storeId: req.storeUser.storeId },
+                where: { storeId: storeId },
                 select: { productId: true }
             });
 
@@ -534,11 +536,6 @@ export class ExternalStoreInvoiceController {
                     },
                 },
             });
-
-            console.log('Products fetched:', products.length);
-            if (products.length > 0) {
-                console.log('Sample product:', JSON.stringify(products[0], null, 2));
-            }
 
             // تنسيق البيانات بنفس الشكل المتوقع في الـ Frontend
             const formattedProducts = products.map(product => ({

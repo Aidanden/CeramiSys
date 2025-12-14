@@ -8,9 +8,22 @@ export interface StoreUser {
     storeName: string;
 }
 
+export interface StoreInfo {
+    id: number;
+    name: string;
+    ownerName: string;
+    phone1: string;
+    address: string;
+}
+
 export interface LoginResponse {
     token: string;
     user: StoreUser;
+}
+
+export interface CurrentUserResponse {
+    user: StoreUser;
+    store: StoreInfo;
 }
 
 export const storePortalApi = createApi({
@@ -18,13 +31,21 @@ export const storePortalApi = createApi({
     baseQuery: fetchBaseQuery({
         baseUrl: `${API_CONFIG.baseUrl}/store-portal`,
         prepareHeaders: (headers) => {
-            const token = localStorage.getItem('storeToken'); // تخزين توكن المحل بشكل منفصل
+            const token = localStorage.getItem('storeToken');
             if (token) {
                 headers.set('authorization', `Bearer ${token}`);
             }
+            // إضافة timestamp لمنع الـ browser caching
+            headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            headers.set('Pragma', 'no-cache');
             return headers;
         },
     }),
+    // تعطيل الـ cache بالكامل لضمان عدم تداخل البيانات
+    keepUnusedDataFor: 0,
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
     tagTypes: ['StoreInvoices', 'StoreProducts', 'StoreProfile'],
     endpoints: (builder) => ({
         // Login
@@ -34,24 +55,42 @@ export const storePortalApi = createApi({
                 method: 'POST',
                 body: credentials,
             }),
+            // مسح جميع الـ cache عند تسجيل الدخول لضمان عدم وجود بيانات قديمة
+            invalidatesTags: ['StoreProfile', 'StoreInvoices', 'StoreProducts'],
+        }),
+
+        // Logout
+        logout: builder.mutation<void, void>({
+            query: () => ({
+                url: '/auth/logout',
+                method: 'POST',
+            }),
+            // مسح جميع الـ cache عند تسجيل الخروج
+            invalidatesTags: ['StoreProfile', 'StoreInvoices', 'StoreProducts'],
         }),
 
         // Get Current User
-        getCurrentUser: builder.query<any, void>({
+        getCurrentUser: builder.query<CurrentUserResponse, void>({
             query: () => '/auth/me',
             providesTags: ['StoreProfile'],
+            // تعطيل الـ cache لضمان جلب البيانات الصحيحة دائماً
+            keepUnusedDataFor: 0,
         }),
 
         // Get Available Products
         getAvailableProducts: builder.query<any[], void>({
             query: () => '/products',
             providesTags: ['StoreProducts'],
+            // تعطيل الـ cache لضمان جلب البيانات الصحيحة دائماً
+            keepUnusedDataFor: 0,
         }),
 
         // Get Invoices
         getInvoices: builder.query<any, void>({
             query: () => '/invoices',
             providesTags: ['StoreInvoices'],
+            // تعطيل الـ cache لضمان جلب البيانات الصحيحة دائماً
+            keepUnusedDataFor: 0,
         }),
 
         // Create Invoice
@@ -68,12 +107,15 @@ export const storePortalApi = createApi({
         getInvoiceStats: builder.query<any, void>({
             query: () => '/invoices/stats',
             providesTags: ['StoreInvoices'],
+            // تعطيل الـ cache لضمان جلب البيانات الصحيحة دائماً
+            keepUnusedDataFor: 0,
         }),
     }),
 });
 
 export const {
     useLoginMutation,
+    useLogoutMutation,
     useGetCurrentUserQuery,
     useGetAvailableProductsQuery,
     useGetInvoicesQuery,

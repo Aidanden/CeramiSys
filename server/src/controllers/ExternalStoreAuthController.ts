@@ -39,12 +39,18 @@ export class ExternalStoreAuthController {
 
             // التحقق من أن المستخدم نشط
             if (!user.isActive) {
-                return res.status(403).json({ error: 'Account is deactivated' });
+                return res.status(403).json({ 
+                    error: 'ACCOUNT_DEACTIVATED',
+                    message: 'الحساب غير نشط. يرجى التواصل مع شركة التقازي.' 
+                });
             }
 
             // التحقق من أن المحل نشط
             if (!user.store.isActive) {
-                return res.status(403).json({ error: 'Store is deactivated' });
+                return res.status(403).json({ 
+                    error: 'STORE_DEACTIVATED',
+                    message: 'المحل غير نشط. يرجى التواصل مع شركة التقازي للتفعيل.' 
+                });
             }
 
             // التحقق من القفل
@@ -119,8 +125,7 @@ export class ExternalStoreAuthController {
                 },
             });
         } catch (error: any) {
-            console.error('Error during store login:', error);
-            return res.status(500).json({ error: 'Login failed', details: error.message });
+            return res.status(500).json({ error: 'LOGIN_FAILED', message: 'فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.' });
         }
     }
 
@@ -140,18 +145,18 @@ export class ExternalStoreAuthController {
 
             res.json({ message: 'Logged out successfully' });
         } catch (error: any) {
-            console.error('Error during store logout:', error);
-            res.status(500).json({ error: 'Logout failed', details: error.message });
+            res.status(500).json({ error: 'LOGOUT_FAILED', message: 'فشل تسجيل الخروج' });
         }
     }
 
     /**
      * الحصول على معلومات المستخدم الحالي
+     * يُرجع البيانات بنفس بنية login response لضمان التوافق
      */
     async getCurrentUser(req: StoreAuthRequest, res: Response) {
         try {
             if (!req.storeUser) {
-                return res.status(401).json({ error: 'Not authenticated' });
+                return res.status(401).json({ error: 'NOT_AUTHENTICATED', message: 'غير مصادق' });
             }
 
             const user = await prisma.externalStoreUser.findUnique({
@@ -170,13 +175,27 @@ export class ExternalStoreAuthController {
             });
 
             if (!user) {
-                return res.status(404).json({ error: 'User not found' });
+                return res.status(404).json({ error: 'USER_NOT_FOUND', message: 'المستخدم غير موجود' });
             }
 
-            return res.json(user);
+            // إرجاع البيانات بنفس بنية login response
+            return res.json({
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    storeId: user.storeId,
+                    storeName: user.store.name,
+                },
+                store: {
+                    id: user.store.id,
+                    name: user.store.name,
+                    ownerName: user.store.ownerName,
+                    phone1: user.store.phone1,
+                    address: user.store.address,
+                },
+            });
         } catch (error: any) {
-            console.error('Error fetching current user:', error);
-            return res.status(500).json({ error: 'Failed to fetch user', details: error.message });
+            return res.status(500).json({ error: 'FETCH_USER_FAILED', message: 'فشل جلب بيانات المستخدم' });
         }
     }
 

@@ -12,8 +12,11 @@ import {
 import Link from 'next/link';
 
 export default function StoreDashboardPage() {
-    const { data: user } = useGetCurrentUserQuery();
-    const { data: stats, isLoading } = useGetInvoiceStatsQuery();
+    // جلب بيانات المستخدم الحالي - البيانات تأتي بنفس بنية login response
+    const { data: currentUser, isLoading: isUserLoading } = useGetCurrentUserQuery();
+    const { data: stats, isLoading: isStatsLoading } = useGetInvoiceStatsQuery();
+    
+    const isLoading = isUserLoading || isStatsLoading;
 
     if (isLoading) {
         return (
@@ -28,7 +31,7 @@ export default function StoreDashboardPage() {
             {/* Welcome Section */}
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    مرحباً بك، {user?.store?.name} 👋
+                    مرحباً بك، {currentUser?.store?.name || currentUser?.user?.storeName} 👋
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400">
                     هذه لوحة التحكم الخاصة بك لإدارة مبيعاتك وفواتيرك.

@@ -1566,7 +1566,7 @@ const PurchasesPage = () => {
                           </span>
                         )}
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative product-dropdown-container">
                         {/* البحث بالكود */}
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -1620,6 +1620,7 @@ const PurchasesPage = () => {
                                 <button
                                   key={product.id}
                                   type="button"
+                                  onMouseDown={(e) => e.preventDefault()}
                                   onClick={() => handleSelectProductFromDropdown(product)}
                                   className="w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors hover:bg-blue-50"
                                 >

@@ -29,10 +29,18 @@ interface InvoiceLine {
 }
 
 export default function StoreInvoicesPage() {
-    const { data: invoicesData, isLoading: invoicesLoading, refetch } = useGetInvoicesQuery();
-    const { data: productsData, isLoading: productsLoading } = useGetAvailableProductsQuery();
+    const { data: invoicesData, isLoading: invoicesLoading, refetch: refetchInvoices } = useGetInvoicesQuery();
+    const { data: productsData, isLoading: productsLoading, refetch: refetchProducts } = useGetAvailableProductsQuery();
     const { data: currentUser } = useGetCurrentUserQuery();
     const [createInvoice, { isLoading: isCreating }] = useCreateInvoiceMutation();
+    
+    // إعادة جلب البيانات عند تغيير المستخدم
+    useEffect(() => {
+        if (currentUser) {
+            refetchInvoices();
+            refetchProducts();
+        }
+    }, [currentUser?.user?.storeId, refetchInvoices, refetchProducts]);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -249,7 +257,7 @@ export default function StoreInvoicesPage() {
             setIsModalOpen(false);
             setLines([]);
             setNotes('');
-            refetch();
+            refetchInvoices();
         } catch (err: any) {
             setError(err.data?.message || 'حدث خطأ أثناء إنشاء الفاتورة');
         }

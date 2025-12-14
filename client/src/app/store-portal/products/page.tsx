@@ -1,12 +1,20 @@
 'use client';
 
-import { useGetAvailableProductsQuery } from '@/state/storePortalApi';
+import { useGetAvailableProductsQuery, useGetCurrentUserQuery } from '@/state/storePortalApi';
 import { Package, Search } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function StoreProductsPage() {
     const [search, setSearch] = useState('');
-    const { data: products, isLoading } = useGetAvailableProductsQuery();
+    const { data: currentUser } = useGetCurrentUserQuery();
+    const { data: products, isLoading, refetch } = useGetAvailableProductsQuery();
+    
+    // إعادة جلب المنتجات عند تغيير المستخدم
+    useEffect(() => {
+        if (currentUser) {
+            refetch();
+        }
+    }, [currentUser?.user?.storeId, refetch]);
 
     const filteredProducts = products?.filter((item: any) =>
         item.product.name.toLowerCase().includes(search.toLowerCase()) ||

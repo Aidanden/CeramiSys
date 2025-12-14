@@ -14,7 +14,8 @@ import {
     BarChart3
 } from 'lucide-react';
 
-import { useGetCurrentUserQuery } from '@/state/storePortalApi';
+import { useGetCurrentUserQuery, useLogoutMutation, storePortalApi } from '@/state/storePortalApi';
+import { useDispatch } from 'react-redux';
 
 export default function StorePortalLayout({
     children,
@@ -23,16 +24,22 @@ export default function StorePortalLayout({
 }) {
     const router = useRouter();
     const pathname = usePathname();
+    const dispatch = useDispatch();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
 
-    // Fetch current user data
-    const { data: currentUser } = useGetCurrentUserQuery();
+    // Fetch current user data - skip if no token
+    const token = typeof window !== 'undefined' ? localStorage.getItem('storeToken') : null;
+    const { data: currentUser, refetch } = useGetCurrentUserQuery(undefined, {
+        skip: !token || pathname === '/store-portal/login',
+    });
+    
+    const [logout] = useLogoutMutation();
 
     // التحقق من تسجيل الدخول
     useEffect(() => {
-        const token = localStorage.getItem('storeToken');
-        if (!token && pathname !== '/store-portal/login') {
+        const storedToken = localStorage.getItem('storeToken');
+        if (!storedToken && pathname !== '/store-portal/login') {
             router.push('/store-portal/login');
         }
     }, [pathname, router]);
@@ -54,9 +61,17 @@ export default function StorePortalLayout({
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const handleLogout = () => {
-        localStorage.removeItem('storeToken');
-        router.push('/store-portal/login');
+    const handleLogout = async () => {
+        try {
+            await logout().unwrap();
+        } catch (error) {
+            // تجاهل أخطاء تسجيل الخروج
+        } finally {
+            localStorage.removeItem('storeToken');
+            dispatch(storePortalApi.util.resetApiState());
+            // إعادة تحميل الصفحة لضمان مسح جميع البيانات
+            window.location.href = '/store-portal/login';
+        }
     };
 
     if (pathname === '/store-portal/login') {

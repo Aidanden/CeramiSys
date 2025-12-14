@@ -1,68 +1,752 @@
 [
   {
+    "id": 21,
+    "name": "صالة الامارات",
+    "phone": "BRANCH-2",
+    "note": "عميل وهمي يمثل الشركة الفرعية:صالة الامارات"
+  },
+  {
     "id": 1,
-    "name": "أحمد محمد علي",
-    "phone": "0912345678",
-    "note": "عميل دائم - خصم 5%"
-  },
-  {
-    "id": 2,
-    "name": "فاطمة أحمد السالم",
-    "phone": "0923456789",
-    "note": "عميل جديد"
-  },
-  {
-    "id": 3,
-    "name": "محمد عبدالله الهادي",
-    "phone": "0934567890",
-    "note": "عميل مقاول - دفع شهري"
-  },
-  {
-    "id": 4,
-    "name": "عائشة سالم المبروك",
-    "phone": "0945678901",
+    "name": "زبون",
+    "phone": null,
     "note": null
   },
   {
     "id": 5,
-    "name": "عبدالرحمن محمد القذافي",
-    "phone": "0956789012",
-    "note": "عميل VIP - خصم 10%"
+    "name": "بريق",
+    "phone": null,
+    "note": null
   },
   {
     "id": 6,
-    "name": "خديجة أحمد الزروق",
+    "name": "الشماخي للسيرميك",
     "phone": null,
-    "note": "عميل نقدي فقط"
+    "note": null
   },
   {
     "id": 7,
-    "name": "يوسف عبدالسلام الطرابلسي",
-    "phone": "0967890123",
-    "note": "مورد ومشتري"
+    "name": "النعمي للسيرميك",
+    "phone": null,
+    "note": null
   },
   {
     "id": 8,
-    "name": "زينب محمد البوسيفي",
-    "phone": "0978901234",
-    "note": "عميل موسمي"
+    "name": "الماسة للسيرميك",
+    "phone": null,
+    "note": null
   },
   {
     "id": 9,
-    "name": "عمر سالم الفيتوري",
-    "phone": "0989012345",
-    "note": "عميل جملة"
+    "name": "الزخرف ( طارق النجار )",
+    "phone": null,
+    "note": null
   },
   {
     "id": 10,
-    "name": "مريم عبدالله الشريف",
-    "phone": "0990123456",
-    "note": "عميل تجزئة"
+    "name": "شركة القطرات 11 يونيو",
+    "phone": null,
+    "note": null
   },
   {
     "id": 11,
-    "name": "صالة الامارات",
-    "phone": "BRANCH-2",
-    "note": "عميل وهمي يمثل الشركة الفرعية:صالة الامارات"
+    "name": "علي الوحدة",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 12,
+    "name": "النعمي ( اذواق )",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 13,
+    "name": "سيراميك مكسور",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 14,
+    "name": "طلال الزناتي",
+    "phone": "0913330309",
+    "note": null
+  },
+  {
+    "id": 15,
+    "name": "فاروق",
+    "phone": "0925219871",
+    "note": null
+  },
+  {
+    "id": 16,
+    "name": "شركة الرخاء",
+    "phone": "0910535050",
+    "note": null
+  },
+  {
+    "id": 17,
+    "name": "محمد الجالي",
+    "phone": "0925619684",
+    "note": null
+  },
+  {
+    "id": 18,
+    "name": "محمد الزواوي",
+    "phone": "0916137307",
+    "note": null
+  },
+  {
+    "id": 19,
+    "name": "ايمن المصراتي",
+    "phone": "0917333355",
+    "note": null
+  },
+  {
+    "id": 20,
+    "name": "بلعيد ابراهيم",
+    "phone": "0912200048",
+    "note": null
+  },
+  {
+    "id": 22,
+    "name": "حمزه المزداوي",
+    "phone": "0918150527",
+    "note": null
+  },
+  {
+    "id": 23,
+    "name": "شركة القطرات البيفي",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 25,
+    "name": "شركة الصدى / سرت",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 26,
+    "name": "بريق العمارة (بن علي )",
+    "phone": "0912203217",
+    "note": null
+  },
+  {
+    "id": 28,
+    "name": "معرض المنزل",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 29,
+    "name": "علي بحيح",
+    "phone": "0913504321",
+    "note": null
+  },
+  {
+    "id": 30,
+    "name": "خليفة سالم",
+    "phone": "0910621602",
+    "note": null
+  },
+  {
+    "id": 31,
+    "name": "ناصر العلام",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 32,
+    "name": "مستوصف ابوزاهية / سرت",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 33,
+    "name": "معرض اليونسي",
+    "phone": "0910639985",
+    "note": null
+  },
+  {
+    "id": 34,
+    "name": "فادي / زلطن",
+    "phone": "0912251764",
+    "note": null
+  },
+  {
+    "id": 35,
+    "name": "ادريس المرغتي",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 36,
+    "name": "عمر الشيباني",
+    "phone": "0915138637",
+    "note": null
+  },
+  {
+    "id": 37,
+    "name": "اجدابيا / قريفة",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 38,
+    "name": "اجدابيا / الدرة",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 39,
+    "name": "معرض طرابلس",
+    "phone": "0927203000",
+    "note": null
+  },
+  {
+    "id": 40,
+    "name": "احمد الجقندي",
+    "phone": "0912100859",
+    "note": null
+  },
+  {
+    "id": 41,
+    "name": "ابو بكر القزيري",
+    "phone": "0913303676",
+    "note": null
+  },
+  {
+    "id": 42,
+    "name": "مصطفى حسين",
+    "phone": "0917292191",
+    "note": null
+  },
+  {
+    "id": 43,
+    "name": "محمد كويلة",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 44,
+    "name": "مجمع عيادات القرقني",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 45,
+    "name": "ضياف",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 46,
+    "name": "شركة الساحل سيلين",
+    "phone": "0926556088",
+    "note": null
+  },
+  {
+    "id": 47,
+    "name": "عبد المطلب الفيتوري",
+    "phone": "0912183387",
+    "note": null
+  },
+  {
+    "id": 48,
+    "name": "عبد المنعم سركس",
+    "phone": "0917075969",
+    "note": null
+  },
+  {
+    "id": 49,
+    "name": "مصطفى عويد / شركة اعمار القرى",
+    "phone": "0912112298",
+    "note": null
+  },
+  {
+    "id": 50,
+    "name": "تامر حسن",
+    "phone": "0946061758",
+    "note": null
+  },
+  {
+    "id": 51,
+    "name": "عبد الواحد الدرناوي",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 52,
+    "name": "محل الغزال",
+    "phone": "0918402021",
+    "note": null
+  },
+  {
+    "id": 53,
+    "name": "عبد الرحمن الزليطني",
+    "phone": "0913125913",
+    "note": null
+  },
+  {
+    "id": 54,
+    "name": "مستوصف عمر المختار / سرت",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 55,
+    "name": "احمد",
+    "phone": "0914014946",
+    "note": null
+  },
+  {
+    "id": 56,
+    "name": "محمود",
+    "phone": "0915559096",
+    "note": null
+  },
+  {
+    "id": 57,
+    "name": "صهيب بريون",
+    "phone": "0945036135",
+    "note": null
+  },
+  {
+    "id": 58,
+    "name": "محمد الشائبي",
+    "phone": "0925551775",
+    "note": null
+  },
+  {
+    "id": 59,
+    "name": "منير الزرقاتي",
+    "phone": "0912130458",
+    "note": null
+  },
+  {
+    "id": 60,
+    "name": "محمد المغربي",
+    "phone": "0912111419",
+    "note": null
+  },
+  {
+    "id": 61,
+    "name": "ريفان للسيراميك",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 62,
+    "name": "شمس الدين",
+    "phone": "0925132849",
+    "note": null
+  },
+  {
+    "id": 63,
+    "name": "معرض التومي",
+    "phone": "0912200260",
+    "note": null
+  },
+  {
+    "id": 64,
+    "name": "العماري",
+    "phone": "0915422526",
+    "note": null
+  },
+  {
+    "id": 65,
+    "name": "فوزي التقازي",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 66,
+    "name": "رضا الشهاوي",
+    "phone": "0913217194",
+    "note": null
+  },
+  {
+    "id": 67,
+    "name": "اسعد",
+    "phone": "0925701550",
+    "note": null
+  },
+  {
+    "id": 68,
+    "name": "محمود الرخصي",
+    "phone": "0911177002",
+    "note": null
+  },
+  {
+    "id": 69,
+    "name": "شركة بيم",
+    "phone": "0928899729",
+    "note": null
+  },
+  {
+    "id": 70,
+    "name": "زيدان الشريف",
+    "phone": "0913791997",
+    "note": null
+  },
+  {
+    "id": 72,
+    "name": "صالة قرطبة",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 75,
+    "name": "محمد الشيخ",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 76,
+    "name": "عبد الرحمن كوبة",
+    "phone": "0911220098",
+    "note": null
+  },
+  {
+    "id": 77,
+    "name": "معرض أبناء سلامة",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 79,
+    "name": "خالد رخاء",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 80,
+    "name": "محل القيصر",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 81,
+    "name": "حاتم القريد",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 82,
+    "name": "معرض القرام",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 83,
+    "name": "ايراد السيارة",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 84,
+    "name": "الصادق قبقوب (قطرات)",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 85,
+    "name": "شركة مدرار",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 86,
+    "name": "وليد الامين",
+    "phone": "0913333938",
+    "note": null
+  },
+  {
+    "id": 88,
+    "name": "الصيني",
+    "phone": "0926124040",
+    "note": null
+  },
+  {
+    "id": 89,
+    "name": "معرض البركة",
+    "phone": "0925227136",
+    "note": null
+  },
+  {
+    "id": 90,
+    "name": "محمود القريو",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 91,
+    "name": "معرض النوران / اشرف طابلة",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 92,
+    "name": "معرض اوتاد",
+    "phone": "0910120600",
+    "note": null
+  },
+  {
+    "id": 93,
+    "name": "معرض الفجر",
+    "phone": "0922021218",
+    "note": null
+  },
+  {
+    "id": 94,
+    "name": "شركة القطرات المشتل",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 96,
+    "name": "رمال الجبل / حسن الشامس",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 97,
+    "name": "شركة قصر الاندلس",
+    "phone": "0929886666",
+    "note": null
+  },
+  {
+    "id": 98,
+    "name": "العيادة الخاصة بنينا",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 99,
+    "name": "احمد بن يوسف",
+    "phone": "0911946968",
+    "note": null
+  },
+  {
+    "id": 100,
+    "name": "محمد سعيد",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 101,
+    "name": "شركة المتدفق /اكرم التقازي",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 102,
+    "name": "علي بحيح/ القويعة",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 103,
+    "name": "علي بحيح طريق 16",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 104,
+    "name": "اشرف دراويل",
+    "phone": "0918707018",
+    "note": null
+  },
+  {
+    "id": 105,
+    "name": "شركة الصدى / مستشفى الاورام بنغازي",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 106,
+    "name": "شركة الحضيري/فوزي",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 107,
+    "name": "عبد الله السوكني",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 108,
+    "name": "البيت الملكي",
+    "phone": "0945109352",
+    "note": null
+  },
+  {
+    "id": 110,
+    "name": "معتز السمين",
+    "phone": "0927549275",
+    "note": null
+  },
+  {
+    "id": 113,
+    "name": "السفير",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 114,
+    "name": "احمد صقر",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 115,
+    "name": "الخزينة",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 116,
+    "name": "تعديل اسعار",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 117,
+    "name": "معرض الرياض باسم",
+    "phone": "0911325134",
+    "note": null
+  },
+  {
+    "id": 118,
+    "name": "محل مارومكس",
+    "phone": "0915038707",
+    "note": null
+  },
+  {
+    "id": 120,
+    "name": "أبو بكر",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 121,
+    "name": "وائل",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 122,
+    "name": "محل الجودة / عمر الصيد",
+    "phone": "0925157319",
+    "note": null
+  },
+  {
+    "id": 123,
+    "name": "اسماعيل قشيرة",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 125,
+    "name": "عبد المنعم التقازي",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 126,
+    "name": "عمر بن عثمان",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 127,
+    "name": "عصام",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 128,
+    "name": "هيثم الشريف",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 129,
+    "name": "خلوة سيد السايح",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 130,
+    "name": "معرض الامل",
+    "phone": "0915104537",
+    "note": null
+  },
+  {
+    "id": 131,
+    "name": "شركة القصر الفضي",
+    "phone": "0915070221",
+    "note": null
+  },
+  {
+    "id": 132,
+    "name": "انس عبود",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 133,
+    "name": "محمد زراص",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 134,
+    "name": "محمد ابو سن",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 135,
+    "name": "محمد يوسف ليطة",
+    "phone": "0913360144",
+    "note": null
+  },
+  {
+    "id": 136,
+    "name": "ناجي السيد",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 137,
+    "name": "خطأ اثناء الجرد",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 138,
+    "name": "مرض النو",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 139,
+    "name": "معرض التميز /الحبشي",
+    "phone": null,
+    "note": null
+  },
+  {
+    "id": 140,
+    "name": "محمد حسن",
+    "phone": "0914444406",
+    "note": null
+  },
+  {
+    "id": 141,
+    "name": "النعمي",
+    "phone": "0924124280",
+    "note": null
   }
 ]

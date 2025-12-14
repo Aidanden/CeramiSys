@@ -1,24 +1,54 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useLoginMutation } from '@/state/storePortalApi';
-import { Store, Lock, User } from 'lucide-react';
+import { useLoginMutation, storePortalApi } from '@/state/storePortalApi';
+import { useDispatch } from 'react-redux';
+import { ShoppingBag, Lock, User, AlertTriangle } from 'lucide-react';
 
 export default function StoreLoginPage() {
     const router = useRouter();
+    const dispatch = useDispatch();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [login, { isLoading, error }] = useLoginMutation();
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [login, { isLoading }] = useLoginMutation();
+
+    // مسح الـ cache عند فتح صفحة تسجيل الدخول لضمان عدم وجود بيانات قديمة
+    useEffect(() => {
+        localStorage.removeItem('storeToken');
+        dispatch(storePortalApi.util.resetApiState());
+    }, [dispatch]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setErrorMessage(null);
+        
         try {
+            // مسح التوكن القديم أولاً
+            localStorage.removeItem('storeToken');
+            
+            // مسح جميع الـ cache
+            dispatch(storePortalApi.util.resetApiState());
+            
             const result = await login({ username, password }).unwrap();
+            
+            // حفظ التوكن الجديد
             localStorage.setItem('storeToken', result.token);
-            router.push('/store-portal/dashboard');
-        } catch (err) {
-            console.error('Login failed:', err);
+            
+            // إعادة تحميل الصفحة لضمان مسح جميع البيانات القديمة
+            window.location.href = '/store-portal/dashboard';
+        } catch (err: any) {
+            const apiError = err?.data;
+            if (apiError?.error === 'STORE_DEACTIVATED') {
+                setErrorMessage(apiError.message || 'المحل غير نشط. يرجى التواصل مع شركة التقازي للتفعيل.');
+            } else if (apiError?.error === 'ACCOUNT_DEACTIVATED') {
+                setErrorMessage(apiError.message || 'الحساب غير نشط. يرجى التواصل مع شركة التقازي.');
+            } else if (apiError?.message) {
+                setErrorMessage(apiError.message);
+            } else {
+                setErrorMessage('فشل تسجيل الدخول. يرجى التحقق من البيانات.');
+            }
         }
     };
 
@@ -27,7 +57,7 @@ export default function StoreLoginPage() {
             <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
                 <div className="bg-blue-600 p-8 text-center">
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full mb-4">
-                        <Store className="text-blue-600" size={32} />
+                        <ShoppingBag className="text-blue-600" size={32} />
                     </div>
                     <h1 className="text-2xl font-bold text-white">بوابة المحلات الخارجية</h1>
                     <p className="text-blue-100 mt-2">تسجيل الدخول لإدارة مبيعاتك</p>
@@ -35,9 +65,10 @@ export default function StoreLoginPage() {
 
                 <div className="p-8">
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        {error && (
-                            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg text-sm text-center">
-                                فشل تسجيل الدخول. يرجى التحقق من البيانات.
+                        {errorMessage && (
+                            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-lg text-sm flex items-start gap-3">
+                                <AlertTriangle className="flex-shrink-0 mt-0.5" size={20} />
+                                <span>{errorMessage}</span>
                             </div>
                         )}
 
