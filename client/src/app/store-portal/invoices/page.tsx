@@ -14,7 +14,9 @@ import {
     Trash2,
     X,
     AlertCircle,
-    ShoppingCart
+    ShoppingCart,
+    Package,
+    Calculator
 } from 'lucide-react';
 
 interface InvoiceLine {
@@ -22,10 +24,12 @@ interface InvoiceLine {
     productName: string;
     sku: string;
     qty: number;
-    unitPrice: number;
+    unitPrice: number; // السعر للوحدة (أو للمتر إذا كانت الوحدة صندوق)
     minPrice: number;
     subTotal: number;
     availableQty: number; // الكمية المتاحة في المخزن
+    unit: string; // وحدة المنتج (صندوق، قطعة، كيس، لتر)
+    unitsPerBox: number | null; // عدد الأمتار في الصندوق (للصناديق فقط)
 }
 
 export default function StoreInvoicesPage() {
@@ -169,20 +173,39 @@ export default function StoreInvoicesPage() {
             }
 
             newLines[existingLineIndex].qty = newQty;
-            newLines[existingLineIndex].subTotal = newLines[existingLineIndex].qty * newLines[existingLineIndex].unitPrice;
+            // حساب الإجمالي بناءً على نوع الوحدة
+            const line = newLines[existingLineIndex];
+            if (line.unit === 'صندوق' && line.unitsPerBox) {
+                // للصناديق: الكمية × عدد الأمتار × سعر المتر
+                line.subTotal = line.qty * line.unitsPerBox * line.unitPrice;
+            } else {
+                line.subTotal = line.qty * line.unitPrice;
+            }
             setLines(newLines);
             console.log('✅ Updated line:', newLines[existingLineIndex]);
         } else {
             console.log('Adding new line to cart');
-            const newLine = {
+            const unit = productData.product.unit || 'قطعة';
+            const unitsPerBox = productData.product.unitsPerBox ? Number(productData.product.unitsPerBox) : null;
+            
+            // حساب الإجمالي بناءً على نوع الوحدة
+            let subTotal = Number(taqaziPrice);
+            if (unit === 'صندوق' && unitsPerBox) {
+                // للصناديق: السعر × عدد الأمتار في الصندوق
+                subTotal = Number(taqaziPrice) * unitsPerBox;
+            }
+            
+            const newLine: InvoiceLine = {
                 productId: productData.productId,
                 productName: productData.product.name,
                 sku: productData.product.sku,
                 qty: 1,
                 unitPrice: Number(taqaziPrice),
                 minPrice: Number(taqaziPrice),
-                subTotal: Number(taqaziPrice),
-                availableQty: availableQty
+                subTotal: subTotal,
+                availableQty: availableQty,
+                unit: unit,
+                unitsPerBox: unitsPerBox
             };
             console.log('✅ New line:', newLine);
             setLines([...lines, newLine]);
@@ -193,7 +216,7 @@ export default function StoreInvoicesPage() {
         console.log('=== handleAddProduct completed ===');
     };
 
-    // Update Line
+    // Update Line - حساب الإجمالي بناءً على نوع الوحدة
     const updateLine = (index: number, field: keyof InvoiceLine, value: number) => {
         const newLines = [...lines];
         const line = newLines[index];
@@ -208,16 +231,25 @@ export default function StoreInvoicesPage() {
                 return;
             }
             line.qty = value;
-            line.subTotal = line.qty * line.unitPrice;
-        } else if (field === 'unitPrice') {
-            if (value < line.minPrice) {
-                // سيتم التحقق من هذا عند الحفظ، لكن نسمح بالتعديل
+            // حساب الإجمالي بناءً على نوع الوحدة
+            if (line.unit === 'صندوق' && line.unitsPerBox) {
+                // للصناديق: الكمية × عدد الأمتار × سعر المتر
+                line.subTotal = line.qty * line.unitsPerBox * line.unitPrice;
+            } else {
+                line.subTotal = line.qty * line.unitPrice;
             }
-            line.unitPrice = value;
-            line.subTotal = line.qty * line.unitPrice;
         }
+        // السعر مغلق - لا يمكن تعديله
 
         setLines(newLines);
+    };
+    
+    // حساب إجمالي الأمتار لبند معين
+    const calculateTotalMeters = (line: InvoiceLine): number => {
+        if (line.unit === 'صندوق' && line.unitsPerBox) {
+            return line.qty * line.unitsPerBox;
+        }
+        return 0;
     };
 
     // Remove Line
@@ -237,19 +269,26 @@ export default function StoreInvoicesPage() {
             return;
         }
 
-        // Validate Prices
-        const invalidPriceLine = lines.find(l => l.unitPrice < l.minPrice);
-        if (invalidPriceLine) {
-            setError(`سعر بيع المنتج "${invalidPriceLine.productName}" أقل من السعر المسموح (${invalidPriceLine.minPrice})`);
+        // التحقق من الكميات
+        const invalidQtyLine = lines.find(l => l.qty > l.availableQty);
+        if (invalidQtyLine) {
+            setError(`الكمية المطلوبة للمنتج "${invalidQtyLine.productName}" (${invalidQtyLine.qty}) أكبر من المتوفر (${invalidQtyLine.availableQty})`);
             return;
         }
 
         try {
+            // إرسال البيانات للـ API
+            // ملاحظة: السعر يُرسل كما هو (سعر المتر للصناديق أو سعر الوحدة للباقي)
             await createInvoice({
                 lines: lines.map(l => ({
                     productId: l.productId,
                     qty: l.qty,
-                    unitPrice: l.unitPrice
+                    unitPrice: l.unitPrice, // سعر المتر أو سعر الوحدة
+                    // إرسال معلومات إضافية للـ backend
+                    unit: l.unit,
+                    unitsPerBox: l.unitsPerBox,
+                    totalMeters: l.unit === 'صندوق' && l.unitsPerBox ? l.qty * l.unitsPerBox : null,
+                    subTotal: l.subTotal
                 })),
                 notes
             }).unwrap();
@@ -407,64 +446,108 @@ export default function StoreInvoicesPage() {
                                 )}
                             </div>
 
+                            {/* ملاحظة مهمة عن البيع بالمتر */}
+                            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-4 rounded-lg border-2 border-blue-300 dark:border-blue-700">
+                                <div className="flex items-start gap-3">
+                                    <Calculator className="text-blue-600 dark:text-blue-400 mt-0.5" size={24} />
+                                    <div>
+                                        <p className="text-sm text-blue-900 dark:text-blue-100 font-bold mb-1">
+                                            ملاحظة مهمة: البيع بالمتر المربع
+                                        </p>
+                                        <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
+                                            • للأصناف التي وحدتها "صندوق": السعر يكون <strong>بالمتر المربع</strong><br/>
+                                            • الإجمالي = عدد الصناديق × عدد الأمتار في الصندوق × سعر المتر<br/>
+                                            • <strong>السعر ثابت</strong> ولا يمكن تعديله
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* Lines Table */}
                             <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                                 <table className="w-full">
                                     <thead className="bg-gray-100 dark:bg-gray-800">
                                         <tr>
-                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">المنتج</th>
-                                            <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-24">الكمية</th>
-                                            <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-32">السعر (د.ل)</th>
-                                            <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-32">الإجمالي</th>
-                                            <th className="px-4 py-2 w-10"></th>
+                                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">المنتج</th>
+                                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-24">الكمية</th>
+                                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-28">الأمتار</th>
+                                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-32">السعر</th>
+                                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-32">الإجمالي</th>
+                                            <th className="px-4 py-3 w-10"></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                                         {lines.length > 0 ? (
                                             lines.map((line, index) => (
-                                                <tr key={index}>
-                                                    <td className="px-4 py-2">
+                                                <tr key={index} className="hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors">
+                                                    <td className="px-4 py-3">
                                                         <div className="text-sm font-medium text-gray-900 dark:text-white">{line.productName}</div>
-                                                        <div className="text-xs text-gray-500 dark:text-gray-400">{line.sku}</div>
-                                                        <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                                                            متوفر: {line.availableQty} {line.qty > line.availableQty && '⚠️'}
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">{line.sku}</div>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                                line.unit === 'صندوق' 
+                                                                    ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' 
+                                                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                                            }`}>
+                                                                <Package size={10} className="ml-1" />
+                                                                {line.unit}
+                                                            </span>
+                                                            <span className="text-xs text-blue-600 dark:text-blue-400">
+                                                                متوفر: {line.availableQty}
+                                                            </span>
+                                                            {line.qty > line.availableQty && (
+                                                                <span className="text-red-500">⚠️</span>
+                                                            )}
                                                         </div>
-                                                        {line.unitPrice < line.minPrice && (
-                                                            <div className="text-xs text-red-500 flex items-center gap-1 mt-1">
-                                                                <AlertCircle size={12} />
-                                                                أقل من السعر المسموح ({line.minPrice})
-                                                            </div>
-                                                        )}
                                                     </td>
-                                                    <td className="px-4 py-2">
+                                                    <td className="px-4 py-3">
                                                         <input
                                                             type="number"
                                                             min="1"
+                                                            max={line.availableQty}
                                                             value={line.qty}
                                                             onChange={(e) => updateLine(index, 'qty', Number(e.target.value))}
-                                                            className="w-full px-2 py-1 text-center border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                                                            className="w-full px-2 py-2 text-center border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white font-medium"
                                                         />
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400 text-center mt-1">
+                                                            {line.unit === 'صندوق' ? 'صندوق' : line.unit}
+                                                        </div>
                                                     </td>
-                                                    <td className="px-4 py-2">
-                                                        <input
-                                                            type="number"
-                                                            min={line.minPrice}
-                                                            step="0.01"
-                                                            value={line.unitPrice}
-                                                            onChange={(e) => updateLine(index, 'unitPrice', Number(e.target.value))}
-                                                            className={`w-full px-2 py-1 text-center border rounded focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white ${line.unitPrice < line.minPrice
-                                                                ? 'border-red-500 text-red-600'
-                                                                : 'border-gray-300 dark:border-gray-600'
-                                                                }`}
-                                                        />
+                                                    <td className="px-4 py-3 text-center">
+                                                        {line.unit === 'صندوق' && line.unitsPerBox ? (
+                                                            <div className="bg-purple-100 dark:bg-purple-900/30 px-2 py-2 rounded-lg">
+                                                                <span className="text-sm font-bold text-purple-700 dark:text-purple-300">
+                                                                    {calculateTotalMeters(line).toFixed(2)}
+                                                                </span>
+                                                                <span className="text-xs text-purple-600 dark:text-purple-400 block">م²</span>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-gray-400 dark:text-gray-500">-</span>
+                                                        )}
                                                     </td>
-                                                    <td className="px-4 py-2 text-center font-bold text-gray-900 dark:text-white">
-                                                        {line.subTotal.toLocaleString()}
+                                                    <td className="px-4 py-3">
+                                                        {/* السعر مغلق - للعرض فقط */}
+                                                        <div className="bg-gray-100 dark:bg-gray-700 px-2 py-2 rounded-lg text-center">
+                                                            <span className="text-sm font-bold text-gray-700 dark:text-gray-200">
+                                                                {line.unitPrice.toFixed(2)}
+                                                            </span>
+                                                            <span className="text-xs text-gray-500 dark:text-gray-400 block">
+                                                                {line.unit === 'صندوق' ? 'د.ل/م²' : 'د.ل'}
+                                                            </span>
+                                                        </div>
                                                     </td>
-                                                    <td className="px-4 py-2 text-center">
+                                                    <td className="px-4 py-3 text-center">
+                                                        <div className="bg-green-100 dark:bg-green-900/30 px-2 py-2 rounded-lg">
+                                                            <span className="text-sm font-bold text-green-700 dark:text-green-300">
+                                                                {line.subTotal.toLocaleString('ar-EG')}
+                                                            </span>
+                                                            <span className="text-xs text-green-600 dark:text-green-400 block">د.ل</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
                                                         <button
                                                             onClick={() => removeLine(index)}
-                                                            className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                            className="text-red-500 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                                         >
                                                             <Trash2 size={18} />
                                                         </button>
@@ -473,18 +556,27 @@ export default function StoreInvoicesPage() {
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan={5} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                                                    قم بإضافة منتجات للفاتورة
+                                                <td colSpan={6} className="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+                                                    <ShoppingCart className="mx-auto mb-3 opacity-50" size={48} />
+                                                    <p className="font-medium">لا توجد منتجات في الفاتورة</p>
+                                                    <p className="text-sm mt-1">ابحث عن منتج وأضفه للفاتورة</p>
                                                 </td>
                                             </tr>
                                         )}
                                     </tbody>
                                     {lines.length > 0 && (
-                                        <tfoot className="bg-gray-50 dark:bg-gray-800 font-bold">
+                                        <tfoot className="bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20">
                                             <tr>
-                                                <td colSpan={3} className="px-4 py-3 text-left text-gray-900 dark:text-white">الإجمالي الكلي:</td>
-                                                <td className="px-4 py-3 text-center text-blue-600 dark:text-blue-400 text-lg">
-                                                    {totalAmount.toLocaleString()} د.ل
+                                                <td colSpan={4} className="px-4 py-4 text-left">
+                                                    <span className="text-lg font-bold text-gray-900 dark:text-white">الإجمالي الكلي:</span>
+                                                </td>
+                                                <td className="px-4 py-4 text-center">
+                                                    <div className="bg-green-600 text-white px-4 py-2 rounded-lg">
+                                                        <span className="text-xl font-bold">
+                                                            {totalAmount.toLocaleString('ar-EG')}
+                                                        </span>
+                                                        <span className="text-sm block">د.ل</span>
+                                                    </div>
                                                 </td>
                                                 <td></td>
                                             </tr>
