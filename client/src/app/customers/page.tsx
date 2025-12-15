@@ -320,22 +320,50 @@ const CustomersPage = () => {
                         <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     </button>
-                    {Array.from({ length: Math.min(5, customersData.data.pagination.pages) }, (_, i) => {
-                      const page = i + 1;
-                      return (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                            currentPage === page
-                              ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      );
-                    })}
+                    {(() => {
+                      const totalPages = customersData.data.pagination.pages;
+                      const pages: (number | string)[] = [];
+                      
+                      if (totalPages <= 7) {
+                        for (let i = 1; i <= totalPages; i++) pages.push(i);
+                      } else {
+                        if (currentPage <= 4) {
+                          for (let i = 1; i <= 5; i++) pages.push(i);
+                          pages.push('...');
+                          pages.push(totalPages);
+                        } else if (currentPage >= totalPages - 3) {
+                          pages.push(1);
+                          pages.push('...');
+                          for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+                        } else {
+                          pages.push(1);
+                          pages.push('...');
+                          for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+                          pages.push('...');
+                          pages.push(totalPages);
+                        }
+                      }
+                      
+                      return pages.map((page, idx) => (
+                        page === '...' ? (
+                          <span key={`ellipsis-${idx}`} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                            ...
+                          </span>
+                        ) : (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page as number)}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              currentPage === page
+                                ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        )
+                      ));
+                    })()}
                     <button
                       onClick={() => setCurrentPage(prev => Math.min(customersData.data.pagination.pages, prev + 1))}
                       disabled={currentPage === customersData.data.pagination.pages}

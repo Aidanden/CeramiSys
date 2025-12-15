@@ -28,6 +28,7 @@ export const SCREEN_PERMISSIONS = {
   ACCOUNTANT: 'screen.accountant',
   CUSTOMER_ACCOUNTS: 'screen.customer_accounts',
   SUPPLIER_ACCOUNTS: 'screen.supplier_accounts',
+  TREASURY: 'screen.treasury',
 
   // التقارير
   REPORTS: 'screen.reports',
@@ -186,6 +187,15 @@ export const SCREEN_METADATA: ScreenMetadata[] = [
     category: 'accounting',
     description: 'إدارة حسابات الموردين',
     icon: 'CircleDollarSign'
+  },
+  {
+    id: 'treasury',
+    name: 'حركات الخزينة',
+    route: '/treasury',
+    permission: SCREEN_PERMISSIONS.TREASURY,
+    category: 'accounting',
+    description: 'إدارة الخزائن وحركات الأموال',
+    icon: 'Wallet'
   },
 
   // شاشات المحلات الخارجية

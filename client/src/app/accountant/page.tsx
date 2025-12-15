@@ -5,24 +5,25 @@ import { useGetSalesQuery, useGetCashSalesQuery, useIssueReceiptMutation, useApp
 import { useCreateDispatchOrderMutation } from '@/state/warehouseApi';
 import { useGetCurrentUserQuery } from '@/state/authApi';
 import { useGetProductsQuery } from '@/state/productsApi';
+import { useGetCompaniesQuery } from '@/state/companyApi';
+import { useGetTreasuriesQuery } from '@/state/treasuryApi';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/app/redux';
 import { useToast } from '@/components/ui/Toast';
-import { ReceiptPrint } from '@/components/sales/ReceiptPrint';
+import { formatArabicNumber, formatArabicCurrency } from '@/utils/formatArabicNumbers';
 import { InvoicePrint } from '@/components/sales/InvoicePrint';
-import { Search, Filter, X, DollarSign, FileText } from 'lucide-react';
-import { useDispatch } from 'react-redux';
-import html2canvas from 'html2canvas';
+import { ReceiptPrint } from '@/components/sales/ReceiptPrint';
+import { CreditPaymentReceiptPrint } from '@/components/sales/CreditPaymentReceiptPrint';
+import { PaymentsHistoryPrint } from '@/components/sales/PaymentsHistoryPrint';
 import { 
   useGetCreditSalesStatsQuery,
   useCreatePaymentMutation,
   useDeletePaymentMutation,
   SalePayment
 } from '@/state/salePaymentApi';
-import { CreditPaymentReceiptPrint } from '@/components/sales/CreditPaymentReceiptPrint';
-import { PaymentsHistoryPrint } from '@/components/sales/PaymentsHistoryPrint';
-import { formatArabicNumber, formatArabicCurrency } from '@/utils/formatArabicNumbers';
-import { useGetCompaniesQuery } from '@/state/companyApi';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/app/redux';
+import { Search, Filter, X, DollarSign, FileText } from 'lucide-react';
+import { useDispatch } from 'react-redux';
+import html2canvas from 'html2canvas';
 import { useEffect } from 'react';
 
 export default function AccountantWorkspace() {
@@ -90,7 +91,7 @@ export default function AccountantWorkspace() {
       page: currentPage,
       limit: 10,
       search: searchTerm || undefined,
-      companyId: activeCompanyId, // ✅ فلتر حسب الشركة النشطة
+      companyId: activeCompanyId, // 
       receiptIssued: getReceiptIssuedFilter(),
       startDate: startDate || undefined,
       endDate: endDate || undefined
@@ -116,6 +117,13 @@ export default function AccountantWorkspace() {
   const [createPayment, { isLoading: isCreatingPayment }] = useCreatePaymentMutation();
   const [deletePayment] = useDeletePaymentMutation();
   const { data: companiesData } = useGetCompaniesQuery({ limit: 100 });
+  // تحميل الحسابات المصرفية (جميع الحسابات المصرفية النشطة)
+  const { data: treasuriesData, isLoading: isTreasuriesLoading, error: treasuriesError } = useGetTreasuriesQuery({ type: 'BANK', isActive: true });
+  const bankAccounts = Array.isArray(treasuriesData) ? treasuriesData : [];
+  
+  // Debug: تتبع بيانات الحسابات المصرفية
+  console.log('Treasury Debug:', { treasuriesData, bankAccounts, activeCompanyId, isTreasuriesLoading, treasuriesError });
+  
   // تحميل المنتجات فقط عند فتح مودال التعديل
   const { data: productsData } = useGetProductsQuery(
     { limit: 500 },
@@ -132,7 +140,7 @@ export default function AccountantWorkspace() {
     // الانتظار حتى يتم render المكون
     setTimeout(() => {
       if (!printRef.current) {
-        showError('فشل في تحميل الفاتورة');
+        showError('فشل في تحميل الإيصال');
         setCurrentSaleToPrint(null);
         return;
       }
@@ -152,7 +160,7 @@ export default function AccountantWorkspace() {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>فاتورة مبيعات - ${sale.invoiceNumber || sale.id}</title>
+          <title>إيصال قبض - ${sale.invoiceNumber || sale.id}</title>
           <style>
             * {
               margin: 0;
@@ -183,7 +191,7 @@ export default function AccountantWorkspace() {
               }
             }
             
-            /* تنسيق الطباعة من مكون InvoicePrint */
+            /* تنسيق الطباعة */
             .print-receipt {
               width: 100%;
               max-width: 210mm;
@@ -225,6 +233,9 @@ export default function AccountantWorkspace() {
     }, 200);
   };
 
+  const [paymentMethodForReceipt, setPaymentMethodForReceipt] = useState<"CASH" | "BANK" | "CARD">("CASH");
+  const [bankAccountIdForReceipt, setBankAccountIdForReceipt] = useState<number | "">("");
+
   const handleIssueReceipt = async (sale: Sale) => {
     if (sale.receiptIssued) {
       showError('تم إصدار إيصال قبض لهذه الفاتورة مسبقاً');
@@ -244,7 +255,8 @@ export default function AccountantWorkspace() {
         
       }, 500);
     } catch (err: any) {
-      showError(err?.data?.message || 'حدث خطأ أثناء إصدار إيصال القبض');
+      console.error('Payment error:', err);
+      showError(err?.data?.message || 'حدث خطأ أثناء إنشاء إيصال القبض');
     }
   };
   
@@ -506,6 +518,7 @@ ${itemsText}
     const formData = new FormData(e.target as HTMLFormElement);
     const saleType = formData.get('saleType') as "CASH" | "CREDIT";
     const paymentMethod = formData.get('paymentMethod') as "CASH" | "BANK" | "CARD" | undefined;
+    const bankAccountId = formData.get('bankAccountId') as string | null;
 
     if (!saleType) {
       showError('يرجى اختيار نوع البيع');
@@ -517,14 +530,29 @@ ${itemsText}
       return;
     }
 
+    // التحقق من اختيار الحساب المصرفي عند الدفع بالبطاقة أو الحوالة
+    if (saleType === 'CASH' && (paymentMethod === 'BANK' || paymentMethod === 'CARD') && !bankAccountId) {
+      showError('يرجى اختيار الحساب المصرفي');
+      return;
+    }
+
     try {
-      await approveSale({
+      const result = await approveSale({
         id: saleToApprove.id,
         saleType,
-        paymentMethod: saleType === 'CASH' ? paymentMethod : undefined
+        paymentMethod: saleType === 'CASH' ? paymentMethod : undefined,
+        bankAccountId: bankAccountId ? Number(bankAccountId) : undefined
       }).unwrap();
 
       success(`تم اعتماد الفاتورة ${saleToApprove.invoiceNumber || saleToApprove.id} وخصم المخزون بنجاح`);
+
+      // إذا كانت الفاتورة نقدية: إصدار الإيصال يتم تلقائياً من الخادم عند الاعتماد
+      // هنا نقوم بالطباعة مباشرة وإظهار زر إعادة الطباعة فوراً
+      if (saleType === 'CASH' && result?.data) {
+        setIssuedReceipts(prev => new Set(prev).add(result.data.id));
+        printReceipt({ ...result.data, receiptIssued: true } as any);
+      }
+
       setShowApprovalModal(false);
       setSaleToApprove(null);
       
@@ -644,6 +672,8 @@ ${itemsText}
     const formData = new FormData(e.target as HTMLFormElement);
     const amount = Number(formData.get('amount'));
     const paymentMethod = formData.get('paymentMethod') as "CASH" | "BANK" | "CARD";
+    const bankAccountIdRaw = formData.get('bankAccountId') as string | null;
+    const bankAccountId = bankAccountIdRaw ? Number(bankAccountIdRaw) : undefined;
     const notes = formData.get('notes') as string;
     
     const remainingAmount = selectedCreditSale.remainingAmount || 0;
@@ -662,11 +692,17 @@ ${itemsText}
       return;
     }
 
+    if ((paymentMethod === 'BANK' || paymentMethod === 'CARD') && !bankAccountId) {
+      showError('❌ يجب اختيار الحساب المصرفي عند اختيار حوالة أو بطاقة');
+      return;
+    }
+
     try {
       const result = await createPayment({
         saleId: selectedCreditSale.id,
         amount,
         paymentMethod,
+        bankAccountId: (paymentMethod === 'BANK' || paymentMethod === 'CARD') ? bankAccountId : undefined,
         notes: notes || undefined
       }).unwrap();
       
@@ -677,6 +713,8 @@ ${itemsText}
       const updatedSale = result.data.sale;
       
       setShowPaymentModal(false);
+      setPaymentMethodForReceipt('CASH');
+      setBankAccountIdForReceipt('');
       
       setTimeout(() => {
         setSelectedPayment(newPayment);
@@ -1415,7 +1453,7 @@ ${itemsText}
           pointerEvents: 'none'
         }}
       >
-        {currentSaleToPrint && <InvoicePrint sale={currentSaleToPrint} />}
+        {currentSaleToPrint && <ReceiptPrint sale={currentSaleToPrint} />}
       </div>
 
       {/* Hidden print container for payments history */}
@@ -1472,7 +1510,12 @@ ${itemsText}
                   قبض مبلغ من العميل
                 </h3>
                 <button
-                  onClick={() => setShowPaymentModal(false)}
+                  onClick={() => {
+                    setShowPaymentModal(false);
+                    setSelectedCreditSale(null);
+                    setPaymentMethodForReceipt('CASH');
+                    setBankAccountIdForReceipt('');
+                  }}
                   className="text-white hover:text-gray-200 transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1558,6 +1601,14 @@ ${itemsText}
                   <select
                     name="paymentMethod"
                     required
+                    value={paymentMethodForReceipt}
+                    onChange={(e) => {
+                      const next = e.target.value as "CASH" | "BANK" | "CARD";
+                      setPaymentMethodForReceipt(next);
+                      if (next === 'CASH') {
+                        setBankAccountIdForReceipt('');
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="CASH">كاش</option>
@@ -1565,6 +1616,35 @@ ${itemsText}
                     <option value="CARD">بطاقة</option>
                   </select>
                 </div>
+
+                {(paymentMethodForReceipt === 'BANK' || paymentMethodForReceipt === 'CARD') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      الحساب المصرفي (الخزينة) *
+                    </label>
+                    <select
+                      name="bankAccountId"
+                      required
+                      value={bankAccountIdForReceipt}
+                      onChange={(e) => setBankAccountIdForReceipt(e.target.value ? Number(e.target.value) : '')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={isTreasuriesLoading}
+                    >
+                      <option value="">اختر الحساب المصرفي</option>
+                      {bankAccounts.map((account: any) => (
+                        <option key={account.id} value={account.id}>
+                          {account.name} {account.bankName ? `- ${account.bankName}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    {treasuriesError && (
+                      <p className="mt-1 text-xs text-red-600">تعذر تحميل الحسابات المصرفية</p>
+                    )}
+                    {!isTreasuriesLoading && !treasuriesError && bankAccounts.length === 0 && (
+                      <p className="mt-1 text-xs text-gray-500">لا توجد حسابات مصرفية فعّالة في الخزينة</p>
+                    )}
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1606,6 +1686,8 @@ ${itemsText}
                     onClick={() => {
                       setShowPaymentModal(false);
                       setSelectedCreditSale(null);
+                      setPaymentMethodForReceipt('CASH');
+                      setBankAccountIdForReceipt('');
                     }}
                     className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors"
                   >
@@ -1864,13 +1946,20 @@ ${itemsText}
                 </select>
               </div>
 
-              <div className="mb-6">
+              <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   طريقة الدفع (للبيع النقدي)
                 </label>
                 <select
                   name="paymentMethod"
+                  id="paymentMethodSelect"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => {
+                    const bankDiv = document.getElementById('bankAccountDiv');
+                    if (bankDiv) {
+                      bankDiv.style.display = (e.target.value === 'BANK' || e.target.value === 'CARD') ? 'block' : 'none';
+                    }
+                  }}
                 >
                   <option value="">اختر طريقة الدفع</option>
                   <option value="CASH">كاش</option>
@@ -1879,6 +1968,26 @@ ${itemsText}
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
                   💡 طريقة الدفع مطلوبة فقط للبيع النقدي
+                </p>
+              </div>
+
+              <div id="bankAccountDiv" className="mb-6" style={{ display: 'none' }}>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  الحساب المصرفي *
+                </label>
+                <select
+                  name="bankAccountId"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">اختر الحساب المصرفي</option>
+                  {bankAccounts.map((account: any) => (
+                    <option key={account.id} value={account.id}>
+                      {account.name} - {account.bankName || ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  🏦 اختر الحساب المصرفي الذي سيتم إيداع المبلغ فيه
                 </p>
               </div>
 

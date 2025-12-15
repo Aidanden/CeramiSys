@@ -78,6 +78,7 @@ export interface CreatePaymentRequest {
   paymentMethod: "CASH" | "BANK" | "CARD";
   paymentDate?: string;
   notes?: string;
+  bankAccountId?: number;
 }
 
 export interface CreditSalesQueryParams {
@@ -111,7 +112,7 @@ export interface CreditSalesStats {
 export const salePaymentApi = createApi({
   reducerPath: "salePaymentApi",
   baseQuery: baseQueryWithAuthInterceptor,
-  tagTypes: ["CreditSales", "CreditSale", "SalePayments", "CustomerAccountSummary"],
+  tagTypes: ["CreditSales", "CreditSale", "SalePayments", "CustomerAccountSummary", "Sales"],
   // تطبيق إعدادات عدم الكاش
   keepUnusedDataFor: API_CACHE_CONFIG.sales.keepUnusedDataFor,
   refetchOnMountOrArgChange: API_CACHE_CONFIG.sales.refetchOnMountOrArgChange,

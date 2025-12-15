@@ -40,6 +40,7 @@ import { damageReportsApi } from "@/state/damageReportsApi"; // إضافة damag
 import { externalStoresApi } from "@/state/externalStoresApi"; // إضافة externalStoresApi
 import { externalStoreInvoicesApi } from "@/state/externalStoreInvoicesApi"; // إضافة externalStoreInvoicesApi
 import { storePortalApi } from "@/state/storePortalApi"; // إضافة storePortalApi
+import { treasuryApi } from "@/state/treasuryApi"; // إضافة treasuryApi
 import { setupListeners } from "@reduxjs/toolkit/query";
 import {
   persistStore,
@@ -118,6 +119,7 @@ const rootReducer = combineReducers({
   [externalStoresApi.reducerPath]: externalStoresApi.reducer, // إضافة externalStoresApi.reducer
   [externalStoreInvoicesApi.reducerPath]: externalStoreInvoicesApi.reducer, // إضافة externalStoreInvoicesApi.reducer
   [storePortalApi.reducerPath]: storePortalApi.reducer, // إضافة storePortalApi.reducer
+  [treasuryApi.reducerPath]: treasuryApi.reducer, // إضافة treasuryApi.reducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -131,7 +133,7 @@ export const makeStore = () => {
         serializableCheck: {
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
-      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, purchaseExpenseApi.middleware, paymentReceiptsApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware, notificationsApi.middleware, saleReturnsApi.middleware, saleReturnApi.middleware, returnPaymentApi.middleware, warehouseApi.middleware, customerAccountApi.middleware, supplierAccountApi.middleware, damageReportsApi.middleware, externalStoresApi.middleware, externalStoreInvoicesApi.middleware, storePortalApi.middleware), // إضافة middleware
+      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, purchaseExpenseApi.middleware, paymentReceiptsApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware, notificationsApi.middleware, saleReturnsApi.middleware, saleReturnApi.middleware, returnPaymentApi.middleware, warehouseApi.middleware, customerAccountApi.middleware, supplierAccountApi.middleware, damageReportsApi.middleware, externalStoresApi.middleware, externalStoreInvoicesApi.middleware, storePortalApi.middleware, treasuryApi.middleware), // إضافة middleware
   });
 };
 

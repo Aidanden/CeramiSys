@@ -1,0 +1,173 @@
+server/src/routes/companyRoutes.ts:router.post(
+server/src/routes/companyRoutes.ts:router.get(
+server/src/routes/companyRoutes.ts:router.get(
+server/src/routes/companyRoutes.ts:router.get(
+server/src/routes/companyRoutes.ts:router.get(
+server/src/routes/companyRoutes.ts:router.get(
+server/src/routes/companyRoutes.ts:router.put(
+server/src/routes/companyRoutes.ts:router.delete(
+server/src/routes/paymentReceipt.routes.ts:router.get('/', paymentReceiptController.getAllPaymentReceipts.bind(paymentReceiptController));
+server/src/routes/paymentReceipt.routes.ts:router.get('/stats', paymentReceiptController.getPaymentReceiptsStats.bind(paymentReceiptController));
+server/src/routes/paymentReceipt.routes.ts:router.get('/:id', paymentReceiptController.getPaymentReceiptById.bind(paymentReceiptController));
+server/src/routes/paymentReceipt.routes.ts:router.post('/', paymentReceiptController.createPaymentReceipt.bind(paymentReceiptController));
+server/src/routes/paymentReceipt.routes.ts:router.put('/:id', paymentReceiptController.updatePaymentReceipt.bind(paymentReceiptController));
+server/src/routes/paymentReceipt.routes.ts:router.delete('/:id', paymentReceiptController.deletePaymentReceipt.bind(paymentReceiptController));
+server/src/routes/paymentReceipt.routes.ts:router.post('/:id/pay', paymentReceiptController.payReceipt.bind(paymentReceiptController));
+server/src/routes/paymentReceipt.routes.ts:router.post('/:id/cancel', paymentReceiptController.cancelReceipt.bind(paymentReceiptController));
+server/src/routes/paymentReceipt.routes.ts:router.post('/installments', paymentInstallmentController.addInstallment.bind(paymentInstallmentController));
+server/src/routes/paymentReceipt.routes.ts:router.get('/:paymentReceiptId/installments', paymentInstallmentController.getInstallmentsByReceiptId.bind(paymentInstallmentController));
+server/src/routes/paymentReceipt.routes.ts:router.delete('/installments/:id', paymentInstallmentController.deleteInstallment.bind(paymentInstallmentController));
+server/src/routes/customerAccountRoutes.ts:router.get('/summary', CustomerAccountController.getAllCustomersAccountSummary);
+server/src/routes/customerAccountRoutes.ts:router.get('/:customerId/open-invoices', CustomerAccountController.getCustomerOpenInvoices);
+server/src/routes/customerAccountRoutes.ts:router.get('/:customerId/balance', CustomerAccountController.getCurrentBalance);
+server/src/routes/customerAccountRoutes.ts:router.get('/:customerId', CustomerAccountController.getCustomerAccount);
+server/src/routes/interCompanySaleRoutes.ts:router.post('/', createInterCompanySale);
+server/src/routes/interCompanySaleRoutes.ts:router.get('/', getInterCompanySales);
+server/src/routes/interCompanySaleRoutes.ts:router.get('/stats', getInterCompanySalesStats);
+server/src/routes/interCompanySaleRoutes.ts:router.get('/:id', getInterCompanySaleById);
+server/src/routes/complexInterCompanySaleRoutes.ts:router.post('/', (req, res) => complexInterCompanySaleController.createComplexInterCompanySale(req, res));
+server/src/routes/complexInterCompanySaleRoutes.ts:router.post('/:parentSaleId/settle', (req, res) => complexInterCompanySaleController.settleParentSale(req, res));
+server/src/routes/complexInterCompanySaleRoutes.ts:router.get('/stats', (req, res) => complexInterCompanySaleController.getComplexInterCompanyStats(req, res));
+server/src/routes/damageReportRoutes.ts:router.post('/', damageReportController.createDamageReport);
+server/src/routes/damageReportRoutes.ts:router.get('/', damageReportController.getDamageReports);
+server/src/routes/damageReportRoutes.ts:router.get('/stats', damageReportController.getDamageReportStats);
+server/src/routes/damageReportRoutes.ts:router.get('/:id', damageReportController.getDamageReportById);
+server/src/routes/damageReportRoutes.ts:router.delete('/:id', damageReportController.deleteDamageReport);
+server/src/routes/usersRoute.ts:router.get('/users', 
+server/src/routes/usersRoute.ts:router.post('/users', 
+server/src/routes/usersRoute.ts:router.put('/users/:id', 
+server/src/routes/usersRoute.ts:router.delete('/users/:id', 
+server/src/routes/usersRoute.ts:router.put('/users/:id/reset-password', 
+server/src/routes/usersRoute.ts:router.get('/roles', 
+server/src/routes/usersRoute.ts:router.post('/roles',
+server/src/routes/usersRoute.ts:router.put('/roles/:id',
+server/src/routes/usersRoute.ts:router.delete('/roles/:id',
+server/src/routes/externalStoreAuthRoutes.ts:router.post('/auth/login', controller.login.bind(controller));
+server/src/routes/externalStoreAuthRoutes.ts:router.post('/auth/logout', authenticateStoreToken, controller.logout.bind(controller));
+server/src/routes/externalStoreAuthRoutes.ts:router.get('/auth/me', authenticateStoreToken, controller.getCurrentUser.bind(controller));
+server/src/routes/externalStoreAuthRoutes.ts:router.put('/auth/change-password', authenticateStoreToken, controller.changePassword.bind(controller));
+server/src/routes/externalStoreAuthRoutes.ts:router.post('/auth/forgot-password', controller.forgotPassword.bind(controller));
+server/src/routes/externalStoreRoutes.ts:router.get('/', controller.getStores.bind(controller));
+server/src/routes/externalStoreRoutes.ts:router.post('/', controller.createStore.bind(controller));
+server/src/routes/externalStoreRoutes.ts:router.get('/:id', controller.getStoreById.bind(controller));
+server/src/routes/externalStoreRoutes.ts:router.put('/:id', controller.updateStore.bind(controller));
+server/src/routes/externalStoreRoutes.ts:router.delete('/:id', controller.deleteStore.bind(controller));
+server/src/routes/externalStoreRoutes.ts:router.post('/:id/users', controller.createStoreUser.bind(controller));
+server/src/routes/externalStoreRoutes.ts:router.put('/:id/users/:userId', controller.updateStoreUser.bind(controller));
+server/src/routes/externalStoreRoutes.ts:router.get('/:id/products', controller.getStoreProducts.bind(controller));
+server/src/routes/externalStoreRoutes.ts:router.post('/:id/products', controller.assignProducts.bind(controller));
+server/src/routes/externalStoreRoutes.ts:router.delete('/:id/products/:productId', controller.removeProduct.bind(controller));
+server/src/routes/reportsRoute.ts:router.get("/sales", reportsController.getSalesReport);
+server/src/routes/reportsRoute.ts:router.get("/stock", reportsController.getStockReport);
+server/src/routes/reportsRoute.ts:router.get("/customers", reportsController.getCustomerReport);
+server/src/routes/reportsRoute.ts:router.get("/top-products", reportsController.getTopProductsReport);
+server/src/routes/reportsRoute.ts:router.get("/suppliers", reportsController.getSupplierReport);
+server/src/routes/reportsRoute.ts:router.get("/purchases", reportsController.getPurchaseReport);
+server/src/routes/salesRoutes.ts:router.get('/', salesController.getSales.bind(salesController));
+server/src/routes/salesRoutes.ts:router.post('/', salesController.createSale.bind(salesController));
+server/src/routes/salesRoutes.ts:router.get('/stats', salesController.getSalesStats.bind(salesController));
+server/src/routes/salesRoutes.ts:router.get('/chart/daily', salesController.getDailySalesChart.bind(salesController));
+server/src/routes/salesRoutes.ts:router.get('/customers', salesController.getCustomers.bind(salesController));
+server/src/routes/salesRoutes.ts:router.post('/customers', salesController.createCustomer.bind(salesController));
+server/src/routes/salesRoutes.ts:router.get('/customers/:id', salesController.getCustomerById.bind(salesController));
+server/src/routes/salesRoutes.ts:router.put('/customers/:id', salesController.updateCustomer.bind(salesController));
+server/src/routes/salesRoutes.ts:router.delete('/customers/:id', salesController.deleteCustomer.bind(salesController));
+server/src/routes/salesRoutes.ts:router.post('/:id/issue-receipt', salesController.issueReceipt.bind(salesController));
+server/src/routes/salesRoutes.ts:router.patch('/:id/approve', salesController.approveSale.bind(salesController));
+server/src/routes/salesRoutes.ts:router.get('/:id', salesController.getSaleById.bind(salesController));
+server/src/routes/salesRoutes.ts:router.put('/:id', salesController.updateSale.bind(salesController));
+server/src/routes/salesRoutes.ts:router.delete('/:id', salesController.deleteSale.bind(salesController));
+server/src/routes/externalStorePortalRoutes.ts:router.get('/invoices', authenticateStoreToken, controller.getInvoices.bind(controller));
+server/src/routes/externalStorePortalRoutes.ts:router.post('/invoices', authenticateStoreToken, controller.createInvoice.bind(controller));
+server/src/routes/externalStorePortalRoutes.ts:router.get('/invoices/stats', authenticateStoreToken, controller.getInvoiceStats.bind(controller));
+server/src/routes/externalStorePortalRoutes.ts:router.get('/products', authenticateStoreToken, controller.getAvailableProducts.bind(controller));
+server/src/routes/externalStorePortalRoutes.ts:router.get('/invoices/:id', authenticateStoreToken, controller.getInvoiceById.bind(controller));
+server/src/routes/externalStorePortalRoutes.ts:router.put('/invoices/:id', authenticateStoreToken, controller.updateInvoice.bind(controller));
+server/src/routes/externalStorePortalRoutes.ts:router.delete('/invoices/:id', authenticateStoreToken, controller.deleteInvoice.bind(controller));
+server/src/routes/purchaseExpense.routes.ts:router.get('/categories', purchaseExpenseController.getAllExpenseCategories.bind(purchaseExpenseController));
+server/src/routes/purchaseExpense.routes.ts:router.get('/categories/:id', purchaseExpenseController.getExpenseCategoryById.bind(purchaseExpenseController));
+server/src/routes/purchaseExpense.routes.ts:router.post('/categories', purchaseExpenseController.createExpenseCategory.bind(purchaseExpenseController));
+server/src/routes/purchaseExpense.routes.ts:router.put('/categories/:id', purchaseExpenseController.updateExpenseCategory.bind(purchaseExpenseController));
+server/src/routes/purchaseExpense.routes.ts:router.delete('/categories/:id', purchaseExpenseController.deleteExpenseCategory.bind(purchaseExpenseController));
+server/src/routes/purchaseExpense.routes.ts:router.post('/approve', purchaseExpenseController.approvePurchase.bind(purchaseExpenseController));
+server/src/routes/purchaseExpense.routes.ts:router.get('/purchase/:purchaseId', purchaseExpenseController.getPurchaseExpenses.bind(purchaseExpenseController));
+server/src/routes/purchaseExpense.routes.ts:router.delete('/expense/:expenseId', purchaseExpenseController.deletePurchaseExpense.bind(purchaseExpenseController));
+server/src/routes/purchaseExpense.routes.ts:router.post('/add-to-approved', addExpensesToApprovedPurchaseController.addExpensesToApprovedPurchase.bind(addExpensesToApprovedPurchaseController));
+server/src/routes/purchaseExpense.routes.ts:router.get('/cost-history/:productId', purchaseExpenseController.getProductCostHistory.bind(purchaseExpenseController));
+server/src/routes/authRoute.ts:router.post('/login', login);
+server/src/routes/authRoute.ts:router.post('/logout', authenticateToken, logout);
+server/src/routes/authRoute.ts:router.get('/me', authenticateToken, getCurrentUser);
+server/src/routes/authRoute.ts:router.put('/change-password', authenticateToken, changePassword);
+server/src/routes/productRoutes.ts:router.get('/', (req, res) => productController.getProducts(req, res));
+server/src/routes/productRoutes.ts:router.get('/stats', (req, res) => productController.getProductStats(req, res));
+server/src/routes/productRoutes.ts:router.get('/top-selling', (req, res) => productController.getTopSellingProducts(req, res));
+server/src/routes/productRoutes.ts:router.get('/low-stock', (req, res) => productController.getLowStockProducts(req, res));
+server/src/routes/productRoutes.ts:router.get('/parent-company', (req, res) => productController.getParentCompanyProducts(req, res));
+server/src/routes/productRoutes.ts:router.get('/:id', (req, res) => productController.getProductById(req, res));
+server/src/routes/productRoutes.ts:router.post('/', (req, res) => productController.createProduct(req, res));
+server/src/routes/productRoutes.ts:router.put('/:id', (req, res) => productController.updateProduct(req, res));
+server/src/routes/productRoutes.ts:router.delete('/:id', (req, res) => productController.deleteProduct(req, res));
+server/src/routes/productRoutes.ts:router.put('/stock/update', (req, res) => productController.updateStock(req, res));
+server/src/routes/productRoutes.ts:router.put('/price/update', (req, res) => productController.updatePrice(req, res));
+server/src/routes/supplierAccount.routes.ts:router.get('/summary', supplierAccountController.getAllSuppliersAccountSummary);
+server/src/routes/supplierAccount.routes.ts:router.get('/:supplierId', supplierAccountController.getSupplierAccount);
+server/src/routes/supplierAccount.routes.ts:router.get('/:supplierId/open-purchases', supplierAccountController.getSupplierOpenPurchases);
+server/src/routes/purchaseRoutes.ts:router.post('/purchases', 
+server/src/routes/purchaseRoutes.ts:router.get('/purchases', 
+server/src/routes/purchaseRoutes.ts:router.get('/purchases/stats', 
+server/src/routes/purchaseRoutes.ts:router.get('/purchases/:id', 
+server/src/routes/purchaseRoutes.ts:router.put('/purchases/:id', 
+server/src/routes/purchaseRoutes.ts:router.delete('/purchases/:id', 
+server/src/routes/purchaseRoutes.ts:router.post('/purchases/payments', 
+server/src/routes/purchaseRoutes.ts:router.post('/suppliers', 
+server/src/routes/purchaseRoutes.ts:router.get('/suppliers', 
+server/src/routes/purchaseRoutes.ts:router.get('/suppliers/:id', 
+server/src/routes/purchaseRoutes.ts:router.put('/suppliers/:id', 
+server/src/routes/purchaseRoutes.ts:router.delete('/suppliers/:id', 
+server/src/routes/notificationRoutes.ts:router.post('/', createNotification);
+server/src/routes/notificationRoutes.ts:router.post('/bulk', bulkCreateNotifications);
+server/src/routes/notificationRoutes.ts:router.get('/', getNotifications);
+server/src/routes/notificationRoutes.ts:router.get('/stats', getNotificationStats);
+server/src/routes/notificationRoutes.ts:router.get('/:id', getNotificationById);
+server/src/routes/notificationRoutes.ts:router.put('/:id', updateNotification);
+server/src/routes/notificationRoutes.ts:router.patch('/mark-read', markAsRead);
+server/src/routes/notificationRoutes.ts:router.patch('/mark-all-read', markAllAsRead);
+server/src/routes/notificationRoutes.ts:router.delete('/:id', deleteNotification);
+server/src/routes/notificationRoutes.ts:router.delete('/cleanup/old', cleanupOldNotifications);
+server/src/routes/screensRoute.ts:router.get('/screens', 
+server/src/routes/screensRoute.ts:router.get('/users/me/screens', 
+server/src/routes/screensRoute.ts:router.get('/screens/category/:category', 
+server/src/routes/provisionalSalesRoutes.ts:router.post('/', (req, res) => provisionalSalesController.createProvisionalSale(req, res));
+server/src/routes/provisionalSalesRoutes.ts:router.get('/', (req, res) => provisionalSalesController.getProvisionalSales(req, res));
+server/src/routes/provisionalSalesRoutes.ts:router.get('/:id', (req, res) => provisionalSalesController.getProvisionalSaleById(req, res));
+server/src/routes/provisionalSalesRoutes.ts:router.put('/:id', (req, res) => provisionalSalesController.updateProvisionalSale(req, res));
+server/src/routes/provisionalSalesRoutes.ts:router.delete('/:id', (req, res) => provisionalSalesController.deleteProvisionalSale(req, res));
+server/src/routes/provisionalSalesRoutes.ts:router.patch('/:id/status', (req, res) => provisionalSalesController.updateStatus(req, res));
+server/src/routes/provisionalSalesRoutes.ts:router.post('/:id/convert', (req, res) => provisionalSalesController.convertToSale(req, res));
+server/src/routes/warehouseRoutes.ts:router.get('/dispatch-orders/stats', authenticateToken, getDispatchOrderStats);
+server/src/routes/warehouseRoutes.ts:router.get('/dispatch-orders/:id', authenticateToken, getDispatchOrderById);
+server/src/routes/warehouseRoutes.ts:router.get('/dispatch-orders', authenticateToken, getDispatchOrders);
+server/src/routes/warehouseRoutes.ts:router.post('/dispatch-orders', authenticateToken, createDispatchOrder);
+server/src/routes/warehouseRoutes.ts:router.patch('/dispatch-orders/:id/status', authenticateToken, updateDispatchOrderStatus);
+server/src/routes/warehouseRoutes.ts:router.delete('/dispatch-orders/:id', authenticateToken, deleteDispatchOrder);
+server/src/routes/salePaymentRoutes.ts:router.get('/credit-sales/stats', authenticateToken, getCreditSalesStats);
+server/src/routes/salePaymentRoutes.ts:router.get('/credit-sales/:id', authenticateToken, getCreditSaleById);
+server/src/routes/salePaymentRoutes.ts:router.get('/credit-sales', authenticateToken, getCreditSales);
+server/src/routes/salePaymentRoutes.ts:router.get('/payments', authenticateToken, getSalePayments);
+server/src/routes/salePaymentRoutes.ts:router.post('/payments', authenticateToken, createPayment);
+server/src/routes/salePaymentRoutes.ts:router.delete('/payments/:id', authenticateToken, deletePayment);
+server/src/routes/activityRoutes.ts:router.get('/recent', (req, res) => activityController.getRecentActivities(req, res));
+server/src/routes/externalStoreInvoiceRoutes.ts:router.get('/', controller.getInvoices.bind(controller));
+server/src/routes/externalStoreInvoiceRoutes.ts:router.get('/stats', controller.getInvoiceStats.bind(controller));
+server/src/routes/externalStoreInvoiceRoutes.ts:router.get('/:id', controller.getInvoiceById.bind(controller));
+server/src/routes/externalStoreInvoiceRoutes.ts:router.post('/:id/approve', controller.approveInvoice.bind(controller));
+server/src/routes/externalStoreInvoiceRoutes.ts:router.post('/:id/reject', controller.rejectInvoice.bind(controller));
+server/src/routes/saleReturnRoutes.ts:router.post('/', controller.createSaleReturn.bind(controller));
+server/src/routes/saleReturnRoutes.ts:router.get('/', controller.getSaleReturns.bind(controller));
+server/src/routes/saleReturnRoutes.ts:router.get('/:id', controller.getSaleReturnById.bind(controller));
+server/src/routes/saleReturnRoutes.ts:router.post('/:id/approve', controller.approveSaleReturn.bind(controller));
+server/src/routes/saleReturnRoutes.ts:router.post('/:id/reject', controller.rejectSaleReturn.bind(controller));
+server/src/routes/saleReturnRoutes.ts:router.delete('/:id', controller.deleteSaleReturn.bind(controller));
+server/src/routes/saleReturnRoutes.ts:router.post('/payments', controller.createReturnPayment.bind(controller));
+server/src/routes/saleReturnRoutes.ts:router.get('/payments', controller.getReturnPayments.bind(controller));
+server/src/routes/saleReturnRoutes.ts:router.delete('/payments/:paymentId', controller.deleteReturnPayment.bind(controller));

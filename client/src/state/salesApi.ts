@@ -99,6 +99,7 @@ export interface SalesQueryParams {
   search?: string;
   customerId?: number;
   companyId?: number; // ✅ فلتر حسب الشركة
+  status?: "DRAFT" | "APPROVED" | "CANCELLED";
   saleType?: "CASH" | "CREDIT";
   paymentMethod?: "CASH" | "BANK" | "CARD";
   startDate?: string;
@@ -184,7 +185,7 @@ export interface CustomersResponse {
 export const salesApi = createApi({
   reducerPath: "salesApi",
   baseQuery: baseQueryWithAuthInterceptor,
-  tagTypes: ["Sales", "Sale", "SalesStats", "Customers", "Customer", "CustomerAccountSummary"],
+  tagTypes: ["Sales", "Sale", "SalesStats", "Customers", "Customer", "CustomerAccountSummary", "Treasury", "TreasuryTransaction"],
   // تطبيق إعدادات التحديث الفوري من config.ts
   ...API_CACHE_CONFIG.sales,
   endpoints: (builder) => ({
@@ -562,7 +563,7 @@ export const salesApi = createApi({
      */
     approveSale: builder.mutation<
       { success: boolean; message: string; data: Sale }, 
-      { id: number; saleType: "CASH" | "CREDIT"; paymentMethod?: "CASH" | "BANK" | "CARD" }
+      { id: number; saleType: "CASH" | "CREDIT"; paymentMethod?: "CASH" | "BANK" | "CARD"; bankAccountId?: number }
     >({
       query: ({ id, ...data }) => ({
         url: `sales/${id}/approve`,
@@ -573,6 +574,8 @@ export const salesApi = createApi({
         { type: "Sale", id },
         { type: "Sales", id: "LIST" },
         { type: "CustomerAccountSummary", id: "LIST" }, // تحديث ملخص حسابات العملاء
+        { type: "Treasury", id: "LIST" }, // تحديث الخزائن
+        { type: "TreasuryTransaction", id: "LIST" }, // تحديث حركات الخزينة
       ],
     }),
   }),

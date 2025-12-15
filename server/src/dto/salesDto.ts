@@ -17,6 +17,12 @@ export enum PaymentMethod {
   CARD = 'CARD'    // بطاقة
 }
 
+export enum SaleStatus {
+  DRAFT = 'DRAFT',
+  APPROVED = 'APPROVED',
+  CANCELLED = 'CANCELLED'
+}
+
 export enum ReturnStatus {
   PENDING = 'PENDING',     // قيد الانتظار
   APPROVED = 'APPROVED',   // معتمدة
@@ -63,6 +69,7 @@ export const GetSalesQueryDtoSchema = z.object({
     z.string().transform(val => val === '' ? undefined : Number(val)).pipe(z.number().int().positive()),
     z.literal('').transform(() => undefined)
   ]).optional(),
+  status: z.union([z.nativeEnum(SaleStatus), z.literal('').transform(() => undefined)]).optional(),
   saleType: z.union([z.nativeEnum(SaleType), z.literal('').transform(() => undefined)]).optional(),
   paymentMethod: z.union([z.nativeEnum(PaymentMethod), z.literal('').transform(() => undefined)]).optional(),
   startDate: z.string().transform(val => val === '' ? undefined : val).optional(),

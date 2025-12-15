@@ -162,9 +162,15 @@ export class ExternalStoreInvoiceController {
             }
 
             // حساب الإجمالي
+            // ملاحظة: للأصناف التي وحدتها "صندوق"، يتم إرسال subTotal محسوب من الـ frontend
+            // (الكمية × عدد الأمتار × سعر المتر)
             let total = 0;
             const invoiceLines = lines.map((line: any) => {
-                const subTotal = Number(line.qty) * Number(line.unitPrice);
+                // استخدام subTotal المُرسل من الـ frontend إذا كان موجوداً
+                // وإلا حساب الإجمالي بالطريقة العادية
+                const subTotal = line.subTotal 
+                    ? Number(line.subTotal) 
+                    : Number(line.qty) * Number(line.unitPrice);
                 total += subTotal;
                 return {
                     productId: line.productId,
@@ -230,9 +236,13 @@ export class ExternalStoreInvoiceController {
             }
 
             // حساب الإجمالي الجديد
+            // ملاحظة: للأصناف التي وحدتها "صندوق"، يتم إرسال subTotal محسوب من الـ frontend
             let total = 0;
             const invoiceLines = lines.map((line: any) => {
-                const subTotal = Number(line.qty) * Number(line.unitPrice);
+                // استخدام subTotal المُرسل من الـ frontend إذا كان موجوداً
+                const subTotal = line.subTotal 
+                    ? Number(line.subTotal) 
+                    : Number(line.qty) * Number(line.unitPrice);
                 total += subTotal;
                 return {
                     productId: line.productId,

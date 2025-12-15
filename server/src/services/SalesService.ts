@@ -5,6 +5,7 @@
 
 import prisma from '../models/prismaClient';
 import { CreateSaleDto, UpdateSaleDto, GetSalesQueryDto, CreateCustomerDto, UpdateCustomerDto, GetCustomersQueryDto } from '../dto/salesDto';
+import { TreasuryController } from '../controllers/TreasuryController';
 
 export class SalesService {
   private prisma = prisma; // Use singleton instead of new instance
@@ -171,6 +172,10 @@ export class SalesService {
 
       if (query.customerId) {
         where.customerId = query.customerId;
+      }
+
+      if (query.status) {
+        where.status = query.status;
       }
 
       if (query.saleType) {
@@ -1434,19 +1439,28 @@ export class SalesService {
    */
   private async generateInvoiceNumber(companyId: number): Promise<string> {
     try {
-      // الحصول على آخر فاتورة
-      const lastSale = await this.prisma.sale.findFirst({
+      // الحصول على آخر رقم فاتورة (رقمي) لنفس الشركة فقط
+      // ملاحظة: invoiceNumber قد يتم تعديله يدوياً ليصبح غير رقمي، لذلك نتجاهل القيم غير الرقمية
+      const lastSales = await this.prisma.sale.findMany({
+        where: {
+          companyId,
+          invoiceNumber: { not: null }
+        },
         orderBy: { id: 'desc' },
-        select: { invoiceNumber: true }
+        select: { invoiceNumber: true },
+        take: 50
       });
 
       let nextNumber = 1;
 
-      if (lastSale?.invoiceNumber) {
-        // استخراج الرقم من آخر فاتورة
-        const lastNumber = parseInt(lastSale.invoiceNumber);
+      for (const s of lastSales) {
+        const raw = (s.invoiceNumber || '').trim();
+        if (!raw) continue;
+        if (!/^\d+$/.test(raw)) continue;
+        const lastNumber = parseInt(raw, 10);
         if (!isNaN(lastNumber)) {
           nextNumber = lastNumber + 1;
+          break;
         }
       }
 
@@ -1465,7 +1479,7 @@ export class SalesService {
    */
   async approveSale(
     id: number,
-    approvalData: { saleType: 'CASH' | 'CREDIT'; paymentMethod?: 'CASH' | 'BANK' | 'CARD' },
+    approvalData: { saleType: 'CASH' | 'CREDIT'; paymentMethod?: 'CASH' | 'BANK' | 'CARD'; bankAccountId?: number },
     userCompanyId: number,
     approvedBy: string,
     isSystemUser: boolean = false,
@@ -1596,6 +1610,9 @@ export class SalesService {
       const remainingAmount = approvalData.saleType === 'CASH' ? 0 : total;
       const isFullyPaid = approvalData.saleType === 'CASH';
 
+      // إصدار إيصال قبض تلقائياً عند اعتماد فاتورة نقدية
+      const shouldIssueReceipt = approvalData.saleType === 'CASH';
+
       // اعتماد الفاتورة وتحديث بياناتها
       const approvedSale = await this.prisma.sale.update({
         where: { id },
@@ -1607,7 +1624,14 @@ export class SalesService {
           remainingAmount,
           isFullyPaid,
           approvedAt: new Date(),
-          approvedBy
+          approvedBy,
+          ...(shouldIssueReceipt
+            ? {
+                receiptIssued: true,
+                receiptIssuedAt: new Date(),
+                receiptIssuedBy: approvedBy
+              }
+            : {})
         },
         include: {
           customer: true,
@@ -1700,6 +1724,67 @@ export class SalesService {
 
       }
 
+      // إضافة المبلغ للخزينة (إذا كانت مبيعات نقدية)
+      if (approvalData.saleType === 'CASH') {
+        try {
+          let targetTreasuryId: number | null = null;
+          let treasuryName = '';
+
+          // تحديد الخزينة المستهدفة حسب طريقة الدفع
+          if (approvalData.paymentMethod === 'CASH') {
+            // نقدي كاش - خزينة الشركة
+            const companyTreasury = await this.prisma.treasury.findFirst({
+              where: {
+                companyId: existingSale.companyId,
+                type: 'COMPANY',
+                isActive: true
+              }
+            });
+            if (companyTreasury) {
+              targetTreasuryId = companyTreasury.id;
+              treasuryName = companyTreasury.name;
+            }
+          } else if ((approvalData.paymentMethod === 'BANK' || approvalData.paymentMethod === 'CARD') && approvalData.bankAccountId) {
+            // بطاقة أو حوالة مصرفية - الحساب المصرفي المحدد
+            const bankAccount = await this.prisma.treasury.findFirst({
+              where: {
+                id: approvalData.bankAccountId,
+                type: 'BANK',
+                isActive: true
+              }
+            });
+            if (bankAccount) {
+              targetTreasuryId = bankAccount.id;
+              treasuryName = bankAccount.name;
+            }
+          }
+
+          if (targetTreasuryId) {
+            // بناء وصف تفصيلي للحركة
+            const customerInfo = approvedSale.customer 
+              ? `- الزبون: ${approvedSale.customer.name}${approvedSale.customer.phone ? ` (${approvedSale.customer.phone})` : ''}`
+              : '';
+            const description = `فاتورة مبيعات نقدية رقم ${approvedSale.invoiceNumber || approvedSale.id} - ${approvedSale.company.name} ${customerInfo}`.trim();
+            
+            await TreasuryController.addToTreasury(
+              targetTreasuryId,
+              total,
+              'SALE',
+              'Sale',
+              approvedSale.id,
+              description,
+              approvedBy
+            );
+            console.log(`✅ تم إضافة ${total} دينار إلى ${treasuryName}`);
+          } else {
+            console.log(`⚠️ لا توجد خزينة مناسبة للشركة ${existingSale.companyId}`);
+          }
+        } catch (treasuryError) {
+          console.error('خطأ في تحديث الخزينة:', treasuryError);
+          // لا نوقف العملية إذا فشل تحديث الخزينة
+        }
+      }
+
       return {
         id: approvedSale.id,
         companyId: approvedSale.companyId,
@@ -1712,6 +1797,9 @@ export class SalesService {
         notes: approvedSale.notes,
         saleType: approvedSale.saleType,
         paymentMethod: approvedSale.paymentMethod,
+        receiptIssued: approvedSale.receiptIssued,
+        receiptIssuedAt: approvedSale.receiptIssuedAt,
+        receiptIssuedBy: approvedSale.receiptIssuedBy,
         paidAmount: Number(approvedSale.paidAmount),
         remainingAmount: Number(approvedSale.remainingAmount),
         isFullyPaid: approvedSale.isFullyPaid,

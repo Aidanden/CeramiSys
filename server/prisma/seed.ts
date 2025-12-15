@@ -76,6 +76,8 @@ async function deleteAllData() {
     "stock",                         // Stock model
     "damageReportLine",              // DamageReportLine model (أسطر محاضر الإتلاف)
     "damageReport",                  // DamageReport model (محاضر الإتلاف)
+    "externalStoreInvoiceLine",      // ExternalStoreInvoiceLine model (أسطر فواتير المخازن الخارجية)
+    "externalStoreInvoice",          // ExternalStoreInvoice model (فواتير المخازن الخارجية)
     "product",                       // Product model
     "users",                         // Users model
     "userRoles",                     // UserRoles model

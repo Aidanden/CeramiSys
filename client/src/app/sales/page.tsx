@@ -63,6 +63,7 @@ const SalesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [customerNameFilter, setCustomerNameFilter] = useState('');
   const [customerPhoneFilter, setCustomerPhoneFilter] = useState('');
+  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState<'all' | 'DRAFT' | 'APPROVED'>('all');
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
   const [showCreateSaleModal, setShowCreateSaleModal] = useState(false);
   const [showCreateCustomerModal, setShowCreateCustomerModal] = useState(false);
@@ -429,11 +430,21 @@ const SalesPage = () => {
   };
 
   // API calls
-  const { data: salesData, isLoading: salesLoading, refetch: refetchSales } = useGetSalesQuery({
-    page: currentPage,
-    limit: 10,
-    search: searchTerm
-  });
+  const targetCompanyIdForSales = user?.isSystemUser ? selectedCompanyId : user?.companyId;
+  const shouldSkipSalesQuery = Boolean(user?.isSystemUser && !selectedCompanyId);
+
+  const { data: salesData, isLoading: salesLoading, refetch: refetchSales } = useGetSalesQuery(
+    {
+      page: currentPage,
+      limit: 10,
+      search: searchTerm,
+      companyId: targetCompanyIdForSales || undefined,
+      status: invoiceStatusFilter === 'all' ? undefined : invoiceStatusFilter
+    },
+    {
+      skip: shouldSkipSalesQuery
+    }
+  );
 
   const { data: customersData, isLoading: customersLoading, error: customersError, refetch: refetchCustomers } = useGetCustomersQuery({ limit: 1000 });
   const { data: companiesData, isLoading: companiesLoading } = useGetCompaniesQuery({ limit: 1000 });
@@ -446,6 +457,16 @@ const SalesPage = () => {
       setSelectedCompanyId(user.companyId);
     }
   }, [user, selectedCompanyId]);
+
+  // إعادة تعيين الصفحة عند تغيير الشركة لضمان عرض الفواتير الخاصة بها فقط
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCompanyId]);
+
+  // إعادة تعيين الصفحة عند تغيير فلتر حالة الفاتورة
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [invoiceStatusFilter]);
 
   // جلب الأصناف حسب الشركة المختارة:
   // - شركة 1 (التقازي): أصناف شركة 1 فقط
@@ -616,7 +637,7 @@ const SalesPage = () => {
         await handleSimpleSale(targetCompanyId);
       }
       
-      // إغلاق المودال فوراً
+      // إغلاق المودال
       setShowCreateSaleModal(false);
       
       // إعادة تعيين الفورم فوراً
@@ -625,16 +646,12 @@ const SalesPage = () => {
         notes: '',
         lines: []
       });
-      setProductCodeSearch('');
-      setProductNameSearch('');
-      
-      // للمستخدمين العاديين: الاحتفاظ بالشركة، لمستخدمي النظام: إعادة تعيين
-      if (user?.isSystemUser) {
-        setSelectedCompanyId(null);
-      }
+      setSelectedCustomerName('');
+      setShowCustomerSuggestions(false);
       
       // تحديث قائمة الفواتير فوراً
-      await refetchSales();
+      setCurrentPage(1);
+      refetchSales();
       
       // إشعار فوري بعد التحديث
       if (hasParentCompanyItems) {
@@ -1119,9 +1136,39 @@ const SalesPage = () => {
         )}
       </div>
 
+      {shouldSkipSalesQuery && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <p className="text-sm font-medium text-blue-900">اختر شركة لعرض فواتيرها</p>
+              <p className="text-xs text-blue-700 mt-1">سيتم عرض فواتير الشركة المختارة فقط، وبالترتيب من الأحدث إلى الأقدم.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Filters and Search */}
       <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+          {/* Invoice Status Filter */}
+          <div className="relative">
+            <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <select
+              value={invoiceStatusFilter}
+              onChange={(e) => setInvoiceStatusFilter(e.target.value as 'all' | 'DRAFT' | 'APPROVED')}
+              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+            >
+              <option value="all">حالة الفاتورة: الكل</option>
+              <option value="DRAFT">حالة الفاتورة: مبدئية</option>
+              <option value="APPROVED">حالة الفاتورة: معتمدة</option>
+            </select>
+          </div>
+
           {/* Search */}
           <div className="relative">
             <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1167,12 +1214,13 @@ const SalesPage = () => {
 
         <div className="flex flex-col md:flex-row gap-4">
           {/* Clear Filters Button */}
-          {(searchTerm || customerNameFilter || customerPhoneFilter) && (
+          {(searchTerm || customerNameFilter || customerPhoneFilter || invoiceStatusFilter !== 'all') && (
             <button 
               onClick={() => {
                 setSearchTerm('');
                 setCustomerNameFilter('');
                 setCustomerPhoneFilter('');
+                setInvoiceStatusFilter('all');
               }}
               className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors whitespace-nowrap"
             >
@@ -1247,7 +1295,14 @@ const SalesPage = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {salesData?.data?.sales
+              {shouldSkipSalesQuery ? (
+                <tr>
+                  <td colSpan={8} className="px-6 py-10 text-center text-sm text-gray-500">
+                    يجب اختيار الشركة أولاً لعرض الفواتير
+                  </td>
+                </tr>
+              ) : (
+                salesData?.data?.sales
                 ?.filter((sale: Sale) => {
                   // فلترة بأسم الزبون
                   if (customerNameFilter && sale.customer) {
@@ -1353,67 +1408,68 @@ const SalesPage = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         </div>
+      </div>
 
-        {/* Pagination */}
-        {salesData?.data?.pagination && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-              >
-                السابق
-              </button>
-              <button
-                onClick={() => setCurrentPage(prev => prev + 1)}
-                disabled={currentPage >= salesData.data.pagination.pages}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-              >
-                التالي
-              </button>
+      {/* Pagination */}
+      {salesData?.data?.pagination && (
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+          <div className="flex-1 flex justify-between sm:hidden">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            >
+              السابق
+            </button>
+            <button
+              onClick={() => setCurrentPage(prev => prev + 1)}
+              disabled={currentPage >= salesData.data.pagination.pages}
+              className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            >
+              التالي
+            </button>
+          </div>
+          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                عرض{' '}
+                <span className="font-medium">
+                  {((currentPage - 1) * 10) + 1}
+                </span>{' '}
+                إلى{' '}
+                <span className="font-medium">
+                  {Math.min(currentPage * 10, salesData.data.pagination.total)}
+                </span>{' '}
+                من{' '}
+                <span className="font-medium">{salesData.data.pagination.total}</span>{' '}
+                نتيجة
+              </p>
             </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  عرض{' '}
-                  <span className="font-medium">
-                    {((currentPage - 1) * 10) + 1}
-                  </span>{' '}
-                  إلى{' '}
-                  <span className="font-medium">
-                    {Math.min(currentPage * 10, salesData.data.pagination.total)}
-                  </span>{' '}
-                  من{' '}
-                  <span className="font-medium">{salesData.data.pagination.total}</span>{' '}
-                  نتيجة
-                </p>
-              </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                  {Array.from({ length: salesData.data.pagination.pages }, (_, i) => (
-                    <button
-                      key={i + 1}
-                      onClick={() => setCurrentPage(i + 1)}
-                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                        currentPage === i + 1
-                          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                </nav>
-              </div>
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                {Array.from({ length: salesData.data.pagination.pages }, (_, i) => (
+                  <button
+                    key={i + 1}
+                    onClick={() => setCurrentPage(i + 1)}
+                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                      currentPage === i + 1
+                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </nav>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Create Sale Modal */}
       {showCreateSaleModal && selectedCompanyId && (
@@ -2072,7 +2128,7 @@ const SalesPage = () => {
           <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
-                تفاصيل الفاتورة #{selectedSale.invoiceNumber || selectedSale.id}
+                تفاصيل الفاتورة #{selectedSale!.invoiceNumber || selectedSale!.id}
               </h3>
               
               <div className="space-y-4">
@@ -2080,34 +2136,34 @@ const SalesPage = () => {
                 <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-blue-900">الشركة:</span>
-                    <span className="text-sm font-semibold text-blue-700">{selectedSale.company?.name}</span>
-                    <span className="text-xs text-blue-600">({selectedSale.company?.code})</span>
+                    <span className="text-sm font-semibold text-blue-700">{selectedSale!.company?.name}</span>
+                    <span className="text-xs text-blue-600">({selectedSale!.company?.code})</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <span className="font-medium">العميل:</span> {selectedSale.customer?.name || 'غير محدد'}
+                    <span className="font-medium">العميل:</span> {selectedSale!.customer?.name || 'غير محدد'}
                   </div>
                   <div>
-                    <span className="font-medium">التاريخ:</span> {new Date(selectedSale.createdAt).toLocaleDateString('en-US')}
+                    <span className="font-medium">التاريخ:</span> {new Date(selectedSale!.createdAt).toLocaleDateString('en-US')}
                   </div>
                   <div>
                     <span className="font-medium">الحالة:</span> 
                     <span className={`ml-2 px-2 py-1 text-xs font-semibold rounded-full ${
-                      selectedSale.status === 'DRAFT' 
+                      selectedSale!.status === 'DRAFT' 
                         ? 'bg-yellow-100 text-yellow-800' 
-                        : selectedSale.status === 'APPROVED'
+                        : selectedSale!.status === 'APPROVED'
                         ? 'bg-green-100 text-green-800'
                         : 'bg-red-100 text-red-800'
                     }`}>
-                      {selectedSale.status === 'DRAFT' ? 'مبدئية' : 
-                       selectedSale.status === 'APPROVED' ? 'معتمدة' : 'ملغية'}
+                      {selectedSale!.status === 'DRAFT' ? 'مبدئية' : 
+                       selectedSale!.status === 'APPROVED' ? 'معتمدة' : 'ملغية'}
                     </span>
                   </div>
-                  {selectedSale.notes && (
+                  {selectedSale!.notes && (
                     <div>
-                      <span className="font-medium">الملاحظات:</span> {selectedSale.notes}
+                      <span className="font-medium">الملاحظات:</span> {selectedSale!.notes}
                     </div>
                   )}
                 </div>
@@ -2126,7 +2182,7 @@ const SalesPage = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
-                        {selectedSale.lines.map((line, index) => {
+                        {selectedSale!.lines.map((line, index) => {
                           // حساب الأمتار المربعة وسعر المتر للأصناف بوحدة صندوق
                           const isBox = line.product?.unit === 'صندوق';
                           const unitsPerBox = line.product?.unitsPerBox ? Number(line.product.unitsPerBox) : null;
@@ -2168,7 +2224,7 @@ const SalesPage = () => {
 
                 <div className="border-t pt-4">
                   <div className="text-right text-lg font-bold">
-                    المجموع الإجمالي: {formatArabicCurrency(selectedSale.total)}
+                    المجموع الإجمالي: {formatArabicCurrency(selectedSale!.total)}
                   </div>
                 </div>
 

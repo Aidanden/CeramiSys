@@ -99,146 +99,207 @@ export const CreditPaymentReceiptPrint: React.FC<CreditPaymentReceiptPrintProps>
   const amountInWords = numberToArabicWords(payment.amount);
 
   return (
-    <div className="print-receipt" style={{ 
-      width: '210mm', 
-      minHeight: '148mm',
-      padding: '12mm',
-      backgroundColor: 'white',
-      fontFamily: 'Arial, sans-serif',
-      direction: 'rtl',
-      pageBreakAfter: 'always',
-      border: '2px solid #333'
-    }}>
-      {/* رأس الإيصال - بسيط */}
-      <div style={{ textAlign: 'center', marginBottom: '15px', borderBottom: '2px solid #333', paddingBottom: '10px' }}>
-        <h1 style={{ fontSize: '22px', margin: '0 0 4px 0', color: '#000' }}>
-          {sale.company?.name || 'اسم الشركة'}
-        </h1>
-        <p style={{ fontSize: '12px', margin: '3px 0', color: '#666' }}>
-          كود الشركة: {sale.company?.code || '-'}
-        </p>
-        <h2 style={{ fontSize: '18px', margin: '8px 0 0 0', color: '#000', fontWeight: 'bold' }}>
-          إيصال قبض - دفعة آجلة
-        </h2>
-      </div>
-
-      {/* معلومات الإيصال - في سطر واحد */}
-      <div style={{ 
-        marginBottom: '12px',
-        padding: '8px',
-        backgroundColor: '#f9fafb',
-        border: '1px solid #d1d5db',
-        borderRadius: '4px'
+    <>
+      <style>{`
+        @media print {
+          .print-receipt {
+            page-break-after: avoid !important;
+            page-break-inside: avoid !important;
+          }
+          @page {
+            size: A4;
+            margin: 0;
+          }
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+        }
+      `}</style>
+      <div className="print-receipt" style={{
+        width: '210mm',
+        minHeight: '297mm',
+        maxHeight: '297mm',
+        padding: '15mm',
+        backgroundColor: 'white',
+        fontFamily: 'Arial, sans-serif',
+        direction: 'rtl',
+        border: '3px double #333',
+        boxSizing: 'border-box',
+        overflow: 'hidden'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-          <span><strong>رقم الإيصال:</strong> {payment.receiptNumber}</span>
-          <span><strong>التاريخ:</strong> {new Date(payment.paymentDate).toLocaleDateString('ar-LY')}</span>
-          <span><strong>طريقة الدفع:</strong> {
-            payment.paymentMethod === 'CASH' ? 'كاش' :
-            payment.paymentMethod === 'BANK' ? 'حوالة' : 'بطاقة'
-          }</span>
-        </div>
-      </div>
-
-      {/* معلومات الدافع - بسيط */}
-      <div style={{ 
-        marginBottom: '15px',
-        padding: '10px',
-        backgroundColor: '#f9fafb',
-        border: '1px solid #d1d5db',
-        borderRadius: '4px'
-      }}>
-        <p style={{ margin: '0', fontSize: '13px' }}>
-          <strong>استلمنا من:</strong> <span style={{ fontSize: '15px', fontWeight: 'bold' }}>{sale.customer?.name || 'عميل'}</span>
-          {sale.customer?.phone && <span style={{ marginRight: '15px', color: '#666' }}>هاتف: {sale.customer.phone}</span>}
-        </p>
-      </div>
-
-      {/* المبلغ - واضح وبسيط */}
-      <div style={{ 
-        marginBottom: '15px',
-        padding: '15px',
-        textAlign: 'center',
-        border: '2px solid #333',
-        borderRadius: '6px'
-      }}>
-        <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#666' }}>مبلغ وقدره</p>
-        <p style={{ 
-          margin: '0 0 10px 0', 
-          fontSize: '36px', 
-          fontWeight: 'bold', 
-          color: '#000'
-        }}>
-          {formatArabicCurrency(payment.amount)}
-        </p>
-        <p style={{ margin: '0', fontSize: '13px', color: '#666', borderTop: '1px dashed #999', paddingTop: '8px' }}>
-          فقط: {amountInWords} لا غير
-        </p>
-      </div>
-
-      {/* معلومات الفاتورة - سطر واحد */}
-      <div style={{ 
-        marginBottom: '12px',
-        padding: '8px',
-        backgroundColor: '#f9fafb',
-        border: '1px solid #d1d5db',
-        borderRadius: '4px'
-      }}>
-        <p style={{ margin: '0 0 8px 0', fontSize: '13px' }}>
-          <strong>دفعة من فاتورة آجلة رقم:</strong> {sale.invoiceNumber || sale.id}
-        </p>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', paddingTop: '6px', borderTop: '1px solid #e5e7eb' }}>
-          <span>إجمالي الفاتورة: <strong style={{ fontSize: '14px' }}>{formatArabicCurrency(sale.total)}</strong></span>
-          <span style={{ color: '#16a34a' }}>المدفوع: <strong style={{ fontSize: '14px' }}>{formatArabicCurrency(sale.paidAmount)}</strong></span>
-          <span style={{ color: '#dc2626' }}>الباقي: <strong style={{ fontSize: '14px' }}>{formatArabicCurrency(sale.remainingAmount)}</strong></span>
-        </div>
-      </div>
-
-      {/* ملاحظات */}
-      {payment.notes && (
-        <div style={{ 
-          marginBottom: '12px',
-          padding: '8px',
-          backgroundColor: '#fef9c3',
-          border: '1px solid #fbbf24',
-          borderRadius: '4px'
-        }}>
-          <p style={{ margin: '0', fontSize: '12px' }}>
-            <strong>ملاحظات:</strong> {payment.notes}
+        <div style={{ textAlign: 'center', marginBottom: '15px', borderBottom: '2px solid #1e40af', paddingBottom: '10px' }}>
+          <h1 style={{ fontSize: '24px', margin: '0 0 5px 0', color: '#1e40af' }}>
+            {sale.company?.name || 'اسم الشركة'}
+          </h1>
+          <p style={{ fontSize: '12px', margin: '3px 0', color: '#666' }}>
+            كود الشركة: {sale.company?.code || '-'}
           </p>
+          <h2 style={{
+            fontSize: '20px',
+            margin: '8px 0 0 0',
+            color: 'white',
+            backgroundColor: '#16a34a',
+            padding: '6px',
+            borderRadius: '6px'
+          }}>
+            إيصال قبض - دفعة آجلة
+          </h2>
         </div>
-      )}
 
-      {/* التوقيعات */}
-      <div style={{ 
-        display: 'flex',
-        justifyContent: 'space-between',
-        marginTop: '30px',
-        paddingTop: '12px',
-        borderTop: '1px solid #d1d5db'
-      }}>
-        <div style={{ textAlign: 'center', flex: 1 }}>
-          <div style={{ borderTop: '1px solid #333', paddingTop: '6px', marginTop: '20px' }}>
-            <p style={{ margin: '0', fontSize: '12px', fontWeight: 'bold' }}>المستلم</p>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '12px',
+          marginBottom: '15px',
+          padding: '10px',
+          backgroundColor: '#f0fdf4',
+          borderRadius: '6px',
+          border: '1px solid #16a34a'
+        }}>
+          <div>
+            <p style={{ margin: '5px 0', fontSize: '14px' }}>
+              <strong>رقم الإيصال:</strong> {payment.receiptNumber}
+            </p>
+            <p style={{ margin: '5px 0', fontSize: '14px' }}>
+              <strong>التاريخ:</strong> {new Date(payment.paymentDate).toLocaleDateString('ar-LY', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </p>
+          </div>
+          <div>
+            <p style={{ margin: '5px 0', fontSize: '14px' }}>
+              <strong>الوقت:</strong> {new Date(payment.paymentDate).toLocaleTimeString('ar-LY')}
+            </p>
+            <p style={{ margin: '5px 0', fontSize: '14px' }}>
+              <strong>طريقة الدفع:</strong> {
+                payment.paymentMethod === 'CASH' ? '💵 كاش' :
+                payment.paymentMethod === 'BANK' ? '🏦 حوالة بنكية' : '💳 بطاقة'
+              }
+            </p>
           </div>
         </div>
-        <div style={{ textAlign: 'center', flex: 1 }}>
-          <div style={{ borderTop: '1px solid #333', paddingTop: '6px', marginTop: '20px' }}>
-            <p style={{ margin: '0', fontSize: '12px', fontWeight: 'bold' }}>الدافع</p>
+
+        <div style={{
+          marginBottom: '15px',
+          padding: '12px',
+          backgroundColor: '#fef3c7',
+          borderRadius: '6px',
+          border: '1px solid #fbbf24'
+        }}>
+          <p style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 'bold', color: '#92400e' }}>
+            استلمنا من السيد/ة:
+          </p>
+          <p style={{ margin: '0', fontSize: '16px', fontWeight: 'bold', color: '#1e40af' }}>
+            {sale.customer?.name || 'عميل'}
+          </p>
+          {sale.customer?.phone && (
+            <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#666' }}>
+              الهاتف: {sale.customer.phone}
+            </p>
+          )}
+        </div>
+
+        <div style={{
+          marginBottom: '15px',
+          padding: '15px',
+          backgroundColor: '#dbeafe',
+          borderRadius: '8px',
+          border: '2px solid #1e40af',
+          textAlign: 'center'
+        }}>
+          <p style={{ margin: '0 0 10px 0', fontSize: '15px', color: '#1e40af' }}>
+            مبلغ وقدره
+          </p>
+          <p style={{
+            margin: '0 0 15px 0',
+            fontSize: '32px',
+            fontWeight: 'bold',
+            color: '#16a34a',
+            textShadow: '1px 1px 2px rgba(0,0,0,0.1)'
+          }}>
+            {formatArabicCurrency(payment.amount)}
+          </p>
+          <div style={{
+            padding: '12px',
+            backgroundColor: 'white',
+            borderRadius: '6px',
+            border: '1px dashed #1e40af'
+          }}>
+            <p style={{ margin: '0', fontSize: '14px', color: '#1e40af', fontWeight: 'bold' }}>
+              فقط: {amountInWords} لا غير
+            </p>
           </div>
         </div>
-      </div>
 
-      {/* الختم */}
-      <div style={{ 
-        textAlign: 'center', 
-        marginTop: '15px', 
-        fontSize: '10px', 
-        color: '#999' 
-      }}>
-        <p style={{ margin: '2px 0' }}>إيصال قبض صحيح</p>
-        <p style={{ margin: '2px 0' }}>تم الطباعة: {new Date().toLocaleDateString('ar-LY')} - {new Date().toLocaleTimeString('ar-LY')}</p>
+        <div style={{
+          marginBottom: '15px',
+          padding: '10px',
+          backgroundColor: '#f9fafb',
+          borderRadius: '6px',
+          border: '1px solid #d1d5db'
+        }}>
+          <p style={{ margin: '0 0 8px 0', fontSize: '13px' }}>
+            <strong>وذلك عن:</strong> دفعة من فاتورة آجلة رقم {sale.invoiceNumber || sale.id}
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', paddingTop: '6px', borderTop: '1px solid #e5e7eb' }}>
+            <span>إجمالي الفاتورة: <strong style={{ fontSize: '14px' }}>{formatArabicCurrency(sale.total)}</strong></span>
+            <span style={{ color: '#16a34a' }}>المدفوع: <strong style={{ fontSize: '14px' }}>{formatArabicCurrency(sale.paidAmount)}</strong></span>
+            <span style={{ color: '#dc2626' }}>الباقي: <strong style={{ fontSize: '14px' }}>{formatArabicCurrency(sale.remainingAmount)}</strong></span>
+          </div>
+        </div>
+
+        {payment.notes && (
+          <div style={{
+            marginBottom: '15px',
+            padding: '10px',
+            backgroundColor: '#fef9c3',
+            borderRadius: '6px',
+            border: '1px solid #fbbf24'
+          }}>
+            <p style={{ margin: '0', fontSize: '13px' }}>
+              <strong>ملاحظات:</strong> {payment.notes}
+            </p>
+          </div>
+        )}
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '30px',
+          marginTop: '20px',
+          paddingTop: '12px',
+          borderTop: '1px solid #ddd'
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ borderTop: '2px solid #333', paddingTop: '8px', marginTop: '30px' }}>
+              <p style={{ margin: '0', fontSize: '13px', fontWeight: 'bold' }}>المستلم</p>
+              <p style={{ margin: '5px 0 0 0', fontSize: '11px', color: '#666' }}>الاسم والتوقيع</p>
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ borderTop: '2px solid #333', paddingTop: '8px', marginTop: '30px' }}>
+              <p style={{ margin: '0', fontSize: '13px', fontWeight: 'bold' }}>الدافع</p>
+              <p style={{ margin: '5px 0 0 0', fontSize: '11px', color: '#666' }}>الاسم والتوقيع</p>
+            </div>
+          </div>
+        </div>
+
+        <div style={{
+          textAlign: 'center',
+          marginTop: '15px',
+          padding: '8px',
+          backgroundColor: '#f3f4f6',
+          borderRadius: '6px',
+          fontSize: '10px',
+          color: '#666'
+        }}>
+          <p style={{ margin: '2px 0' }}>✓ إيصال قبض صحيح</p>
+          <p style={{ margin: '2px 0' }}>تم الطباعة بتاريخ: {new Date().toLocaleDateString('ar-LY')} - {new Date().toLocaleTimeString('ar-LY')}</p>
+        </div>
       </div>
-    </div>
+    </>
   );
 };

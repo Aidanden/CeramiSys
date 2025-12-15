@@ -208,6 +208,14 @@ const Sidebar = () => {
               isCollapsed={isSidebarCollapsed}
             />
           )}
+           {canAccessScreen('/treasury') && (
+            <SidebarLink
+              href="/treasury"
+              icon={Wallet}
+              label="حركات الخزينة"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
           {canAccessScreen('/customer-accounts') && (
             <SidebarLink
               href="/customer-accounts"
@@ -266,6 +274,7 @@ const Sidebar = () => {
               isCollapsed={isSidebarCollapsed}
             />
           )}
+         
 
           {canAccessScreen('/damage-reports') && (
             <SidebarLink

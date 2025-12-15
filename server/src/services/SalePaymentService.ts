@@ -5,6 +5,7 @@
 
 import prisma from '../models/prismaClient';
 import { CreateSalePaymentDto, UpdateSalePaymentDto, GetSalePaymentsQueryDto, GetCreditSalesQueryDto } from '../dto/salePaymentDto';
+import { TreasuryController } from '../controllers/TreasuryController';
 
 export class SalePaymentService {
   private prisma = prisma; // Use singleton
@@ -181,7 +182,13 @@ export class SalePaymentService {
           ...(isSystemUser !== true && { companyId: userCompanyId })
         },
         include: {
-          payments: true
+          payments: true,
+          customer: {
+            select: { id: true, name: true, phone: true }
+          },
+          company: {
+            select: { id: true, name: true, code: true }
+          }
         }
       });
 
@@ -198,6 +205,11 @@ export class SalePaymentService {
       const remainingAmount = Number(sale.remainingAmount);
       if (data.amount > remainingAmount) {
         throw new Error(`المبلغ المدفوع (${data.amount}) يتجاوز المبلغ المتبقي (${remainingAmount})`);
+      }
+
+      // التحقق من بيانات الخزينة للحوالة/البطاقة
+      if ((data.paymentMethod === 'BANK' || data.paymentMethod === 'CARD') && !data.bankAccountId) {
+        throw new Error('يجب تحديد الحساب المصرفي (الخزينة) عند اختيار حوالة أو بطاقة');
       }
 
       // توليد رقم إيصال القبض
@@ -245,6 +257,66 @@ export class SalePaymentService {
         console.log(`✅ تم تسجيل قيد محاسبي (له) بمبلغ ${data.amount} دينار في حساب العميل`);
       }
 
+      // إضافة المبلغ إلى الخزينة حسب طريقة الدفع (إيصال قبض)
+      try {
+        let targetTreasuryId: number | null = null;
+        let treasuryName = '';
+
+        if (data.paymentMethod === 'CASH') {
+          // نقدي كاش - خزينة الشركة
+          const companyTreasury = await this.prisma.treasury.findFirst({
+            where: {
+              companyId: userCompanyId,
+              type: 'COMPANY',
+              isActive: true
+            }
+          });
+          if (companyTreasury) {
+            targetTreasuryId = companyTreasury.id;
+            treasuryName = companyTreasury.name;
+          }
+        } else if ((data.paymentMethod === 'BANK' || data.paymentMethod === 'CARD') && data.bankAccountId) {
+          // بطاقة أو حوالة مصرفية - الحساب المصرفي المحدد
+          const bankAccount = await this.prisma.treasury.findFirst({
+            where: {
+              id: data.bankAccountId,
+              type: 'BANK',
+              isActive: true
+            }
+          });
+          if (!bankAccount) {
+            throw new Error('الحساب المصرفي المحدد غير موجود أو غير نشط');
+          }
+          targetTreasuryId = bankAccount.id;
+          treasuryName = bankAccount.name;
+        }
+
+        if (targetTreasuryId) {
+          // بناء وصف تفصيلي للحركة
+          const customerInfo = sale.customer 
+            ? `- الزبون: ${sale.customer.name}${sale.customer.phone ? ` (${sale.customer.phone})` : ''}`
+            : '';
+          const description = `إيصال قبض رقم ${receiptNumber} - فاتورة ${sale.invoiceNumber || sale.id} - ${sale.company?.name || ''} ${customerInfo}`.trim();
+          
+          await TreasuryController.addToTreasury(
+            targetTreasuryId,
+            data.amount,
+            'RECEIPT',
+            'SalePayment',
+            payment.id,
+            description,
+            undefined // createdBy
+          );
+          console.log(`✅ تم إضافة ${data.amount} دينار إلى ${treasuryName}`);
+        } else {
+          throw new Error(`لا توجد خزينة مناسبة للشركة ${userCompanyId}`);
+        }
+      } catch (treasuryError) {
+        console.error('خطأ في تحديث الخزينة:', treasuryError);
+        // مهم: لا ننشئ دفعة بدون تسجيلها في الخزينة
+        throw treasuryError;
+      }
+
       // جلب الدفعة مع العلاقات
       const paymentWithRelations = await this.prisma.salePayment.findUnique({
         where: { id: payment.id },
@@ -260,10 +332,33 @@ export class SalePaymentService {
         }
       });
 
+      // جلب الفاتورة بعد تحديثها مع جميع العلاقات اللازمة للطباعة
+      const saleWithRelations = await this.prisma.sale.findUnique({
+        where: { id: data.saleId },
+        include: {
+          customer: {
+            select: { id: true, name: true, phone: true }
+          },
+          company: {
+            select: { id: true, name: true, code: true }
+          },
+          payments: {
+            orderBy: { paymentDate: 'desc' }
+          },
+          lines: {
+            include: {
+              product: {
+                select: { id: true, sku: true, name: true, unit: true, unitsPerBox: true }
+              }
+            }
+          }
+        }
+      });
+
       return {
         success: true,
         message: 'تم إنشاء إيصال القبض بنجاح',
-        data: { payment: paymentWithRelations }
+        data: { payment: paymentWithRelations, sale: saleWithRelations }
       };
     } catch (error: any) {
       throw new Error(`خطأ في إنشاء الدفعة: ${error.message}`);

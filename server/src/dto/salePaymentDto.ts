@@ -12,8 +12,9 @@ export const CreateSalePaymentDtoSchema = z.object({
   saleId: z.number().int().positive('معرف الفاتورة يجب أن يكون رقم موجب'),
   amount: z.number().positive('المبلغ يجب أن يكون أكبر من صفر'),
   paymentMethod: z.nativeEnum(PaymentMethod, { message: 'طريقة الدفع غير صحيحة' }),
-  paymentDate: z.string().optional(), // تاريخ الدفع (اختياري، افتراضياً اليوم)
-  notes: z.string().optional()
+  paymentDate: z.string().optional(),
+  notes: z.string().optional(),
+  bankAccountId: z.number().int().positive().optional()
 });
 
 export const UpdateSalePaymentDtoSchema = z.object({

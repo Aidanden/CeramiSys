@@ -16,6 +16,7 @@ import { useToast } from '@/components/ui/Toast';
 import { formatArabicNumber, formatArabicCurrency } from '@/utils/formatArabicNumbers';
 import { CreditPaymentReceiptPrint } from '@/components/sales/CreditPaymentReceiptPrint';
 import { PaymentsHistoryPrint } from '@/components/sales/PaymentsHistoryPrint';
+import { useGetTreasuriesQuery } from '@/state/treasuryApi';
 
 const CreditSalesPage = () => {
   const { success, error, confirm } = useToast();
@@ -32,6 +33,12 @@ const CreditSalesPage = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showPrintReceiptModal, setShowPrintReceiptModal] = useState(false);
   const [showPrintHistoryModal, setShowPrintHistoryModal] = useState(false);
+  const [paymentMethodForReceipt, setPaymentMethodForReceipt] = useState<"CASH" | "BANK" | "CARD">("CASH");
+  const [bankAccountIdForReceipt, setBankAccountIdForReceipt] = useState<number | "">("");
+
+  // تحميل الحسابات المصرفية (جميع الحسابات المصرفية النشطة)
+  const { data: treasuriesData, isLoading: isTreasuriesLoading, error: treasuriesError } = useGetTreasuriesQuery({ type: 'BANK', isActive: true });
+  const bankAccounts = Array.isArray(treasuriesData) ? treasuriesData : [];
   
   // Print handlers
   const handlePrintPaymentReceipt = (payment: SalePayment, sale: CreditSale) => {
@@ -158,6 +165,8 @@ const CreditSalesPage = () => {
     const formData = new FormData(e.target as HTMLFormElement);
     const amount = Number(formData.get('amount'));
     const paymentMethod = formData.get('paymentMethod') as "CASH" | "BANK" | "CARD";
+    const bankAccountIdRaw = formData.get('bankAccountId') as string | null;
+    const bankAccountId = bankAccountIdRaw ? Number(bankAccountIdRaw) : undefined;
     const notes = formData.get('notes') as string;
 
     if (amount <= 0) {
@@ -170,11 +179,17 @@ const CreditSalesPage = () => {
       return;
     }
 
+    if ((paymentMethod === 'BANK' || paymentMethod === 'CARD') && !bankAccountId) {
+      error('خطأ', 'يجب اختيار الحساب المصرفي عند اختيار حوالة أو بطاقة');
+      return;
+    }
+
     try {
       const result = await createPayment({
         saleId: selectedSale.id,
         amount,
         paymentMethod,
+        bankAccountId: (paymentMethod === 'BANK' || paymentMethod === 'CARD') ? bankAccountId : undefined,
         notes: notes || undefined
       }).unwrap();
       
@@ -188,6 +203,8 @@ const CreditSalesPage = () => {
       const updatedSale = result.data.sale;
       
       setShowPaymentModal(false);
+      setPaymentMethodForReceipt('CASH');
+      setBankAccountIdForReceipt('');
       
       // طباعة تلقائية
       setTimeout(() => {
@@ -588,6 +605,14 @@ const CreditSalesPage = () => {
                   <select
                     name="paymentMethod"
                     required
+                    value={paymentMethodForReceipt}
+                    onChange={(e) => {
+                      const next = e.target.value as "CASH" | "BANK" | "CARD";
+                      setPaymentMethodForReceipt(next);
+                      if (next === 'CASH') {
+                        setBankAccountIdForReceipt('');
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="CASH">كاش</option>
@@ -595,6 +620,35 @@ const CreditSalesPage = () => {
                     <option value="CARD">بطاقة</option>
                   </select>
                 </div>
+
+                {(paymentMethodForReceipt === 'BANK' || paymentMethodForReceipt === 'CARD') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      الحساب المصرفي (الخزينة) *
+                    </label>
+                    <select
+                      name="bankAccountId"
+                      required
+                      value={bankAccountIdForReceipt}
+                      onChange={(e) => setBankAccountIdForReceipt(e.target.value ? Number(e.target.value) : '')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={isTreasuriesLoading}
+                    >
+                      <option value="">اختر الحساب المصرفي</option>
+                      {bankAccounts.map((account: any) => (
+                        <option key={account.id} value={account.id}>
+                          {account.name} {account.bankName ? `- ${account.bankName}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    {treasuriesError && (
+                      <p className="mt-1 text-xs text-red-600">تعذر تحميل الحسابات المصرفية</p>
+                    )}
+                    {!isTreasuriesLoading && !treasuriesError && bankAccounts.length === 0 && (
+                      <p className="mt-1 text-xs text-gray-500">لا توجد حسابات مصرفية فعّالة في الخزينة</p>
+                    )}
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -621,6 +675,8 @@ const CreditSalesPage = () => {
                     onClick={() => {
                       setShowPaymentModal(false);
                       setSelectedSale(null);
+                      setPaymentMethodForReceipt('CASH');
+                      setBankAccountIdForReceipt('');
                     }}
                     className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg"
                   >

@@ -29,6 +29,8 @@ const SupplierAccountsPage = () => {
   const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('summary');
   const accountPrintRef = useRef<HTMLDivElement>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const { data: summaryData, isLoading, error, refetch: refetchSummary } = useGetAllSuppliersAccountSummaryQuery();
   const { data: accountData, isLoading: isLoadingAccount, refetch: refetchAccount } = useGetSupplierAccountQuery(selectedSupplierId ?? 0, {
@@ -62,6 +64,19 @@ const SupplierAccountsPage = () => {
     supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     supplier.phone?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Pagination
+  const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage);
+  const paginatedSuppliers = filteredSuppliers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset page when search changes
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
 
   const totalCreditors = suppliers.filter((s) => s.currentBalance > 0).length;
   const totalDebtors = suppliers.filter((s) => s.currentBalance < 0).length;
@@ -309,7 +324,7 @@ const SupplierAccountsPage = () => {
                   type="text"
                   placeholder="بحث عن مورد (الاسم أو الهاتف)..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => handleSearch(e.target.value)}
                   className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -320,6 +335,7 @@ const SupplierAccountsPage = () => {
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">#</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المورد</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">رقم الهاتف</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الرصيد</th>
@@ -328,13 +344,16 @@ const SupplierAccountsPage = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredSuppliers.length === 0 ? (
+                    {paginatedSuppliers.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-8 text-center text-gray-500">لا توجد نتائج</td>
+                        <td colSpan={6} className="px-6 py-8 text-center text-gray-500">لا توجد نتائج</td>
                       </tr>
                     ) : (
-                      filteredSuppliers.map((supplier) => (
+                      paginatedSuppliers.map((supplier, index) => (
                         <tr key={supplier.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {(currentPage - 1) * itemsPerPage + index + 1}
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${
@@ -377,6 +396,110 @@ const SupplierAccountsPage = () => {
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                  <div className="flex-1 flex justify-between sm:hidden">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      السابق
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      التالي
+                    </button>
+                  </div>
+                  <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">
+                        عرض{' '}
+                        <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span>
+                        {' '}إلى{' '}
+                        <span className="font-medium">
+                          {Math.min(currentPage * itemsPerPage, filteredSuppliers.length)}
+                        </span>
+                        {' '}من{' '}
+                        <span className="font-medium">{filteredSuppliers.length}</span>
+                        {' '}نتيجة
+                      </p>
+                    </div>
+                    <div>
+                      <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        <button
+                          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                          disabled={currentPage === 1}
+                          className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span className="sr-only">السابق</span>
+                          <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                        {(() => {
+                          const pages: (number | string)[] = [];
+                          
+                          if (totalPages <= 7) {
+                            for (let i = 1; i <= totalPages; i++) pages.push(i);
+                          } else {
+                            if (currentPage <= 4) {
+                              for (let i = 1; i <= 5; i++) pages.push(i);
+                              pages.push('...');
+                              pages.push(totalPages);
+                            } else if (currentPage >= totalPages - 3) {
+                              pages.push(1);
+                              pages.push('...');
+                              for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+                            } else {
+                              pages.push(1);
+                              pages.push('...');
+                              for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+                              pages.push('...');
+                              pages.push(totalPages);
+                            }
+                          }
+                          
+                          return pages.map((page, idx) => (
+                            page === '...' ? (
+                              <span key={`ellipsis-${idx}`} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                ...
+                              </span>
+                            ) : (
+                              <button
+                                key={page}
+                                onClick={() => setCurrentPage(page as number)}
+                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                                  currentPage === page
+                                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                }`}
+                              >
+                                {page}
+                              </button>
+                            )
+                          ));
+                        })()}
+                        <button
+                          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                          disabled={currentPage === totalPages}
+                          className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span className="sr-only">التالي</span>
+                          <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </nav>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}

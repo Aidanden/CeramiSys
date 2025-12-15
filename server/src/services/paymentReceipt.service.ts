@@ -1,5 +1,6 @@
 import prisma from '../models/prismaClient';
 import SupplierAccountLedgerService from './SupplierAccountService';
+import { TreasuryController } from '../controllers/TreasuryController';
 
 export class PaymentReceiptService {
   // الحصول على جميع إيصالات الدفع
@@ -260,6 +261,36 @@ export class PaymentReceiptService {
           });
         }
       }
+    }
+
+    // سحب المبلغ من الخزينة العامة (إيصال صرف)
+    try {
+      // البحث عن خزينة عامة نشطة
+      const generalTreasury = await prisma.treasury.findFirst({
+        where: {
+          type: 'GENERAL',
+          isActive: true
+        }
+      });
+
+      if (generalTreasury) {
+        const amountToWithdraw = Number(receipt.amount);
+        await TreasuryController.withdrawFromTreasury(
+          generalTreasury.id,
+          amountToWithdraw,
+          'PAYMENT',
+          'SupplierPaymentReceipt',
+          receipt.id,
+          `إيصال صرف للمورد - ${receipt.description || `إيصال رقم ${receipt.id}`}`,
+          undefined // createdBy
+        );
+        console.log(`✅ تم سحب ${amountToWithdraw} دينار من الخزينة العامة`);
+      } else {
+        console.log(`⚠️ لا توجد خزينة عامة نشطة`);
+      }
+    } catch (treasuryError) {
+      console.error('خطأ في تحديث الخزينة:', treasuryError);
+      // لا نوقف العملية إذا فشل تحديث الخزينة
     }
 
     return receipt;

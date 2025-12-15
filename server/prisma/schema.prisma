@@ -33,6 +33,7 @@ model Company {
   users               Users[]
   notifications       Notification[]
   damageReports       DamageReport[]
+  treasuries          Treasury[]            // خزائن الشركة
 }
 
 model Product {
@@ -888,4 +889,76 @@ enum ExternalInvoiceStatus {
   PENDING // في انتظار المعالجة
   APPROVED // تمت الموافقة
   REJECTED // مرفوضة
+}
+
+// ============== نظام الخزينة ==============
+
+// أنواع الخزينة
+enum TreasuryType {
+  COMPANY // خزينة شركة
+  GENERAL // خزينة عامة
+  BANK    // حساب مصرفي
+}
+
+// الخزينة
+model Treasury {
+  id          Int          @id @default(autoincrement())
+  name        String       // اسم الخزينة
+  type        TreasuryType // نوع الخزينة
+  companyId   Int?         // الشركة (فقط لخزينة الشركة)
+  bankName    String?      // اسم البنك (فقط للحسابات المصرفية)
+  accountNumber String?    // رقم الحساب (فقط للحسابات المصرفية)
+  balance     Decimal      @default(0) @db.Decimal(18, 4) // الرصيد الحالي
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  company      Company?              @relation(fields: [companyId], references: [id])
+  transactions TreasuryTransaction[]
+
+  @@index([companyId])
+  @@index([type])
+}
+
+// أنواع حركات الخزينة
+enum TransactionType {
+  DEPOSIT    // إيداع (دخول)
+  WITHDRAWAL // سحب (خروج)
+  TRANSFER   // تحويل بين الخزائن
+}
+
+// مصادر الحركة
+enum TransactionSource {
+  RECEIPT         // إيصال قبض
+  PAYMENT         // إيصال صرف
+  SALE            // مبيعات نقدية
+  MANUAL          // يدوي
+  TRANSFER_IN     // تحويل وارد
+  TRANSFER_OUT    // تحويل صادر
+  OPENING_BALANCE // رصيد افتتاحي
+}
+
+// حركات الخزينة
+model TreasuryTransaction {
+  id              Int               @id @default(autoincrement())
+  treasuryId      Int               // الخزينة
+  type            TransactionType   // نوع الحركة
+  source          TransactionSource // مصدر الحركة
+  amount          Decimal           @db.Decimal(18, 4) // المبلغ
+  balanceBefore   Decimal           @db.Decimal(18, 4) // الرصيد قبل
+  balanceAfter    Decimal           @db.Decimal(18, 4) // الرصيد بعد
+  description     String?           // الوصف
+  referenceType   String?           // نوع المرجع (Receipt, SalePayment, etc.)
+  referenceId     Int?              // معرف المرجع
+  relatedTreasuryId Int?            // الخزينة المرتبطة (للتحويلات)
+  createdBy       String?           // المستخدم الذي أنشأ الحركة
+  createdAt       DateTime          @default(now())
+
+  treasury        Treasury          @relation(fields: [treasuryId], references: [id])
+
+  @@index([treasuryId])
+  @@index([type])
+  @@index([source])
+  @@index([createdAt])
+  @@index([referenceType, referenceId])
 }

@@ -21,6 +21,7 @@ import { CreditPaymentReceiptPrint } from '@/components/sales/CreditPaymentRecei
 import { PaymentsHistoryPrint } from '@/components/sales/PaymentsHistoryPrint';
 import { formatArabicNumber, formatArabicCurrency } from '@/utils/formatArabicNumbers';
 import { useGetCompaniesQuery } from '@/state/companyApi';
+import { useGetTreasuriesQuery } from '@/state/treasuryApi';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/app/redux';
 import { useEffect } from 'react';
@@ -45,6 +46,8 @@ export default function CashierReceiptsPage() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showPrintReceiptModal, setShowPrintReceiptModal] = useState(false);
   const [showPrintHistoryModal, setShowPrintHistoryModal] = useState(false);
+  const [paymentMethodForReceipt, setPaymentMethodForReceipt] = useState<"CASH" | "BANK" | "CARD">("CASH");
+  const [bankAccountIdForReceipt, setBankAccountIdForReceipt] = useState<number | "">("");
   
   // تعيين تاريخ اليوم كـ default
   const getTodayDate = () => {
@@ -138,6 +141,10 @@ export default function CashierReceiptsPage() {
   const [createPayment, { isLoading: isCreatingPayment }] = useCreatePaymentMutation();
   const [deletePayment] = useDeletePaymentMutation();
   const { data: companiesData } = useGetCompaniesQuery({ limit: 1000 });
+
+  // تحميل الحسابات المصرفية (جميع الحسابات المصرفية النشطة)
+  const { data: treasuriesData, isLoading: isTreasuriesLoading, error: treasuriesError } = useGetTreasuriesQuery({ type: 'BANK', isActive: true });
+  const bankAccounts = Array.isArray(treasuriesData) ? treasuriesData : [];
 
   const printReceipt = (sale: Sale) => {
     setCurrentSaleToPrint(sale);
@@ -409,6 +416,8 @@ ${itemsText}
     const formData = new FormData(e.target as HTMLFormElement);
     const amount = Number(formData.get('amount'));
     const paymentMethod = formData.get('paymentMethod') as "CASH" | "BANK" | "CARD";
+    const bankAccountIdRaw = formData.get('bankAccountId') as string | null;
+    const bankAccountId = bankAccountIdRaw ? Number(bankAccountIdRaw) : undefined;
     const notes = formData.get('notes') as string;
 
     if (amount <= 0) {
@@ -421,11 +430,17 @@ ${itemsText}
       return;
     }
 
+    if ((paymentMethod === 'BANK' || paymentMethod === 'CARD') && !bankAccountId) {
+      showError('يجب اختيار الحساب المصرفي عند اختيار حوالة أو بطاقة');
+      return;
+    }
+
     try {
       const result = await createPayment({
         saleId: selectedCreditSale.id,
         amount,
         paymentMethod,
+        bankAccountId: (paymentMethod === 'BANK' || paymentMethod === 'CARD') ? bankAccountId : undefined,
         notes: notes || undefined
       }).unwrap();
       
@@ -436,6 +451,8 @@ ${itemsText}
       const updatedSale = result.data.sale;
       
       setShowPaymentModal(false);
+      setPaymentMethodForReceipt('CASH');
+      setBankAccountIdForReceipt('');
       
       setTimeout(() => {
         setSelectedPayment(newPayment);
@@ -979,13 +996,372 @@ ${itemsText}
       
       {/* Credit Sales Tab Content */}
       {activeTab === 'credit' && (
-        <div className="text-center py-12 bg-white rounded-lg shadow">
-          <svg className="mx-auto h-12 w-12 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-          </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">المبيعات الآجلة</h3>
-          <p className="mt-1 text-sm text-gray-500">قريباً... سيتم دمج شاشة المبيعات الآجلة هنا</p>
-        </div>
+        <>
+          {/* Credit Filters */}
+          <div className="bg-white rounded-lg shadow p-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="relative md:col-span-2">
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <Search className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  value={creditSearchTerm}
+                  onChange={(e) => {
+                    setCreditSearchTerm(e.target.value);
+                    setCreditCurrentPage(1);
+                  }}
+                  placeholder="بحث برقم الفاتورة أو اسم العميل..."
+                  className="block w-full pr-10 pl-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">حالة السداد</label>
+                <select
+                  value={filterFullyPaid}
+                  onChange={(e) => {
+                    setFilterFullyPaid(e.target.value as any);
+                    setCreditCurrentPage(1);
+                  }}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+                >
+                  <option value="all">الكل</option>
+                  <option value="paid">مسددة</option>
+                  <option value="unpaid">غير مسددة</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">الشركة</label>
+                <select
+                  value={selectedCompanyId ?? ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSelectedCompanyId(value ? Number(value) : null);
+                  }}
+                  disabled={!user?.isSystemUser}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 sm:text-sm disabled:opacity-50"
+                >
+                  {user?.isSystemUser && <option value="">كل الشركات</option>}
+                  {(companiesData as any)?.data?.companies?.map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Credit Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white rounded-lg shadow p-4">
+              <p className="text-sm text-gray-600">إجمالي فواتير آجلة</p>
+              <p className="text-2xl font-bold text-purple-600">{creditStatsData?.data?.totalCreditSales ?? 0}</p>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <p className="text-sm text-gray-600">مسددة بالكامل</p>
+              <p className="text-2xl font-bold text-green-600">{creditStatsData?.data?.fullyPaidSales ?? 0}</p>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <p className="text-sm text-gray-600">غير مسددة</p>
+              <p className="text-2xl font-bold text-orange-600">{creditStatsData?.data?.unpaidSales ?? 0}</p>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4">
+              <p className="text-sm text-gray-600">إجمالي المبلغ</p>
+              <p className="text-2xl font-bold text-blue-600">{formatArabicCurrency(creditStatsData?.data?.totalAmount ?? 0)}</p>
+            </div>
+          </div>
+
+          {/* Credit Sales Table */}
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">رقم الفاتورة</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">العميل</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الإجمالي</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المدفوع</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الباقي</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الحالة</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {creditSalesLoading ? (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-4 text-center text-gray-500">جاري التحميل...</td>
+                    </tr>
+                  ) : filteredCreditSales.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-4 text-center text-gray-500">لا توجد فواتير آجلة</td>
+                    </tr>
+                  ) : (
+                    filteredCreditSales.map((sale: CreditSale) => (
+                      <tr key={sale.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{sale.invoiceNumber || `#${sale.id}`}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          <div>
+                            <div className="font-medium">{sale.customer?.name || 'عميل'}</div>
+                            {sale.customer?.phone && <div className="text-gray-500 text-xs">{sale.customer.phone}</div>}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold">{formatArabicCurrency(sale.total)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-green-700 font-semibold">{formatArabicCurrency(sale.paidAmount)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-red-700 font-semibold">{formatArabicCurrency(sale.remainingAmount)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {sale.isFullyPaid ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-700">مسددة</span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-orange-100 text-orange-700">متبقي</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setSelectedCreditSale(sale);
+                                setPaymentMethodForReceipt('CASH');
+                                setBankAccountIdForReceipt('');
+                                setShowPaymentModal(true);
+                              }}
+                              disabled={sale.isFullyPaid}
+                              className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                              title="إضافة دفعة"
+                            >
+                              قبض
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedCreditSale(sale);
+                                setShowPrintHistoryModal(true);
+                              }}
+                              className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                              title="طباعة سجل الدفعات"
+                            >
+                              سجل الدفعات
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Create Payment Modal */}
+          {showPaymentModal && selectedCreditSale && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <div className="w-full max-w-lg bg-white rounded-lg shadow-lg overflow-hidden">
+                <div className="px-4 py-3 border-b flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-gray-500">فاتورة: {selectedCreditSale.invoiceNumber || selectedCreditSale.id}</div>
+                    <div className="text-lg font-bold text-gray-900">قبض دفعة</div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowPaymentModal(false);
+                      setPaymentMethodForReceipt('CASH');
+                      setBankAccountIdForReceipt('');
+                    }}
+                    className="p-2 text-gray-400 hover:text-gray-600"
+                    title="إغلاق"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleCreatePayment} className="p-4 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">المبلغ</label>
+                      <input
+                        name="amount"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        defaultValue={selectedCreditSale.remainingAmount}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+                        required
+                      />
+                      <p className="mt-1 text-xs text-gray-500">المتبقي: {formatArabicCurrency(selectedCreditSale.remainingAmount)}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">طريقة الدفع</label>
+                      <select
+                        name="paymentMethod"
+                        value={paymentMethodForReceipt}
+                        onChange={(e) => {
+                          const next = e.target.value as "CASH" | "BANK" | "CARD";
+                          setPaymentMethodForReceipt(next);
+                          if (next === 'CASH') {
+                            setBankAccountIdForReceipt('');
+                          }
+                        }}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+                        required
+                      >
+                        <option value="CASH">كاش</option>
+                        <option value="BANK">حوالة</option>
+                        <option value="CARD">بطاقة</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {(paymentMethodForReceipt === 'BANK' || paymentMethodForReceipt === 'CARD') && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">الحساب المصرفي (الخزينة)</label>
+                      <select
+                        name="bankAccountId"
+                        required
+                        value={bankAccountIdForReceipt}
+                        onChange={(e) => setBankAccountIdForReceipt(e.target.value ? Number(e.target.value) : '')}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+                        disabled={isTreasuriesLoading}
+                      >
+                        <option value="">اختر الحساب المصرفي</option>
+                        {bankAccounts.map((account: any) => (
+                          <option key={account.id} value={account.id}>
+                            {account.name} {account.bankName ? `- ${account.bankName}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                      {treasuriesError && (
+                        <p className="mt-1 text-xs text-red-600">تعذر تحميل الحسابات المصرفية</p>
+                      )}
+                      {!isTreasuriesLoading && !treasuriesError && bankAccounts.length === 0 && (
+                        <p className="mt-1 text-xs text-gray-500">لا توجد حسابات مصرفية فعّالة في الخزينة</p>
+                      )}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">ملاحظات (اختياري)</label>
+                    <input
+                      name="notes"
+                      type="text"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+                      placeholder="مثال: تحويل مصرفي"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowPaymentModal(false);
+                        setPaymentMethodForReceipt('CASH');
+                        setBankAccountIdForReceipt('');
+                      }}
+                      className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      إلغاء
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isCreatingPayment}
+                      className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+                    >
+                      {isCreatingPayment ? 'جاري الحفظ...' : 'حفظ وطباعة'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Print Receipt Modal */}
+          {showPrintReceiptModal && selectedPayment && selectedCreditSale && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <div className="w-full max-w-3xl bg-white rounded-lg shadow-lg overflow-hidden">
+                <div className="px-4 py-3 border-b flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-gray-500">إيصال رقم: {selectedPayment.receiptNumber}</div>
+                    <div className="text-lg font-bold text-gray-900">طباعة إيصال قبض</div>
+                  </div>
+                  <button
+                    onClick={() => setShowPrintReceiptModal(false)}
+                    className="p-2 text-gray-400 hover:text-gray-600"
+                    title="إغلاق"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="p-4">
+                  <div id="receipt-print-content">
+                    <CreditPaymentReceiptPrint payment={selectedPayment} sale={selectedCreditSale} />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-4 border-t mt-4">
+                    <button
+                      onClick={() => setShowPrintReceiptModal(false)}
+                      className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      إغلاق
+                    </button>
+                    <button
+                      onClick={() => {
+                        printCreditReceipt();
+                        setShowPrintReceiptModal(false);
+                      }}
+                      className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                    >
+                      طباعة
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Print Payments History Modal */}
+          {showPrintHistoryModal && selectedCreditSale && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden">
+                <div className="px-4 py-3 border-b flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-gray-500">فاتورة: {selectedCreditSale.invoiceNumber || selectedCreditSale.id}</div>
+                    <div className="text-lg font-bold text-gray-900">طباعة سجل الدفعات</div>
+                  </div>
+                  <button
+                    onClick={() => setShowPrintHistoryModal(false)}
+                    className="p-2 text-gray-400 hover:text-gray-600"
+                    title="إغلاق"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="p-4">
+                  <div id="history-print-content">
+                    <PaymentsHistoryPrint sale={selectedCreditSale} payments={selectedCreditSale.payments || []} />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-4 border-t mt-4">
+                    <button
+                      onClick={() => setShowPrintHistoryModal(false)}
+                      className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      إغلاق
+                    </button>
+                    <button
+                      onClick={() => {
+                        printPaymentsHistory();
+                        setShowPrintHistoryModal(false);
+                      }}
+                      className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                    >
+                      طباعة
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
