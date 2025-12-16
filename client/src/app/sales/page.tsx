@@ -352,7 +352,7 @@ const SalesPage = () => {
     try {
       console.log('🔍 معالجة QR Code:', qrData);
       const productData = JSON.parse(qrData);
-      console.log('📦 بيانات الصنف:', productData);
+      console.log('📦 بيانات الصنف من QR:', productData);
       
       // البحث عن الصنف باستخدام ID أو SKU
       const product = productsData?.data?.products?.find(
@@ -360,12 +360,13 @@ const SalesPage = () => {
       );
 
       if (!product) {
-        console.error('❌ الصنف غير موجود');
-        notifications.custom.error('خطأ', 'الصنف غير موجود في النظام');
+        console.error('❌ الصنف غير موجود في قائمة الأصناف');
+        console.log('📋 عدد الأصناف المتاحة:', productsData?.data?.products?.length || 0);
+        notifications.custom.error('خطأ', 'الصنف غير موجود في النظام. تأكد من أن الصنف موجود في قاعدة البيانات.');
         return;
       }
 
-      console.log('✅ تم العثور على الصنف:', product.name);
+      console.log('✅ تم العثور على الصنف:', product.name, 'ID:', product.id);
 
       // التحقق من أن الصنف ينتمي للشركة المستهدفة أو الشركة الأم (التقازي)
       const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
@@ -385,36 +386,36 @@ const SalesPage = () => {
         return;
       }
 
-      console.log('➕ إضافة سطر جديد للفاتورة...');
+      console.log('➕ إضافة سطر جديد للفاتورة مع بيانات الصنف...');
       
-      // إضافة سطر جديد أولاً
+      // حساب السعر
+      const unitPrice = product.price?.sellPrice ? Number(product.price.sellPrice) : 0;
+      
+      // إضافة سطر جديد مع بيانات الصنف مباشرة (بدون setTimeout)
       setSaleForm(prev => {
-        const newLines = [...prev.lines, { productId: 0, qty: 1, unitPrice: 0 }];
+        const newLine = { 
+          productId: product.id, 
+          qty: 1, 
+          unitPrice: unitPrice,
+          isFromParentCompany: isFromParentCompany,
+          parentUnitPrice: isFromParentCompany ? unitPrice : 0,
+          branchUnitPrice: 0
+        };
+        
+        const newLines = [...prev.lines, newLine];
         const newIndex = newLines.length - 1;
         
-        console.log('✅ تم إضافة السطر، الفهرس:', newIndex);
+        console.log('✅ تم إضافة السطر بالبيانات:', {
+          index: newIndex,
+          productId: product.id,
+          productName: product.name,
+          unitPrice: unitPrice
+        });
         
-        // تحديث السطر الجديد فوراً
-        setTimeout(() => {
-          console.log('🔄 تحديث بيانات السطر الجديد...');
-          updateSaleLine(newIndex, 'productId', product.id);
-          if (product.price?.sellPrice) {
-            // السعر يُحفظ كما هو (سعر المتر المربع)
-            updateSaleLine(newIndex, 'unitPrice', Number(product.price.sellPrice));
-          }
-          updateSaleLine(newIndex, 'qty', 1);
-          
-          // التركيز على مربع اختيار الصنف للصنف المُضاف
-          requestAnimationFrame(() => {
-            focusProductSelect(newIndex);
-          });
-          
-          console.log('✅ تم تحديث السطر بنجاح');
-          notifications.custom.success(
-            'تم بنجاح',
-            `تمت إضافة الصنف "${product.name}" للفاتورة`
-          );
-        }, 50);
+        // التركيز على مربع اختيار الصنف للصنف المُضاف
+        requestAnimationFrame(() => {
+          focusProductSelect(newIndex);
+        });
         
         return {
           ...prev,
@@ -422,10 +423,16 @@ const SalesPage = () => {
         };
       });
 
+      // إظهار رسالة النجاح
+      notifications.custom.success(
+        'تم بنجاح',
+        `تمت إضافة الصنف "${product.name}" للفاتورة`
+      );
+
       setShowQRScanner(false);
     } catch (error) {
       console.error('❌ خطأ في معالجة QR Code:', error);
-      notifications.custom.error('خطأ', 'QR Code غير صالح أو تالف');
+      notifications.custom.error('خطأ', 'QR Code غير صالح أو تالف. تأكد من صحة رمز QR.');
     }
   };
 
