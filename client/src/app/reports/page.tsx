@@ -9,7 +9,8 @@ import {
   useGetSupplierReportQuery,
   useGetPurchaseReportQuery
 } from "@/state/reportsApi";
-import { BarChart3, ShoppingCart, Users, FileText, Search, X } from "lucide-react";
+import { useGetCompaniesQuery } from "@/state/companyApi";
+import { BarChart3, ShoppingCart, Users, FileText, Search, X, Building2 } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 
 type ReportType = "sales" | "stock" | "customers" | "top-products" | "suppliers" | "purchases";
@@ -20,6 +21,23 @@ export default function ReportsPage() {
     startDate: "",
     endDate: "",
   });
+  
+  // فلتر الشركة
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | undefined>(undefined);
+  
+  // جلب قائمة الشركات
+  const { data: companiesData } = useGetCompaniesQuery({ limit: 100 });
+  const companies = companiesData?.data?.companies || [];
+  
+  // Pagination state لكل تقرير
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
+  
+  // إعادة تعيين الصفحة عند تغيير التقرير
+  const handleReportChange = (reportId: ReportType) => {
+    setActiveReport(reportId);
+    setCurrentPage(1);
+  };
   
   // Filters
   const [filters, setFilters] = useState({
@@ -38,13 +56,129 @@ export default function ReportsPage() {
   
   const printRef = useRef<HTMLDivElement>(null);
   
+  // دالة الطباعة المحسنة - تطبع جميع البيانات بدون pagination
   const handlePrint = () => {
-    if (!printRef.current) return;
+    const reportName = reports.find(r => r.id === activeReport)?.name || 'تقرير';
+    const companyName = selectedCompanyId 
+      ? companies.find((c: any) => c.id === selectedCompanyId)?.name 
+      : 'جميع الشركات';
+    
+    // جلب البيانات المفلترة للطباعة
+    let printData: any[] = [];
+    let stats: any = null;
+    let tableHeaders: string[] = [];
+    let tableRows: (item: any, index: number) => string = () => '';
+    
+    if (activeReport === 'sales' && salesReport) {
+      stats = salesReport.data.stats;
+      printData = salesReport.data.sales.filter((sale: any) => {
+        if (filters.invoiceNumber && !sale.invoiceNumber?.toLowerCase().includes(filters.invoiceNumber.toLowerCase())) return false;
+        if (filters.customerName && !sale.customer?.name?.toLowerCase().includes(filters.customerName.toLowerCase())) return false;
+        if (filters.minAmount && sale.total < parseFloat(filters.minAmount)) return false;
+        if (filters.maxAmount && sale.total > parseFloat(filters.maxAmount)) return false;
+        return true;
+      });
+      tableHeaders = ['رقم الفاتورة', 'التاريخ', 'العميل', 'النوع', 'المبلغ', 'الحالة'];
+      tableRows = (sale: any) => `
+        <tr>
+          <td>${sale.invoiceNumber || '-'}</td>
+          <td>${new Date(sale.createdAt).toLocaleDateString('ar-LY')}</td>
+          <td>${sale.customer?.name || 'عميل نقدي'}</td>
+          <td>${sale.saleType === 'CASH' ? 'نقدي' : 'آجل'}</td>
+          <td>${sale.total.toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</td>
+          <td>${sale.isFullyPaid ? 'مدفوع' : 'غير مدفوع'}</td>
+        </tr>
+      `;
+    } else if (activeReport === 'stock' && stockReport) {
+      stats = stockReport.data.stats;
+      printData = stockReport.data.stocks.filter((stock: any) => {
+        if (filters.productName && !stock.product.name?.toLowerCase().includes(filters.productName.toLowerCase())) return false;
+        return true;
+      });
+      tableHeaders = ['كود الصنف', 'الصنف', 'الصناديق', 'إجمالي الوحدات', 'السعر', 'القيمة'];
+      tableRows = (stock: any) => `
+        <tr>
+          <td style="font-family: monospace; font-weight: bold;">${stock.product.sku || '-'}</td>
+          <td>${stock.product.name}</td>
+          <td>${stock.boxes.toLocaleString('ar-LY')}</td>
+          <td>${stock.totalUnits.toLocaleString('ar-LY')} ${stock.product.unit || 'وحدة'}</td>
+          <td>${stock.product.sellPrice ? stock.product.sellPrice.toLocaleString('ar-LY', { minimumFractionDigits: 2 }) + ' د.ل' : '-'}</td>
+          <td>${stock.product.sellPrice ? (stock.boxes * stock.product.sellPrice).toLocaleString('ar-LY', { minimumFractionDigits: 2 }) + ' د.ل' : '-'}</td>
+        </tr>
+      `;
+    } else if (activeReport === 'customers' && customerReport) {
+      stats = customerReport.data.stats;
+      printData = customerReport.data.customers.filter((customer: any) => {
+        if (filters.customerName && !customer.name?.toLowerCase().includes(filters.customerName.toLowerCase())) return false;
+        if (filters.customerPhone && !customer.phone?.toLowerCase().includes(filters.customerPhone.toLowerCase())) return false;
+        return true;
+      });
+      tableHeaders = ['العميل', 'الهاتف', 'إجمالي المشتريات', 'عدد المبيعات', 'متوسط الشراء'];
+      tableRows = (customer: any) => `
+        <tr>
+          <td>${customer.name}</td>
+          <td>${customer.phone || '-'}</td>
+          <td>${customer.totalPurchases.toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</td>
+          <td>${customer.totalSales.toLocaleString('ar-LY')}</td>
+          <td>${customer.averagePurchase.toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</td>
+        </tr>
+      `;
+    } else if (activeReport === 'suppliers' && supplierReport) {
+      stats = supplierReport.data.stats;
+      printData = supplierReport.data.suppliers.filter((supplier: any) => {
+        if (filters.supplierReportName && !supplier.name?.toLowerCase().includes(filters.supplierReportName.toLowerCase())) return false;
+        if (filters.supplierReportPhone && !supplier.phone?.toLowerCase().includes(filters.supplierReportPhone.toLowerCase())) return false;
+        return true;
+      });
+      tableHeaders = ['المورد', 'الهاتف', 'إجمالي المشتريات', 'المدفوع', 'الرصيد'];
+      tableRows = (supplier: any) => `
+        <tr>
+          <td>${supplier.name}</td>
+          <td>${supplier.phone || '-'}</td>
+          <td>${supplier.totalPurchases.toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</td>
+          <td>${supplier.totalPaid.toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</td>
+          <td style="color: red; font-weight: bold;">${supplier.balance.toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</td>
+        </tr>
+      `;
+    } else if (activeReport === 'purchases' && purchaseReport) {
+      stats = purchaseReport.data.stats;
+      printData = purchaseReport.data.purchases.filter((purchase: any) => {
+        if (filters.invoiceNumber && !purchase.invoiceNumber?.toLowerCase().includes(filters.invoiceNumber.toLowerCase())) return false;
+        if (filters.supplierName && !purchase.supplier?.name?.toLowerCase().includes(filters.supplierName.toLowerCase())) return false;
+        return true;
+      });
+      tableHeaders = ['رقم الفاتورة', 'التاريخ', 'المورد', 'المبلغ', 'المصروفات', 'الإجمالي'];
+      tableRows = (purchase: any) => `
+        <tr>
+          <td>${purchase.invoiceNumber || '-'}</td>
+          <td>${new Date(purchase.createdAt).toLocaleDateString('ar-LY')}</td>
+          <td>${purchase.supplier?.name || '-'}</td>
+          <td>${Number(purchase.total).toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</td>
+          <td>${(purchase.totalExpenses || 0).toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</td>
+          <td style="font-weight: bold;">${Number(purchase.finalTotal).toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</td>
+        </tr>
+      `;
+    } else if (activeReport === 'top-products' && topProductsReport) {
+      stats = topProductsReport.data.stats;
+      printData = topProductsReport.data.topProducts.filter((item: any) => {
+        if (filters.productName && !item.product.name?.toLowerCase().includes(filters.productName.toLowerCase())) return false;
+        return true;
+      });
+      tableHeaders = ['الترتيب', 'كود الصنف', 'المنتج', 'الكمية المباعة', 'الإيرادات', 'عدد المبيعات'];
+      tableRows = (item: any, index: number) => `
+        <tr>
+          <td style="text-align: center; font-weight: bold;">${index + 1}</td>
+          <td style="font-family: monospace;">${item.product.sku || '-'}</td>
+          <td>${item.product.name}</td>
+          <td>${item.totalQty.toLocaleString('ar-LY')} ${item.product.unit || 'وحدة'}</td>
+          <td style="font-weight: bold;">${item.totalRevenue.toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</td>
+          <td>${item.salesCount.toLocaleString('ar-LY')}</td>
+        </tr>
+      `;
+    }
     
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
-    
-    const reportName = reports.find(r => r.id === activeReport)?.name || 'تقرير';
     
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -55,64 +189,108 @@ export default function ReportsPage() {
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
-            font-family: 'Cairo', 'Tahoma', sans-serif; 
+            font-family: 'Cairo', 'Tahoma', 'Arial', sans-serif; 
             padding: 20px;
             direction: rtl;
+            font-size: 12px;
           }
           table { 
             width: 100%; 
             border-collapse: collapse; 
-            margin: 20px 0;
+            margin: 15px 0;
           }
           th, td { 
-            border: 1px solid #ddd; 
-            padding: 8px; 
+            border: 1px solid #333; 
+            padding: 8px 6px; 
             text-align: right;
           }
           th { 
-            background-color: #f3f4f6; 
+            background-color: #e5e7eb; 
             font-weight: bold;
+            font-size: 11px;
+          }
+          tr:nth-child(even) {
+            background-color: #f9fafb;
           }
           .header { 
             text-align: center; 
-            margin-bottom: 30px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 20px;
+            margin-bottom: 20px;
+            border-bottom: 3px double #333;
+            padding-bottom: 15px;
+          }
+          .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+          }
+          .header p {
+            font-size: 12px;
+            color: #666;
+            margin: 3px 0;
           }
           .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin: 20px 0;
+            gap: 10px;
+            margin: 15px 0;
           }
           .stat-card {
-            border: 1px solid #ddd;
-            padding: 15px;
-            border-radius: 8px;
+            border: 1px solid #333;
+            padding: 10px;
+            text-align: center;
+            background-color: #f3f4f6;
           }
           .stat-label {
-            font-size: 12px;
+            font-size: 10px;
             color: #666;
           }
           .stat-value {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: bold;
-            margin-top: 5px;
+            margin-top: 3px;
+          }
+          .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+          }
+          .total-row {
+            font-weight: bold;
+            background-color: #e5e7eb !important;
           }
           @media print {
-            body { padding: 0; }
+            body { padding: 10px; }
+            .no-print { display: none; }
           }
         </style>
       </head>
       <body>
         <div class="header">
           <h1>${reportName}</h1>
-          <p>تاريخ الطباعة: ${new Date().toLocaleDateString("ar-LY")}</p>
+          <p><strong>الشركة:</strong> ${companyName}</p>
+          <p><strong>تاريخ الطباعة:</strong> ${new Date().toLocaleDateString('ar-LY')} - ${new Date().toLocaleTimeString('ar-LY')}</p>
           ${(dateRange.startDate || dateRange.endDate) ? `
-            <p>الفترة: ${dateRange.startDate ? new Date(dateRange.startDate).toLocaleDateString("ar-LY") : "البداية"} - ${dateRange.endDate ? new Date(dateRange.endDate).toLocaleDateString("ar-LY") : "النهاية"}</p>
+            <p><strong>الفترة:</strong> ${dateRange.startDate ? new Date(dateRange.startDate).toLocaleDateString('ar-LY') : 'البداية'} - ${dateRange.endDate ? new Date(dateRange.endDate).toLocaleDateString('ar-LY') : 'النهاية'}</p>
           ` : ''}
+          <p><strong>عدد السجلات:</strong> ${printData.length}</p>
         </div>
-        ${printRef.current.innerHTML}
+        
+        <table>
+          <thead>
+            <tr>
+              ${tableHeaders.map(h => `<th>${h}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${printData.map((item, index) => tableRows(item, index)).join('')}
+          </tbody>
+        </table>
+        
+        <div class="footer">
+          <p>تم إنشاء هذا التقرير بواسطة نظام سيراميسيس - CeramiSys</p>
+        </div>
       </body>
       </html>
     `);
@@ -123,37 +301,99 @@ export default function ReportsPage() {
     setTimeout(() => {
       printWindow.print();
       printWindow.close();
-    }, 250);
+    }, 300);
+  };
+  
+  // مكون Pagination
+  const Pagination = ({ totalItems, filteredItems }: { totalItems: number; filteredItems: any[] }) => {
+    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, filteredItems.length);
+    
+    if (totalPages <= 1) return null;
+    
+    return (
+      <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+        <div className="flex items-center text-sm text-gray-700">
+          <span>عرض </span>
+          <span className="font-medium mx-1">{startIndex + 1}</span>
+          <span> إلى </span>
+          <span className="font-medium mx-1">{endIndex}</span>
+          <span> من </span>
+          <span className="font-medium mx-1">{filteredItems.length}</span>
+          <span> سجل</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCurrentPage(1)}
+            disabled={currentPage === 1}
+            className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            الأولى
+          </button>
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            السابق
+          </button>
+          <span className="px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded-md font-medium">
+            {currentPage} / {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            التالي
+          </button>
+          <button
+            onClick={() => setCurrentPage(totalPages)}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            الأخيرة
+          </button>
+        </div>
+      </div>
+    );
+  };
+  
+  // دالة لتقسيم البيانات حسب الصفحة
+  const paginateData = (data: any[]) => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return data.slice(startIndex, startIndex + itemsPerPage);
   };
 
-  // استدعاء التقارير
+  // استدعاء التقارير مع فلتر الشركة
   const { data: salesReport, isLoading: salesLoading } = useGetSalesReportQuery(
-    { ...dateRange },
+    { ...dateRange, companyId: selectedCompanyId },
     { skip: activeReport !== "sales" }
   );
 
   const { data: stockReport, isLoading: stockLoading } = useGetStockReportQuery(
-    {},
+    { companyId: selectedCompanyId },
     { skip: activeReport !== "stock" }
   );
 
   const { data: customerReport, isLoading: customerLoading } = useGetCustomerReportQuery(
-    { ...dateRange },
+    { ...dateRange, companyId: selectedCompanyId },
     { skip: activeReport !== "customers" }
   );
 
   const { data: topProductsReport, isLoading: topProductsLoading } = useGetTopProductsReportQuery(
-    { ...dateRange, limit: 10 },
+    { ...dateRange, limit: 10, companyId: selectedCompanyId },
     { skip: activeReport !== "top-products" }
   );
 
   const { data: supplierReport, isLoading: supplierLoading } = useGetSupplierReportQuery(
-    { ...dateRange },
+    { ...dateRange, companyId: selectedCompanyId },
     { skip: activeReport !== "suppliers" }
   );
 
   const { data: purchaseReport, isLoading: purchaseLoading } = useGetPurchaseReportQuery(
-    { ...dateRange },
+    { ...dateRange, companyId: selectedCompanyId },
     { skip: activeReport !== "purchases" }
   );
 
@@ -184,7 +424,7 @@ export default function ReportsPage() {
           return (
             <button
               key={report.id}
-              onClick={() => setActiveReport(report.id)}
+              onClick={() => handleReportChange(report.id)}
               className={`p-4 rounded-lg border-2 transition-all ${
                 isActive
                   ? `border-${report.color}-500 bg-${report.color}-50`
@@ -209,7 +449,10 @@ export default function ReportsPage() {
               الفلاتر والبحث
             </h3>
             <button
-              onClick={() => setFilters({ customerName: "", invoiceNumber: "", productName: "", minAmount: "", maxAmount: "", supplierName: "", supplierPhone: "", invoiceAmount: "", customerPhone: "", supplierReportName: "", supplierReportPhone: "" })}
+              onClick={() => {
+                setFilters({ customerName: "", invoiceNumber: "", productName: "", minAmount: "", maxAmount: "", supplierName: "", supplierPhone: "", invoiceAmount: "", customerPhone: "", supplierReportName: "", supplierReportPhone: "" });
+                setSelectedCompanyId(undefined);
+              }}
               className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
             >
               <X className="w-4 h-4" />
@@ -217,7 +460,27 @@ export default function ReportsPage() {
             </button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* فلتر الشركة */}
+            <div>
+              <label className="block text-sm text-gray-600 mb-1 flex items-center gap-1">
+                <Building2 className="w-4 h-4" />
+                الشركة
+              </label>
+              <select
+                value={selectedCompanyId || ""}
+                onChange={(e) => setSelectedCompanyId(e.target.value ? Number(e.target.value) : undefined)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              >
+                <option value="">جميع الشركات</option>
+                {companies.map((company: any) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
             {/* Date Range */}
             <div>
               <label className="block text-sm text-gray-600 mb-1">من تاريخ</label>
@@ -523,63 +786,63 @@ export default function ReportsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {salesReport.data.sales
-                    .filter((sale: any) => {
-                      // Filter by invoice number
-                      if (filters.invoiceNumber && !sale.invoiceNumber?.toLowerCase().includes(filters.invoiceNumber.toLowerCase())) {
-                        return false;
-                      }
-                      // Filter by customer name
-                      if (filters.customerName && !sale.customer?.name?.toLowerCase().includes(filters.customerName.toLowerCase())) {
-                        return false;
-                      }
-                      // Filter by min amount
-                      if (filters.minAmount && sale.total < parseFloat(filters.minAmount)) {
-                        return false;
-                      }
-                      // Filter by max amount
-                      if (filters.maxAmount && sale.total > parseFloat(filters.maxAmount)) {
-                        return false;
-                      }
+                  {(() => {
+                    const filteredSales = salesReport.data.sales.filter((sale: any) => {
+                      if (filters.invoiceNumber && !sale.invoiceNumber?.toLowerCase().includes(filters.invoiceNumber.toLowerCase())) return false;
+                      if (filters.customerName && !sale.customer?.name?.toLowerCase().includes(filters.customerName.toLowerCase())) return false;
+                      if (filters.minAmount && sale.total < parseFloat(filters.minAmount)) return false;
+                      if (filters.maxAmount && sale.total > parseFloat(filters.maxAmount)) return false;
                       return true;
-                    })
-                    .map((sale: any) => (
-                    <tr key={sale.id} className="hover:bg-gray-50 print:hover:bg-white">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {sale.invoiceNumber || "-"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {new Date(sale.createdAt).toLocaleDateString("ar-LY")}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {sale.customer?.name || "عميل نقدي"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          sale.saleType === "CASH" 
-                            ? "bg-green-100 text-green-800" 
-                            : "bg-orange-100 text-orange-800"
-                        }`}>
-                          {sale.saleType === "CASH" ? "نقدي" : "آجل"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {sale.total.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          sale.isFullyPaid 
-                            ? "bg-green-100 text-green-800" 
-                            : "bg-red-100 text-red-800"
-                        }`}>
-                          {sale.isFullyPaid ? "مدفوع" : "غير مدفوع"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                    });
+                    return paginateData(filteredSales).map((sale: any) => (
+                      <tr key={sale.id} className="hover:bg-gray-50 print:hover:bg-white">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {sale.invoiceNumber || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {new Date(sale.createdAt).toLocaleDateString("ar-LY")}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {sale.customer?.name || "عميل نقدي"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            sale.saleType === "CASH" 
+                              ? "bg-green-100 text-green-800" 
+                              : "bg-orange-100 text-orange-800"
+                          }`}>
+                            {sale.saleType === "CASH" ? "نقدي" : "آجل"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {sale.total.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            sale.isFullyPaid 
+                              ? "bg-green-100 text-green-800" 
+                              : "bg-red-100 text-red-800"
+                          }`}>
+                            {sale.isFullyPaid ? "مدفوع" : "غير مدفوع"}
+                          </span>
+                        </td>
+                      </tr>
+                    ));
+                  })()}
                 </tbody>
               </table>
             </div>
+            {/* Pagination للمبيعات */}
+            <Pagination 
+              totalItems={salesReport.data.sales.length} 
+              filteredItems={salesReport.data.sales.filter((sale: any) => {
+                if (filters.invoiceNumber && !sale.invoiceNumber?.toLowerCase().includes(filters.invoiceNumber.toLowerCase())) return false;
+                if (filters.customerName && !sale.customer?.name?.toLowerCase().includes(filters.customerName.toLowerCase())) return false;
+                if (filters.minAmount && sale.total < parseFloat(filters.minAmount)) return false;
+                if (filters.maxAmount && sale.total > parseFloat(filters.maxAmount)) return false;
+                return true;
+              })} 
+            />
           </div>
         </div>
       )}
@@ -615,6 +878,7 @@ export default function ReportsPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">كود الصنف</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الصنف</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الصناديق</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">إجمالي الوحدات</th>
@@ -623,43 +887,51 @@ export default function ReportsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {stockReport.data.stocks
-                    .filter((stock: any) => {
-                      // Filter by product name
-                      if (filters.productName && !stock.product.name?.toLowerCase().includes(filters.productName.toLowerCase())) {
-                        return false;
-                      }
+                  {(() => {
+                    const filteredStocks = stockReport.data.stocks.filter((stock: any) => {
+                      if (filters.productName && !stock.product.name?.toLowerCase().includes(filters.productName.toLowerCase())) return false;
                       return true;
-                    })
-                    .map((stock: any) => (
-                    <tr key={stock.id} className="hover:bg-gray-50 print:hover:bg-white">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{stock.product.name}</p>
-                          <p className="text-xs text-gray-500">{stock.product.sku}</p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {stock.boxes.toLocaleString("ar-LY")}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {stock.totalUnits.toLocaleString("ar-LY")} {stock.product.unit || "وحدة"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {stock.product.sellPrice 
-                          ? `${stock.product.sellPrice.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل`
-                          : "-"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {stock.product.sellPrice 
-                          ? `${(stock.boxes * stock.product.sellPrice).toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل`
-                          : "-"}
-                      </td>
-                    </tr>
-                  ))}
+                    });
+                    return paginateData(filteredStocks).map((stock: any) => (
+                      <tr key={stock.id} className="hover:bg-gray-50 print:hover:bg-white">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-mono rounded">
+                            {stock.product.sku || "-"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {stock.product.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {stock.boxes.toLocaleString("ar-LY")}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {stock.totalUnits.toLocaleString("ar-LY")} {stock.product.unit || "وحدة"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {stock.product.sellPrice 
+                            ? `${stock.product.sellPrice.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل`
+                            : "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {stock.product.sellPrice 
+                            ? `${(stock.boxes * stock.product.sellPrice).toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل`
+                            : "-"}
+                        </td>
+                      </tr>
+                    ));
+                  })()}
                 </tbody>
               </table>
             </div>
+            {/* Pagination للمخزون */}
+            <Pagination 
+              totalItems={stockReport.data.stocks.length} 
+              filteredItems={stockReport.data.stocks.filter((stock: any) => {
+                if (filters.productName && !stock.product.name?.toLowerCase().includes(filters.productName.toLowerCase())) return false;
+                return true;
+              })} 
+            />
           </div>
         </div>
       )}
@@ -703,40 +975,44 @@ export default function ReportsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {customerReport.data.customers
-                    .filter((customer: any) => {
-                      // Filter by customer name
-                      if (filters.customerName && !customer.name?.toLowerCase().includes(filters.customerName.toLowerCase())) {
-                        return false;
-                      }
-                      // Filter by customer phone
-                      if (filters.customerPhone && !customer.phone?.toLowerCase().includes(filters.customerPhone.toLowerCase())) {
-                        return false;
-                      }
+                  {(() => {
+                    const filteredCustomers = customerReport.data.customers.filter((customer: any) => {
+                      if (filters.customerName && !customer.name?.toLowerCase().includes(filters.customerName.toLowerCase())) return false;
+                      if (filters.customerPhone && !customer.phone?.toLowerCase().includes(filters.customerPhone.toLowerCase())) return false;
                       return true;
-                    })
-                    .map((customer: any) => (
-                    <tr key={customer.id} className="hover:bg-gray-50 print:hover:bg-white">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {customer.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {customer.phone || "-"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {customer.totalPurchases.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {customer.totalSales.toLocaleString("ar-LY")}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {customer.averagePurchase.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                      </td>
-                    </tr>
-                  ))}
+                    });
+                    return paginateData(filteredCustomers).map((customer: any) => (
+                      <tr key={customer.id} className="hover:bg-gray-50 print:hover:bg-white">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {customer.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {customer.phone || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {customer.totalPurchases.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {customer.totalSales.toLocaleString("ar-LY")}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {customer.averagePurchase.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
+                        </td>
+                      </tr>
+                    ));
+                  })()}
                 </tbody>
               </table>
             </div>
+            {/* Pagination للعملاء */}
+            <Pagination 
+              totalItems={customerReport.data.customers.length} 
+              filteredItems={customerReport.data.customers.filter((customer: any) => {
+                if (filters.customerName && !customer.name?.toLowerCase().includes(filters.customerName.toLowerCase())) return false;
+                if (filters.customerPhone && !customer.phone?.toLowerCase().includes(filters.customerPhone.toLowerCase())) return false;
+                return true;
+              })} 
+            />
           </div>
         </div>
       )}
@@ -786,38 +1062,44 @@ export default function ReportsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {supplierReport.data.suppliers
-                    .filter((supplier: any) => {
-                      if (filters.supplierReportName && !supplier.name?.toLowerCase().includes(filters.supplierReportName.toLowerCase())) {
-                        return false;
-                      }
-                      if (filters.supplierReportPhone && !supplier.phone?.toLowerCase().includes(filters.supplierReportPhone.toLowerCase())) {
-                        return false;
-                      }
+                  {(() => {
+                    const filteredSuppliers = supplierReport.data.suppliers.filter((supplier: any) => {
+                      if (filters.supplierReportName && !supplier.name?.toLowerCase().includes(filters.supplierReportName.toLowerCase())) return false;
+                      if (filters.supplierReportPhone && !supplier.phone?.toLowerCase().includes(filters.supplierReportPhone.toLowerCase())) return false;
                       return true;
-                    })
-                    .map((supplier: any) => (
-                    <tr key={supplier.id} className="hover:bg-gray-50 print:hover:bg-white">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {supplier.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {supplier.phone || "-"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {supplier.totalPurchases.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                        {supplier.totalPaid.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
-                        {supplier.balance.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                      </td>
-                    </tr>
-                  ))}
+                    });
+                    return paginateData(filteredSuppliers).map((supplier: any) => (
+                      <tr key={supplier.id} className="hover:bg-gray-50 print:hover:bg-white">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {supplier.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {supplier.phone || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {supplier.totalPurchases.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
+                          {supplier.totalPaid.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
+                          {supplier.balance.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
+                        </td>
+                      </tr>
+                    ));
+                  })()}
                 </tbody>
               </table>
             </div>
+            {/* Pagination للموردين */}
+            <Pagination 
+              totalItems={supplierReport.data.suppliers.length} 
+              filteredItems={supplierReport.data.suppliers.filter((supplier: any) => {
+                if (filters.supplierReportName && !supplier.name?.toLowerCase().includes(filters.supplierReportName.toLowerCase())) return false;
+                if (filters.supplierReportPhone && !supplier.phone?.toLowerCase().includes(filters.supplierReportPhone.toLowerCase())) return false;
+                return true;
+              })} 
+            />
           </div>
         </div>
       )}
@@ -868,53 +1150,55 @@ export default function ReportsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {purchaseReport.data.purchases
-                    .filter((purchase: any) => {
-                      if (filters.invoiceNumber && !purchase.invoiceNumber?.toLowerCase().includes(filters.invoiceNumber.toLowerCase())) {
-                        return false;
-                      }
-                      if (filters.supplierName && !purchase.supplier?.name?.toLowerCase().includes(filters.supplierName.toLowerCase())) {
-                        return false;
-                      }
-                      if (filters.supplierPhone && !purchase.supplier?.phone?.toLowerCase().includes(filters.supplierPhone.toLowerCase())) {
-                        return false;
-                      }
-                      if (filters.minAmount && Number(purchase.total) < Number(filters.minAmount)) {
-                        return false;
-                      }
-                      if (filters.maxAmount && Number(purchase.total) > Number(filters.maxAmount)) {
-                        return false;
-                      }
-                      if (filters.invoiceAmount && Number(purchase.total) !== Number(filters.invoiceAmount)) {
-                        return false;
-                      }
+                  {(() => {
+                    const filteredPurchases = purchaseReport.data.purchases.filter((purchase: any) => {
+                      if (filters.invoiceNumber && !purchase.invoiceNumber?.toLowerCase().includes(filters.invoiceNumber.toLowerCase())) return false;
+                      if (filters.supplierName && !purchase.supplier?.name?.toLowerCase().includes(filters.supplierName.toLowerCase())) return false;
+                      if (filters.supplierPhone && !purchase.supplier?.phone?.toLowerCase().includes(filters.supplierPhone.toLowerCase())) return false;
+                      if (filters.minAmount && Number(purchase.total) < Number(filters.minAmount)) return false;
+                      if (filters.maxAmount && Number(purchase.total) > Number(filters.maxAmount)) return false;
+                      if (filters.invoiceAmount && Number(purchase.total) !== Number(filters.invoiceAmount)) return false;
                       return true;
-                    })
-                    .map((purchase: any) => (
-                    <tr key={purchase.id} className="hover:bg-gray-50 print:hover:bg-white">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {purchase.invoiceNumber || "-"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {new Date(purchase.createdAt).toLocaleDateString("ar-LY")}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {purchase.supplier?.name || "-"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {purchase.total.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {(purchase.totalExpenses || 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {purchase.finalTotal.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                      </td>
-                    </tr>
-                  ))}
+                    });
+                    return paginateData(filteredPurchases).map((purchase: any) => (
+                      <tr key={purchase.id} className="hover:bg-gray-50 print:hover:bg-white">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {purchase.invoiceNumber || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {new Date(purchase.createdAt).toLocaleDateString("ar-LY")}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {purchase.supplier?.name || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {Number(purchase.total).toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {(purchase.totalExpenses || 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {Number(purchase.finalTotal).toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
+                        </td>
+                      </tr>
+                    ));
+                  })()}
                 </tbody>
               </table>
             </div>
+            {/* Pagination للمشتريات */}
+            <Pagination 
+              totalItems={purchaseReport.data.purchases.length} 
+              filteredItems={purchaseReport.data.purchases.filter((purchase: any) => {
+                if (filters.invoiceNumber && !purchase.invoiceNumber?.toLowerCase().includes(filters.invoiceNumber.toLowerCase())) return false;
+                if (filters.supplierName && !purchase.supplier?.name?.toLowerCase().includes(filters.supplierName.toLowerCase())) return false;
+                if (filters.supplierPhone && !purchase.supplier?.phone?.toLowerCase().includes(filters.supplierPhone.toLowerCase())) return false;
+                if (filters.minAmount && Number(purchase.total) < Number(filters.minAmount)) return false;
+                if (filters.maxAmount && Number(purchase.total) > Number(filters.maxAmount)) return false;
+                if (filters.invoiceAmount && Number(purchase.total) !== Number(filters.invoiceAmount)) return false;
+                return true;
+              })} 
+            />
           </div>
         </div>
       )}
@@ -958,46 +1242,55 @@ export default function ReportsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {topProductsReport.data.topProducts
-                    .filter((item: any) => {
-                      // Filter by product name
-                      if (filters.productName && !item.product.name?.toLowerCase().includes(filters.productName.toLowerCase())) {
-                        return false;
-                      }
+                  {(() => {
+                    const filteredProducts = topProductsReport.data.topProducts.filter((item: any) => {
+                      if (filters.productName && !item.product.name?.toLowerCase().includes(filters.productName.toLowerCase())) return false;
                       return true;
-                    })
-                    .map((item: any, index: number) => (
-                    <tr key={item.product.id} className="hover:bg-gray-50 print:hover:bg-white">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${
-                          index === 0 ? "bg-yellow-100 text-yellow-800" :
-                          index === 1 ? "bg-gray-100 text-gray-800" :
-                          index === 2 ? "bg-orange-100 text-orange-800" :
-                          "bg-blue-100 text-blue-800"
-                        } font-bold`}>
-                          {index + 1}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{item.product.name}</p>
-                          <p className="text-xs text-gray-500">{item.product.sku}</p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.totalQty.toLocaleString("ar-LY")} {item.product.unit || "وحدة"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {item.totalRevenue.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {item.salesCount.toLocaleString("ar-LY")}
-                      </td>
-                    </tr>
-                  ))}
+                    });
+                    return paginateData(filteredProducts).map((item: any, index: number) => {
+                      const actualIndex = (currentPage - 1) * itemsPerPage + index;
+                      return (
+                        <tr key={item.product.id} className="hover:bg-gray-50 print:hover:bg-white">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${
+                              actualIndex === 0 ? "bg-yellow-100 text-yellow-800" :
+                              actualIndex === 1 ? "bg-gray-100 text-gray-800" :
+                              actualIndex === 2 ? "bg-orange-100 text-orange-800" :
+                              "bg-blue-100 text-blue-800"
+                            } font-bold`}>
+                              {actualIndex + 1}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{item.product.name}</p>
+                              <p className="text-xs text-gray-500">{item.product.sku}</p>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {item.totalQty.toLocaleString("ar-LY")} {item.product.unit || "وحدة"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {item.totalRevenue.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {item.salesCount.toLocaleString("ar-LY")}
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>
+            {/* Pagination للأكثر مبيعاً */}
+            <Pagination 
+              totalItems={topProductsReport.data.topProducts.length} 
+              filteredItems={topProductsReport.data.topProducts.filter((item: any) => {
+                if (filters.productName && !item.product.name?.toLowerCase().includes(filters.productName.toLowerCase())) return false;
+                return true;
+              })} 
+            />
           </div>
         </div>
       )}

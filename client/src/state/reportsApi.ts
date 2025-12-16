@@ -33,12 +33,14 @@ export interface TopProductsReportQuery {
 }
 
 export interface SupplierReportQuery {
+  companyId?: number;
   supplierId?: number;
   startDate?: string;
   endDate?: string;
 }
 
 export interface PurchaseReportQuery {
+  companyId?: number;
   supplierId?: number;
   startDate?: string;
   endDate?: string;

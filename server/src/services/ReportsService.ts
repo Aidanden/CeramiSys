@@ -296,6 +296,7 @@ export class ReportsService {
   async getSupplierReport(query: SupplierReportQuery, userCompanyId: number, isSystemUser: boolean = false) {
     const where: any = {
       ...(isSystemUser !== true && { companyId: userCompanyId }),
+      ...(query.companyId && { companyId: query.companyId }),
       ...(query.supplierId && { id: query.supplierId }),
     };
 
@@ -356,6 +357,7 @@ export class ReportsService {
     const where: any = {
       isApproved: true,
       ...(isSystemUser !== true && { companyId: userCompanyId }),
+      ...(query.companyId && { companyId: query.companyId }),
       ...(query.supplierId && { supplierId: query.supplierId }),
       ...(query.purchaseType && { purchaseType: query.purchaseType }),
       ...(query.startDate || query.endDate ? {

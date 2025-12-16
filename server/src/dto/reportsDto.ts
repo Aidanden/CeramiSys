@@ -44,6 +44,7 @@ export type TopProductsReportQuery = z.infer<typeof TopProductsReportQueryDto>;
 
 // DTO لتقرير الموردين
 export const SupplierReportQueryDto = z.object({
+  companyId: z.string().optional().transform(Number),
   supplierId: z.string().optional().transform(Number),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
@@ -53,6 +54,7 @@ export type SupplierReportQuery = z.infer<typeof SupplierReportQueryDto>;
 
 // DTO لتقرير المشتريات
 export const PurchaseReportQueryDto = z.object({
+  companyId: z.string().optional().transform(Number),
   supplierId: z.string().optional().transform(Number),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
