@@ -354,24 +354,50 @@ const SalesPage = () => {
       const productData = JSON.parse(qrData);
       console.log('📦 بيانات الصنف من QR:', productData);
       
-      // البحث عن الصنف باستخدام ID أو SKU
-      const product = productsData?.data?.products?.find(
-        p => p.id === productData.id || p.sku === productData.sku
+      // البحث عن الصنف باستخدام ID أولاً (الأكثر دقة)
+      // ثم SKU مع التحقق من الشركة المنشئة
+      let product = productsData?.data?.products?.find(
+        p => p.id === productData.id
       );
+      
+      // إذا لم يتم العثور بالـ ID، نبحث بالـ SKU مع الشركة المنشئة
+      if (!product && productData.sku) {
+        // البحث بالـ SKU مع نفس الشركة المنشئة من QR Code (إذا كانت موجودة)
+        if (productData.createdByCompanyId) {
+          product = productsData?.data?.products?.find(
+            p => p.sku === productData.sku && p.createdByCompanyId === productData.createdByCompanyId
+          );
+        }
+        
+        // إذا لم يتم العثور، نبحث بالـ SKU فقط
+        if (!product) {
+          product = productsData?.data?.products?.find(
+            p => p.sku === productData.sku
+          );
+        }
+      }
 
       if (!product) {
         console.error('❌ الصنف غير موجود في قائمة الأصناف');
         console.log('📋 عدد الأصناف المتاحة:', productsData?.data?.products?.length || 0);
+        console.log('📋 بيانات QR:', productData);
         notifications.custom.error('خطأ', 'الصنف غير موجود في النظام. تأكد من أن الصنف موجود في قاعدة البيانات.');
         return;
       }
 
-      console.log('✅ تم العثور على الصنف:', product.name, 'ID:', product.id);
+      console.log('✅ تم العثور على الصنف:', product.name, 'ID:', product.id, 'الشركة:', product.createdByCompanyId);
 
       // التحقق من أن الصنف ينتمي للشركة المستهدفة أو الشركة الأم (التقازي)
       const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
       const isFromCurrentCompany = product.createdByCompanyId === targetCompanyId;
       const isFromParentCompany = product.createdByCompanyId === 1; // الشركة الأم (التقازي)
+      
+      console.log('🏢 التحقق من الشركة:', {
+        targetCompanyId,
+        productCompanyId: product.createdByCompanyId,
+        isFromCurrentCompany,
+        isFromParentCompany
+      });
       
       if (targetCompanyId && !isFromCurrentCompany && !isFromParentCompany) {
         const otherCompany = companiesData?.data?.companies?.find(
@@ -409,6 +435,8 @@ const SalesPage = () => {
           index: newIndex,
           productId: product.id,
           productName: product.name,
+          productCompanyId: product.createdByCompanyId,
+          isFromParentCompany: isFromParentCompany,
           unitPrice: unitPrice
         });
         
@@ -423,10 +451,11 @@ const SalesPage = () => {
         };
       });
 
-      // إظهار رسالة النجاح
+      // إظهار رسالة النجاح مع توضيح مصدر الصنف
+      const sourceCompany = isFromParentCompany ? '(من مخزن التقازي)' : '(من الشركة الحالية)';
       notifications.custom.success(
         'تم بنجاح',
-        `تمت إضافة الصنف "${product.name}" للفاتورة`
+        `تمت إضافة الصنف "${product.name}" ${sourceCompany}`
       );
 
       setShowQRScanner(false);
