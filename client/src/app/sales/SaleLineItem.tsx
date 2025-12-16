@@ -78,8 +78,8 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
     }
     
     if (line.isFromParentCompany) {
-      // عرض أصناف الشركة الأم فقط (الأصناف التي لا تنتمي للشركة الحالية)
-      const isFromParent = product.createdByCompanyId !== currentCompanyId && product.createdByCompanyId === 1;
+      // عرض أصناف الشركة الأم (التقازي = ID 1) فقط
+      const isFromParent = product.createdByCompanyId === 1;
       return isFromParent;
     } else {
       // عرض أصناف الشركة الحالية فقط
@@ -87,6 +87,37 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
       return isFromCurrent;
     }
   });
+  
+  // Debug log للتحقق من الفلترة
+  console.log('🔍 SaleLineItem فلترة:', {
+    lineIndex: index,
+    isFromParentCompany: line.isFromParentCompany,
+    currentCompanyId,
+    productId: line.productId,
+    filteredCount: lineFilteredProducts.length,
+    totalProducts: filteredProducts.length,
+    selectedProductExists: !!selectedProduct,
+    selectedProductName: selectedProduct?.name
+  });
+  
+  // التأكد من أن الصنف المختار موجود في القائمة المفلترة
+  // إذا لم يكن موجوداً (مثل عند إضافته عبر QR Code)، نضيفه
+  const displayProducts = React.useMemo(() => {
+    if (!selectedProduct || !line.productId) {
+      return lineFilteredProducts;
+    }
+    
+    // التحقق من وجود الصنف المختار في القائمة المفلترة
+    const existsInFiltered = lineFilteredProducts.some((p: any) => p.id === line.productId);
+    
+    if (!existsInFiltered) {
+      // إضافة الصنف المختار في بداية القائمة
+      console.log('➕ إضافة الصنف المختار للقائمة:', selectedProduct.name);
+      return [selectedProduct, ...lineFilteredProducts];
+    }
+    
+    return lineFilteredProducts;
+  }, [lineFilteredProducts, selectedProduct, line.productId]);
 
   // حالات محلية للحقول لتجنب فقدان التركيز
   const [localPrice, setLocalPrice] = React.useState(line.unitPrice || '');
@@ -118,7 +149,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
       const qtyValue = localQty === '' ? 0 : Number(localQty);
       if (qtyValue !== line.qty) {
         // التحقق من المخزون قبل التحديث
-        const product = lineFilteredProducts.find((p: any) => p.id === line.productId);
+        const product = displayProducts.find((p: any) => p.id === line.productId);
         if (product && product.stock && qtyValue > 0) {
           // البحث عن المخزون في الشركة المالكة للصنف أولاً، ثم في الشركة المختارة
           let stockForCompany = product.stock.find((s: any) => s.companyId === product.createdByCompanyId);
@@ -139,7 +170,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
     }, 100);
     
     return () => clearTimeout(timer);
-  }, [localQty, index, updateSaleLine, line.qty, line.productId, lineFilteredProducts]);
+  }, [localQty, index, updateSaleLine, line.qty, line.productId, displayProducts]);
 
   return (
     <div 
@@ -220,7 +251,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
             value={line.productId}
             onChange={(e) => {
               const productId = Number(e.target.value);
-              const product = lineFilteredProducts.find((p: any) => p.id === productId);
+              const product = displayProducts.find((p: any) => p.id === productId);
               
               updateSaleLine(index, 'productId', productId);
               
@@ -251,12 +282,12 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
             required
           >
             <option value={0}>
-              {lineFilteredProducts.length > 0 
+              {displayProducts.length > 0 
                 ? 'اختر الصنف...' 
                 : (line.isFromParentCompany ? 'لا توجد أصناف من مخزن التقازي' : 'لا توجد أصناف من الشركة الحالية')
               }
             </option>
-            {lineFilteredProducts.map((product: any) => (
+            {displayProducts.map((product: any) => (
               <option key={product.id} value={product.id}>
                 {product.name} ({product.sku})
               </option>
