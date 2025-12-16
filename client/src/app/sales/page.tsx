@@ -390,7 +390,11 @@ const SalesPage = () => {
       // التحقق من أن الصنف ينتمي للشركة المستهدفة أو الشركة الأم (التقازي)
       const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
       const isFromCurrentCompany = product.createdByCompanyId === targetCompanyId;
-      const isFromParentCompany = product.createdByCompanyId === 1; // الشركة الأم (التقازي)
+      
+      // الصنف يعتبر من الشركة الأم فقط إذا:
+      // 1. الصنف من التقازي (createdByCompanyId === 1)
+      // 2. الشركة الحالية ليست التقازي (targetCompanyId !== 1)
+      const isFromParentCompany = product.createdByCompanyId === 1 && targetCompanyId !== 1;
       
       console.log('🏢 التحقق من الشركة:', {
         targetCompanyId,
@@ -1951,7 +1955,19 @@ const SalesPage = () => {
                       saleForm.lines.map((line, index) => {
                         const selectedProduct = productsData?.data?.products?.find(p => p.id === line.productId);
                         const currentCompanyId = user?.isSystemUser ? selectedCompanyId : (user?.companyId || null);
-                        console.log(`🔍 تمرير currentCompanyId للـ SaleLineItem: ${currentCompanyId}`);
+                        
+                        // Debug log للتحقق من البيانات
+                        if (line.productId && !selectedProduct) {
+                          console.warn(`⚠️ الصنف ${line.productId} غير موجود في productsData. عدد الأصناف: ${productsData?.data?.products?.length || 0}`);
+                        }
+                        console.log(`🔍 SaleLineItem render:`, {
+                          lineIndex: index,
+                          productId: line.productId,
+                          isFromParentCompany: line.isFromParentCompany,
+                          currentCompanyId,
+                          selectedProductFound: !!selectedProduct,
+                          selectedProductName: selectedProduct?.name
+                        });
                         
                         return (
                           <SaleLineItem

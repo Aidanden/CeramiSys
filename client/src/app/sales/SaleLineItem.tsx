@@ -97,13 +97,17 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
     filteredCount: lineFilteredProducts.length,
     totalProducts: filteredProducts.length,
     selectedProductExists: !!selectedProduct,
-    selectedProductName: selectedProduct?.name
+    selectedProductName: selectedProduct?.name,
+    selectedProductCompanyId: selectedProduct?.createdByCompanyId,
+    // عينة من الأصناف المفلترة
+    sampleFilteredProducts: lineFilteredProducts.slice(0, 3).map((p: any) => ({ id: p.id, name: p.name, companyId: p.createdByCompanyId }))
   });
   
   // التأكد من أن الصنف المختار موجود في القائمة المفلترة
   // إذا لم يكن موجوداً (مثل عند إضافته عبر QR Code)، نضيفه
   const displayProducts = React.useMemo(() => {
-    if (!selectedProduct || !line.productId) {
+    // إذا لم يكن هناك صنف مختار، نعرض القائمة المفلترة
+    if (!line.productId) {
       return lineFilteredProducts;
     }
     
@@ -111,13 +115,28 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
     const existsInFiltered = lineFilteredProducts.some((p: any) => p.id === line.productId);
     
     if (!existsInFiltered) {
-      // إضافة الصنف المختار في بداية القائمة
-      console.log('➕ إضافة الصنف المختار للقائمة:', selectedProduct.name);
-      return [selectedProduct, ...lineFilteredProducts];
+      // البحث عن الصنف في جميع الأصناف (filteredProducts) أو استخدام selectedProduct
+      const productToAdd = selectedProduct || filteredProducts.find((p: any) => p.id === line.productId);
+      
+      if (productToAdd) {
+        // إضافة الصنف المختار في بداية القائمة
+        console.log('➕ إضافة الصنف المختار للقائمة:', productToAdd.name);
+        return [productToAdd, ...lineFilteredProducts];
+      }
     }
     
+    // إذا كان الصنف موجوداً في القائمة المفلترة
     return lineFilteredProducts;
-  }, [lineFilteredProducts, selectedProduct, line.productId]);
+  }, [lineFilteredProducts, selectedProduct, line.productId, filteredProducts]);
+  
+  // Debug log لـ displayProducts
+  console.log('📋 displayProducts:', {
+    lineIndex: index,
+    displayCount: displayProducts.length,
+    lineProductId: line.productId,
+    hasSelectedProduct: !!selectedProduct,
+    lineFilteredCount: lineFilteredProducts.length
+  });
 
   // حالات محلية للحقول لتجنب فقدان التركيز
   const [localPrice, setLocalPrice] = React.useState(line.unitPrice || '');
@@ -284,9 +303,19 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
             <option value={0}>
               {displayProducts.length > 0 
                 ? 'اختر الصنف...' 
-                : (line.isFromParentCompany ? 'لا توجد أصناف من مخزن التقازي' : 'لا توجد أصناف من الشركة الحالية')
+                : (line.isFromParentCompany 
+                    ? 'لا توجد أصناف من مخزن التقازي' 
+                    : (currentCompanyId === 1 
+                        ? 'لا توجد أصناف في مخزن التقازي' 
+                        : 'لا توجد أصناف من الشركة الحالية'))
               }
             </option>
+            {/* إذا كان هناك صنف مختار ولكنه غير موجود في displayProducts، نعرضه */}
+            {selectedProduct && line.productId && !displayProducts.some((p: any) => p.id === line.productId) && (
+              <option key={selectedProduct.id} value={selectedProduct.id}>
+                {selectedProduct.name} ({selectedProduct.sku})
+              </option>
+            )}
             {displayProducts.map((product: any) => (
               <option key={product.id} value={product.id}>
                 {product.name} ({product.sku})
