@@ -19,7 +19,7 @@ import { RootState } from '@/app/redux';
 
 const DamageReportsPage = () => {
   const { success, error: showError } = useToast();
-  
+
   // Get current user info
   const currentUser = useSelector((state: RootState) => state.auth.user);
   const { data: currentUserData } = useGetCurrentUserQuery();
@@ -42,17 +42,21 @@ const DamageReportsPage = () => {
   const [reason, setReason] = useState('');
   const [notes, setNotes] = useState('');
   const [lines, setLines] = useState<DamageReportLine[]>([]);
-  
+
   // Product search states
-  const [productSearchTerm, setProductSearchTerm] = useState('');
-  const [showProductDropdown, setShowProductDropdown] = useState(false);
+  const [productNameSearch, setProductNameSearch] = useState('');
+  const [productCodeSearch, setProductCodeSearch] = useState('');
+  const [showNameDropdown, setShowNameDropdown] = useState(false);
+  const [showCodeDropdown, setShowCodeDropdown] = useState(false);
   const productSearchRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (productSearchRef.current && !productSearchRef.current.contains(event.target as Node)) {
-        setShowProductDropdown(false);
+      const target = event.target as HTMLElement;
+      if (productSearchRef.current && !productSearchRef.current.contains(target)) {
+        setShowNameDropdown(false);
+        setShowCodeDropdown(false);
       }
     };
 
@@ -65,7 +69,7 @@ const DamageReportsPage = () => {
   // Queries
   const { data: companiesData } = useGetCompaniesQuery({});
   const companies = (companiesData?.data as any)?.companies || [];
-  
+
   const { data: stats } = useGetDamageReportStatsQuery();
   const { data: reportsData, isLoading, refetch } = useGetDamageReportsQuery({
     page: currentPage,
@@ -76,15 +80,16 @@ const DamageReportsPage = () => {
     reason: filterReason || undefined,
     ...(filterDate
       ? {
-          startDate: `${filterDate}T00:00:00.000Z`,
-          endDate: `${filterDate}T23:59:59.999Z`,
-        }
+        startDate: `${filterDate}T00:00:00.000Z`,
+        endDate: `${filterDate}T23:59:59.999Z`,
+      }
       : {}),
   });
 
   // جلب جميع الأصناف ثم الفلترة في الواجهة الأمامية حسب الشركة المختارة (نفس طريقة المبيعات)
-  const { data: productsData, isLoading: productsLoading } = useGetProductsQuery({ 
-    limit: 1000
+  const { data: productsData, isLoading: productsLoading } = useGetProductsQuery({
+    limit: 10000,
+    companyId: isSystemUser ? (selectedCompanyId || undefined) : userCompanyId
   });
   const [createDamageReport, { isLoading: isCreating }] = useCreateDamageReportMutation();
   const [deleteDamageReport] = useDeleteDamageReportMutation();
@@ -92,30 +97,29 @@ const DamageReportsPage = () => {
   const reports = reportsData?.data?.reports || [];
   const pagination = reportsData?.data?.pagination || {};
   const products = (productsData?.data as any)?.products || [];
-  
-  // Filter products based on search - عرض جميع الأصناف (الشركة الأم + الشركة التابعة) - نفس منطق المبيعات
-  const filteredProducts = productsData?.data?.products?.filter(product => {
+
+  // Helper logic for filtering by company
+  const isProductVisible = (product: any) => {
     const targetCompanyId = isSystemUser ? selectedCompanyId : userCompanyId;
-    
-    if (!targetCompanyId) {
-      return false; // لا تعرض أي أصناف إذا لم يتم تحديد الشركة
-    }
-    
-    // عرض أصناف الشركة الحالية + أصناف الشركة الأم دائماً
-    const isFromCurrentCompany = product.createdByCompanyId === targetCompanyId;
-    const isFromParentCompany = product.createdByCompanyId === 1; // الشركة الأم
-    
-    if (!isFromCurrentCompany && !isFromParentCompany) {
-      return false;
-    }
-    
-    // البحث في الاسم والكود معاً
-    if (productSearchTerm) {
-      const matchesName = product.name.toLowerCase().includes(productSearchTerm.toLowerCase());
-      const matchesCode = product.sku.toLowerCase().includes(productSearchTerm.toLowerCase());
-      return matchesName || matchesCode;
-    }
-    return true;
+    if (!targetCompanyId) return false;
+
+    // For Damage Reports, companies can ONLY see their own products (strict filtering)
+    // This applies to Emirates Company and any other subsidiary, as well as the Parent company.
+    return product.createdByCompanyId === targetCompanyId;
+  };
+
+  // Filter products by code (Exact match)
+  const filteredByCode = productsData?.data?.products?.filter(product => {
+    if (!isProductVisible(product)) return false;
+    if (!productCodeSearch) return false;
+    return product.sku.toLowerCase() === productCodeSearch.toLowerCase();
+  }) || [];
+
+  // Filter products by name (Partial match)
+  const filteredByName = productsData?.data?.products?.filter(product => {
+    if (!isProductVisible(product)) return false;
+    if (!productNameSearch) return false;
+    return product.name.toLowerCase().includes(productNameSearch.toLowerCase());
   }) || [];
 
   // Reset form
@@ -123,15 +127,17 @@ const DamageReportsPage = () => {
     setReason('');
     setNotes('');
     setLines([]);
-    setProductSearchTerm('');
-    setShowProductDropdown(false);
+    setProductNameSearch('');
+    setProductCodeSearch('');
+    setShowNameDropdown(false);
+    setShowCodeDropdown(false);
   };
 
   // Handlers
   const handleSelectProductFromDropdown = (product: any) => {
     // Add product to lines
     const existingLineIndex = lines.findIndex(line => line.productId === product.id);
-    
+
     if (existingLineIndex >= 0) {
       // If product already exists, increase quantity
       const newLines = [...lines];
@@ -140,9 +146,9 @@ const DamageReportsPage = () => {
       success(`تم زيادة كمية الصنف: ${product.name}`);
     } else {
       // Add new line
-      setLines([...lines, { 
-        productId: product.id, 
-        quantity: 1, 
+      setLines([...lines, {
+        productId: product.id,
+        quantity: 1,
         notes: '',
         product: {
           id: product.id,
@@ -152,20 +158,22 @@ const DamageReportsPage = () => {
           unitsPerBox: product.unitsPerBox
         }
       }]);
-      
+
       // تحديد ما إذا كان الصنف من الشركة الأم
       const targetCompanyId = isSystemUser ? selectedCompanyId : userCompanyId;
       const isFromParentCompany = product.createdByCompanyId !== targetCompanyId && product.createdByCompanyId === 1;
       const companyType = isFromParentCompany ? '(من مخزن التقازي)' : '(من الشركة الحالية)';
-      
+
       success(`تم إضافة الصنف: ${product.name} ${companyType}`);
     }
-    
+
     // Clear search
-    setProductSearchTerm('');
-    setShowProductDropdown(false);
+    setProductNameSearch('');
+    setProductCodeSearch('');
+    setShowNameDropdown(false);
+    setShowCodeDropdown(false);
   };
-  
+
   const handleAddLine = () => {
     setLines([...lines, { productId: 0, quantity: 0, notes: '' }]);
   };
@@ -682,112 +690,128 @@ const DamageReportsPage = () => {
                       الأصناف التالفة <span className="text-red-500">*</span>
                     </label>
                   </div>
-                  
-                  {/* Product Search */}
-                  <div className="mb-4">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+
+                  {/* Product Search - Split into Name and Code */}
+                  <div className="mb-4" ref={productSearchRef}>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
                       بحث عن صنف لإضافته
                     </label>
-                    <div className="relative" ref={productSearchRef}>
-                      <input
-                        type="text"
-                        value={productSearchTerm}
-                        onChange={(e) => {
-                          setProductSearchTerm(e.target.value);
-                          setShowProductDropdown(e.target.value.length > 0);
-                        }}
-                        onFocus={() => setShowProductDropdown(productSearchTerm.length > 0)}
-                        placeholder="ابحث بالاسم أو الكود..."
-                        className="w-full px-3 py-2 border-2 border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
-                      />
-                      
-                      {/* Dropdown */}
-                      {showProductDropdown && productSearchTerm && (
-                        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border-2 border-red-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                          {filteredProducts.length > 0 ? (
-                            filteredProducts.slice(0, 10).map((product: any) => {
-                              const stockInfo = product.stock?.[0];
-                              const availableQty = stockInfo?.boxes || 0;
-                              const hasStock = availableQty > 0;
-                              const targetCompanyId = isSystemUser ? selectedCompanyId : userCompanyId;
-              const isFromParentCompany = product.createdByCompanyId === 1 && product.createdByCompanyId !== targetCompanyId;
-                              
-                              return (
-                                <button
-                                  key={product.id}
-                                  type="button"
-                                  onClick={() => handleSelectProductFromDropdown(product)}
-                                  className={`w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors ${
-                                    isFromParentCompany 
-                                      ? 'hover:bg-orange-50 focus:bg-orange-50' 
-                                      : 'hover:bg-red-50 focus:bg-red-50'
-                                  }`}
-                                >
-                                  <div className="flex justify-between items-center gap-3">
-                                    <div className="text-sm flex-1">
-                                      <div className={`font-medium flex items-center gap-2 ${
-                                        isFromParentCompany ? 'text-orange-900' : 'text-gray-900'
-                                      }`}>
-                                        {product.name}
-                                        {isFromParentCompany && (
-                                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
-                                            مخزن التقازي
-                                          </span>
-                                        )}
-                                        {!hasStock && (
-                                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                                            نفذت الكمية
-                                          </span>
-                                        )}
-                                      </div>
-                                      <div className="text-xs text-gray-500 flex items-center gap-2 mt-0.5">
-                                        <span>كود: {product.sku}</span>
-                                        {hasStock && (
-                                          <span className="text-green-600 font-medium">
-                                            • متوفر: {formatArabicArea(availableQty)}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                    <div className="text-right">
-                                      <div className="text-xs font-medium text-red-600">
-                                        {product.price?.sellPrice ? `${formatArabicCurrency(Number(product.price.sellPrice))}` : 'غير محدد'}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </button>
-                              );
-                            })
-                          ) : (
-                            <div className="px-3 py-4 text-sm text-gray-500 text-center">
-                              <Search className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                              <p>لا توجد أصناف مطابقة للبحث</p>
-                              <p className="text-xs mt-1">جرب كلمات بحث أخرى</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      💡 ابحث واختر الصنف لإضافته تلقائياً للمحضر
-                    </p>
-                    {productSearchTerm && (
-                      <div className="mt-2 flex justify-between items-center p-2 bg-white rounded-md border border-red-200">
-                        <div className="text-xs font-medium text-gray-600">
-                          📊 عرض {filteredProducts.length} منتج من أصل {products.length}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setProductSearchTerm('');
-                            setShowProductDropdown(false);
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Name Search */}
+                      <div className="relative">
+                        <label className="block text-[10px] text-gray-500 mb-1">
+                          البحث بالاسم (جزء من الاسم)
+                        </label>
+                        <input
+                          type="text"
+                          value={productNameSearch}
+                          onChange={(e) => {
+                            setProductNameSearch(e.target.value);
+                            setShowNameDropdown(e.target.value.length > 0);
+                            setShowCodeDropdown(false);
                           }}
-                          className="text-xs text-red-600 hover:text-red-800 font-medium px-2 py-1 hover:bg-red-50 rounded transition-colors"
-                        >
-                          ✖️ مسح البحث
-                        </button>
+                          onFocus={() => {
+                            if (productNameSearch) setShowNameDropdown(true);
+                            setShowCodeDropdown(false);
+                          }}
+                          placeholder="ابحث بالاسم..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
+                        />
+
+                        {/* Name Dropdown */}
+                        {showNameDropdown && productNameSearch && (
+                          <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {filteredByName.length > 0 ? (
+                              filteredByName.slice(0, 10).map((product: any) => {
+                                return (
+                                  <button
+                                    key={product.id}
+                                    type="button"
+                                    onClick={() => handleSelectProductFromDropdown(product)}
+                                    className="w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors hover:bg-red-50 focus:bg-red-50"
+                                  >
+                                    <div className="flex justify-between items-center gap-3">
+                                      <div className="text-sm flex-1">
+                                        <div className="font-medium flex items-center gap-2 text-gray-900">
+                                          {product.name}
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                          كود: {product.sku}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </button>
+                                );
+                              })
+                            ) : (
+                              <div className="px-3 py-4 text-sm text-gray-500 text-center">
+                                <p>لا توجد أصناف مطابقة للاسم</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    )}
+
+                      {/* Code Search */}
+                      <div className="relative">
+                        <label className="block text-[10px] text-gray-500 mb-1">
+                          البحث بالكود (مطابقة تامة)
+                        </label>
+                        <input
+                          type="text"
+                          value={productCodeSearch}
+                          onChange={(e) => {
+                            setProductCodeSearch(e.target.value);
+                            setShowCodeDropdown(e.target.value.length > 0);
+                            setShowNameDropdown(false);
+                          }}
+                          onFocus={() => {
+                            if (productCodeSearch) setShowCodeDropdown(true);
+                            setShowNameDropdown(false);
+                          }}
+                          placeholder="ابحث بالكود..."
+                          className="w-full px-3 py-2 border border-blue-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono"
+                        />
+
+                        {/* Code Dropdown */}
+                        {showCodeDropdown && productCodeSearch && (
+                          <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-blue-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {filteredByCode.length > 0 ? (
+                              filteredByCode.map((product: any) => {
+                                return (
+                                  <button
+                                    key={product.id}
+                                    type="button"
+                                    onClick={() => handleSelectProductFromDropdown(product)}
+                                    className="w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors hover:bg-blue-50 focus:bg-blue-50"
+                                  >
+                                    <div className="flex justify-between items-center gap-3">
+                                      <div className="text-sm flex-1">
+                                        <div className="font-medium flex items-center gap-2 text-gray-900">
+                                          {product.name}
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                          كود: {product.sku}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </button>
+                                );
+                              })
+                            ) : (
+                              <div className="px-3 py-4 text-sm text-gray-500 text-center">
+                                <p>لا يوجد صنف بهذا الكود</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-gray-500 mt-2">
+                      ابحث بالاسم (تقريبي) أو بالكود (مطابق تماماً) لإضافة الأصناف
+                    </p>
                   </div>
 
                   <div className="space-y-3">
@@ -795,7 +819,7 @@ const DamageReportsPage = () => {
                       const product = line.product || products.find((p: any) => p.id === line.productId);
                       const stockInfo = product?.stock?.[0];
                       const availableQty = stockInfo?.boxes || 0;
-                      
+
                       return (
                         <div key={index} className="flex gap-2 items-start p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-red-300 transition-colors">
                           <div className="flex-1">
