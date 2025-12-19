@@ -44,6 +44,7 @@ export default function ReportsPage() {
     customerName: "",
     invoiceNumber: "",
     productName: "",
+    productCode: "",
     minAmount: "",
     maxAmount: "",
     supplierName: "",
@@ -53,6 +54,15 @@ export default function ReportsPage() {
     supplierReportName: "",
     supplierReportPhone: "",
   });
+
+  // دالة مساعدة للبحث النصي المحسن (تدعم العربية والإنجليزية)
+  const textSearch = (text: string | null | undefined, query: string): boolean => {
+    if (!text || !query) return true;
+    const normalizedText = text.toString().toLowerCase().trim();
+    const normalizedQuery = query.toLowerCase().trim();
+    // البحث الجزئي - يبحث عن أي جزء من النص
+    return normalizedText.includes(normalizedQuery);
+  };
 
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -72,8 +82,8 @@ export default function ReportsPage() {
     if (activeReport === 'sales' && salesReport) {
       stats = salesReport.data.stats;
       printData = salesReport.data.sales.filter((sale: any) => {
-        if (filters.invoiceNumber && !sale.invoiceNumber?.toLowerCase().includes(filters.invoiceNumber.toLowerCase())) return false;
-        if (filters.customerName && !sale.customer?.name?.toLowerCase().includes(filters.customerName.toLowerCase())) return false;
+        if (filters.invoiceNumber && !textSearch(sale.invoiceNumber, filters.invoiceNumber)) return false;
+        if (filters.customerName && !textSearch(sale.customer?.name, filters.customerName)) return false;
         if (filters.minAmount && sale.total < parseFloat(filters.minAmount)) return false;
         if (filters.maxAmount && sale.total > parseFloat(filters.maxAmount)) return false;
         return true;
@@ -92,7 +102,8 @@ export default function ReportsPage() {
     } else if (activeReport === 'stock' && stockReport) {
       stats = stockReport.data.stats;
       printData = stockReport.data.stocks.filter((stock: any) => {
-        if (filters.productName && !stock.product.name?.toLowerCase().includes(filters.productName.toLowerCase())) return false;
+        if (filters.productCode && !textSearch(stock.product.sku, filters.productCode)) return false;
+        if (filters.productName && !textSearch(stock.product.name, filters.productName)) return false;
         return true;
       });
       tableHeaders = ['كود الصنف', 'الصنف', 'الصناديق', 'إجمالي الكمية', 'السعر', 'القيمة'];
@@ -113,8 +124,8 @@ export default function ReportsPage() {
     } else if (activeReport === 'customers' && customerReport) {
       stats = customerReport.data.stats;
       printData = customerReport.data.customers.filter((customer: any) => {
-        if (filters.customerName && !customer.name?.toLowerCase().includes(filters.customerName.toLowerCase())) return false;
-        if (filters.customerPhone && !customer.phone?.toLowerCase().includes(filters.customerPhone.toLowerCase())) return false;
+        if (filters.customerName && !textSearch(customer.name, filters.customerName)) return false;
+        if (filters.customerPhone && !textSearch(customer.phone, filters.customerPhone)) return false;
         return true;
       });
       tableHeaders = ['العميل', 'الهاتف', 'إجمالي المشتريات', 'عدد المبيعات', 'متوسط الشراء'];
@@ -130,8 +141,8 @@ export default function ReportsPage() {
     } else if (activeReport === 'suppliers' && supplierReport) {
       stats = supplierReport.data.stats;
       printData = supplierReport.data.suppliers.filter((supplier: any) => {
-        if (filters.supplierReportName && !supplier.name?.toLowerCase().includes(filters.supplierReportName.toLowerCase())) return false;
-        if (filters.supplierReportPhone && !supplier.phone?.toLowerCase().includes(filters.supplierReportPhone.toLowerCase())) return false;
+        if (filters.supplierReportName && !textSearch(supplier.name, filters.supplierReportName)) return false;
+        if (filters.supplierReportPhone && !textSearch(supplier.phone, filters.supplierReportPhone)) return false;
         return true;
       });
       tableHeaders = ['المورد', 'الهاتف', 'إجمالي المشتريات', 'المدفوع', 'الرصيد'];
@@ -147,8 +158,8 @@ export default function ReportsPage() {
     } else if (activeReport === 'purchases' && purchaseReport) {
       stats = purchaseReport.data.stats;
       printData = purchaseReport.data.purchases.filter((purchase: any) => {
-        if (filters.invoiceNumber && !purchase.invoiceNumber?.toLowerCase().includes(filters.invoiceNumber.toLowerCase())) return false;
-        if (filters.supplierName && !purchase.supplier?.name?.toLowerCase().includes(filters.supplierName.toLowerCase())) return false;
+        if (filters.invoiceNumber && !textSearch(purchase.invoiceNumber, filters.invoiceNumber)) return false;
+        if (filters.supplierName && !textSearch(purchase.supplier?.name, filters.supplierName)) return false;
         return true;
       });
       tableHeaders = ['رقم الفاتورة', 'التاريخ', 'المورد', 'المبلغ', 'المصروفات', 'الإجمالي'];
@@ -165,7 +176,9 @@ export default function ReportsPage() {
     } else if (activeReport === 'top-products' && topProductsReport) {
       stats = topProductsReport.data.stats;
       printData = topProductsReport.data.topProducts.filter((item: any) => {
-        if (filters.productName && !item.product.name?.toLowerCase().includes(filters.productName.toLowerCase())) return false;
+        if (filters.productName && !textSearch(item.product.name, filters.productName)) return false;
+        // أضفت فلتر الكود هنا أيضاً للأكثر مبيعاً للفائدة
+        if (filters.productCode && !textSearch(item.product.sku, filters.productCode)) return false;
         return true;
       });
       tableHeaders = ['الترتيب', 'كود الصنف', 'المنتج', 'الكمية المباعة', 'الإيرادات', 'عدد المبيعات'];
@@ -453,7 +466,7 @@ export default function ReportsPage() {
             </h3>
             <button
               onClick={() => {
-                setFilters({ customerName: "", invoiceNumber: "", productName: "", minAmount: "", maxAmount: "", supplierName: "", supplierPhone: "", invoiceAmount: "", customerPhone: "", supplierReportName: "", supplierReportPhone: "" });
+                setFilters({ customerName: "", invoiceNumber: "", productName: "", productCode: "", minAmount: "", maxAmount: "", supplierName: "", supplierPhone: "", invoiceAmount: "", customerPhone: "", supplierReportName: "", supplierReportPhone: "" });
                 setSelectedCompanyId(undefined);
               }}
               className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
@@ -562,16 +575,28 @@ export default function ReportsPage() {
 
             {/* Stock Report Filters */}
             {activeReport === "stock" && (
-              <div className="md:col-span-2">
-                <label className="block text-sm text-gray-600 mb-1">اسم الصنف</label>
-                <input
-                  type="text"
-                  value={filters.productName}
-                  onChange={(e) => setFilters({ ...filters, productName: e.target.value })}
-                  placeholder="ابحث باسم الصنف"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
+              <>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">كود الصنف</label>
+                  <input
+                    type="text"
+                    value={filters.productCode}
+                    onChange={(e) => setFilters({ ...filters, productCode: e.target.value })}
+                    placeholder="ابحث بكود الصنف"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">اسم الصنف</label>
+                  <input
+                    type="text"
+                    value={filters.productName}
+                    onChange={(e) => setFilters({ ...filters, productName: e.target.value })}
+                    placeholder="ابحث باسم الصنف"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </>
             )}
 
             {/* Customers Report Filters */}
@@ -791,8 +816,8 @@ export default function ReportsPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {(() => {
                       const filteredSales = salesReport.data.sales.filter((sale: any) => {
-                        if (filters.invoiceNumber && !sale.invoiceNumber?.toLowerCase().includes(filters.invoiceNumber.toLowerCase())) return false;
-                        if (filters.customerName && !sale.customer?.name?.toLowerCase().includes(filters.customerName.toLowerCase())) return false;
+                        if (filters.invoiceNumber && !textSearch(sale.invoiceNumber, filters.invoiceNumber)) return false;
+                        if (filters.customerName && !textSearch(sale.customer?.name, filters.customerName)) return false;
                         if (filters.minAmount && sale.total < parseFloat(filters.minAmount)) return false;
                         if (filters.maxAmount && sale.total > parseFloat(filters.maxAmount)) return false;
                         return true;
@@ -837,8 +862,8 @@ export default function ReportsPage() {
               <Pagination
                 totalItems={salesReport.data.sales.length}
                 filteredItems={salesReport.data.sales.filter((sale: any) => {
-                  if (filters.invoiceNumber && !sale.invoiceNumber?.toLowerCase().includes(filters.invoiceNumber.toLowerCase())) return false;
-                  if (filters.customerName && !sale.customer?.name?.toLowerCase().includes(filters.customerName.toLowerCase())) return false;
+                  if (filters.invoiceNumber && !textSearch(sale.invoiceNumber, filters.invoiceNumber)) return false;
+                  if (filters.customerName && !textSearch(sale.customer?.name, filters.customerName)) return false;
                   if (filters.minAmount && sale.total < parseFloat(filters.minAmount)) return false;
                   if (filters.maxAmount && sale.total > parseFloat(filters.maxAmount)) return false;
                   return true;
@@ -890,7 +915,10 @@ export default function ReportsPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {(() => {
                       const filteredStocks = stockReport.data.stocks.filter((stock: any) => {
-                        if (filters.productName && !stock.product.name?.toLowerCase().includes(filters.productName.toLowerCase())) return false;
+                        // البحث بالكود (SKU)
+                        if (filters.productCode && !textSearch(stock.product.sku, filters.productCode)) return false;
+                        // البحث بالاسم
+                        if (filters.productName && !textSearch(stock.product.name, filters.productName)) return false;
                         return true;
                       });
                       return paginateData(filteredStocks).map((stock: any) => {
@@ -934,7 +962,10 @@ export default function ReportsPage() {
               <Pagination
                 totalItems={stockReport.data.stocks.length}
                 filteredItems={stockReport.data.stocks.filter((stock: any) => {
-                  if (filters.productName && !stock.product.name?.toLowerCase().includes(filters.productName.toLowerCase())) return false;
+                  // البحث بالكود (SKU)
+                  if (filters.productCode && !textSearch(stock.product.sku, filters.productCode)) return false;
+                  // البحث بالاسم
+                  if (filters.productName && !textSearch(stock.product.name, filters.productName)) return false;
                   return true;
                 })}
               />
@@ -983,8 +1014,8 @@ export default function ReportsPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {(() => {
                       const filteredCustomers = customerReport.data.customers.filter((customer: any) => {
-                        if (filters.customerName && !customer.name?.toLowerCase().includes(filters.customerName.toLowerCase())) return false;
-                        if (filters.customerPhone && !customer.phone?.toLowerCase().includes(filters.customerPhone.toLowerCase())) return false;
+                        if (filters.customerName && !textSearch(customer.name, filters.customerName)) return false;
+                        if (filters.customerPhone && !textSearch(customer.phone, filters.customerPhone)) return false;
                         return true;
                       });
                       return paginateData(filteredCustomers).map((customer: any) => (
@@ -1014,8 +1045,8 @@ export default function ReportsPage() {
               <Pagination
                 totalItems={customerReport.data.customers.length}
                 filteredItems={customerReport.data.customers.filter((customer: any) => {
-                  if (filters.customerName && !customer.name?.toLowerCase().includes(filters.customerName.toLowerCase())) return false;
-                  if (filters.customerPhone && !customer.phone?.toLowerCase().includes(filters.customerPhone.toLowerCase())) return false;
+                  if (filters.customerName && !textSearch(customer.name, filters.customerName)) return false;
+                  if (filters.customerPhone && !textSearch(customer.phone, filters.customerPhone)) return false;
                   return true;
                 })}
               />
@@ -1070,8 +1101,8 @@ export default function ReportsPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {(() => {
                       const filteredSuppliers = supplierReport.data.suppliers.filter((supplier: any) => {
-                        if (filters.supplierReportName && !supplier.name?.toLowerCase().includes(filters.supplierReportName.toLowerCase())) return false;
-                        if (filters.supplierReportPhone && !supplier.phone?.toLowerCase().includes(filters.supplierReportPhone.toLowerCase())) return false;
+                        if (filters.supplierReportName && !textSearch(supplier.name, filters.supplierReportName)) return false;
+                        if (filters.supplierReportPhone && !textSearch(supplier.phone, filters.supplierReportPhone)) return false;
                         return true;
                       });
                       return paginateData(filteredSuppliers).map((supplier: any) => (
@@ -1101,8 +1132,8 @@ export default function ReportsPage() {
               <Pagination
                 totalItems={supplierReport.data.suppliers.length}
                 filteredItems={supplierReport.data.suppliers.filter((supplier: any) => {
-                  if (filters.supplierReportName && !supplier.name?.toLowerCase().includes(filters.supplierReportName.toLowerCase())) return false;
-                  if (filters.supplierReportPhone && !supplier.phone?.toLowerCase().includes(filters.supplierReportPhone.toLowerCase())) return false;
+                  if (filters.supplierReportName && !textSearch(supplier.name, filters.supplierReportName)) return false;
+                  if (filters.supplierReportPhone && !textSearch(supplier.phone, filters.supplierReportPhone)) return false;
                   return true;
                 })}
               />
@@ -1158,9 +1189,9 @@ export default function ReportsPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {(() => {
                       const filteredPurchases = purchaseReport.data.purchases.filter((purchase: any) => {
-                        if (filters.invoiceNumber && !purchase.invoiceNumber?.toLowerCase().includes(filters.invoiceNumber.toLowerCase())) return false;
-                        if (filters.supplierName && !purchase.supplier?.name?.toLowerCase().includes(filters.supplierName.toLowerCase())) return false;
-                        if (filters.supplierPhone && !purchase.supplier?.phone?.toLowerCase().includes(filters.supplierPhone.toLowerCase())) return false;
+                        if (filters.invoiceNumber && !textSearch(purchase.invoiceNumber, filters.invoiceNumber)) return false;
+                        if (filters.supplierName && !textSearch(purchase.supplier?.name, filters.supplierName)) return false;
+                        if (filters.supplierPhone && !textSearch(purchase.supplier?.phone, filters.supplierPhone)) return false;
                         if (filters.minAmount && Number(purchase.total) < Number(filters.minAmount)) return false;
                         if (filters.maxAmount && Number(purchase.total) > Number(filters.maxAmount)) return false;
                         if (filters.invoiceAmount && Number(purchase.total) !== Number(filters.invoiceAmount)) return false;
@@ -1196,9 +1227,9 @@ export default function ReportsPage() {
               <Pagination
                 totalItems={purchaseReport.data.purchases.length}
                 filteredItems={purchaseReport.data.purchases.filter((purchase: any) => {
-                  if (filters.invoiceNumber && !purchase.invoiceNumber?.toLowerCase().includes(filters.invoiceNumber.toLowerCase())) return false;
-                  if (filters.supplierName && !purchase.supplier?.name?.toLowerCase().includes(filters.supplierName.toLowerCase())) return false;
-                  if (filters.supplierPhone && !purchase.supplier?.phone?.toLowerCase().includes(filters.supplierPhone.toLowerCase())) return false;
+                  if (filters.invoiceNumber && !textSearch(purchase.invoiceNumber, filters.invoiceNumber)) return false;
+                  if (filters.supplierName && !textSearch(purchase.supplier?.name, filters.supplierName)) return false;
+                  if (filters.supplierPhone && !textSearch(purchase.supplier?.phone, filters.supplierPhone)) return false;
                   if (filters.minAmount && Number(purchase.total) < Number(filters.minAmount)) return false;
                   if (filters.maxAmount && Number(purchase.total) > Number(filters.maxAmount)) return false;
                   if (filters.invoiceAmount && Number(purchase.total) !== Number(filters.invoiceAmount)) return false;
@@ -1250,7 +1281,8 @@ export default function ReportsPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {(() => {
                       const filteredProducts = topProductsReport.data.topProducts.filter((item: any) => {
-                        if (filters.productName && !item.product.name?.toLowerCase().includes(filters.productName.toLowerCase())) return false;
+                        if (filters.productName && !textSearch(item.product.name, filters.productName)) return false;
+                        if (filters.productCode && !textSearch(item.product.sku, filters.productCode)) return false;
                         return true;
                       });
                       return paginateData(filteredProducts).map((item: any, index: number) => {
@@ -1292,7 +1324,8 @@ export default function ReportsPage() {
               <Pagination
                 totalItems={topProductsReport.data.topProducts.length}
                 filteredItems={topProductsReport.data.topProducts.filter((item: any) => {
-                  if (filters.productName && !item.product.name?.toLowerCase().includes(filters.productName.toLowerCase())) return false;
+                  if (filters.productName && !textSearch(item.product.name, filters.productName)) return false;
+                  if (filters.productCode && !textSearch(item.product.sku, filters.productCode)) return false;
                   return true;
                 })}
               />
