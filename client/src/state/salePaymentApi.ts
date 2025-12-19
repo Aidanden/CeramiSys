@@ -112,7 +112,7 @@ export interface CreditSalesStats {
 export const salePaymentApi = createApi({
   reducerPath: "salePaymentApi",
   baseQuery: baseQueryWithAuthInterceptor,
-  tagTypes: ["CreditSales", "CreditSale", "SalePayments", "CustomerAccountSummary", "Sales"],
+  tagTypes: ["CreditSales", "CreditSale", "SalePayments", "CustomerAccountSummary", "Sales", "Treasury", "TreasuryTransaction", "TreasuryStats"],
   // تطبيق إعدادات عدم الكاش
   keepUnusedDataFor: API_CACHE_CONFIG.sales.keepUnusedDataFor,
   refetchOnMountOrArgChange: API_CACHE_CONFIG.sales.refetchOnMountOrArgChange,
@@ -159,6 +159,9 @@ export const salePaymentApi = createApi({
         "SalePayments",
         { type: "CustomerAccountSummary", id: "LIST" }, // تحديث حسابات العملاء
         { type: "Sales", id: "LIST" }, // تحديث قائمة المبيعات الرئيسية
+        "Treasury",
+        "TreasuryTransaction",
+        "TreasuryStats"
       ]
     }),
 
@@ -182,7 +185,10 @@ export const salePaymentApi = createApi({
         "CreditSales",
         "SalePayments",
         { type: "CustomerAccountSummary", id: "LIST" },
-        { type: "Sales", id: "LIST" }
+        { type: "Sales", id: "LIST" },
+        "Treasury",
+        "TreasuryTransaction",
+        "TreasuryStats"
       ]
     })
   })

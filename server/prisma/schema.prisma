@@ -34,6 +34,7 @@ model Company {
   notifications       Notification[]
   damageReports       DamageReport[]
   treasuries          Treasury[]            // خزائن الشركة
+  returnOrders        ReturnOrder[]
 }
 
 model Product {
@@ -113,6 +114,7 @@ model Users {
   Role                    UserRoles?      @relation(fields: [RoleID], references: [RoleID])
   notifications           Notification[]
   damageReports           DamageReport[]
+  completedReturnOrders   ReturnOrder[]
 }
 
 model UserRoles {
@@ -267,6 +269,7 @@ model SaleReturn {
   sale            Sale             @relation(fields: [saleId], references: [id])
   lines           SaleReturnLine[]
   payments        ReturnPayment[] // إيصالات الدفع
+  returnOrders    ReturnOrder[]
 
   @@index([saleId])
   @@index([companyId])
@@ -507,6 +510,26 @@ model DispatchOrder {
   @@index([createdAt])
 }
 
+model ReturnOrder {
+  id              Int                 @id @default(autoincrement())
+  saleReturnId    Int
+  companyId       Int
+  status          DispatchOrderStatus @default(PENDING) // PENDING, COMPLETED, CANCELLED
+  notes           String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  completedAt     DateTime?
+  completedBy     String?
+  company         Company             @relation(fields: [companyId], references: [id])
+  completedByUser Users?              @relation(fields: [completedBy], references: [UserID])
+  saleReturn      SaleReturn          @relation(fields: [saleReturnId], references: [id])
+
+  @@index([saleReturnId])
+  @@index([companyId])
+  @@index([status])
+  @@index([createdAt])
+}
+
 model Notification {
   id         Int              @id @default(autoincrement())
   title      String
@@ -567,6 +590,7 @@ enum ReturnStatus {
   APPROVED
   REJECTED
   PROCESSED
+  RECEIVED_WAREHOUSE
 }
 
 enum DispatchOrderStatus {

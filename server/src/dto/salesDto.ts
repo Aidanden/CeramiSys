@@ -26,7 +26,8 @@ export enum SaleStatus {
 export enum ReturnStatus {
   PENDING = 'PENDING',     // قيد الانتظار
   APPROVED = 'APPROVED',   // معتمدة
-  REJECTED = 'REJECTED'    // مرفوضة
+  REJECTED = 'REJECTED',    // مرفوضة
+  RECEIVED_WAREHOUSE = 'RECEIVED_WAREHOUSE' // تم الاستلام المخزن
 }
 
 // Zod Schemas للتحقق من صحة البيانات

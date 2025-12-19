@@ -4,13 +4,17 @@ import React, { useState } from 'react';
 import {
   useGetDispatchOrdersQuery,
   useUpdateDispatchOrderStatusMutation,
+  useGetReturnOrdersQuery,
+  useUpdateReturnOrderStatusMutation,
   DispatchOrder,
+  ReturnOrder,
 } from '@/state/warehouseApi';
 import { useGetCurrentUserQuery } from '@/state/authApi';
 import { useToast } from '@/components/ui/Toast';
 import { formatArabicNumber } from '@/utils/formatArabicNumbers';
 
 export default function WarehouseDispatchPage() {
+  const [activeTab, setActiveTab] = useState<'dispatch' | 'returns'>('dispatch');
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<'PENDING' | 'COMPLETED' | 'CANCELLED' | ''>('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -18,18 +22,26 @@ export default function WarehouseDispatchPage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+
+  // State for Dispatch Orders
   const [selectedOrder, setSelectedOrder] = useState<DispatchOrder | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+  // State for Return Orders
+  const [selectedReturnOrder, setSelectedReturnOrder] = useState<ReturnOrder | null>(null);
+  const [showReturnDetailsModal, setShowReturnDetailsModal] = useState(false);
+
   const [notes, setNotes] = useState('');
 
   const { data: userData } = useGetCurrentUserQuery();
   const user = userData?.data;
   const { success, error: showError } = useToast();
 
+  // Query for Dispatch Orders
   const {
     data: ordersData,
-    isLoading,
-    refetch,
+    isLoading: isLoadingOrders,
+    refetch: refetchOrders,
   } = useGetDispatchOrdersQuery(
     {
       page: currentPage,
@@ -41,12 +53,32 @@ export default function WarehouseDispatchPage() {
     },
     {
       refetchOnMountOrArgChange: true,
-      refetchOnFocus: true,
-      refetchOnReconnect: true,
+      skip: activeTab !== 'dispatch'
+    }
+  );
+
+  // Query for Return Orders
+  const {
+    data: returnsData,
+    isLoading: isLoadingReturns,
+    refetch: refetchReturns,
+  } = useGetReturnOrdersQuery(
+    {
+      page: currentPage,
+      limit: 20,
+      status: statusFilter || undefined,
+      search: searchTerm || undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    },
+    {
+      refetchOnMountOrArgChange: true,
+      skip: activeTab !== 'returns'
     }
   );
 
   const [updateStatus, { isLoading: isUpdating }] = useUpdateDispatchOrderStatusMutation();
+  const [updateReturnStatus, { isLoading: isUpdatingReturn }] = useUpdateReturnOrderStatusMutation();
 
   const handleUpdateStatus = async (
     orderId: number,
@@ -70,9 +102,37 @@ export default function WarehouseDispatchPage() {
       setShowDetailsModal(false);
       setSelectedOrder(null);
       setNotes('');
-      refetch();
+      refetchOrders();
     } catch (err: any) {
       showError(err?.data?.message || 'حدث خطأ أثناء تحديث حالة أمر الصرف');
+    }
+  };
+
+  const handleUpdateReturnStatus = async (
+    orderId: number,
+    newStatus: 'COMPLETED' | 'CANCELLED'
+  ) => {
+    try {
+      await updateReturnStatus({
+        id: orderId,
+        body: {
+          status: newStatus,
+          notes: notes || undefined,
+        },
+      }).unwrap();
+
+      success(
+        newStatus === 'COMPLETED'
+          ? 'تم استلام المردود وتأكيد المخزون بنجاح'
+          : 'تم إلغاء طلب الاستلام'
+      );
+
+      setShowReturnDetailsModal(false);
+      setSelectedReturnOrder(null);
+      setNotes('');
+      refetchReturns();
+    } catch (err: any) {
+      showError(err?.data?.message || 'حدث خطأ أثناء تحديث حالة الاستلام');
     }
   };
 
@@ -94,9 +154,9 @@ export default function WarehouseDispatchPage() {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return 'معلق';
+        return activeTab === 'dispatch' ? 'معلق' : 'في انتظار الاستلام';
       case 'COMPLETED':
-        return 'تم التسليم';
+        return activeTab === 'dispatch' ? 'تم التسليم' : 'تم الاستلام';
       case 'CANCELLED':
         return 'ملغي';
       default:
@@ -108,12 +168,12 @@ export default function WarehouseDispatchPage() {
   const formatQuantityDisplay = (qty: number, product: any) => {
     const isBox = product?.unit === 'صندوق';
     const unitsPerBox = product?.unitsPerBox || 0;
-    
+
     if (!isBox) {
       // إذا لم تكن الوحدة صندوق، اعرض الكمية مباشرة
       return `${formatArabicNumber(qty)} ${product?.unit || 'قطعة'}`;
     }
-    
+
     // الكمية في الفاتورة = عدد الصناديق
     return `${formatArabicNumber(qty)} صندوق`;
   };
@@ -122,13 +182,13 @@ export default function WarehouseDispatchPage() {
   const formatTotalUnits = (qty: number, product: any) => {
     const isBox = product?.unit === 'صندوق';
     const unitsPerBox = product?.unitsPerBox || 0;
-    
+
     if (isBox && unitsPerBox > 0) {
       // حساب الأمتار المربعة: عدد الصناديق × الوحدات في الصندوق
       const totalUnits = qty * unitsPerBox;
       return `${formatArabicNumber(totalUnits)} م²`;
     }
-    
+
     // إذا لم تكن صندوق، اعرض الكمية بوحدتها
     return `${formatArabicNumber(qty)} ${product?.unit || 'قطعة'}`;
   };
@@ -145,11 +205,39 @@ export default function WarehouseDispatchPage() {
               </svg>
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-text-primary">أوامر صرف المخزن</h1>
-              <p className="text-text-secondary">إدارة أوامر صرف البضائع من المخزن</p>
+              <h1 className="text-3xl font-bold text-text-primary">لوحة عمليات المخزن</h1>
+              <p className="text-text-secondary">إدارة أوامر الصرف والاستلام من المخزن</p>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-border-primary mb-6">
+        <button
+          className={`px-6 py-3 font-semibold transition-all duration-200 ${activeTab === 'dispatch'
+            ? 'border-b-2 border-orange-600 text-orange-600'
+            : 'text-text-secondary hover:text-text-primary'
+            }`}
+          onClick={() => {
+            setActiveTab('dispatch');
+            setCurrentPage(1);
+          }}
+        >
+          أوامر الصرف
+        </button>
+        <button
+          className={`px-6 py-3 font-semibold transition-all duration-200 ${activeTab === 'returns'
+            ? 'border-b-2 border-blue-600 text-blue-600'
+            : 'text-text-secondary hover:text-text-primary'
+            }`}
+          onClick={() => {
+            setActiveTab('returns');
+            setCurrentPage(1);
+          }}
+        >
+          استلام المردودات
+        </button>
       </div>
 
       {/* Stats Cards */}
@@ -157,12 +245,16 @@ export default function WarehouseDispatchPage() {
         <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-text-secondary text-sm">إجمالي الأوامر</p>
+              <p className="text-text-secondary text-sm">إجمالي {activeTab === 'dispatch' ? 'الأوامر' : 'المردودات'}</p>
               <p className="text-2xl font-bold text-text-primary">
-                {formatArabicNumber(ordersData?.data?.pagination?.total || 0)}
+                {formatArabicNumber(
+                  activeTab === 'dispatch'
+                    ? (ordersData?.data?.pagination?.total || 0)
+                    : (returnsData?.data?.pagination?.total || 0)
+                )}
               </p>
             </div>
-            <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-8 h-8 ${activeTab === 'dispatch' ? 'text-orange-600' : 'text-blue-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
           </div>
@@ -174,7 +266,9 @@ export default function WarehouseDispatchPage() {
               <p className="text-text-secondary text-sm">معلقة</p>
               <p className="text-2xl font-bold text-yellow-600">
                 {formatArabicNumber(
-                  ordersData?.data?.dispatchOrders?.filter((o) => o.status === 'PENDING').length || 0
+                  activeTab === 'dispatch'
+                    ? (ordersData?.data?.dispatchOrders?.filter((o) => o.status === 'PENDING').length || 0)
+                    : (returnsData?.data?.returnOrders?.filter((o) => o.status === 'PENDING').length || 0)
                 )}
               </p>
             </div>
@@ -187,10 +281,12 @@ export default function WarehouseDispatchPage() {
         <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-text-secondary text-sm">تم التسليم</p>
+              <p className="text-text-secondary text-sm">{activeTab === 'dispatch' ? 'تم التسليم' : 'تم الاستلام'}</p>
               <p className="text-2xl font-bold text-green-600">
                 {formatArabicNumber(
-                  ordersData?.data?.dispatchOrders?.filter((o) => o.status === 'COMPLETED').length || 0
+                  activeTab === 'dispatch'
+                    ? (ordersData?.data?.dispatchOrders?.filter((o) => o.status === 'COMPLETED').length || 0)
+                    : (returnsData?.data?.returnOrders?.filter((o) => o.status === 'COMPLETED').length || 0)
                 )}
               </p>
             </div>
@@ -209,7 +305,7 @@ export default function WarehouseDispatchPage() {
           </svg>
           فلاتر البحث
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Search by Invoice Number */}
           <div className="relative">
@@ -390,7 +486,7 @@ export default function WarehouseDispatchPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {isLoading ? (
+              {(activeTab === 'dispatch' ? isLoadingOrders : isLoadingReturns) ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                     <div className="flex items-center justify-center gap-2">
@@ -399,81 +495,123 @@ export default function WarehouseDispatchPage() {
                     </div>
                   </td>
                 </tr>
-              ) : !ordersData?.data?.dispatchOrders || ordersData?.data?.dispatchOrders?.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
-                    <div className="flex flex-col items-center gap-2">
-                      <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                      </svg>
+              ) : activeTab === 'dispatch' ? (
+                !ordersData?.data?.dispatchOrders || ordersData?.data?.dispatchOrders?.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                       <p className="font-medium">لا توجد أوامر صرف</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                ordersData?.data?.dispatchOrders?.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      #{formatArabicNumber(order.id)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {order.sale?.invoiceNumber || `#${order.saleId}`}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {order.sale?.customer?.name || 'غير محدد'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="flex flex-col">
-                        <span className="font-medium text-orange-600">{order.sale?.company?.name}</span>
-                        <span className="text-xs text-gray-500">{order.sale?.company?.code}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
-                          order.status
-                        )}`}
-                      >
-                        {getStatusText(order.status)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(order.createdAt).toLocaleDateString('ar-LY')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => {
-                          setSelectedOrder(order);
-                          setShowDetailsModal(true);
-                        }}
-                        className="text-orange-600 hover:text-orange-900 p-1 rounded"
-                        title="عرض التفاصيل"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                          />
-                        </svg>
-                      </button>
                     </td>
                   </tr>
-                ))
+                ) : (
+                  ordersData?.data?.dispatchOrders?.map((order) => (
+                    <tr key={order.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        #{formatArabicNumber(order.id)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {order.sale?.invoiceNumber || `#${order.saleId}`}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {order.sale?.customer?.name || 'غير محدد'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-orange-600">{order.sale?.company?.name}</span>
+                          <span className="text-xs text-gray-500">{order.sale?.company?.code}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                            order.status
+                          )}`}
+                        >
+                          {getStatusText(order.status)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {new Date(order.createdAt).toLocaleDateString('ar-LY')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setShowDetailsModal(true);
+                          }}
+                          className="text-orange-600 hover:text-orange-900 p-1 rounded"
+                          title="عرض التفاصيل"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )
+              ) : (
+                !returnsData?.data?.returnOrders || returnsData?.data?.returnOrders?.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                      <p className="font-medium">لا توجد طلبات استرجاع</p>
+                    </td>
+                  </tr>
+                ) : (
+                  returnsData?.data?.returnOrders?.map((order) => (
+                    <tr key={order.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        #{formatArabicNumber(order.id)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {order.saleReturn?.returnNumber || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {order.saleReturn?.customer?.name || 'غير محدد'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-blue-600">{order.company?.name}</span>
+                          <span className="text-xs text-gray-500">{order.company?.code}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                            order.status
+                          )}`}
+                        >
+                          {getStatusText(order.status)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {new Date(order.createdAt).toLocaleDateString('ar-LY')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => {
+                            setSelectedReturnOrder(order);
+                            setShowReturnDetailsModal(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-900 p-1 rounded"
+                          title="عرض التفاصيل"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )
               )}
             </tbody>
           </table>
         </div>
 
         {/* Pagination */}
-        {ordersData?.data?.pagination && ordersData.data.pagination.pages > 1 && (
+        {((activeTab === 'dispatch' ? ordersData : returnsData)?.data?.pagination?.pages || 0) > 1 && (
           <div className="mt-6 flex justify-center p-4">
             <div className="flex space-x-2 space-x-reverse">
               <button
@@ -485,12 +623,12 @@ export default function WarehouseDispatchPage() {
               </button>
 
               <span className="px-3 py-2 text-sm text-gray-700">
-                صفحة {formatArabicNumber(currentPage)} من {formatArabicNumber(ordersData.data.pagination.pages)}
+                صفحة {formatArabicNumber(currentPage)} من {formatArabicNumber((activeTab === 'dispatch' ? ordersData : returnsData)?.data?.pagination?.pages || 0)}
               </span>
 
               <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, ordersData.data.pagination.pages))}
-                disabled={currentPage === ordersData.data.pagination.pages}
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, (activeTab === 'dispatch' ? ordersData : returnsData)?.data?.pagination?.pages || 0))}
+                disabled={currentPage === ((activeTab === 'dispatch' ? ordersData : returnsData)?.data?.pagination?.pages || 0)}
                 className="px-3 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 التالي
@@ -568,11 +706,10 @@ export default function WarehouseDispatchPage() {
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">{line.product?.name}</td>
                         <td className="px-4 py-3 text-sm text-gray-600 font-mono">{line.product?.sku}</td>
                         <td className="px-4 py-3 text-sm">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
-                            line.isFromParentCompany 
-                              ? 'bg-blue-100 text-blue-800' 
-                              : 'bg-orange-100 text-orange-800'
-                          }`}>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${line.isFromParentCompany
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-orange-100 text-orange-800'
+                            }`}>
                             {line.isFromParentCompany ? 'التقازي' : selectedOrder.sale?.company?.name || 'الإمارات'}
                           </span>
                         </td>
@@ -635,6 +772,113 @@ export default function WarehouseDispatchPage() {
                     className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
                   >
                     إلغاء الأمر
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Return Order Details Modal */}
+      {showReturnDetailsModal && selectedReturnOrder && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold">تفاصيل استلام المردودات</h3>
+              <button
+                onClick={() => {
+                  setShowReturnDetailsModal(false);
+                  setSelectedReturnOrder(null);
+                  setNotes('');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-lg text-right">
+              <div>
+                <p className="text-sm text-gray-600">رقم المردود</p>
+                <p className="font-bold">{selectedReturnOrder.saleReturn?.returnNumber || `#${selectedReturnOrder.saleReturnId}`}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">العميل</p>
+                <p className="font-bold">{selectedReturnOrder.saleReturn?.customer?.name || 'غير محدد'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">الفاتورة الأصلية</p>
+                <p className="font-bold">{selectedReturnOrder.saleReturn?.sale?.invoiceNumber || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">الشركة</p>
+                <p className="font-bold text-blue-600">{selectedReturnOrder.company?.name}</p>
+              </div>
+            </div>
+
+            <h4 className="font-bold mb-3 text-right">الأصناف المردودة:</h4>
+            <div className="border rounded-lg overflow-hidden mb-6">
+              <table className="w-full text-right">
+                <thead className="bg-blue-50">
+                  <tr>
+                    <th className="px-4 py-2 border-b">الصنف</th>
+                    <th className="px-4 py-2 border-b">الكود</th>
+                    <th className="px-4 py-2 border-b">الكمية</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedReturnOrder.saleReturn?.lines?.map((line) => (
+                    <tr key={line.id} className="border-b">
+                      <td className="px-4 py-2">{line.product?.name}</td>
+                      <td className="px-4 py-2 font-mono">{line.product?.sku}</td>
+                      <td className="px-4 py-2 font-bold text-blue-600">
+                        {formatArabicNumber(Number(line.qty))} {line.product?.unit || 'صندوق'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">ملاحظات المخزن</label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
+                placeholder="أضف ملاحظات عند الاستلام..."
+              />
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowReturnDetailsModal(false);
+                  setSelectedReturnOrder(null);
+                  setNotes('');
+                }}
+                className="px-4 py-2 border rounded-lg"
+              >
+                إغلاق
+              </button>
+              {selectedReturnOrder.status === 'PENDING' && (
+                <>
+                  <button
+                    onClick={() => handleUpdateReturnStatus(selectedReturnOrder.id, 'COMPLETED')}
+                    disabled={isUpdatingReturn}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                  >
+                    تأكيد الاستلام
+                  </button>
+                  <button
+                    onClick={() => handleUpdateReturnStatus(selectedReturnOrder.id, 'CANCELLED')}
+                    disabled={isUpdatingReturn}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                  >
+                    رفض الاستلام
                   </button>
                 </>
               )}

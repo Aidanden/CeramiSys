@@ -17,28 +17,28 @@ function loadProductCosts() {
     console.log("⚠️ ملف product_seed_ غير موجود، سيتم تخطي التكلفة");
     return;
   }
-  
+
   const content = fs.readFileSync(seedFilePath, "utf-8");
   const lines = content.split("\n");
-  
+
   // تخطي السطر الأول (العناوين)
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
-    
+
     // تقسيم السطر بالتاب
     const parts = line.split("\t");
     if (parts.length >= 5) {
       const sku = parts[0].trim();
       const costStr = parts[4].trim();
       const cost = parseFloat(costStr);
-      
+
       if (sku && !isNaN(cost) && cost > 0) {
         productCostMap.set(sku, cost);
       }
     }
   }
-  
+
   console.log(`✅ تم تحميل ${productCostMap.size} تكلفة من ملف product_seed_`);
 }
 
@@ -47,6 +47,9 @@ async function deleteAllData() {
   // Delete in reverse order to handle foreign key constraints
   const deletionOrder = [
     "notification",                  // Notification model
+    "treasuryTransaction",           // TreasuryTransaction model
+    "treasury",                      // Treasury model
+    "returnOrder",                   // ReturnOrder model
     "dispatchOrder",                 // DispatchOrder model
     "purchaseFromParentReceipt",     // PurchaseFromParentReceipt model
     "receipt",                       // Receipt model
@@ -100,12 +103,12 @@ async function deleteAllData() {
 async function main() {
   // تحميل التكلفة من ملف product_seed_
   loadProductCosts();
-  
+
   const dataDirectory = path.resolve("prisma", "seedData");
 
   const orderedFileNames = [
     "Company.json",
-    "UserRoles.json", 
+    "UserRoles.json",
     "Users.json",
     "Product.json",
     "Stock.json",
@@ -113,7 +116,8 @@ async function main() {
     "Customer.json",
     "Supplier.json",
     "PurchaseExpenseCategory.json",
-    "ExpenseCategorySupplier.json"
+    "ExpenseCategorySupplier.json",
+    "Treasury.json"
   ];
 
   await deleteAllData();
@@ -122,7 +126,7 @@ async function main() {
     const filePath = path.join(dataDirectory, fileName);
     const jsonData = JSON.parse(fs.readFileSync(filePath, "utf-8"));
     const baseModelName = path.basename(fileName, path.extname(fileName));
-    
+
     // تحويل أسماء النماذج إلى أسماء Prisma الصحيحة
     let modelName: string;
     switch (baseModelName) {
@@ -171,7 +175,7 @@ async function main() {
     if (modelName === 'product') {
       let productCount = 0;
       let oldId = 1; // عداد للـ IDs القديمة (1, 2, 3, ...)
-      
+
       for (const data of jsonData) {
         try {
           // توليد QR Code للصنف
@@ -182,7 +186,7 @@ async function main() {
             unit: data.unit,
             unitsPerBox: data.unitsPerBox
           };
-          
+
           const qrCodeDataUrl = await QRCode.toDataURL(JSON.stringify(qrData), {
             errorCorrectionLevel: 'M',
             type: 'image/png',
@@ -194,10 +198,10 @@ async function main() {
           const costFromJson = data.cost;
           const costFromFile = productCostMap.get(data.sku);
           const cost = costFromJson !== undefined ? costFromJson : costFromFile;
-          
+
           // إزالة cost من data لأننا سنضيفها بشكل منفصل
           const { cost: _, ...dataWithoutCost } = data;
-          
+
           // إنشاء الصنف مع QR Code والتكلفة
           const createdProduct = await model.create({
             data: {
@@ -248,7 +252,7 @@ async function main() {
         try {
           // الحصول على الـ ID الجديد من الـ mapping
           const newProductId = createdProductsMap.get(data.productId);
-          
+
           if (!newProductId) {
             console.error(`  ⚠️ تخطي Stock: productId ${data.productId} غير موجود في الأصناف المُنشأة`);
             continue;
@@ -260,7 +264,7 @@ async function main() {
               productId: newProductId // استخدام الـ ID الجديد
             },
           });
-          
+
           stockCount++;
           console.log(`  ✅ [${stockCount}/${jsonData.length}] تم إنشاء Stock: Company ${data.companyId}, Product ${newProductId}, Boxes: ${data.boxes}`);
         } catch (error) {
@@ -275,7 +279,7 @@ async function main() {
         try {
           // الحصول على الـ ID الجديد من الـ mapping
           const newProductId = createdProductsMap.get(data.productId);
-          
+
           if (!newProductId) {
             console.error(`  ⚠️ تخطي CompanyProductPrice: productId ${data.productId} غير موجود في الأصناف المُنشأة`);
             continue;
@@ -287,7 +291,7 @@ async function main() {
               productId: newProductId // استخدام الـ ID الجديد للصنف
             },
           });
-          
+
           priceCount++;
           console.log(`  ✅ [${priceCount}/${jsonData.length}] تم إنشاء السعر: الشركة ${data.companyId}, الصنف ${newProductId}, السعر: ${data.sellPrice}`);
         } catch (error) {

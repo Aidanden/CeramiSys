@@ -185,12 +185,12 @@ export interface CustomersResponse {
 export const salesApi = createApi({
   reducerPath: "salesApi",
   baseQuery: baseQueryWithAuthInterceptor,
-  tagTypes: ["Sales", "Sale", "SalesStats", "Customers", "Customer", "CustomerAccountSummary", "Treasury", "TreasuryTransaction"],
+  tagTypes: ["Sales", "Sale", "SalesStats", "Customers", "Customer", "CustomerAccountSummary", "Treasury", "TreasuryTransaction", "TreasuryStats"],
   // تطبيق إعدادات التحديث الفوري من config.ts
   ...API_CACHE_CONFIG.sales,
   endpoints: (builder) => ({
     // ============== المبيعات ==============
-    
+
     /**
      * الحصول على قائمة المبيعات
      */
@@ -207,9 +207,9 @@ export const salesApi = createApi({
       providesTags: (result) =>
         result
           ? [
-              ...result.data.sales.map(({ id }) => ({ type: "Sale" as const, id })),
-              { type: "Sales", id: "LIST" },
-            ]
+            ...result.data.sales.map(({ id }) => ({ type: "Sale" as const, id })),
+            { type: "Sales", id: "LIST" },
+          ]
           : [{ type: "Sales", id: "LIST" }],
       keepUnusedDataFor: API_CACHE_CONFIG.sales.keepUnusedDataFor,
     }),
@@ -238,8 +238,8 @@ export const salesApi = createApi({
           id: Date.now(), // ID مؤقت
           invoiceNumber: `TEMP-${Date.now()}`,
           customerId: arg.customerId,
-          customer: arg.customerId ? { 
-            id: arg.customerId, 
+          customer: arg.customerId ? {
+            id: arg.customerId,
             name: 'جاري التحميل...',
             phone: '',
             note: ''
@@ -259,7 +259,7 @@ export const salesApi = createApi({
 
         // تحديث فوري للـ cache - تحديث جميع الـ queries المحتملة
         const patchResults: any[] = [];
-        
+
         // تحديث الـ query الافتراضي
         patchResults.push(
           dispatch(
@@ -270,7 +270,7 @@ export const salesApi = createApi({
             })
           )
         );
-        
+
         // تحديث الـ queries مع pagination
         for (let page = 1; page <= 5; page++) {
           patchResults.push(
@@ -287,7 +287,7 @@ export const salesApi = createApi({
         try {
           const { data: response } = await queryFulfilled;
           const realSale = response.data;
-          
+
           // استبدال البيانات المؤقتة بالبيانات الحقيقية في جميع الـ queries
           dispatch(
             salesApi.util.updateQueryData('getSales', {}, (draft) => {
@@ -299,7 +299,7 @@ export const salesApi = createApi({
               }
             })
           );
-          
+
           // تحديث الـ queries مع pagination
           for (let page = 1; page <= 5; page++) {
             dispatch(
@@ -341,7 +341,7 @@ export const salesApi = createApi({
       async onQueryStarted({ id, data }, { dispatch, queryFulfilled }) {
         // Optimistic update للفاتورة المحدثة
         const patchResults: any[] = [];
-        
+
         try {
           // تحديث جميع الـ queries
           patchResults.push(
@@ -354,7 +354,7 @@ export const salesApi = createApi({
               })
             )
           );
-          
+
           patchResults.push(
             dispatch(
               salesApi.util.updateQueryData('getSales', { page: 1, limit: 1000, search: undefined }, (draft) => {
@@ -365,7 +365,7 @@ export const salesApi = createApi({
               })
             )
           );
-          
+
           await queryFulfilled;
         } catch {
           // في حالة الخطأ، نرجع التغييرات
@@ -390,7 +390,7 @@ export const salesApi = createApi({
       async onQueryStarted(id, { dispatch, queryFulfilled }) {
         // Optimistic update لحذف الفاتورة
         const patchResults: any[] = [];
-        
+
         try {
           // حذف من جميع الـ queries
           patchResults.push(
@@ -402,7 +402,7 @@ export const salesApi = createApi({
               })
             )
           );
-          
+
           patchResults.push(
             dispatch(
               salesApi.util.updateQueryData('getSales', { page: 1, limit: 1000, search: undefined }, (draft) => {
@@ -412,7 +412,7 @@ export const salesApi = createApi({
               })
             )
           );
-          
+
           await queryFulfilled;
         } catch {
           // في حالة الخطأ، نرجع التغييرات
@@ -447,9 +447,9 @@ export const salesApi = createApi({
       providesTags: (result) =>
         result
           ? [
-              ...result.data.sales.map(({ id }) => ({ type: "Sale" as const, id })),
-              { type: "Sales", id: "CASH_LIST" },
-            ]
+            ...result.data.sales.map(({ id }) => ({ type: "Sale" as const, id })),
+            { type: "Sales", id: "CASH_LIST" },
+          ]
           : [{ type: "Sales", id: "CASH_LIST" }],
     }),
 
@@ -466,6 +466,9 @@ export const salesApi = createApi({
         { type: "Sales", id: "LIST" },
         { type: "Sales", id: "CASH_LIST" },
         { type: "SalesStats", id: "STATS" },
+        "Treasury",
+        "TreasuryTransaction",
+        "TreasuryStats"
       ],
     }),
 
@@ -487,9 +490,9 @@ export const salesApi = createApi({
       providesTags: (result) =>
         result
           ? [
-              ...result.data.customers.map(({ id }) => ({ type: "Customer" as const, id })),
-              { type: "Customers", id: "LIST" },
-            ]
+            ...result.data.customers.map(({ id }) => ({ type: "Customer" as const, id })),
+            { type: "Customers", id: "LIST" },
+          ]
           : [{ type: "Customers", id: "LIST" }],
     }),
 
@@ -516,7 +519,7 @@ export const salesApi = createApi({
         try {
           const { data: response } = await queryFulfilled;
           const newCustomer = response.data;
-          
+
           // تحديث الـ cache مباشرة بإضافة العميل الجديد
           dispatch(
             salesApi.util.updateQueryData('getCustomers', { limit: 1000 }, (draft) => {
@@ -525,7 +528,7 @@ export const salesApi = createApi({
               }
             })
           );
-        } catch {}
+        } catch { }
       },
     }),
 
@@ -562,7 +565,7 @@ export const salesApi = createApi({
      * اعتماد فاتورة مبدئية
      */
     approveSale: builder.mutation<
-      { success: boolean; message: string; data: Sale }, 
+      { success: boolean; message: string; data: Sale },
       { id: number; saleType: "CASH" | "CREDIT"; paymentMethod?: "CASH" | "BANK" | "CARD"; bankAccountId?: number }
     >({
       query: ({ id, ...data }) => ({
@@ -574,8 +577,9 @@ export const salesApi = createApi({
         { type: "Sale", id },
         { type: "Sales", id: "LIST" },
         { type: "CustomerAccountSummary", id: "LIST" }, // تحديث ملخص حسابات العملاء
-        { type: "Treasury", id: "LIST" }, // تحديث الخزائن
-        { type: "TreasuryTransaction", id: "LIST" }, // تحديث حركات الخزينة
+        "Treasury",
+        "TreasuryTransaction",
+        "TreasuryStats" // تحديث إحصائيات الخزينة
       ],
     }),
   }),

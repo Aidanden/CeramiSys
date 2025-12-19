@@ -48,6 +48,54 @@ export interface DispatchOrder {
   notes?: string;
 }
 
+export interface ReturnOrder {
+  id: number;
+  saleReturnId: number;
+  saleReturn?: {
+    id: number;
+    returnNumber: string;
+    customer?: {
+      id: number;
+      name: string;
+      phone?: string;
+    };
+    sale?: {
+      id: number;
+      invoiceNumber: string;
+    };
+    total: number;
+    lines: Array<{
+      id: number;
+      productId: number;
+      product?: {
+        id: number;
+        name: string;
+        sku: string;
+        unit?: string;
+        unitsPerBox?: number;
+      };
+      qty: number;
+      unitPrice: number;
+      subtotal: number;
+    }>;
+  };
+  company?: {
+    id: number;
+    name: string;
+    code: string;
+  };
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+  completedBy?: number;
+  completedByUser?: {
+    id: number;
+    name: string;
+  };
+  notes?: string;
+}
+
 export interface CreateDispatchOrderRequest {
   saleId: number;
   notes?: string;
@@ -77,10 +125,20 @@ export interface DispatchOrdersResponse {
   };
 }
 
+export interface ReturnOrdersResponse {
+  returnOrders: ReturnOrder[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
 export const warehouseApi = createApi({
   reducerPath: 'warehouseApi',
   baseQuery: baseQueryWithAuthInterceptor,
-  tagTypes: ['DispatchOrders', 'Sales'],
+  tagTypes: ['DispatchOrders', 'Sales', 'ReturnOrders', 'SaleReturns', 'Treasury', 'TreasuryTransaction', 'TreasuryStats'],
   // تطبيق إعدادات عدم الكاش
   keepUnusedDataFor: API_CACHE_CONFIG.warehouse.keepUnusedDataFor,
   refetchOnMountOrArgChange: API_CACHE_CONFIG.warehouse.refetchOnMountOrArgChange,
@@ -115,7 +173,7 @@ export const warehouseApi = createApi({
         try {
           const { data: response } = await queryFulfilled;
           const newOrder = response.data;
-          
+
           // تحديث الـ cache مباشرة - إضافة الأمر الجديد في بداية القائمة
           dispatch(
             warehouseApi.util.updateQueryData('getDispatchOrders', { limit: 100 }, (draft) => {
@@ -147,7 +205,7 @@ export const warehouseApi = createApi({
       async onQueryStarted({ id, body }, { dispatch, queryFulfilled }) {
         // Optimistic update لتحديث حالة الأمر
         const patchResults: any[] = [];
-        
+
         try {
           patchResults.push(
             dispatch(
@@ -162,7 +220,7 @@ export const warehouseApi = createApi({
               })
             )
           );
-          
+
           await queryFulfilled;
         } catch {
           // في حالة الخطأ، نرجع التغييرات
@@ -181,7 +239,7 @@ export const warehouseApi = createApi({
       async onQueryStarted(id, { dispatch, queryFulfilled }) {
         // Optimistic update لحذف الأمر
         const patchResults: any[] = [];
-        
+
         try {
           patchResults.push(
             dispatch(
@@ -192,13 +250,42 @@ export const warehouseApi = createApi({
               })
             )
           );
-          
+
           await queryFulfilled;
         } catch {
           // في حالة الخطأ، نرجع التغييرات
           patchResults.forEach(patchResult => patchResult.undo());
         }
       },
+    }),
+
+    // Get all return orders
+    getReturnOrders: builder.query<{ data: ReturnOrdersResponse }, GetDispatchOrdersParams>({
+      query: (params) => ({
+        url: '/warehouse/return-orders',
+        params,
+      }),
+      providesTags: ['ReturnOrders'],
+    }),
+
+    // Update return order status
+    updateReturnOrderStatus: builder.mutation<
+      { data: ReturnOrder },
+      { id: number; body: UpdateDispatchOrderStatusRequest }
+    >({
+      query: ({ id, body }) => ({
+        url: `/warehouse/return-orders/${id}/status`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        'ReturnOrders',
+        { type: 'ReturnOrders', id },
+        'SaleReturns',
+        'Treasury',
+        'TreasuryTransaction',
+        'TreasuryStats'
+      ],
     }),
   }),
 });
@@ -209,4 +296,6 @@ export const {
   useCreateDispatchOrderMutation,
   useUpdateDispatchOrderStatusMutation,
   useDeleteDispatchOrderMutation,
+  useGetReturnOrdersQuery,
+  useUpdateReturnOrderStatusMutation,
 } = warehouseApi;

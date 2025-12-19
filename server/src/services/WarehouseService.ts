@@ -121,6 +121,90 @@ export class WarehouseService {
   }
 
   /**
+   * الحصول على جميع طلبات الاستلام (المردودات)
+   */
+  async getReturnOrders(query: GetDispatchOrdersQueryDto, userCompanyId: number, isSystemUser: boolean = false) {
+    try {
+      const page = query.page || 1;
+      const limit = query.limit || 20;
+      const skip = (page - 1) * limit;
+
+      const where: any = {};
+      if (!isSystemUser) {
+        where.companyId = userCompanyId;
+      }
+
+      if (query.status) {
+        where.status = query.status;
+      }
+
+      if (query.search) {
+        where.saleReturn = {
+          OR: [
+            { returnNumber: { contains: query.search, mode: 'insensitive' } },
+            { customer: { name: { contains: query.search, mode: 'insensitive' } } },
+            { sale: { invoiceNumber: { contains: query.search, mode: 'insensitive' } } }
+          ]
+        };
+      }
+
+      if (query.startDate || query.endDate) {
+        where.createdAt = {};
+        if (query.startDate) where.createdAt.gte = new Date(query.startDate);
+        if (query.endDate) where.createdAt.lte = new Date(query.endDate);
+      }
+
+      const [returnOrders, total] = await Promise.all([
+        this.prisma.returnOrder.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            saleReturn: {
+              include: {
+                customer: {
+                  select: { id: true, name: true, phone: true }
+                },
+                sale: {
+                  select: { id: true, invoiceNumber: true }
+                },
+                lines: {
+                  include: {
+                    product: {
+                      select: { id: true, name: true, sku: true, unit: true, unitsPerBox: true }
+                    }
+                  }
+                }
+              }
+            },
+            company: {
+              select: { id: true, name: true, code: true }
+            },
+            completedByUser: {
+              select: { UserID: true, FullName: true }
+            }
+          }
+        }),
+        this.prisma.returnOrder.count({ where })
+      ]);
+
+      return {
+        returnOrders,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (error) {
+      console.error('Error fetching return orders:', error);
+      throw error;
+    }
+  }
+
+  /**
    * الحصول على أمر صرف واحد
    */
   async getDispatchOrderById(id: number, userCompanyId: number, isSystemUser: boolean = false) {
@@ -340,6 +424,91 @@ export class WarehouseService {
       return dispatchOrder;
     } catch (error) {
       console.error('Error updating dispatch order status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * تحديث حالة طلب الاستلام (المردود)
+   */
+  async updateReturnOrderStatus(
+    id: number,
+    data: UpdateDispatchOrderStatusDto,
+    userId: string,
+    userCompanyId: number,
+    isSystemUser: boolean = false
+  ) {
+    try {
+      const where: any = { id };
+      if (!isSystemUser) {
+        where.companyId = userCompanyId;
+      }
+
+      const existingOrder = await this.prisma.returnOrder.findFirst({
+        where
+      });
+
+      if (!existingOrder) {
+        throw new Error('Return order not found');
+      }
+
+      if (existingOrder.status === 'COMPLETED' || existingOrder.status === 'CANCELLED') {
+        throw new Error('Cannot update a completed or cancelled return order');
+      }
+
+      const updateData: any = {
+        status: data.status,
+        notes: data.notes || existingOrder.notes,
+        updatedAt: new Date()
+      };
+
+      if (data.status === 'COMPLETED') {
+        updateData.completedAt = new Date();
+        updateData.completedBy = userId;
+      }
+
+      const returnOrder = await this.prisma.$transaction(async (tx) => {
+        const updated = await tx.returnOrder.update({
+          where: { id },
+          data: updateData,
+          include: {
+            saleReturn: {
+              include: {
+                customer: {
+                  select: { id: true, name: true, phone: true }
+                },
+                lines: {
+                  include: {
+                    product: {
+                      select: { id: true, name: true, sku: true, unit: true, unitsPerBox: true }
+                    }
+                  }
+                }
+              }
+            },
+            company: {
+              select: { id: true, name: true, code: true }
+            },
+            completedByUser: {
+              select: { UserID: true, FullName: true }
+            }
+          }
+        });
+
+        // إذا اكتمل الاستلام، نحدث حالة المردود في الشاشة الرئيسية
+        if (data.status === 'COMPLETED') {
+          await tx.saleReturn.update({
+            where: { id: updated.saleReturnId },
+            data: { status: 'RECEIVED_WAREHOUSE' as any }
+          });
+        }
+
+        return updated;
+      });
+
+      return returnOrder;
+    } catch (error) {
+      console.error('Error updating return order status:', error);
       throw error;
     }
   }

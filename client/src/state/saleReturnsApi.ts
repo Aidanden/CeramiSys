@@ -8,7 +8,7 @@ import { baseQueryWithAuthInterceptor } from "./apiUtils";
 import { API_CACHE_CONFIG } from "@/lib/config";
 
 // Types للمرتجعات
-export type ReturnStatus = "PENDING" | "APPROVED" | "REJECTED" | "PROCESSED";
+export type ReturnStatus = "PENDING" | "APPROVED" | "REJECTED" | "PROCESSED" | "RECEIVED_WAREHOUSE";
 export type PaymentMethod = "CASH" | "BANK" | "CARD";
 
 export interface SaleReturnLine {

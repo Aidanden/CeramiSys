@@ -44,6 +44,19 @@ export class SaleReturnService {
       throw new Error('لا يمكن إرجاع منتجات من فاتورة غير معتمدة');
     }
 
+    // التحقق من أن الفاتورة تم تسليمها من المخزن
+    const dispatchOrders = await prisma.dispatchOrder.findMany({
+      where: { saleId: data.saleId }
+    });
+
+    if (dispatchOrders.length === 0) {
+      throw new Error('لا يمكن إجراء مردود لفاتورة لم يتم إصدار أمر صرف لها بعد');
+    }
+
+    if (dispatchOrders.some(order => order.status === 'PENDING')) {
+      throw new Error('لا يمكن إجراء مردود لفاتورة لم يتم تسليمها من المخزن بعد (أمر الصرف حالته معلق)');
+    }
+
     // التحقق من أن الكميات المردودة صحيحة
     for (const returnLine of data.lines) {
       const saleLine = sale.lines.find(l => l.productId === returnLine.productId);
@@ -134,6 +147,15 @@ export class SaleReturnService {
           }
         });
       }
+
+      // إنشاء طلب استلام للمخزن
+      await tx.returnOrder.create({
+        data: {
+          saleReturnId: newReturn.id,
+          companyId: companyId,
+          status: 'PENDING'
+        }
+      });
 
       return newReturn;
     });

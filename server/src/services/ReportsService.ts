@@ -105,6 +105,7 @@ export class ReportsService {
             name: true,
             unit: true,
             unitsPerBox: true,
+            cost: true,
             prices: {
               select: { companyId: true, sellPrice: true }
             }
@@ -116,10 +117,16 @@ export class ReportsService {
 
     // حساب الإحصائيات
     const totalBoxes = stocks.reduce((sum, stock) => sum + Number(stock.boxes), 0);
+    const totalUnits = stocks.reduce((sum, stock) => {
+      const unitsPerBox = stock.product.unitsPerBox ? Number(stock.product.unitsPerBox) : 1;
+      return sum + (Number(stock.boxes) * unitsPerBox);
+    }, 0);
+
     const totalValue = stocks.reduce((sum, stock) => {
-      const companyPriceEntry = stock.product.prices.find((price) => price.companyId === stock.companyId);
-      const sellPrice = companyPriceEntry ? Number(companyPriceEntry.sellPrice) : 0;
-      return sum + (Number(stock.boxes) * sellPrice);
+      const costPrice = stock.product.cost ? Number(stock.product.cost) : 0;
+      const unitsPerBox = stock.product.unitsPerBox ? Number(stock.product.unitsPerBox) : 1;
+      const tUnits = Number(stock.boxes) * unitsPerBox;
+      return sum + (tUnits * costPrice);
     }, 0);
 
     return {
@@ -137,6 +144,7 @@ export class ReportsService {
             unit: stock.product.unit,
             unitsPerBox: stock.product.unitsPerBox ? Number(stock.product.unitsPerBox) : null,
             sellPrice,
+            costPrice: stock.product.cost ? Number(stock.product.cost) : 0,
           },
           boxes: Number(stock.boxes),
           totalUnits: stock.product.unitsPerBox
@@ -147,6 +155,7 @@ export class ReportsService {
       }),
       stats: {
         totalBoxes,
+        totalUnits,
         totalValue,
         itemsCount: stocks.length,
         lowStockItems: stocks.filter(s => Number(s.boxes) < 10).length,

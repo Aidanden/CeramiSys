@@ -62,6 +62,38 @@ export const getDispatchOrders = async (req: Request, res: Response): Promise<vo
 };
 
 /**
+ * الحصول على جميع طلبات الاستلام (المردودات)
+ */
+export const getReturnOrders = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userCompanyId = (req as any).user?.companyId;
+    const isSystemUser = (req as any).user?.isSystemUser || false;
+
+    if (!userCompanyId && !isSystemUser) {
+      res.status(401).json({
+        success: false,
+        message: 'غير مصرح - معرف الشركة مفقود'
+      });
+      return;
+    }
+
+    const query = GetDispatchOrdersQuerySchema.parse(req.query);
+    const result = await warehouseService.getReturnOrders(query, userCompanyId, isSystemUser);
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error: any) {
+    console.error('Error in getReturnOrders:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+/**
  * الحصول على أمر صرف واحد
  */
 export const getDispatchOrderById = async (req: Request, res: Response): Promise<void> => {
@@ -151,6 +183,47 @@ export const updateDispatchOrderStatus = async (req: Request, res: Response): Pr
   } catch (error: any) {
     console.error('Error in updateDispatchOrderStatus:', error);
     res.status(error.message === 'Dispatch order not found' ? 404 : 400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+/**
+ * تحديث حالة طلب الاستلام (المردود)
+ */
+export const updateReturnOrderStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = (req as any).user?.userId;
+    const userCompanyId = (req as any).user?.companyId;
+    const isSystemUser = (req as any).user?.isSystemUser || false;
+    const { id } = req.params;
+
+    if (!userCompanyId && !isSystemUser) {
+      res.status(401).json({
+        success: false,
+        message: 'غير مصرح - معرف الشركة مفقود'
+      });
+      return;
+    }
+
+    const data = UpdateDispatchOrderStatusSchema.parse(req.body);
+    const result = await warehouseService.updateReturnOrderStatus(
+      Number(id),
+      data,
+      userId,
+      userCompanyId,
+      isSystemUser
+    );
+
+    res.status(200).json({
+      success: true,
+      data: result,
+      message: 'تم تحديث حالة المردود بنجاح'
+    });
+  } catch (error: any) {
+    console.error('Error in updateReturnOrderStatus:', error);
+    res.status(error.message === 'Return order not found' ? 404 : 400).json({
       success: false,
       message: error.message
     });

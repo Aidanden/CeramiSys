@@ -28,7 +28,7 @@ export interface SaleReturn {
   remainingAmount: number;
   isFullyPaid: boolean;
   refundMethod?: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
+  status: "PENDING" | "APPROVED" | "REJECTED" | "RECEIVED_WAREHOUSE";
   reason?: string;
   notes?: string;
   createdAt: string;
@@ -103,7 +103,7 @@ export interface ReturnPaymentsQueryParams {
 export const saleReturnApi = createApi({
   reducerPath: "saleReturnApi",
   baseQuery: baseQueryWithAuthInterceptor,
-  tagTypes: ["SaleReturns", "ReturnPayments", "Sales", "CustomerAccountSummary"],
+  tagTypes: ["SaleReturns", "ReturnPayments", "Sales", "CustomerAccountSummary", "Treasury", "TreasuryTransaction", "TreasuryStats"],
   endpoints: (build) => ({
     // Get all sale returns
     getSaleReturns: build.query<
@@ -133,9 +133,9 @@ export const saleReturnApi = createApi({
       providesTags: (result) =>
         result
           ? [
-              ...result.data.map(({ id }) => ({ type: "SaleReturns" as const, id })),
-              { type: "SaleReturns", id: "LIST" },
-            ]
+            ...result.data.map(({ id }) => ({ type: "SaleReturns" as const, id })),
+            { type: "SaleReturns", id: "LIST" },
+          ]
           : [{ type: "SaleReturns", id: "LIST" }],
     }),
 
@@ -256,9 +256,9 @@ export const saleReturnApi = createApi({
       providesTags: (result) =>
         result
           ? [
-              ...result.data.map(({ id }) => ({ type: "ReturnPayments" as const, id })),
-              { type: "ReturnPayments", id: "LIST" },
-            ]
+            ...result.data.map(({ id }) => ({ type: "ReturnPayments" as const, id })),
+            { type: "ReturnPayments", id: "LIST" },
+          ]
           : [{ type: "ReturnPayments", id: "LIST" }],
     }),
 
@@ -281,6 +281,9 @@ export const saleReturnApi = createApi({
         { type: "SaleReturns", id: arg.saleReturnId },
         { type: "SaleReturns", id: "LIST" },
         { type: "CustomerAccountSummary", id: "LIST" },
+        "Treasury",
+        "TreasuryTransaction",
+        "TreasuryStats"
       ],
     }),
 
@@ -300,6 +303,9 @@ export const saleReturnApi = createApi({
         { type: "ReturnPayments", id: "LIST" },
         { type: "SaleReturns", id: "LIST" },
         { type: "CustomerAccountSummary", id: "LIST" },
+        "Treasury",
+        "TreasuryTransaction",
+        "TreasuryStats"
       ],
     }),
   }),

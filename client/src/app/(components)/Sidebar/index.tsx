@@ -208,7 +208,7 @@ const Sidebar = () => {
               isCollapsed={isSidebarCollapsed}
             />
           )}
-           {canAccessScreen('/treasury') && (
+          {canAccessScreen('/treasury') && (
             <SidebarLink
               href="/treasury"
               icon={Wallet}
@@ -237,6 +237,14 @@ const Sidebar = () => {
               href="/warehouse-dispatch"
               icon={Layout}
               label="أوامر صرف المخزن"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
+          {canAccessScreen('/warehouse-returns') && (
+            <SidebarLink
+              href="/warehouse-returns"
+              icon={Returns}
+              label="استلام المردودات"
               isCollapsed={isSidebarCollapsed}
             />
           )}
@@ -274,7 +282,7 @@ const Sidebar = () => {
               isCollapsed={isSidebarCollapsed}
             />
           )}
-         
+
 
           {canAccessScreen('/damage-reports') && (
             <SidebarLink

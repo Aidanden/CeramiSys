@@ -19,7 +19,7 @@ export interface SaleReturnFormState {
 interface SaleReturnsState {
   currentPage: number;
   searchTerm: string;
-  statusFilter: 'PENDING' | 'APPROVED' | 'REJECTED' | 'PROCESSED' | '';
+  statusFilter: 'PENDING' | 'APPROVED' | 'REJECTED' | 'PROCESSED' | 'RECEIVED_WAREHOUSE' | '';
   showCreateModal: boolean;
   showDetailsModal: boolean;
   selectedReturnId: number | null;
@@ -53,7 +53,7 @@ const saleReturnsSlice = createSlice({
     setSearchTerm: (state, action: PayloadAction<string>) => {
       state.searchTerm = action.payload;
     },
-    setStatusFilter: (state, action: PayloadAction<'PENDING' | 'APPROVED' | 'REJECTED' | 'PROCESSED' | ''>) => {
+    setStatusFilter: (state, action: PayloadAction<'PENDING' | 'APPROVED' | 'REJECTED' | 'PROCESSED' | 'RECEIVED_WAREHOUSE' | ''>) => {
       state.statusFilter = action.payload;
     },
     setShowCreateModal: (state, action: PayloadAction<boolean>) => {
@@ -83,7 +83,7 @@ const saleReturnsSlice = createSlice({
       const { index, field, value } = action.payload;
       if (state.returnForm.lines[index]) {
         state.returnForm.lines[index][field] = value;
-        
+
         // حساب الإجمالي الفرعي
         if (field === 'qty' || field === 'unitPrice') {
           const line = state.returnForm.lines[index];

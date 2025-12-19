@@ -11,7 +11,9 @@ import {
   createDispatchOrder,
   updateDispatchOrderStatus,
   deleteDispatchOrder,
-  getDispatchOrderStats
+  getDispatchOrderStats,
+  getReturnOrders,
+  updateReturnOrderStatus
 } from '../controllers/WarehouseController';
 
 const router = Router();
@@ -23,5 +25,9 @@ router.get('/dispatch-orders', authenticateToken, getDispatchOrders);
 router.post('/dispatch-orders', authenticateToken, createDispatchOrder);
 router.patch('/dispatch-orders/:id/status', authenticateToken, updateDispatchOrderStatus);
 router.delete('/dispatch-orders/:id', authenticateToken, deleteDispatchOrder);
+
+// طلبات استلام المردودات
+router.get('/return-orders', authenticateToken, getReturnOrders);
+router.patch('/return-orders/:id/status', authenticateToken, updateReturnOrderStatus);
 
 export default router;
