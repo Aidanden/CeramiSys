@@ -85,6 +85,10 @@ const getTransactionSourceLabel = (source: string) => {
         case 'TRANSFER_IN': return 'تحويل وارد';
         case 'TRANSFER_OUT': return 'تحويل صادر';
         case 'OPENING_BALANCE': return 'رصيد افتتاحي';
+        case 'SALARY': return 'رواتب';
+        case 'BONUS': return 'مكافآت';
+        case 'BAD_DEBT': return 'مصروفات معدومة';
+        case 'SALE': return 'مبيعات';
         default: return source;
     }
 };
@@ -103,6 +107,31 @@ const TreasuryTypeIcon = ({ type }: { type: string }) => {
     }
 };
 
+interface MainStatCardProps {
+    title: string;
+    value: string;
+    subtitle?: string;
+    icon: any;
+    iconBgColor: string;
+}
+
+const MainStatCard = ({ title, value, subtitle, icon: Icon, iconBgColor }: MainStatCardProps) => {
+    return (
+        <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-6 hover:shadow-md hover:border-blue-200 transition-all duration-300">
+            <div className="flex items-start justify-between">
+                <div className="flex-1">
+                    <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
+                    <p className="text-2xl font-bold text-slate-800">{value}</p>
+                    {subtitle && <p className="text-xs text-slate-400 mt-1">{subtitle}</p>}
+                </div>
+                <div className={`w-14 h-14 ${iconBgColor} rounded-xl flex items-center justify-center shadow-sm`}>
+                    <Icon className="w-7 h-7 text-white" />
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export default function TreasuryPage() {
     // State
     const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'treasuries'>('overview');
@@ -110,14 +139,14 @@ export default function TreasuryPage() {
     const [showTransactionModal, setShowTransactionModal] = useState(false);
     const [showTransferModal, setShowTransferModal] = useState(false);
     const [transactionType, setTransactionType] = useState<'DEPOSIT' | 'WITHDRAWAL'>('DEPOSIT');
-    
+
     // Filters
     const [selectedTreasury, setSelectedTreasury] = useState<number | null>(null);
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
     const [transactionTypeFilter, setTransactionTypeFilter] = useState('');
     const [page, setPage] = useState(1);
-    
+
     // Form State
     const [treasuryForm, setTreasuryForm] = useState({
         name: '',
@@ -127,13 +156,13 @@ export default function TreasuryPage() {
         accountNumber: '',
         openingBalance: '',
     });
-    
+
     const [transactionForm, setTransactionForm] = useState({
         treasuryId: '',
         amount: '',
         description: '',
     });
-    
+
     const [transferForm, setTransferForm] = useState({
         fromTreasuryId: '',
         toTreasuryId: '',
@@ -312,42 +341,30 @@ export default function TreasuryPage() {
             {/* Stats Cards */}
             {!statsLoading && stats && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-blue-100 text-sm">إجمالي الرصيد</p>
-                                <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalBalance)}</p>
-                            </div>
-                            <DollarSign className="w-12 h-12 text-blue-200 opacity-80" />
-                        </div>
-                    </div>
-                    <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-green-100 text-sm">خزائن الشركات</p>
-                                <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalCompanyBalance)}</p>
-                            </div>
-                            <Building2 className="w-12 h-12 text-green-200 opacity-80" />
-                        </div>
-                    </div>
-                    <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl p-6 text-white shadow-lg">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-yellow-100 text-sm">الخزينة العامة</p>
-                                <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalGeneralBalance)}</p>
-                            </div>
-                            <PiggyBank className="w-12 h-12 text-yellow-200 opacity-80" />
-                        </div>
-                    </div>
-                    <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-purple-100 text-sm">الحسابات المصرفية</p>
-                                <p className="text-2xl font-bold mt-1">{formatCurrency(stats.totalBankBalance)}</p>
-                            </div>
-                            <CreditCard className="w-12 h-12 text-purple-200 opacity-80" />
-                        </div>
-                    </div>
+                    <MainStatCard
+                        title="إجمالي الرصيد"
+                        value={formatCurrency(stats.totalBalance)}
+                        icon={DollarSign}
+                        iconBgColor="bg-blue-500"
+                    />
+                    <MainStatCard
+                        title="خزائن الشركات"
+                        value={formatCurrency(stats.totalCompanyBalance)}
+                        icon={Building2}
+                        iconBgColor="bg-green-500"
+                    />
+                    <MainStatCard
+                        title="الخزينة العامة"
+                        value={formatCurrency(stats.totalGeneralBalance)}
+                        icon={PiggyBank}
+                        iconBgColor="bg-yellow-500"
+                    />
+                    <MainStatCard
+                        title="الحسابات المصرفية"
+                        value={formatCurrency(stats.totalBankBalance)}
+                        icon={CreditCard}
+                        iconBgColor="bg-purple-500"
+                    />
                 </div>
             )}
 
@@ -356,31 +373,28 @@ export default function TreasuryPage() {
                 <nav className="flex gap-4">
                     <button
                         onClick={() => setActiveTab('overview')}
-                        className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${
-                            activeTab === 'overview'
-                                ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                        }`}
+                        className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'overview'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                            }`}
                     >
                         نظرة عامة
                     </button>
                     <button
                         onClick={() => setActiveTab('transactions')}
-                        className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${
-                            activeTab === 'transactions'
-                                ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                        }`}
+                        className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'transactions'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                            }`}
                     >
                         الحركات
                     </button>
                     <button
                         onClick={() => setActiveTab('treasuries')}
-                        className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${
-                            activeTab === 'treasuries'
-                                ? 'border-blue-600 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                        }`}
+                        className={`py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'treasuries'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                            }`}
                     >
                         الخزائن
                     </button>
@@ -523,24 +537,22 @@ export default function TreasuryPage() {
                                             {transaction.treasury?.name}
                                         </td>
                                         <td className="px-4 py-3">
-                                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                                transaction.type === 'DEPOSIT'
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : transaction.type === 'WITHDRAWAL'
+                                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${transaction.type === 'DEPOSIT'
+                                                ? 'bg-green-100 text-green-800'
+                                                : transaction.type === 'WITHDRAWAL'
                                                     ? 'bg-red-100 text-red-800'
                                                     : 'bg-purple-100 text-purple-800'
-                                            }`}>
+                                                }`}>
                                                 {getTransactionTypeLabel(transaction.type)}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 text-sm text-gray-500">
                                             {getTransactionSourceLabel(transaction.source)}
                                         </td>
-                                        <td className={`px-4 py-3 text-sm font-medium ${
-                                            transaction.type === 'DEPOSIT' || transaction.source === 'TRANSFER_IN'
-                                                ? 'text-green-600'
-                                                : 'text-red-600'
-                                        }`}>
+                                        <td className={`px-4 py-3 text-sm font-medium ${transaction.type === 'DEPOSIT' || transaction.source === 'TRANSFER_IN'
+                                            ? 'text-green-600'
+                                            : 'text-red-600'
+                                            }`}>
                                             {transaction.type === 'DEPOSIT' || transaction.source === 'TRANSFER_IN' ? '+' : '-'}
                                             {formatCurrency(Number(transaction.amount))}
                                         </td>
@@ -613,9 +625,8 @@ export default function TreasuryPage() {
                             )}
                             <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                                 <p className="text-sm text-gray-500">الرصيد الحالي</p>
-                                <p className={`text-2xl font-bold ${
-                                    treasury.balance >= 0 ? 'text-green-600' : 'text-red-600'
-                                }`}>
+                                <p className={`text-2xl font-bold ${treasury.balance >= 0 ? 'text-green-600' : 'text-red-600'
+                                    }`}>
                                     {formatCurrency(treasury.balance)}
                                 </p>
                             </div>
@@ -804,11 +815,10 @@ export default function TreasuryPage() {
                                 <button
                                     type="submit"
                                     disabled={isCreatingTransaction}
-                                    className={`flex-1 px-4 py-2 text-white rounded-lg disabled:opacity-50 ${
-                                        transactionType === 'DEPOSIT'
-                                            ? 'bg-green-600 hover:bg-green-700'
-                                            : 'bg-red-600 hover:bg-red-700'
-                                    }`}
+                                    className={`flex-1 px-4 py-2 text-white rounded-lg disabled:opacity-50 ${transactionType === 'DEPOSIT'
+                                        ? 'bg-green-600 hover:bg-green-700'
+                                        : 'bg-red-600 hover:bg-red-700'
+                                        }`}
                                 >
                                     {isCreatingTransaction ? 'جاري التنفيذ...' : transactionType === 'DEPOSIT' ? 'إيداع' : 'سحب'}
                                 </button>

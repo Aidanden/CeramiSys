@@ -35,6 +35,8 @@ model Company {
   treasuries          Treasury[]
   users               Users[]
   notifications       Notification[]
+  employees           Employee[]
+  badDebtCategories   BadDebtCategory[]
 }
 
 model Product {
@@ -986,4 +988,119 @@ enum TransactionSource {
   TRANSFER_OUT
   OPENING_BALANCE
   SALE
+  SALARY
+  BONUS
+  BAD_DEBT
+}
+
+// ========== نظام المرتبات ==========
+
+// الموظف
+model Employee {
+  id              Int               @id @default(autoincrement())
+  name            String
+  jobTitle        String?           // المسمى الوظيفي
+  phone           String?
+  email           String?
+  baseSalary      Decimal           @db.Decimal(18, 4)  // الراتب الأساسي
+  companyId       Int
+  isActive        Boolean           @default(true)
+  hireDate        DateTime?         // تاريخ التعيين
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  company         Company           @relation(fields: [companyId], references: [id])
+  salaryPayments  SalaryPayment[]
+  bonuses         EmployeeBonus[]
+  
+  @@index([companyId])
+  @@index([isActive])
+}
+
+// صرف مرتب
+model SalaryPayment {
+  id              Int               @id @default(autoincrement())
+  employeeId      Int
+  amount          Decimal           @db.Decimal(18, 4)  // المبلغ المصروف
+  month           Int               // الشهر (1-12)
+  year            Int               // السنة
+  treasuryId      Int               // الخزينة المستخدمة
+  receiptNumber   String?           // رقم إيصال الصرف
+  paymentDate     DateTime          @default(now())
+  notes           String?
+  createdBy       String?
+  createdAt       DateTime          @default(now())
+  employee        Employee          @relation(fields: [employeeId], references: [id])
+  
+  @@unique([employeeId, month, year])  // لا يمكن صرف نفس الشهر مرتين
+  @@index([employeeId])
+  @@index([month, year])
+  @@index([treasuryId])
+}
+
+// المكافآت والزيادات
+model EmployeeBonus {
+  id              Int               @id @default(autoincrement())
+  employeeId      Int
+  type            BonusType         // نوع: مكافأة أو زيادة
+  amount          Decimal           @db.Decimal(18, 4)
+  reason          String?           // سبب المكافأة/الزيادة
+  treasuryId      Int
+  receiptNumber   String?
+  paymentDate     DateTime          @default(now())
+  effectiveDate   DateTime?         // تاريخ السريان (للزيادات)
+  notes           String?
+  createdBy       String?
+  createdAt       DateTime          @default(now())
+  employee        Employee          @relation(fields: [employeeId], references: [id])
+  
+  @@index([employeeId])
+  @@index([type])
+  @@index([paymentDate])
+}
+
+// ========== نظام المصروفات المعدومة ==========
+
+// بند المصروف المعدوم
+model BadDebtCategory {
+  id              Int               @id @default(autoincrement())
+  name            String            // اسم البند
+  description     String?
+  companyId       Int?
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  company         Company?          @relation(fields: [companyId], references: [id])
+  expenses        BadDebtExpense[]
+  
+  @@index([companyId])
+  @@index([isActive])
+}
+
+// صرف مصروف معدوم
+model BadDebtExpense {
+  id              Int               @id @default(autoincrement())
+  categoryId      Int
+  amount          Decimal           @db.Decimal(18, 4)
+  description     String?
+  treasuryId      Int
+  receiptNumber   String?
+  paymentDate     DateTime          @default(now())
+  notes           String?
+  createdBy       String?
+  createdAt       DateTime          @default(now())
+  category        BadDebtCategory   @relation(fields: [categoryId], references: [id])
+  
+  @@index([categoryId])
+  @@index([treasuryId])
+  @@index([paymentDate])
+}
+
+// ========== التعدادات الجديدة ==========
+
+enum BonusType {
+  BONUS       // مكافأة
+  RAISE       // زيادة راتب
+  INCENTIVE   // حافز
+  OVERTIME    // إضافي
 }

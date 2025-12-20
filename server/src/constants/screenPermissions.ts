@@ -29,6 +29,8 @@ export const SCREEN_PERMISSIONS = {
   CUSTOMER_ACCOUNTS: 'screen.customer_accounts',
   SUPPLIER_ACCOUNTS: 'screen.supplier_accounts',
   TREASURY: 'screen.treasury',
+  PAYROLL: 'screen.payroll',
+  BAD_DEBTS: 'screen.bad_debts',
 
   // التقارير
   REPORTS: 'screen.reports',
@@ -196,6 +198,24 @@ export const SCREEN_METADATA: ScreenMetadata[] = [
     category: 'accounting',
     description: 'إدارة الخزائن وحركات الأموال',
     icon: 'Wallet'
+  },
+  {
+    id: 'payroll',
+    name: 'المرتبات والموظفين',
+    route: '/payroll',
+    permission: SCREEN_PERMISSIONS.PAYROLL,
+    category: 'accounting',
+    description: 'إدارة الموظفين وصرف المرتبات والمكافآت',
+    icon: 'UsersRound'
+  },
+  {
+    id: 'bad_debts',
+    name: 'المصروفات المعدومة',
+    route: '/bad-debts',
+    permission: SCREEN_PERMISSIONS.BAD_DEBTS,
+    category: 'accounting',
+    description: 'إدارة بنود المصروفات المعدومة وصرفها',
+    icon: 'Receipt'
   },
 
   // شاشات المحلات الخارجية

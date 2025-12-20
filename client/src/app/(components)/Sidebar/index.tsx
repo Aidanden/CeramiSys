@@ -216,6 +216,22 @@ const Sidebar = () => {
               isCollapsed={isSidebarCollapsed}
             />
           )}
+          {canAccessScreen('/payroll') && (
+            <SidebarLink
+              href="/payroll"
+              icon={UsersRound}
+              label="المرتبات والموظفين"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
+          {canAccessScreen('/bad-debts') && (
+            <SidebarLink
+              href="/bad-debts"
+              icon={Receipt}
+              label="المصروفات المعدومة"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
           {canAccessScreen('/customer-accounts') && (
             <SidebarLink
               href="/customer-accounts"
