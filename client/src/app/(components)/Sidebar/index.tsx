@@ -283,7 +283,12 @@ const Sidebar = () => {
             />
           )}
 
-
+          <SidebarLink
+            href="/product-cost"
+            icon={BarChart3}
+            label="تكلفة الأصناف"
+            isCollapsed={isSidebarCollapsed}
+          />
           {canAccessScreen('/damage-reports') && (
             <SidebarLink
               href="/damage-reports"

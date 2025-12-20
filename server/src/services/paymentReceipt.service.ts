@@ -284,9 +284,6 @@ export class PaymentReceiptService {
           `إيصال صرف للمورد - ${receipt.description || `إيصال رقم ${receipt.id}`}`,
           undefined // createdBy
         );
-        console.log(`✅ تم سحب ${amountToWithdraw} دينار من الخزينة العامة`);
-      } else {
-        console.log(`⚠️ لا توجد خزينة عامة نشطة`);
       }
     } catch (treasuryError) {
       console.error('خطأ في تحديث الخزينة:', treasuryError);

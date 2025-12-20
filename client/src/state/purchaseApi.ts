@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { RootState } from './index';
+import { RootState } from '@/app/redux';
 import { baseQueryWithAuthInterceptor } from './apiUtils';
 import { API_CACHE_CONFIG } from '@/lib/config';
 
@@ -15,6 +15,7 @@ export interface PurchaseLine {
   qty: number;
   unitPrice: number;
   subTotal: number;
+  total?: number;
 }
 
 export interface Purchase {
@@ -43,9 +44,13 @@ export interface Purchase {
   approvedBy: number | null;
   totalExpenses: number;
   finalTotal: number;
+  currency: 'LYD' | 'USD' | 'EUR';
+  exchangeRate: number;
+  totalForeign: number | null;
   createdAt: string;
   lines: PurchaseLine[];
   payments: PurchasePayment[];
+  expenses?: any[]; // For now using any or I should import PurchaseExpense
 }
 
 export interface PurchasePayment {
@@ -89,7 +94,11 @@ export interface CreatePurchaseRequest {
   invoiceNumber?: string;
   purchaseType: 'CASH' | 'CREDIT';
   paymentMethod?: 'CASH' | 'BANK' | 'CARD';
+  currency?: 'LYD' | 'USD' | 'EUR';
+  exchangeRate?: number;
+  totalForeign?: number;
   lines: {
+    id?: number;
     productId: number;
     qty: number;
     unitPrice: number;
@@ -101,6 +110,9 @@ export interface UpdatePurchaseRequest {
   invoiceNumber?: string;
   purchaseType?: 'CASH' | 'CREDIT';
   paymentMethod?: 'CASH' | 'BANK' | 'CARD';
+  currency?: 'LYD' | 'USD' | 'EUR';
+  exchangeRate?: number;
+  totalForeign?: number;
   lines?: {
     id?: number;
     productId: number;
@@ -178,11 +190,13 @@ export const purchaseApi = createApi({
         url: '/purchases',
         params,
       }),
+      transformResponse: (response: any) => response.data,
       providesTags: ['Purchase'],
     }),
 
     getPurchaseById: builder.query<Purchase, number>({
       query: (id) => `/purchases/${id}`,
+      transformResponse: (response: any) => response.data,
       providesTags: (result, error, id) => [{ type: 'Purchase', id }],
     }),
 
@@ -192,6 +206,7 @@ export const purchaseApi = createApi({
         method: 'POST',
         body: data,
       }),
+      transformResponse: (response: any) => response.data,
       invalidatesTags: ['Purchase', 'PurchaseStats', 'PaymentReceipts', 'SupplierAccounts'],
     }),
 
@@ -201,6 +216,7 @@ export const purchaseApi = createApi({
         method: 'PUT',
         body: data,
       }),
+      transformResponse: (response: any) => response.data,
       invalidatesTags: (result, error, { id }) => [
         { type: 'Purchase', id },
         'Purchase',
@@ -228,6 +244,7 @@ export const purchaseApi = createApi({
         method: 'POST',
         body: data,
       }),
+      transformResponse: (response: any) => response.data,
       invalidatesTags: ['Purchase', 'PurchaseStats', 'PaymentReceipts'],
     }),
 
@@ -237,6 +254,7 @@ export const purchaseApi = createApi({
         url: '/purchases/stats',
         params,
       }),
+      transformResponse: (response: any) => response.data,
       providesTags: ['PurchaseStats'],
     }),
 

@@ -580,7 +580,7 @@ export default function ReportsPage() {
                   <label className="block text-sm text-gray-600 mb-1">كود الصنف</label>
                   <input
                     type="text"
-                    value={filters.productCode}
+                    value={filters.productCode || ""}
                     onChange={(e) => setFilters({ ...filters, productCode: e.target.value })}
                     placeholder="ابحث بكود الصنف"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -590,7 +590,7 @@ export default function ReportsPage() {
                   <label className="block text-sm text-gray-600 mb-1">اسم الصنف</label>
                   <input
                     type="text"
-                    value={filters.productName}
+                    value={filters.productName || ""}
                     onChange={(e) => setFilters({ ...filters, productName: e.target.value })}
                     placeholder="ابحث باسم الصنف"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"

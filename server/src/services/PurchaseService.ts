@@ -50,8 +50,15 @@ export class PurchaseService {
       invoiceNumber = await this.generateInvoiceNumber();
     }
 
-    // Calculate total
-    const total = lines.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0);
+    // Calculate total (Assume unit prices in the lines are in the selected currency)
+    const currency = data.currency || 'LYD';
+    const exchangeRate = data.exchangeRate || 1.0;
+
+    // Total in the original currency
+    const totalForeign = lines.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0);
+
+    // Convert to LYD for the main total field
+    const total = currency === 'LYD' ? totalForeign : totalForeign * exchangeRate;
 
     // For cash purchases, mark as fully paid
     const isFullyPaid = purchaseType === 'CASH';
@@ -64,6 +71,9 @@ export class PurchaseService {
         supplierId,
         invoiceNumber,
         total,
+        currency,
+        exchangeRate,
+        totalForeign: currency === 'LYD' ? null : totalForeign,
         paidAmount,
         remainingAmount,
         purchaseType,
@@ -73,7 +83,7 @@ export class PurchaseService {
           create: lines.map(line => ({
             productId: line.productId,
             qty: line.qty,
-            unitPrice: line.unitPrice,
+            unitPrice: line.unitPrice, // This price is in the selected currency
             subTotal: line.qty * line.unitPrice,
           })),
         },
@@ -133,6 +143,9 @@ export class PurchaseService {
     return {
       ...purchase,
       total: Number(purchase.total),
+      currency: purchase.currency as any,
+      exchangeRate: Number(purchase.exchangeRate),
+      totalForeign: purchase.totalForeign ? Number(purchase.totalForeign) : null,
       paidAmount: Number(purchase.paidAmount),
       remainingAmount: Number(purchase.remainingAmount),
       createdAt: purchase.createdAt.toISOString(),
@@ -304,6 +317,9 @@ export class PurchaseService {
       purchases: purchases.map(purchase => ({
         ...purchase,
         total: Number(purchase.total),
+        currency: purchase.currency as any,
+        exchangeRate: Number(purchase.exchangeRate),
+        totalForeign: purchase.totalForeign ? Number(purchase.totalForeign) : null,
         paidAmount: Number(purchase.paidAmount),
         remainingAmount: Number(purchase.remainingAmount),
         createdAt: purchase.createdAt.toISOString(),
@@ -322,6 +338,9 @@ export class PurchaseService {
         expenses: purchase.expenses?.map(expense => ({
           ...expense,
           amount: Number(expense.amount),
+          currency: expense.currency as any,
+          exchangeRate: Number(expense.exchangeRate),
+          amountForeign: expense.amountForeign ? Number(expense.amountForeign) : null,
           description: (expense as any).notes || null,
           createdAt: expense.createdAt.toISOString(),
         })) || [],
@@ -389,6 +408,9 @@ export class PurchaseService {
     return purchase ? {
       ...purchase,
       total: Number(purchase.total),
+      currency: purchase.currency as any,
+      exchangeRate: Number(purchase.exchangeRate),
+      totalForeign: purchase.totalForeign ? Number(purchase.totalForeign) : null,
       paidAmount: Number(purchase.paidAmount),
       remainingAmount: Number(purchase.remainingAmount),
       createdAt: purchase.createdAt.toISOString(),
@@ -407,6 +429,9 @@ export class PurchaseService {
       expenses: purchase.expenses?.map(expense => ({
         ...expense,
         amount: Number(expense.amount),
+        currency: expense.currency as any,
+        exchangeRate: Number(expense.exchangeRate),
+        amountForeign: expense.amountForeign ? Number(expense.amountForeign) : null,
         description: (expense as any).notes || null,
         createdAt: expense.createdAt.toISOString(),
       })) || [],
@@ -527,6 +552,9 @@ export class PurchaseService {
       return {
         ...purchase,
         total: Number(purchase.total),
+        currency: purchase.currency as any,
+        exchangeRate: Number(purchase.exchangeRate),
+        totalForeign: purchase.totalForeign ? Number(purchase.totalForeign) : null,
         paidAmount: Number(purchase.paidAmount),
         remainingAmount: Number(purchase.remainingAmount),
         createdAt: purchase.createdAt.toISOString(),
@@ -587,6 +615,9 @@ export class PurchaseService {
       return {
         ...purchase,
         total: Number(purchase.total),
+        currency: purchase.currency as any,
+        exchangeRate: Number(purchase.exchangeRate),
+        totalForeign: purchase.totalForeign ? Number(purchase.totalForeign) : null,
         paidAmount: Number(purchase.paidAmount),
         remainingAmount: Number(purchase.remainingAmount),
         createdAt: purchase.createdAt.toISOString(),

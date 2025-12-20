@@ -153,9 +153,13 @@ export class PurchaseExpenseService {
 
 
 
-      // حساب إجمالي المصروفات الجديدة
+      // حساب إجمالي المصروفات الجديدة (محولة للدينار الليبي)
       const newExpensesTotal = expenses.reduce(
-        (sum: number, expense: any) => sum + expense.amount,
+        (sum: number, expense: any) => {
+          const rate = expense.exchangeRate || 1.0;
+          const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
+          return sum + amountLYD;
+        },
         0
       );
 
@@ -165,13 +169,21 @@ export class PurchaseExpenseService {
       const result = await prisma.$transaction(async (tx) => {
         // 1. إضافة المصروفات الجديدة
         await tx.purchaseExpense.createMany({
-          data: expenses.map((expense: any) => ({
-            purchaseId,
-            categoryId: expense.categoryId,
-            supplierId: expense.supplierId,
-            amount: new Prisma.Decimal(expense.amount),
-            notes: expense.notes,
-          })),
+          data: expenses.map((expense: any) => {
+            const rate = expense.exchangeRate || 1.0;
+            const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
+
+            return {
+              purchaseId,
+              categoryId: expense.categoryId,
+              supplierId: expense.supplierId,
+              amount: new Prisma.Decimal(amountLYD),
+              currency: expense.currency || 'LYD',
+              exchangeRate: new Prisma.Decimal(rate),
+              amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
+              notes: expense.notes,
+            };
+          }),
         });
 
         // 2. تحديث إجمالي المصروفات والإجمالي النهائي
@@ -207,10 +219,13 @@ export class PurchaseExpenseService {
 
 
             if (supplier) {
+              const rate = expense.exchangeRate || 1.0;
+              const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
+
               const receiptData = {
                 supplierId: expense.supplierId,
                 purchaseId: purchaseId,
-                amount: new Prisma.Decimal(expense.amount),
+                amount: new Prisma.Decimal(amountLYD),
                 type: 'EXPENSE' as const,
                 description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة #${purchase.id}`,
                 categoryName: category?.name,
@@ -232,7 +247,7 @@ export class PurchaseExpenseService {
                 id: createdReceipt.id,
                 supplierId: expense.supplierId,
                 supplierName: supplier.name,
-                amount: expense.amount,
+                amount: amountLYD,
                 type: 'EXPENSE',
                 description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة #${purchase.id}`,
                 categoryName: category?.name,
@@ -287,9 +302,13 @@ export class PurchaseExpenseService {
       };
     }
 
-    // حساب إجمالي المصروفات
+    // حساب إجمالي المصروفات (محولة للدينار الليبي)
     const totalExpenses = expenses.reduce(
-      (sum: number, expense: any) => sum + expense.amount,
+      (sum: number, expense: any) => {
+        const rate = expense.exchangeRate || 1.0;
+        const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
+        return sum + amountLYD;
+      },
       0
     );
 
@@ -311,13 +330,21 @@ export class PurchaseExpenseService {
     const result = await prisma.$transaction(async (tx) => {
       // 1. إضافة المصروفات
       await tx.purchaseExpense.createMany({
-        data: expenses.map((expense: any) => ({
-          purchaseId,
-          categoryId: expense.categoryId,
-          supplierId: expense.supplierId,
-          amount: new Prisma.Decimal(expense.amount),
-          notes: expense.notes,
-        })),
+        data: expenses.map((expense: any) => {
+          const rate = expense.exchangeRate || 1.0;
+          const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
+
+          return {
+            purchaseId,
+            categoryId: expense.categoryId,
+            supplierId: expense.supplierId,
+            amount: new Prisma.Decimal(amountLYD),
+            currency: expense.currency || 'LYD',
+            exchangeRate: new Prisma.Decimal(rate),
+            amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
+            notes: expense.notes,
+          };
+        }),
       });
 
       // 2. تحديث الفاتورة
@@ -426,12 +453,15 @@ export class PurchaseExpenseService {
           });
 
           if (supplier) {
+            const rate = expense.exchangeRate || 1.0;
+            const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
+
             // إنشاء إيصال منفصل لكل مصروف
             const expenseReceipt = await tx.supplierPaymentReceipt.create({
               data: {
                 supplierId: expense.supplierId,
                 purchaseId: purchaseId,
-                amount: new Prisma.Decimal(expense.amount),
+                amount: new Prisma.Decimal(amountLYD),
                 type: 'EXPENSE',
                 description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة #${purchase.id}`,
                 categoryName: category?.name,
@@ -447,7 +477,7 @@ export class PurchaseExpenseService {
               id: expenseReceipt.id,
               supplierId: expense.supplierId,
               supplierName: supplier.name,
-              amount: expense.amount,
+              amount: amountLYD,
               type: 'EXPENSE',
               description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة #${purchase.id}`,
               categoryName: category?.name,

@@ -254,7 +254,6 @@ export class SalePaymentService {
           description: `قبض دفعة من فاتورة ${sale.invoiceNumber || sale.id} - إيصال رقم ${receiptNumber}`,
           transactionDate: data.paymentDate ? new Date(data.paymentDate) : new Date()
         });
-        console.log(`✅ تم تسجيل قيد محاسبي (له) بمبلغ ${data.amount} دينار في حساب العميل`);
       }
 
       // إضافة المبلغ إلى الخزينة حسب طريقة الدفع (إيصال قبض)
@@ -293,11 +292,11 @@ export class SalePaymentService {
 
         if (targetTreasuryId) {
           // بناء وصف تفصيلي للحركة
-          const customerInfo = sale.customer 
+          const customerInfo = sale.customer
             ? `- الزبون: ${sale.customer.name}${sale.customer.phone ? ` (${sale.customer.phone})` : ''}`
             : '';
           const description = `إيصال قبض رقم ${receiptNumber} - فاتورة ${sale.invoiceNumber || sale.id} - ${sale.company?.name || ''} ${customerInfo}`.trim();
-          
+
           await TreasuryController.addToTreasury(
             targetTreasuryId,
             data.amount,
@@ -307,7 +306,6 @@ export class SalePaymentService {
             description,
             undefined // createdBy
           );
-          console.log(`✅ تم إضافة ${data.amount} دينار إلى ${treasuryName}`);
         } else {
           throw new Error(`لا توجد خزينة مناسبة للشركة ${userCompanyId}`);
         }

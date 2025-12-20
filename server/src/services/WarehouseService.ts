@@ -266,8 +266,6 @@ export class WarehouseService {
    */
   async createDispatchOrder(data: CreateDispatchOrderDto) {
     try {
-      console.log('🚀 بدء عملية إنشاء أمر صرف...');
-
       // التحقق من وجود الفاتورة
       const sale = await this.prisma.sale.findUnique({
         where: { id: data.saleId },
@@ -284,10 +282,6 @@ export class WarehouseService {
       if (!sale) {
         throw new Error('Sale not found');
       }
-
-      console.log(`📋 الفاتورة: ${sale.invoiceNumber} (ID: ${sale.id})`);
-      console.log(`🏢 الشركة: ${sale.company.name}`);
-      console.log(`📊 relatedParentSaleId: ${sale.relatedParentSaleId}`);
 
       // لا يوجد تحقق من الشركة - الصلاحيات على مستوى الشاشة
       // من يستطيع الدخول على شاشة المحاسب يستطيع إنشاء أمر صرف لأي فاتورة
@@ -337,8 +331,6 @@ export class WarehouseService {
           }
         }
       });
-
-      console.log(`✅ تم إنشاء أمر الصرف بنجاح (ID: ${dispatchOrder.id})`);
 
       return dispatchOrder;
     } catch (error) {

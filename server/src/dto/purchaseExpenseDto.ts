@@ -5,6 +5,9 @@ export const CreatePurchaseExpenseDto = z.object({
   categoryId: z.number().int().positive(),
   supplierId: z.number().int().positive(), // المورد إجباري
   amount: z.number().positive(),
+  currency: z.enum(['LYD', 'USD', 'EUR']).default('LYD'),
+  exchangeRate: z.number().positive().default(1),
+  amountForeign: z.number().positive().optional(),
   notes: z.string().optional().nullable(),
 });
 
@@ -79,6 +82,9 @@ export interface PurchaseExpense {
     name: string;
   } | null;
   amount: number;
+  currency: 'LYD' | 'USD' | 'EUR';
+  exchangeRate: number;
+  amountForeign: number | null;
   notes: string | null;
   createdAt: string;
 }

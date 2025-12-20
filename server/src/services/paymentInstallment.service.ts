@@ -25,7 +25,6 @@ class PaymentInstallmentService {
   // إضافة دفعة جزئية جديدة
   async addInstallment(data: CreateInstallmentDto): Promise<{ installment: PaymentInstallment; message: string }> {
     try {
-      console.log('إضافة دفعة جزئية:', data);
 
       // التحقق من وجود إيصال الدفع
       const paymentReceipt = await prisma.supplierPaymentReceipt.findUnique({

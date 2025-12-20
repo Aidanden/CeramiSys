@@ -51,14 +51,6 @@ export class ProductService {
         }
       }
       // إذا لم يتم تمرير companyId، لا نضيف شروط (جميع الأصناف)
-      
-      // Debug logging
-      console.log('ProductService Debug:', {
-        companyId,
-        userCompanyId,
-        isSystemUser,
-        companyConditionsCount: companyConditions.length
-      });
 
       // بناء شروط البحث
       const searchConditions: Prisma.ProductWhereInput[] = [];
@@ -248,7 +240,7 @@ export class ProductService {
     try {
       // التحقق من عدم وجود SKU مكرر لنفس الشركة
       const existingProduct = await this.prisma.product.findUnique({
-        where: { 
+        where: {
           sku_createdByCompanyId: {
             sku: data.sku,
             createdByCompanyId: data.createdByCompanyId
@@ -379,7 +371,7 @@ export class ProductService {
       // التحقق من عدم وجود SKU مكرر لنفس الشركة (إذا تم تغييره)
       if (data.sku && data.sku !== existingProduct.sku) {
         const duplicateSku = await this.prisma.product.findUnique({
-          where: { 
+          where: {
             sku_createdByCompanyId: {
               sku: data.sku,
               createdByCompanyId: existingProduct.createdByCompanyId

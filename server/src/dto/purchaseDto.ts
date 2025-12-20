@@ -7,6 +7,9 @@ export const CreatePurchaseDto = z.object({
   invoiceNumber: z.string().regex(/^\d{6}$/, 'رقم الفاتورة يجب أن يكون 6 أرقام فقط').optional(),
   purchaseType: z.enum(['CASH', 'CREDIT']),
   paymentMethod: z.enum(['CASH', 'BANK', 'CARD']).optional(),
+  currency: z.enum(['LYD', 'USD', 'EUR']).default('LYD'),
+  exchangeRate: z.number().positive().default(1),
+  totalForeign: z.number().positive().optional(),
   lines: z.array(z.object({
     productId: z.number().int().positive(),
     qty: z.number().positive(),
@@ -20,6 +23,9 @@ export const UpdatePurchaseDto = z.object({
   invoiceNumber: z.string().regex(/^\d{6}$/, 'رقم الفاتورة يجب أن يكون 6 أرقام فقط').optional(),
   purchaseType: z.enum(['CASH', 'CREDIT']).optional(),
   paymentMethod: z.enum(['CASH', 'BANK', 'CARD']).optional(),
+  currency: z.enum(['LYD', 'USD', 'EUR']).optional(),
+  exchangeRate: z.number().positive().optional(),
+  totalForeign: z.number().positive().optional(),
   lines: z.array(z.object({
     id: z.number().int().positive().optional(), // for existing lines
     productId: z.number().int().positive(),
@@ -118,6 +124,9 @@ export interface PurchaseExpense {
     name: string;
   } | null;
   amount: number;
+  currency: 'LYD' | 'USD' | 'EUR';
+  exchangeRate: number;
+  amountForeign: number | null;
   description: string | null;
   createdAt: string;
 }
@@ -138,6 +147,9 @@ export interface Purchase {
   } | null;
   invoiceNumber: string | null;
   total: number;
+  currency: 'LYD' | 'USD' | 'EUR';
+  exchangeRate: number;
+  totalForeign: number | null;
   paidAmount: number;
   remainingAmount: number;
   purchaseType: 'CASH' | 'CREDIT';

@@ -2,30 +2,25 @@ import { PrismaClient, Company } from '@prisma/client';
 import { CreateCompanyRequest, UpdateCompanyRequest, GetCompaniesQuery } from '../dto/CompanyDto';
 
 export class CompanyService {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: PrismaClient) { }
 
   // إنشاء شركة جديدة
   async createCompany(data: CreateCompanyRequest): Promise<Company> {
-    console.log('🏢 CompanyService.createCompany - Input data:', data);
-    
     // التحقق من عدم تكرار الكود
     const existingCompany = await this.prisma.company.findUnique({
       where: { code: data.code }
     });
 
     if (existingCompany) {
-      console.log('❌ Code already exists:', data.code);
       throw new Error('كود الشركة موجود مسبقاً');
     }
-    
-    console.log('✅ Code is unique, proceeding with creation');
 
     // إذا كانت شركة تابعة، التحقق من وجود الشركة الأم
     if (!data.isParent && data.parentId) {
       const parentCompany = await this.prisma.company.findFirst({
-        where: { 
+        where: {
           id: data.parentId,
-          isParent: true 
+          isParent: true
         }
       });
 
@@ -36,16 +31,8 @@ export class CompanyService {
 
     // إذا كانت شركة أم، لا يجب أن يكون لها parent
     if (data.isParent && data.parentId) {
-      console.log('❌ Parent company cannot have parentId:', data);
       throw new Error('الشركة الأم لا يمكن أن تكون تابعة لشركة أخرى');
     }
-
-    console.log('🚀 Creating company in database with data:', {
-      name: data.name,
-      code: data.code,
-      isParent: data.isParent,
-      parentId: data.isParent ? null : data.parentId,
-    });
 
     try {
       const result = await this.prisma.company.create({
@@ -67,20 +54,17 @@ export class CompanyService {
           }
         }
       });
-      
-      console.log('✅ Company created successfully:', result);
 
       // إذا كانت شركة فرعية، أنشئ عميل وهمي يمثلها
       if (!data.isParent && result.id) {
         try {
-          const dummyCustomer = await this.prisma.customer.create({
+          await this.prisma.customer.create({
             data: {
               name: result.name,
               phone: `BRANCH-${result.id}`,
               note: `عميل وهمي يمثل الشركة الفرعية: ${result.name}`
             }
           });
-          console.log('✅ Dummy customer created for branch company:', dummyCustomer);
         } catch (customerError) {
           console.error('⚠️ Failed to create dummy customer (non-critical):', customerError);
           // لا نرمي خطأ هنا لأن الشركة تم إنشاؤها بنجاح
@@ -90,19 +74,17 @@ export class CompanyService {
       return result;
     } catch (error: any) {
       console.error('❌ Error creating company:', error);
-      
+
       // معالجة خاصة لخطأ Unique constraint على ID
       if (error.code === 'P2002' && error.meta?.target?.includes('id')) {
-        console.error('🔧 Unique constraint failed on ID - this suggests auto-increment sequence issue');
-        console.error('💡 Solution: Run the fix-sequence.sql script to reset the sequence');
         throw new Error('خطأ في تسلسل معرف الشركة. يرجى الاتصال بالدعم الفني.');
       }
-      
+
       // معالجة خطأ تكرار الكود
       if (error.code === 'P2002' && error.meta?.target?.includes('code')) {
         throw new Error('كود الشركة موجود مسبقاً');
       }
-      
+
       throw error;
     }
   }
@@ -233,9 +215,9 @@ export class CompanyService {
     if (data.parentId !== undefined) {
       if (data.parentId && !data.isParent) {
         const parentCompany = await this.prisma.company.findFirst({
-          where: { 
+          where: {
             id: data.parentId,
-            isParent: true 
+            isParent: true
           }
         });
 
@@ -279,8 +261,6 @@ export class CompanyService {
 
   // حذف الشركة
   async deleteCompany(id: number): Promise<void> {
-    console.log('🗑️ CompanyService.deleteCompany - Starting deletion process for ID:', id);
-    
     const company = await this.prisma.company.findUnique({
       where: { id },
       include: {
@@ -292,41 +272,32 @@ export class CompanyService {
     });
 
     if (!company) {
-      console.log('❌ Company not found with ID:', id);
       throw new Error('الشركة غير موجودة');
     }
 
-   
-
     // منع حذف الشركة إذا كان لديها شركات تابعة
     if (company.children.length > 0) {
-      console.log('❌ Cannot delete - Company has children:', company.children.length);
       throw new Error('لا يمكن حذف الشركة لأن لديها شركات تابعة');
     }
 
     // منع حذف الشركة إذا كان لديها مستخدمين
     if (company.users.length > 0) {
-      console.log('❌ Cannot delete - Company has users:', company.users.length);
       throw new Error('لا يمكن حذف الشركة لأن لديها مستخدمين');
     }
 
     // منع حذف الشركة إذا كان لديها منتجات
     if (company.products.length > 0) {
-      console.log('❌ Cannot delete - Company has products:', company.products.length);
       throw new Error('لا يمكن حذف الشركة لأن لديها منتجات');
     }
 
     // منع حذف الشركة إذا كان لديها مبيعات
     if (company.sales.length > 0) {
-      console.log('❌ Cannot delete - Company has sales:', company.sales.length);
       throw new Error('لا يمكن حذف الشركة لأن لديها مبيعات');
     }
 
-    console.log('✅ All checks passed, proceeding with deletion');
     await this.prisma.company.delete({
       where: { id }
     });
-    console.log('✅ Company deleted successfully');
   }
 
   // الحصول على الهيكل الهرمي للشركات
@@ -374,73 +345,33 @@ export class CompanyService {
 
   // إحصائيات الشركات
   async getCompanyStats() {
-    console.log('📊 CompanyService.getCompanyStats - Starting stats calculation...');
-    
     try {
-      // تنفيذ كل استعلام بشكل منفصل مع logging مفصل
-      console.log('🔍 Executing individual queries...');
-      
       const totalCompanies = await this.prisma.company.count();
-      console.log('📈 Total companies:', totalCompanies);
-      
-      // إذا كان هناك شركات، اعرض بعض التفاصيل
-      if (totalCompanies > 0) {
-        const sampleCompanies = await this.prisma.company.findMany({
-          take: 3,
-          select: { id: true, name: true, code: true, isParent: true }
-        });
-        console.log('📋 Sample companies:', sampleCompanies);
-      }
-      
       const parentCompanies = await this.prisma.company.count({ where: { isParent: true } });
-      console.log('🏢 Parent companies:', parentCompanies);
-      
       const branchCompanies = await this.prisma.company.count({ where: { isParent: false } });
-      console.log('🏪 Branch companies:', branchCompanies);
-      
-      // تحقق من وجود جدول Users وحقل IsActive
-      console.log('👥 Checking users table...');
+
+      let finalActiveUsers = 0;
       try {
-        const activeUsers = await this.prisma.users.count({ where: { IsActive: true } });
-        console.log('✅ Active users:', activeUsers);
-        
-        // تحقق من إجمالي المستخدمين
-        const totalUsers = await this.prisma.users.count();
-        console.log('📊 Total users (all):', totalUsers);
-        
-        // تحقق من المستخدمين غير النشطين
-        const inactiveUsers = await this.prisma.users.count({ where: { IsActive: false } });
-        console.log('❌ Inactive users:', inactiveUsers);
-        
-        var finalActiveUsers = activeUsers;
+        finalActiveUsers = await this.prisma.users.count({ where: { IsActive: true } });
       } catch (userError) {
         console.error('❌ Error querying users:', userError);
-        var finalActiveUsers = 0;
-      }
-      
-      // تحقق من جدول Products
-      console.log('📦 Checking products table...');
-      try {
-        const totalProducts = await this.prisma.product.count();
-        console.log('✅ Total products:', totalProducts);
-        var finalTotalProducts = totalProducts;
-      } catch (productError) {
-        console.error('❌ Error querying products:', productError);
-        var finalTotalProducts = 0;
-      }
-      
-      // تحقق من جدول Sales
-      console.log('💰 Checking sales table...');
-      try {
-        const totalSales = await this.prisma.sale.count();
-        console.log('✅ Total sales:', totalSales);
-        var finalTotalSales = totalSales;
-      } catch (saleError) {
-        console.error('❌ Error querying sales:', saleError);
-        var finalTotalSales = 0;
       }
 
-      const stats = {
+      let finalTotalProducts = 0;
+      try {
+        finalTotalProducts = await this.prisma.product.count();
+      } catch (productError) {
+        console.error('❌ Error querying products:', productError);
+      }
+
+      let finalTotalSales = 0;
+      try {
+        finalTotalSales = await this.prisma.sale.count();
+      } catch (saleError) {
+        console.error('❌ Error querying sales:', saleError);
+      }
+
+      return {
         totalCompanies,
         parentCompanies,
         branchCompanies,
@@ -448,9 +379,6 @@ export class CompanyService {
         totalProducts: finalTotalProducts,
         totalSales: finalTotalSales,
       };
-
-      console.log('✅ CompanyService.getCompanyStats - Final stats:', stats);
-      return stats;
     } catch (error) {
       console.error('❌ CompanyService.getCompanyStats - Error calculating stats:', error);
       throw error;

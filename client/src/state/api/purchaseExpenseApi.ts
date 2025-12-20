@@ -38,6 +38,9 @@ export interface PurchaseExpense {
   categoryId: number;
   supplierId?: number;
   amount: string;
+  currency: 'LYD' | 'USD' | 'EUR';
+  exchangeRate: string;
+  amountForeign?: string;
   notes?: string;
   createdAt: string;
   category?: PurchaseExpenseCategory;
@@ -51,6 +54,9 @@ export interface CreatePurchaseExpenseDto {
   categoryId: number;
   supplierId?: number;
   amount: number;
+  currency?: 'LYD' | 'USD' | 'EUR';
+  exchangeRate?: number;
+  amountForeign?: number;
   notes?: string;
 }
 
@@ -107,7 +113,7 @@ export const purchaseExpenseApi = createApi({
     } else if (args && typeof args === 'object' && 'url' in args) {
       args = { ...args, url: `/purchase-expenses${args.url}` };
     }
-    
+
     return baseQueryWithAuthInterceptor(args, api, extraOptions);
   },
   tagTypes: ['ExpenseCategories', 'PurchaseExpenses', 'ProductCostHistory', 'PaymentReceipts', 'SupplierAccounts'],

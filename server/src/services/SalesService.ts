@@ -1627,10 +1627,10 @@ export class SalesService {
           approvedBy,
           ...(shouldIssueReceipt
             ? {
-                receiptIssued: true,
-                receiptIssuedAt: new Date(),
-                receiptIssuedBy: approvedBy
-              }
+              receiptIssued: true,
+              receiptIssuedAt: new Date(),
+              receiptIssuedBy: approvedBy
+            }
             : {})
         },
         include: {
@@ -1761,11 +1761,11 @@ export class SalesService {
 
           if (targetTreasuryId) {
             // بناء وصف تفصيلي للحركة
-            const customerInfo = approvedSale.customer 
+            const customerInfo = approvedSale.customer
               ? `- الزبون: ${approvedSale.customer.name}${approvedSale.customer.phone ? ` (${approvedSale.customer.phone})` : ''}`
               : '';
             const description = `فاتورة مبيعات نقدية رقم ${approvedSale.invoiceNumber || approvedSale.id} - ${approvedSale.company.name} ${customerInfo}`.trim();
-            
+
             await TreasuryController.addToTreasury(
               targetTreasuryId,
               total,
@@ -1775,9 +1775,8 @@ export class SalesService {
               description,
               approvedBy
             );
-            console.log(`✅ تم إضافة ${total} دينار إلى ${treasuryName}`);
           } else {
-            console.log(`⚠️ لا توجد خزينة مناسبة للشركة ${existingSale.companyId}`);
+            // No suitable treasury found
           }
         } catch (treasuryError) {
           console.error('خطأ في تحديث الخزينة:', treasuryError);

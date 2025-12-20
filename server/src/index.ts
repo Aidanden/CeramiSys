@@ -31,6 +31,8 @@ import externalStoreAuthRoutes from "./routes/externalStoreAuthRoutes";
 import externalStorePortalRoutes from "./routes/externalStorePortalRoutes";
 import externalStoreInvoiceRoutes from "./routes/externalStoreInvoiceRoutes";
 import treasuryRoutes from "./routes/treasuryRoutes";
+import settingsRoutes from "./routes/settingsRoutes";
+import productCostRoutes from "./routes/productCost.routes";
 
 
 /*CONFIGRATION*/
@@ -124,6 +126,8 @@ app.use('/api/customer-accounts', customerAccountRoutes);
 app.use('/api/supplier-accounts', supplierAccountRoutes);
 app.use('/api/damage-reports', damageReportRoutes);
 app.use('/api/treasury', treasuryRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/product-cost', productCostRoutes);
 app.use('/api', screensRoute);
 // External Stores Routes moved up
 

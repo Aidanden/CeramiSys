@@ -69,18 +69,29 @@ export default function PurchaseApprovalModal({
           {/* Purchase Summary */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h3 className="text-lg font-semibold text-blue-800 mb-3">ملخص الفاتورة</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <p className="text-sm text-blue-600">رقم الفاتورة</p>
                 <p className="font-semibold text-blue-800">#{purchase.id}</p>
               </div>
               <div>
-                <p className="text-sm text-blue-600">إجمالي المنتجات</p>
-                <p className="font-semibold text-blue-800">{purchase.total.toFixed(2)} د.ل</p>
+                <p className="text-sm text-blue-600">المجموع ({purchase.currency})</p>
+                <p className="font-semibold text-blue-800">
+                  {purchase.currency === 'LYD'
+                    ? purchase.total.toFixed(2)
+                    : (purchase.totalForeign || (purchase.total / (purchase.exchangeRate || 1))).toFixed(2)
+                  } {purchase.currency}
+                </p>
               </div>
+              {purchase.currency !== 'LYD' && (
+                <div>
+                  <p className="text-sm text-blue-600">سعر الصرف</p>
+                  <p className="font-semibold text-blue-800">{purchase.exchangeRate.toFixed(4)}</p>
+                </div>
+              )}
               <div>
-                <p className="text-sm text-blue-600">عدد الأصناف</p>
-                <p className="font-semibold text-blue-800">{purchase.lines.length} صنف</p>
+                <p className="text-sm text-blue-600">المجموع (LYD)</p>
+                <p className="font-semibold text-green-700">{purchase.total.toFixed(2)} د.ل</p>
               </div>
             </div>
           </div>
@@ -91,13 +102,18 @@ export default function PurchaseApprovalModal({
             <div className="bg-gray-50 rounded-lg p-4 max-h-60 overflow-y-auto">
               <div className="space-y-2">
                 {purchase.lines.map((line) => (
-                  <div key={line.id} className="flex justify-between items-center text-sm">
+                  <div key={line.id} className="flex justify-between items-center text-sm border-b border-gray-100 pb-2 mb-2 last:border-0 last:pb-0 last:mb-0">
                     <div>
                       <span className="font-medium">{line.product?.name || 'منتج غير محدد'}</span>
                       <span className="text-gray-500 mr-2">({line.product?.sku || 'غير محدد'})</span>
                     </div>
                     <div className="text-left">
-                      <span>{line.qty} × {line.unitPrice.toFixed(2)} = {line.subTotal.toFixed(2)} د.ل</span>
+                      <div className="font-medium">{line.qty} × {line.unitPrice.toFixed(2)} = {line.subTotal.toFixed(2)} {purchase.currency}</div>
+                      {purchase.currency !== 'LYD' && (
+                        <div className="text-[10px] text-blue-600 mt-0.5">
+                          = {(line.subTotal * purchase.exchangeRate).toFixed(2)} د.ل
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

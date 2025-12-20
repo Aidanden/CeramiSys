@@ -9,6 +9,7 @@ interface PurchaseLineItemProps {
   };
   index: number;
   products: any[];
+  currency?: string;
   onUpdate: (index: number, field: string, value: any) => void;
   onRemove: (index: number) => void;
 }
@@ -17,6 +18,7 @@ const PurchaseLineItem: React.FC<PurchaseLineItemProps> = ({
   line,
   index,
   products,
+  currency = 'LYD',
   onUpdate,
   onRemove
 }) => {
@@ -73,23 +75,23 @@ const PurchaseLineItem: React.FC<PurchaseLineItemProps> = ({
   const boxInfo = getBoxesAndMeters();
 
   return (
-    <div 
+    <div
       data-line-index={index}
       data-product-id={line.productId || 'new'}
       data-testid={`purchase-line-item-${index}`}
       className="p-3 sm:p-4 bg-white rounded-lg shadow-sm border border-gray-200 hover:border-blue-300 transition-all duration-300 hover:shadow-md"
-      style={{ 
+      style={{
         position: 'relative',
         zIndex: 1,
-        isolation: 'isolate' 
+        isolation: 'isolate'
       }}>
-      
+
       {/* Header Row - زر الحذف */}
       <div className="flex items-center justify-between mb-3 p-2 bg-slate-50 rounded-md border border-slate-200">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-slate-700">بند رقم {formatArabicNumber(index + 1)}</span>
         </div>
-        
+
         <button
           type="button"
           onClick={() => onRemove(index)}
@@ -103,12 +105,11 @@ const PurchaseLineItem: React.FC<PurchaseLineItemProps> = ({
       </div>
 
       {/* Main Content - Responsive Grid */}
-      <div 
-        className={`grid gap-2 items-end ${
-          selectedProduct?.unit === 'صندوق' 
-            ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6' 
+      <div
+        className={`grid gap-2 items-end ${selectedProduct?.unit === 'صندوق'
+            ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6'
             : 'grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5'
-        }`}
+          }`}
         data-line-index={index}
         data-testid={`purchase-line-item-${index}`}
       >
@@ -122,9 +123,9 @@ const PurchaseLineItem: React.FC<PurchaseLineItemProps> = ({
             onChange={(e) => {
               const productId = Number(e.target.value);
               const product = products.find((p: any) => p.id === productId);
-              
+
               onUpdate(index, 'productId', productId);
-              
+
               if (product) {
                 const originalPrice = Number(product.latestPricing?.purchasePrice || 0);
                 const formattedPrice = Math.round(originalPrice * 100) / 100;
@@ -143,7 +144,7 @@ const PurchaseLineItem: React.FC<PurchaseLineItemProps> = ({
             ))}
           </select>
         </div>
-        
+
         {/* الكمية */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -160,7 +161,7 @@ const PurchaseLineItem: React.FC<PurchaseLineItemProps> = ({
             required
           />
         </div>
-        
+
         {/* إجمالي الأمتار (للصناديق فقط) */}
         {selectedProduct?.unit === 'صندوق' && boxInfo && (
           <div className="hidden md:block">
@@ -174,7 +175,7 @@ const PurchaseLineItem: React.FC<PurchaseLineItemProps> = ({
             </div>
           </div>
         )}
-        
+
         {/* السعر */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -191,19 +192,19 @@ const PurchaseLineItem: React.FC<PurchaseLineItemProps> = ({
             required
           />
         </div>
-        
+
         {/* المجموع */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">المجموع</label>
-          <div className={`px-2 py-1.5 rounded-md border ${
-            total > 0 
-              ? 'bg-gradient-to-r from-green-50 to-green-100 border-green-200' 
+          <div className={`px-2 py-1.5 rounded-md border ${total > 0
+              ? 'bg-gradient-to-r from-green-50 to-green-100 border-green-200'
               : 'bg-gray-50 border-gray-200'
-          }`}>
-            <span className={`text-sm font-bold block text-center ${
-              total > 0 ? 'text-green-700' : 'text-gray-500'
             }`}>
-              {total > 0 ? formatArabicCurrency(total) : '---'}
+            <span className={`text-sm font-bold block text-center ${total > 0 ? 'text-green-700' : 'text-gray-500'
+              }`}>
+              {total > 0
+                ? (currency === 'LYD' ? formatArabicCurrency(total) : `${total.toFixed(2)} ${currency}`)
+                : '---'}
             </span>
           </div>
         </div>
