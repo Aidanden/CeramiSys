@@ -62,6 +62,8 @@ export interface Sale {
     amount: number;
     paymentMethod: string;
     paymentDate: string;
+    receiptNumber?: string;
+    notes?: string;
   }>; // الدفعات المسجلة على هذه الفاتورة
   createdAt: string;
   updatedAt: string;

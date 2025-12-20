@@ -178,22 +178,6 @@ async function main() {
 
       for (const data of jsonData) {
         try {
-          // توليد QR Code للصنف
-          const qrData = {
-            id: null, // سيتم تحديثه بعد الإنشاء
-            sku: data.sku,
-            name: data.name,
-            unit: data.unit,
-            unitsPerBox: data.unitsPerBox
-          };
-
-          const qrCodeDataUrl = await QRCode.toDataURL(JSON.stringify(qrData), {
-            errorCorrectionLevel: 'M',
-            type: 'image/png',
-            width: 300,
-            margin: 1
-          });
-
           // الحصول على التكلفة - أولاً من الـ JSON ثم من ملف product_seed_
           const costFromJson = data.cost;
           const costFromFile = productCostMap.get(data.sku);
@@ -202,44 +186,73 @@ async function main() {
           // إزالة cost من data لأننا سنضيفها بشكل منفصل
           const { cost: _, ...dataWithoutCost } = data;
 
-          // إنشاء الصنف مع QR Code والتكلفة
-          const createdProduct = await model.create({
-            data: {
-              ...dataWithoutCost,
-              cost: cost || null, // إضافة التكلفة إذا وجدت
-              qrCode: qrCodeDataUrl
-            },
-          });
+          let createdProduct;
 
-          // حفظ mapping بين الـ ID القديم والجديد
+          // 1. إذا كان الـ QR موجوداً مسبقاً في الـ seed، نستخدمه وننشئ الصنف مباشرة
+          if (data.qrCode) {
+            createdProduct = await model.create({
+              data: {
+                ...dataWithoutCost,
+                cost: cost || null,
+              },
+            });
+          } else {
+            // 2. إذا لم يكن موجوداً، نقوم بتوليد واحد أولي ثم تحديثه بالـ ID (المنطق القديم)
+            const qrData = {
+              id: null,
+              sku: data.sku,
+              name: data.name,
+              unit: data.unit,
+              unitsPerBox: data.unitsPerBox
+            };
+
+            const qrCodeDataUrl = await QRCode.toDataURL(JSON.stringify(qrData), {
+              errorCorrectionLevel: 'M',
+              type: 'image/png',
+              width: 300,
+              margin: 1
+            });
+
+            createdProduct = await model.create({
+              data: {
+                ...dataWithoutCost,
+                cost: cost || null,
+                qrCode: qrCodeDataUrl
+              },
+            });
+
+            // تحديث QR Code ليشمل الـ ID الحقيقي
+            const updatedQrData = {
+              id: createdProduct.id,
+              sku: createdProduct.sku,
+              name: createdProduct.name,
+              unit: createdProduct.unit,
+              unitsPerBox: createdProduct.unitsPerBox
+            };
+
+            const finalQrCodeDataUrl = await QRCode.toDataURL(JSON.stringify(updatedQrData), {
+              errorCorrectionLevel: 'M',
+              type: 'image/png',
+              width: 300,
+              margin: 1
+            });
+
+            await prisma.product.update({
+              where: { id: createdProduct.id },
+              data: { qrCode: finalQrCodeDataUrl }
+            });
+
+            // تحديث الكائن المحلي لعرض البيانات الصحيحة في اللوج
+            createdProduct.qrCode = finalQrCodeDataUrl;
+          }
+
+          // حفظ mapping بين الـ ID القديم والجديد (مهم للجداول الأخرى)
           createdProductsMap.set(oldId, createdProduct.id);
           oldId++;
 
-          // تحديث QR Code ليشمل الـ ID الحقيقي
-          const updatedQrData = {
-            id: createdProduct.id,
-            sku: createdProduct.sku,
-            name: createdProduct.name,
-            unit: createdProduct.unit,
-            unitsPerBox: createdProduct.unitsPerBox
-          };
-
-          const finalQrCodeDataUrl = await QRCode.toDataURL(JSON.stringify(updatedQrData), {
-            errorCorrectionLevel: 'M',
-            type: 'image/png',
-            width: 300,
-            margin: 1
-          });
-
-          // تحديث الصنف بـ QR Code النهائي
-          await prisma.product.update({
-            where: { id: createdProduct.id },
-            data: { qrCode: finalQrCodeDataUrl }
-          });
-
           productCount++;
           const costInfo = cost ? ` - التكلفة: ${cost}` : '';
-          console.log(`  ✅ [${productCount}/${jsonData.length}] تم إنشاء الصنف مع QR Code: ${createdProduct.name} (${createdProduct.sku}) - ID: ${createdProduct.id}${costInfo}`);
+          console.log(`  ✅ [${productCount}/${jsonData.length}] تم إنشاء الصنف: ${createdProduct.name} (${createdProduct.sku}) - ID: ${createdProduct.id}${costInfo}`);
         } catch (error) {
           console.error(`  ❌ فشل في إنشاء الصنف: ${data.name}`, error);
         }

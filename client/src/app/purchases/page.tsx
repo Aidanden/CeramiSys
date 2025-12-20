@@ -790,20 +790,25 @@ const PurchasesPage = () => {
           <thead>
             <tr>
               <th>بند المصروف</th>
-              <th>الوصف</th>
               <th>الشخص المتبع</th>
-              <th>المبلغ</th>
+              <th>المبلغ بالعملة الأجنبية</th>
+              <th>سعر الصرف</th>
+              <th>المبلغ بالدينار</th>
             </tr>
           </thead>
           <tbody>
             ${(purchase as any).expenses?.map((expense: any) => `
               <tr>
-                <td>${expense.category?.name || 'غير محدد'}</td>
-                <td>${expense.description || '-'}</td>
+                <td>
+                  <div>${expense.category?.name || 'غير محدد'}</div>
+                  ${expense.notes ? `<div style="font-size: 10px; color: #666;">${expense.notes}</div>` : ''}
+                </td>
                 <td>${expense.supplier?.name || 'غير محدد'}</td>
-                <td>${Number(expense.amount).toFixed(2)} د.ل</td>
+                <td>${expense.currency !== 'LYD' && expense.amountForeign ? `${Number(expense.amountForeign).toFixed(2)} ${expense.currency}` : '-'}</td>
+                <td>${expense.currency !== 'LYD' ? Number(expense.exchangeRate).toFixed(2) : '-'}</td>
+                <td style="font-weight: bold;">${Number(expense.amount).toFixed(2)} د.ل</td>
               </tr>
-            `).join('') || '<tr><td colspan="4">لا توجد مصروفات</td></tr>'}
+            `).join('') || '<tr><td colspan="5">لا توجد مصروفات</td></tr>'}
           </tbody>
         </table>
         ` : ''}
@@ -832,14 +837,6 @@ const PurchasesPage = () => {
           <div className="total-row total-final">
             <span>الإجمالي النهائي (LYD):</span>
             <span>${Number((purchase as any).finalTotal || (Number(purchase.total) + Number((purchase as any).totalExpenses || 0))).toFixed(2)} د.ل</span>
-          </div>
-          <div class="total-row">
-            <span>المبلغ المدفوع:</span>
-            <span>${Number(purchase.paidAmount).toFixed(2)} د.ل</span>
-          </div>
-          <div class="total-row">
-            <span>المبلغ المتبقي:</span>
-            <span>${Number(purchase.remainingAmount).toFixed(2)} د.ل</span>
           </div>
         </div>
 
@@ -1944,43 +1941,68 @@ const PurchasesPage = () => {
                 {(selectedPurchase as any).expenses && (selectedPurchase as any).expenses.length > 0 && (
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">مصروفات الفاتورة</h3>
-                    <div className="space-y-2">
-                      {(selectedPurchase as any).expenses.map((expense: any, index: number) => (
-                        <div key={index} className="bg-orange-50 p-3 rounded border border-orange-200">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="font-medium text-orange-800">{expense.category?.name || 'مصروف عام'}</div>
-                              <div className="text-orange-600 text-sm">{expense.notes || 'بدون وصف'}</div>
-                              {expense.supplier && (
-                                <div className="text-orange-500 text-xs mt-1">
-                                  المورد: {expense.supplier.name}
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="text-left">
-                                <div className="font-semibold text-orange-700">
-                                  {expense.amount} {expense.currency}
-                                  {expense.currency !== 'LYD' && (
-                                    <div className="text-[10px] text-blue-500">
-                                      ({(Number(expense.amount) * Number(expense.exchangeRate)).toFixed(2)} د.ل)
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <button
-                                onClick={() => handleDeleteExpense(expense.id)}
-                                className="text-red-600 hover:text-red-800 hover:bg-red-100 p-2 rounded transition-colors"
-                                title="حذف المصروف"
-                              >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="bg-white rounded-lg border border-orange-200 overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead className="bg-orange-100 border-b border-orange-200">
+                          <tr>
+                            <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">نوع المصروف</th>
+                            <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">المورد</th>
+                            <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">المبلغ بالعملة الأجنبية</th>
+                            <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">سعر الصرف</th>
+                            <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">المبلغ بالدينار</th>
+                            <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">إجراء</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-orange-100">
+                          {(selectedPurchase as any).expenses.map((expense: any, index: number) => (
+                            <tr key={index} className="hover:bg-orange-50/50">
+                              <td className="px-3 py-2 text-gray-800">
+                                <div className="font-medium text-orange-800">{expense.category?.name || 'مصروف عام'}</div>
+                                {expense.notes && (
+                                  <div className="text-orange-600 text-xs">{expense.notes}</div>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 text-gray-600 text-xs">
+                                {expense.supplier?.name || 'غير محدد'}
+                              </td>
+                              <td className="px-3 py-2 font-mono">
+                                {expense.currency !== 'LYD' && expense.amountForeign ? (
+                                  <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
+                                    {Number(expense.amountForeign).toFixed(2)} {expense.currency}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 font-mono">
+                                {expense.currency !== 'LYD' ? (
+                                  <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs">
+                                    {Number(expense.exchangeRate).toFixed(2)}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 font-bold font-mono">
+                                <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs">
+                                  {Number(expense.amount).toFixed(2)} د.ل
+                                </span>
+                              </td>
+                              <td className="px-3 py-2">
+                                <button
+                                  onClick={() => handleDeleteExpense(expense.id)}
+                                  className="text-red-600 hover:text-red-800 hover:bg-red-100 p-1.5 rounded transition-colors"
+                                  title="حذف المصروف"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 )}
@@ -2203,16 +2225,22 @@ const PurchasesPage = () => {
                       <table className="min-w-full divide-y divide-yellow-200">
                         <thead className="bg-yellow-100">
                           <tr>
-                            <th className="px-4 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
+                            <th className="px-3 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
                               فئة المصروف
                             </th>
-                            <th className="px-4 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
+                            <th className="px-3 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
                               المورد
                             </th>
-                            <th className="px-4 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
-                              المبلغ
+                            <th className="px-3 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
+                              المبلغ بالعملة الأجنبية
                             </th>
-                            <th className="px-4 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
+                            <th className="px-3 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
+                              سعر الصرف
+                            </th>
+                            <th className="px-3 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
+                              المبلغ بالدينار
+                            </th>
+                            <th className="px-3 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
                               ملاحظات
                             </th>
                           </tr>
@@ -2220,21 +2248,36 @@ const PurchasesPage = () => {
                         <tbody className="bg-yellow-50 divide-y divide-yellow-200">
                           {existingExpenses.map((expense, index) => (
                             <tr key={expense.id}>
-                              <td className="px-4 py-2 whitespace-nowrap text-sm text-yellow-900">
+                              <td className="px-3 py-2 whitespace-nowrap text-sm text-yellow-900">
                                 {expense.category?.name || 'غير محدد'}
                               </td>
-                              <td className="px-4 py-2 whitespace-nowrap text-sm text-yellow-900">
+                              <td className="px-3 py-2 whitespace-nowrap text-sm text-yellow-900">
                                 {expense.supplier?.name || 'غير محدد'}
                               </td>
-                              <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-yellow-700">
-                                {Number(expense.amount).toFixed(2)} {expense.currency}
-                                {expense.currency !== 'LYD' && (
-                                  <div className="text-[10px] text-blue-500">
-                                    ({(Number(expense.amount) * Number(expense.exchangeRate)).toFixed(2)} د.ل)
-                                  </div>
+                              <td className="px-3 py-2 whitespace-nowrap text-sm font-mono">
+                                {expense.currency !== 'LYD' && expense.amountForeign ? (
+                                  <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
+                                    {Number(expense.amountForeign).toFixed(2)} {expense.currency}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
                                 )}
                               </td>
-                              <td className="px-4 py-2 whitespace-nowrap text-sm text-yellow-600">
+                              <td className="px-3 py-2 whitespace-nowrap text-sm font-mono">
+                                {expense.currency !== 'LYD' ? (
+                                  <span className="bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded text-xs">
+                                    {Number(expense.exchangeRate).toFixed(2)}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 whitespace-nowrap text-sm font-bold font-mono">
+                                <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs">
+                                  {Number(expense.amount).toFixed(2)} د.ل
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 whitespace-nowrap text-sm text-yellow-600">
                                 {expense.notes || '-'}
                               </td>
                             </tr>

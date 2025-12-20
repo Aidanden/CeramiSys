@@ -261,6 +261,17 @@ export class SalesService {
             dispatchOrders: {
               select: { id: true, status: true }
             },
+            payments: {
+              select: {
+                id: true,
+                amount: true,
+                paymentMethod: true,
+                paymentDate: true,
+                receiptNumber: true,
+                notes: true
+              },
+              orderBy: { paymentDate: 'desc' }
+            },
             _count: {
               select: { payments: true }
             }
@@ -300,6 +311,14 @@ export class SalesService {
             approvedAt: sale.approvedAt,
             approvedBy: sale.approvedBy,
             dispatchOrders: sale.dispatchOrders,
+            payments: sale.payments.map(p => ({
+              id: p.id,
+              amount: Number(p.amount),
+              paymentMethod: p.paymentMethod,
+              paymentDate: p.paymentDate,
+              receiptNumber: p.receiptNumber,
+              notes: p.notes
+            })),
             paymentsCount: sale._count.payments, // ✅ عدد المدفوعات فقط
             createdAt: sale.createdAt,
             updatedAt: sale.updatedAt,

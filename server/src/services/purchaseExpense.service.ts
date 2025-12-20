@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, Currency } from '@prisma/client';
 import prisma from '../models/prismaClient';
 import SupplierAccountService from './SupplierAccountService';
 import {
@@ -178,7 +178,7 @@ export class PurchaseExpenseService {
               categoryId: expense.categoryId,
               supplierId: expense.supplierId,
               amount: new Prisma.Decimal(amountLYD),
-              currency: expense.currency || 'LYD',
+              currency: (expense.currency as Currency) || Currency.LYD,
               exchangeRate: new Prisma.Decimal(rate),
               amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
               notes: expense.notes,
@@ -226,13 +226,14 @@ export class PurchaseExpenseService {
                 supplierId: expense.supplierId,
                 purchaseId: purchaseId,
                 amount: new Prisma.Decimal(amountLYD),
+                amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
+                currency: expense.currency || 'LYD',
+                exchangeRate: new Prisma.Decimal(rate),
                 type: 'EXPENSE' as const,
                 description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة #${purchase.id}`,
                 categoryName: category?.name,
                 status: 'PENDING' as const,
               };
-
-
 
               const createdReceipt = await tx.supplierPaymentReceipt.create({
                 data: receiptData,
@@ -339,7 +340,7 @@ export class PurchaseExpenseService {
             categoryId: expense.categoryId,
             supplierId: expense.supplierId,
             amount: new Prisma.Decimal(amountLYD),
-            currency: expense.currency || 'LYD',
+            currency: (expense.currency as Currency) || Currency.LYD,
             exchangeRate: new Prisma.Decimal(rate),
             amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
             notes: expense.notes,
@@ -420,6 +421,9 @@ export class PurchaseExpenseService {
             supplierId: purchase.supplier.id,
             purchaseId: purchaseId,
             amount: purchase.total,
+            amountForeign: purchase.currency === 'LYD' ? null : purchase.totalForeign,
+            currency: purchase.currency || Currency.LYD,
+            exchangeRate: purchase.exchangeRate || 1,
             type: 'MAIN_PURCHASE',
             description: `فاتورة مشتريات #${purchase.id}`,
             status: 'PENDING',
@@ -462,6 +466,9 @@ export class PurchaseExpenseService {
                 supplierId: expense.supplierId,
                 purchaseId: purchaseId,
                 amount: new Prisma.Decimal(amountLYD),
+                amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
+                currency: expense.currency || 'LYD',
+                exchangeRate: new Prisma.Decimal(rate),
                 type: 'EXPENSE',
                 description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة #${purchase.id}`,
                 categoryName: category?.name,

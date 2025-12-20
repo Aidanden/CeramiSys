@@ -1,6 +1,8 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../models/prismaClient';
 import SupplierAccountLedgerService from './SupplierAccountService';
+import { TreasuryController } from '../controllers/TreasuryController';
+import { TransactionSource } from '@prisma/client';
 
 export interface CreateInstallmentDto {
   paymentReceiptId: number;
@@ -8,6 +10,8 @@ export interface CreateInstallmentDto {
   notes?: string;
   paymentMethod?: string;
   referenceNumber?: string;
+  treasuryId?: number; // الخزينة التي تم السحب منها
+  userId?: string;
 }
 
 export interface PaymentInstallment {
@@ -74,6 +78,24 @@ class PaymentInstallmentService {
             : `دفعة على إيصال دفع رقم ${paymentReceipt.id}`,
           transactionDate: installment.paidAt,
         });
+      }
+
+      // الخصم من الخزينة المحددة
+      if (data.treasuryId) {
+        try {
+          await TreasuryController.withdrawFromTreasury(
+            data.treasuryId,
+            Number(data.amount),
+            TransactionSource.PAYMENT,
+            'PaymentReceiptInstallment',
+            installment.id,
+            `دفعة للمورد (${paymentReceipt.description || `إيصال #${paymentReceipt.id}`})`,
+            data.userId
+          );
+        } catch (treasuryError) {
+          console.error('❌ فشل الخصم من الخزينة:', treasuryError);
+          // لا نعيد الخطأ للمستخدم لأن الدفعة قد تم تسجيلها بالفعل
+        }
       }
 
       // حساب المبلغ المدفوع الجديد

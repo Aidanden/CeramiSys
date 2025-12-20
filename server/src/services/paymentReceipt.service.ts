@@ -56,6 +56,18 @@ export class PaymentReceiptService {
             select: {
               id: true,
               invoiceNumber: true,
+              currency: true,
+              exchangeRate: true,
+              totalForeign: true,
+              expenses: {
+                select: {
+                  supplierId: true,
+                  amount: true,
+                  currency: true,
+                  amountForeign: true,
+                  exchangeRate: true,
+                }
+              }
             },
           },
           installments: {
@@ -77,8 +89,36 @@ export class PaymentReceiptService {
       );
       const remainingAmount = Number(receipt.amount) - paidAmount;
 
+      let amountForeign = receipt.amountForeign ? Number(receipt.amountForeign) : null;
+      let currency = receipt.currency;
+      let exchangeRate = Number(receipt.exchangeRate);
+
+      // Fallback logic for old records
+      if (!amountForeign || currency === 'LYD') {
+        if (receipt.type === 'MAIN_PURCHASE' && receipt.purchase && receipt.purchase.currency !== 'LYD') {
+          amountForeign = Number(receipt.purchase.totalForeign);
+          currency = receipt.purchase.currency;
+          exchangeRate = Number(receipt.purchase.exchangeRate);
+        } else if (receipt.type === 'EXPENSE' && receipt.purchase?.expenses) {
+          // Find matching expense
+          const matchingExpense = receipt.purchase.expenses.find(e =>
+            e.supplierId === receipt.supplierId &&
+            Math.abs(Number(e.amount) - Number(receipt.amount)) < 0.01
+          );
+          if (matchingExpense && matchingExpense.currency !== 'LYD') {
+            amountForeign = Number(matchingExpense.amountForeign);
+            currency = matchingExpense.currency;
+            exchangeRate = Number(matchingExpense.exchangeRate);
+          }
+        }
+      }
+
       return {
         ...receipt,
+        amount: Number(receipt.amount),
+        amountForeign,
+        currency,
+        exchangeRate,
         paidAmount,
         remainingAmount,
       };

@@ -10,13 +10,14 @@ import {
   PaymentReceipt,
   PaymentInstallment,
 } from '@/state/api/paymentReceiptsApi';
+import { useGetTreasuriesQuery } from '@/state/treasuryApi';
 import { useToast } from '@/components/ui/Toast';
 import { printReceipt } from '@/utils/printUtils';
 import { formatLibyanCurrencyEnglish, formatEnglishNumber, formatEnglishDate, formatLibyanCurrencyArabic } from '@/utils/formatLibyanNumbers';
 
 export default function PaymentReceiptsPage() {
   const { success, error: showError, confirm } = useToast();
-  
+
   // States
   const [activeTab, setActiveTab] = useState<'all' | 'purchases' | 'returns'>('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -31,6 +32,7 @@ export default function PaymentReceiptsPage() {
   const [installmentNotes, setInstallmentNotes] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [referenceNumber, setReferenceNumber] = useState('');
+  const [selectedTreasuryId, setSelectedTreasuryId] = useState<number | undefined>(undefined);
 
   // API calls - تحديد الفلاتر حسب التبويب النشط
   const getQueryParams = () => {
@@ -68,7 +70,14 @@ export default function PaymentReceiptsPage() {
   const { data: stats } = useGetPaymentReceiptsStatsQuery();
   const [payReceipt, { isLoading: isPaying }] = usePayReceiptMutation();
   const [addInstallment, { isLoading: isAddingInstallment }] = useAddInstallmentMutation();
-  
+
+  // جلب الخزائن والحسابات المصرفية
+  const { data: treasuries = [] } = useGetTreasuriesQuery({ isActive: true });
+
+  // فلترة الخزائن حسب النوع
+  const cashTreasuries = treasuries.filter(t => t.type === 'COMPANY' || t.type === 'GENERAL');
+  const bankAccounts = treasuries.filter(t => t.type === 'BANK');
+
   // جلب الدفعات الجزئية للإيصال المختار
   const { data: installmentsData, refetch: refetchInstallments } = useGetInstallmentsByReceiptIdQuery(
     selectedReceipt?.id || 0,
@@ -92,11 +101,27 @@ export default function PaymentReceiptsPage() {
     setInstallmentNotes('');
     setPaymentMethod('');
     setReferenceNumber('');
+    setSelectedTreasuryId(undefined);
   };
 
   const handleAddInstallment = async () => {
     if (!selectedReceipt || !installmentAmount || parseFloat(installmentAmount) <= 0) {
       showError('خطأ', 'يرجى إدخال مبلغ صحيح');
+      return;
+    }
+
+    // التحقق من اختيار الخزينة
+    if (!selectedTreasuryId) {
+      showError('خطأ', 'يرجى اختيار الخزينة أو الحساب المصرفي');
+      return;
+    }
+
+    // التحقق من اختيار الحساب المصرفي عند الدفع بالبطاقة أو التحويل
+    const isBankPayment = paymentMethod === 'تحويل بنكي' || paymentMethod === 'بطاقة ائتمان';
+    const selectedTreasury = treasuries.find(t => t.id === selectedTreasuryId);
+
+    if (isBankPayment && selectedTreasury?.type !== 'BANK') {
+      showError('خطأ', 'يجب اختيار حساب مصرفي عند الدفع بالبطاقة أو التحويل');
       return;
     }
 
@@ -107,6 +132,7 @@ export default function PaymentReceiptsPage() {
         notes: installmentNotes || undefined,
         paymentMethod: paymentMethod || undefined,
         referenceNumber: referenceNumber || undefined,
+        treasuryId: selectedTreasuryId,
       }).unwrap();
 
       success('تم بنجاح', 'تم إضافة الدفعة بنجاح');
@@ -114,6 +140,7 @@ export default function PaymentReceiptsPage() {
       setInstallmentNotes('');
       setPaymentMethod('');
       setReferenceNumber('');
+      setSelectedTreasuryId(undefined);
       refetch();
       refetchInstallments();
     } catch (err: any) {
@@ -175,6 +202,8 @@ export default function PaymentReceiptsPage() {
         return 'فاتورة رئيسية';
       case 'EXPENSE':
         return 'مصروف';
+      case 'RETURN':
+        return 'مردودات';
       default:
         return type;
     }
@@ -215,11 +244,10 @@ export default function PaymentReceiptsPage() {
           <nav className="-mb-px flex space-x-8" aria-label="Tabs">
             <button
               onClick={() => handleTabChange('all')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'all'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'all'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
             >
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -236,11 +264,10 @@ export default function PaymentReceiptsPage() {
 
             <button
               onClick={() => handleTabChange('purchases')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'purchases'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'purchases'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
             >
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -257,11 +284,10 @@ export default function PaymentReceiptsPage() {
 
             <button
               onClick={() => handleTabChange('returns')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'returns'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'returns'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
             >
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -410,7 +436,7 @@ export default function PaymentReceiptsPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  المورد
+                  صاحب العملية
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   النوع
@@ -421,7 +447,10 @@ export default function PaymentReceiptsPage() {
                   </th>
                 )}
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  المبلغ الإجمالي
+                  المبلغ بالعملة الأجنبية
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  المبلغ بالدينار
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   المبلغ المدفوع
@@ -445,18 +474,19 @@ export default function PaymentReceiptsPage() {
                 <tr key={receipt.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col">
-                      <span className="font-medium text-gray-900">{receipt.supplier.name}</span>
-                      {receipt.supplier.phone && (
+                      <span className="font-medium text-gray-900">
+                        {receipt.type === 'RETURN' && receipt.notes ? receipt.notes : receipt.supplier.name}
+                      </span>
+                      {receipt.supplier.phone && receipt.type !== 'RETURN' && (
                         <span className="text-sm text-gray-500">{receipt.supplier.phone}</span>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      receipt.type === 'MAIN_PURCHASE' 
-                        ? 'bg-blue-100 text-blue-800' 
-                        : 'bg-orange-100 text-orange-800'
-                    }`}>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${receipt.type === 'MAIN_PURCHASE'
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-orange-100 text-orange-800'
+                      }`}>
                       {getTypeText(receipt.type)}
                     </span>
                   </td>
@@ -476,8 +506,25 @@ export default function PaymentReceiptsPage() {
                       )}
                     </td>
                   )}
+                  {/* المبلغ بالعملة الأجنبية */}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    {receipt.currency && receipt.currency !== 'LYD' && receipt.amountForeign ? (
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                        {Number(receipt.amountForeign).toFixed(2)} {receipt.currency}
+                      </span>
+                    ) : receipt.type === 'MAIN_PURCHASE' && receipt.purchase?.currency && receipt.purchase.currency !== 'LYD' && receipt.purchase.totalForeign ? (
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                        {Number(receipt.purchase.totalForeign).toFixed(2)} {receipt.purchase.currency}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </td>
+                  {/* المبلغ بالدينار */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {formatLibyanCurrencyArabic(receipt.amount)}
+                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
+                      {formatLibyanCurrencyArabic(receipt.amount)}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
                     {formatLibyanCurrencyArabic(receipt.paidAmount || 0)}
@@ -572,11 +619,10 @@ export default function PaymentReceiptsPage() {
                     <button
                       key={i + 1}
                       onClick={() => setCurrentPage(i + 1)}
-                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                        currentPage === i + 1
-                          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                      }`}
+                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === i + 1
+                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                        }`}
                     >
                       {i + 1}
                     </button>
@@ -609,8 +655,10 @@ export default function PaymentReceiptsPage() {
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">المورد</label>
-                  <p className="mt-1 text-sm text-gray-900">{selectedReceipt.supplier.name}</p>
+                  <label className="block text-sm font-medium text-gray-700">صاحب العملية</label>
+                  <p className="mt-1 text-sm text-gray-900">
+                    {selectedReceipt.type === 'RETURN' && selectedReceipt.notes ? selectedReceipt.notes : selectedReceipt.supplier.name}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">المبلغ</label>
@@ -660,7 +708,7 @@ export default function PaymentReceiptsPage() {
               )}
 
               {/* Payment History - Installments */}
-              {(selectedReceipt.status === 'PAID' || selectedReceipt.paidAmount > 0) && (
+              {(selectedReceipt.status === 'PAID' || (selectedReceipt.paidAmount || 0) > 0) && (
                 <div className="mt-6">
                   <label className="block text-sm font-medium text-gray-700 mb-3">تاريخ الدفعات</label>
                   <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -870,9 +918,17 @@ export default function PaymentReceiptsPage() {
             <div className="bg-gray-50 p-4 rounded-lg mb-6">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">المبلغ الإجمالي</label>
+                  <label className="block text-sm font-medium text-gray-700">المبلغ بالدينار</label>
                   <p className="text-lg font-semibold text-gray-900">{formatLibyanCurrencyArabic(selectedReceipt.amount)}</p>
                 </div>
+                {selectedReceipt.currency && selectedReceipt.currency !== 'LYD' && selectedReceipt.amountForeign && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">المبلغ بالعملة الأجنبية</label>
+                    <p className="text-lg font-semibold text-blue-600">
+                      {Number(selectedReceipt.amountForeign).toFixed(2)} {selectedReceipt.currency}
+                    </p>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">المبلغ المدفوع</label>
                   <p className="text-lg font-semibold text-green-600">
@@ -914,10 +970,13 @@ export default function PaymentReceiptsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">طريقة الدفع</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">طريقة الدفع *</label>
                   <select
                     value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    onChange={(e) => {
+                      setPaymentMethod(e.target.value);
+                      setSelectedTreasuryId(undefined); // إعادة تعيين الخزينة عند تغيير طريقة الدفع
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">اختر طريقة الدفع</option>
@@ -927,6 +986,45 @@ export default function PaymentReceiptsPage() {
                     <option value="بطاقة ائتمان">بطاقة ائتمان</option>
                   </select>
                 </div>
+
+                {/* حقل اختيار الخزينة - يظهر عند الدفع نقداً فقط */}
+                {(paymentMethod === 'نقد') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">الخزينة *</label>
+                    <select
+                      value={selectedTreasuryId || ''}
+                      onChange={(e) => setSelectedTreasuryId(e.target.value ? Number(e.target.value) : undefined)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">اختر الخزينة</option>
+                      {cashTreasuries.map((treasury) => (
+                        <option key={treasury.id} value={treasury.id}>
+                          {treasury.name} ({formatLibyanCurrencyArabic(treasury.balance)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* حقل اختيار الحساب المصرفي - يظهر عند الدفع بالبطاقة أو التحويل أو الشيك */}
+                {(paymentMethod === 'تحويل بنكي' || paymentMethod === 'بطاقة ائتمان' || paymentMethod === 'شيك') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">الحساب المصرفي *</label>
+                    <select
+                      value={selectedTreasuryId || ''}
+                      onChange={(e) => setSelectedTreasuryId(e.target.value ? Number(e.target.value) : undefined)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">اختر الحساب المصرفي</option>
+                      {bankAccounts.map((account) => (
+                        <option key={account.id} value={account.id}>
+                          {account.name} - {account.bankName} ({formatLibyanCurrencyArabic(account.balance)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">الرقم المرجعي</label>
                   <input

@@ -30,6 +30,17 @@ export interface ProductCostInfo {
         expenseShareAmount: number; // نصيب الصنف من المصروفات
         expenseSharePercentage: number; // نسبة الصنف من المصروفات
 
+        // تفاصيل المصروفات الفردية
+        expenseDetails: Array<{
+            id: number;
+            categoryName: string;
+            supplierName: string | null;
+            currency: string;
+            amountForeign: number | null; // المبلغ بالعملة الأجنبية
+            exchangeRate: number;
+            amountLYD: number; // المبلغ بالدينار الليبي
+        }>;
+
         // الإجماليات
         totalWithExpenses: number; // إجمالي الصنف + نصيبه من المصروفات
         totalInLYD: number; // الإجمالي بالدينار الليبي
@@ -97,7 +108,12 @@ class ProductCostService {
             include: {
                 purchase: {
                     include: {
-                        expenses: true,
+                        expenses: {
+                            include: {
+                                category: true,
+                                supplier: true
+                            }
+                        },
                         lines: {
                             select: {
                                 productId: true,
@@ -166,6 +182,17 @@ class ProductCostService {
                 totalExpenses: totalExpenses,
                 expenseShareAmount: Math.round(expenseShareAmount * 100) / 100,
                 expenseSharePercentage: Math.round(expenseSharePercentage * 100) / 100,
+
+                // تفاصيل المصروفات الفردية
+                expenseDetails: purchase.expenses.map(exp => ({
+                    id: exp.id,
+                    categoryName: exp.category?.name || 'غير محدد',
+                    supplierName: exp.supplier?.name || null,
+                    currency: exp.currency,
+                    amountForeign: exp.amountForeign ? Number(exp.amountForeign) : null,
+                    exchangeRate: Number(exp.exchangeRate),
+                    amountLYD: Number(exp.amount)
+                })),
 
                 totalWithExpenses: Math.round(totalWithExpenses * 100) / 100,
                 totalInLYD: Math.round(totalInLYD * 100) / 100,

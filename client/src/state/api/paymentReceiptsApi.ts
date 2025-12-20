@@ -14,8 +14,14 @@ export interface PaymentReceipt {
   purchase?: {
     id: number;
     invoiceNumber?: string;
+    currency?: string;
+    exchangeRate?: number;
+    totalForeign?: number;
   };
   amount: number;
+  amountForeign?: number; // المبلغ بالعملة الأجنبية
+  currency?: string; // عملة الإيصال الأصلية
+  exchangeRate?: number; // سعر الصرف
   paidAmount?: number;
   remainingAmount?: number;
   type: 'MAIN_PURCHASE' | 'EXPENSE' | 'RETURN';
@@ -31,6 +37,9 @@ export interface CreatePaymentReceiptDto {
   supplierId: number;
   purchaseId?: number;
   amount: number;
+  amountForeign?: number;
+  currency?: string;
+  exchangeRate?: number;
   type: 'MAIN_PURCHASE' | 'EXPENSE' | 'RETURN';
   description?: string;
   categoryName?: string;
@@ -80,6 +89,7 @@ export interface CreateInstallmentDto {
   notes?: string;
   paymentMethod?: string;
   referenceNumber?: string;
+  treasuryId?: number; // الخزينة التي سيتم السحب منها
 }
 
 export const paymentReceiptsApi = createApi({
@@ -91,7 +101,7 @@ export const paymentReceiptsApi = createApi({
     } else if (args && typeof args === 'object' && 'url' in args) {
       args = { ...args, url: `/payment-receipts${args.url}` };
     }
-    
+
     return baseQueryWithAuthInterceptor(args, api, extraOptions);
   },
   tagTypes: ['PaymentReceipts', 'SupplierAccounts'],

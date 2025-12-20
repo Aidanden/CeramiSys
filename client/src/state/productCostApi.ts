@@ -19,6 +19,16 @@ export interface ProductCostInfo {
         totalExpenses: number;
         expenseShareAmount: number;
         expenseSharePercentage: number;
+        // تفاصيل المصروفات الفردية
+        expenseDetails: Array<{
+            id: number;
+            categoryName: string;
+            supplierName: string | null;
+            currency: string;
+            amountForeign: number | null;
+            exchangeRate: number;
+            amountLYD: number;
+        }>;
         totalWithExpenses: number;
         totalInLYD: number;
         calculatedCostPerUnit: number;

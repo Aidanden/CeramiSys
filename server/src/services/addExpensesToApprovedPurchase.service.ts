@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, Currency } from '@prisma/client';
 import prisma from '../models/prismaClient';
 import SupplierAccountService from './SupplierAccountService';
 
@@ -6,6 +6,9 @@ export interface AddExpenseRequest {
   categoryId: number;
   supplierId?: number | null;
   amount: number;
+  currency?: Currency;
+  exchangeRate?: number;
+  amountForeign?: number;
   notes?: string | null;
 }
 
@@ -57,13 +60,21 @@ export class AddExpensesToApprovedPurchaseService {
 
       // 1. إضافة المصروفات الجديدة
       const createdExpenses = await tx.purchaseExpense.createMany({
-        data: expenses.map((expense: AddExpenseRequest) => ({
-          purchaseId,
-          categoryId: expense.categoryId,
-          supplierId: expense.supplierId || null,
-          amount: new Prisma.Decimal(expense.amount),
-          notes: expense.notes || null,
-        })),
+        data: expenses.map((expense: AddExpenseRequest) => {
+          const rate = expense.exchangeRate || 1.0;
+          const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
+
+          return {
+            purchaseId,
+            categoryId: expense.categoryId,
+            supplierId: expense.supplierId || null,
+            amount: new Prisma.Decimal(amountLYD),
+            currency: (expense.currency as Currency) || Currency.LYD,
+            exchangeRate: new Prisma.Decimal(rate),
+            amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
+            notes: expense.notes || null,
+          };
+        }),
       });
 
 
@@ -97,11 +108,17 @@ export class AddExpensesToApprovedPurchaseService {
           });
 
           if (supplier) {
+            const rate = expense.exchangeRate || 1.0;
+            const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
+
             const createdReceipt = await tx.supplierPaymentReceipt.create({
               data: {
                 supplierId: expense.supplierId,
                 purchaseId: purchaseId,
-                amount: new Prisma.Decimal(expense.amount),
+                amount: new Prisma.Decimal(amountLYD),
+                amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
+                currency: (expense.currency as Currency) || Currency.LYD,
+                exchangeRate: new Prisma.Decimal(rate),
                 type: 'EXPENSE',
                 description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة #${purchase.id}`,
                 categoryName: category?.name,

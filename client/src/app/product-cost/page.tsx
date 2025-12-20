@@ -355,19 +355,76 @@ export default function ProductCostPage() {
                                                     <Wallet className="w-4 h-4" />
                                                     توزيع المصروفات
                                                 </h4>
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+
+                                                {/* تفاصيل المصروفات الفردية */}
+                                                {costInfo.lastPurchase.expenseDetails && costInfo.lastPurchase.expenseDetails.length > 0 ? (
+                                                    <div className="mb-4">
+                                                        <div className="border border-orange-200 rounded-lg overflow-hidden bg-white">
+                                                            <table className="w-full text-sm">
+                                                                <thead className="bg-orange-100 border-b border-orange-200">
+                                                                    <tr>
+                                                                        <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">نوع المصروف</th>
+                                                                        <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">المبلغ بالعملة الأجنبية</th>
+                                                                        <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">سعر الصرف</th>
+                                                                        <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">المبلغ بالدينار</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-orange-100">
+                                                                    {costInfo.lastPurchase.expenseDetails.map((expense) => (
+                                                                        <tr key={expense.id} className="hover:bg-orange-50/50">
+                                                                            <td className="px-3 py-2 text-gray-800">
+                                                                                <div className="font-medium">{expense.categoryName}</div>
+                                                                                {expense.supplierName && (
+                                                                                    <div className="text-xs text-gray-500">{expense.supplierName}</div>
+                                                                                )}
+                                                                            </td>
+                                                                            <td className="px-3 py-2 text-gray-800 font-mono">
+                                                                                {expense.currency !== 'LYD' && expense.amountForeign ? (
+                                                                                    <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
+                                                                                        {formatArabicNumber(expense.amountForeign)} {getCurrencySymbol(expense.currency)}
+                                                                                    </span>
+                                                                                ) : (
+                                                                                    <span className="text-gray-400">-</span>
+                                                                                )}
+                                                                            </td>
+                                                                            <td className="px-3 py-2 text-gray-800 font-mono">
+                                                                                {expense.currency !== 'LYD' ? (
+                                                                                    <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs">
+                                                                                        {formatArabicNumber(expense.exchangeRate)}
+                                                                                    </span>
+                                                                                ) : (
+                                                                                    <span className="text-gray-400">-</span>
+                                                                                )}
+                                                                            </td>
+                                                                            <td className="px-3 py-2 text-gray-900 font-bold font-mono">
+                                                                                <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs">
+                                                                                    {formatArabicNumber(expense.amountLYD)} د.ل
+                                                                                </span>
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-orange-600 text-sm mb-4">لا توجد مصروفات مضافة</p>
+                                                )}
+
+                                                {/* ملخص المصروفات */}
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm border-t border-orange-200 pt-4">
                                                     <div className="flex justify-between md:block">
                                                         <span className="text-orange-600 block mb-1 text-xs">إجمالي مصروفات الفاتورة</span>
                                                         <span className="font-bold text-orange-900">{formatArabicCurrency(costInfo.lastPurchase.totalExpenses)}</span>
                                                     </div>
                                                     <div className="flex justify-between md:block">
-                                                        <span className="text-orange-600 block mb-1 text-xs">نسبة التحمل</span>
+                                                        <span className="text-orange-600 block mb-1 text-xs">نسبة تحمل هذا الصنف</span>
                                                         <span className="font-bold text-orange-900">{formatArabicNumber(costInfo.lastPurchase.expenseSharePercentage)}%</span>
                                                     </div>
                                                     <div className="flex justify-between md:block">
-                                                        <span className="text-orange-600 block mb-1 text-xs">نصيب الصنف</span>
+                                                        <span className="text-orange-600 block mb-1 text-xs">نصيب الصنف من المصروفات</span>
                                                         <span className="font-bold text-orange-900">
-                                                            {formatArabicNumber(costInfo.lastPurchase.expenseShareAmount)} {getCurrencySymbol(costInfo.lastPurchase.currency)}
+                                                            {formatArabicCurrency(costInfo.lastPurchase.expenseShareAmount)}
                                                         </span>
                                                     </div>
                                                 </div>

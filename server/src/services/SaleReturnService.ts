@@ -3,6 +3,7 @@
  * خدمة المردودات
  */
 
+import { Prisma, Currency, SupplierPaymentType, PaymentReceiptStatus } from '@prisma/client';
 import prisma from '../models/prismaClient';
 import {
   CreateSaleReturnDto,
@@ -110,7 +111,8 @@ export class SaleReturnService {
             }
           },
           customer: true,
-          sale: true
+          sale: true,
+          company: true
         }
       });
 
@@ -156,6 +158,58 @@ export class SaleReturnService {
           status: 'PENDING'
         }
       });
+
+      // البحث عن مورد مرتبط بالشركة الأم أو الشركة التي أنشأت المنتج لإنشاء إيصال مردودات
+      // Find a supplier associated with the company that created the products to create a return receipt
+      if (parentCompanyReturnValue > 0) {
+        // البحث عن المورد الذي يمثل الشركة الأم
+        const parentSupplier = await tx.supplier.findFirst({
+          where: {
+            OR: [
+              { name: { contains: 'تقازي', mode: 'insensitive' } },
+              { name: { contains: 'Taqazi', mode: 'insensitive' } },
+              { note: { contains: 'الشركة الأم', mode: 'insensitive' } }
+            ]
+          }
+        });
+
+        if (parentSupplier) {
+          await tx.supplierPaymentReceipt.create({
+            data: {
+              supplierId: parentSupplier.id,
+              amount: new Prisma.Decimal(parentCompanyReturnValue),
+              type: SupplierPaymentType.RETURN,
+              description: `مردود مبيعات: ${newReturn.customer?.name || 'عميل'} - عودة فاتورة #${newReturn.id}`,
+              status: PaymentReceiptStatus.PENDING,
+              currency: Currency.LYD,
+              exchangeRate: new Prisma.Decimal(1),
+              notes: newReturn.customer?.name || 'عميل'
+            }
+          });
+        }
+      } else if (branchCompanyReturnValue > 0 && companyId !== newReturn.companyId) {
+        // إذا كان المردود لشركة أخرى غير الشركة الحالية
+        const branchSupplier = await tx.supplier.findFirst({
+          where: {
+            name: { contains: newReturn.company.name, mode: 'insensitive' }
+          }
+        });
+
+        if (branchSupplier) {
+          await tx.supplierPaymentReceipt.create({
+            data: {
+              supplierId: branchSupplier.id,
+              amount: new Prisma.Decimal(branchCompanyReturnValue),
+              type: SupplierPaymentType.RETURN,
+              description: `مردود مبيعات: ${newReturn.customer?.name || 'عميل'} - عودة فاتورة #${newReturn.id}`,
+              status: PaymentReceiptStatus.PENDING,
+              currency: Currency.LYD,
+              exchangeRate: new Prisma.Decimal(1),
+              notes: newReturn.customer?.name || 'عميل'
+            }
+          });
+        }
+      }
 
       return newReturn;
     });
