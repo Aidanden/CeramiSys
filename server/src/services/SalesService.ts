@@ -254,7 +254,7 @@ export class SalesService {
                 unitPrice: true,
                 subTotal: true,
                 product: {
-                  select: { id: true, sku: true, name: true, unit: true }
+                  select: { id: true, sku: true, name: true, unit: true, unitsPerBox: true }
                 }
               }
             },
@@ -1140,7 +1140,8 @@ export class SalesService {
   async getSalesStats(userCompanyId: number, isSystemUser: boolean = false) {
     try {
       const where: any = {
-        ...(isSystemUser !== true && { companyId: userCompanyId })
+        ...(isSystemUser !== true && { companyId: userCompanyId }),
+        status: 'APPROVED'
       };
 
       const today = new Date();
@@ -1195,7 +1196,8 @@ export class SalesService {
   async getDailySalesChart(userCompanyId: number, isSystemUser: boolean = false, days: number = 30) {
     try {
       const where: any = {
-        ...(isSystemUser !== true && { companyId: userCompanyId })
+        ...(isSystemUser !== true && { companyId: userCompanyId }),
+        status: 'APPROVED'
       };
 
       const today = new Date();

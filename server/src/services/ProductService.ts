@@ -748,7 +748,10 @@ export class ProductService {
       const topProducts = await this.prisma.saleLine.groupBy({
         by: ['productId'],
         where: {
-          sale: whereConditions
+          sale: {
+            ...whereConditions,
+            status: 'APPROVED'
+          }
         },
         _sum: {
           qty: true,

@@ -16,9 +16,9 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ sale }) => {
   const total = sale.lines.reduce((sum, line) => sum + line.subTotal, 0);
 
   return (
-    <div className="print-invoice" style={{ 
-      width: '210mm', 
-      minHeight: '297mm', 
+    <div className="print-invoice" style={{
+      width: '210mm',
+      minHeight: '297mm',
       padding: '20mm',
       backgroundColor: 'white',
       fontFamily: 'Arial, sans-serif',
@@ -39,9 +39,9 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ sale }) => {
       </div>
 
       {/* معلومات الفاتورة */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: '1fr 1fr', 
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
         gap: '20px',
         marginBottom: '30px',
         padding: '15px',
@@ -78,15 +78,15 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ sale }) => {
           <p style={{ margin: '5px 0', fontSize: '14px' }}>
             <strong>طريقة الدفع:</strong> {
               sale.paymentMethod === 'CASH' ? 'كاش' :
-              sale.paymentMethod === 'BANK' ? 'حوالة بنكية' : 'بطاقة'
+                sale.paymentMethod === 'BANK' ? 'حوالة بنكية' : 'بطاقة'
             }
           </p>
         </div>
       </div>
 
       {/* جدول الأصناف */}
-      <table style={{ 
-        width: '100%', 
+      <table style={{
+        width: '100%',
         borderCollapse: 'collapse',
         marginBottom: '30px',
         fontSize: '13px'
@@ -97,6 +97,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ sale }) => {
             <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'right' }}>الصنف</th>
             <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>الكود</th>
             <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>الكمية</th>
+            <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>الكمية (متر)</th>
             <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>سعر الوحدة</th>
             <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>الإجمالي</th>
           </tr>
@@ -106,11 +107,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ sale }) => {
             // حساب الأمتار المربعة وسعر المتر للأصناف بوحدة صندوق
             const isBox = line.product?.unit === 'صندوق';
             const unitsPerBox = line.product?.unitsPerBox ? Number(line.product.unitsPerBox) : null;
-            
-            // الكمية: إذا صندوق نعرض الأمتار، وإلا نعرض الكمية العادية
-            const displayQty = isBox && unitsPerBox ? line.qty * unitsPerBox : line.qty;
-            const displayUnit = isBox ? 'م²' : (line.product?.unit || 'وحدة');
-            
+
             // السعر: إذا صندوق نعرض سعر المتر، وإلا نعرض سعر الوحدة
             const displayPrice = isBox && unitsPerBox ? line.unitPrice / unitsPerBox : line.unitPrice;
 
@@ -123,7 +120,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ sale }) => {
                   <div>{line.product?.name || 'غير معروف'}</div>
                   {isBox && unitsPerBox && (
                     <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
-                      ({formatArabicNumber(line.qty)} صندوق × {formatArabicNumber(unitsPerBox)} م²)
+                      ({formatArabicNumber(unitsPerBox)} م²/صندوق)
                     </div>
                   )}
                 </td>
@@ -132,8 +129,17 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ sale }) => {
                 </td>
                 <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>
                   <div style={{ fontWeight: 'bold', color: '#2563eb' }}>
-                    {formatArabicNumber(displayQty.toFixed(2))} {displayUnit}
+                    {formatArabicNumber(line.qty)} {line.product?.unit || 'وحدة'}
                   </div>
+                </td>
+                <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>
+                  {isBox && unitsPerBox ? (
+                    <div style={{ fontWeight: 'bold', color: '#2563eb' }}>
+                      {formatArabicNumber((line.qty * unitsPerBox).toFixed(2))} م²
+                    </div>
+                  ) : (
+                    <span style={{ color: '#999' }}>-</span>
+                  )}
                 </td>
                 <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>
                   <div style={{ fontWeight: 'bold' }}>
@@ -154,7 +160,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ sale }) => {
         </tbody>
         <tfoot>
           <tr style={{ backgroundColor: '#f3f4f6', fontWeight: 'bold', fontSize: '16px' }}>
-            <td colSpan={5} style={{ padding: '15px', border: '1px solid #ddd', textAlign: 'left' }}>
+            <td colSpan={6} style={{ padding: '15px', border: '1px solid #ddd', textAlign: 'left' }}>
               المجموع الإجمالي
             </td>
             <td style={{ padding: '15px', border: '1px solid #ddd', textAlign: 'center', color: '#1e40af' }}>
@@ -172,9 +178,9 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ sale }) => {
       </div>
 
       {/* التوقيعات */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: '1fr 1fr 1fr', 
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr 1fr',
         gap: '30px',
         marginTop: '60px',
         paddingTop: '20px',
