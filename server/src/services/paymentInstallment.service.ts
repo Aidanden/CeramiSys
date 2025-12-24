@@ -83,13 +83,23 @@ class PaymentInstallmentService {
       // الخصم من الخزينة المحددة
       if (data.treasuryId) {
         try {
+          // تجهيز وصف الحركة مع مراعاة العملة الأجنبية
+          let movementDesc = `دفعة للمورد (${paymentReceipt.description || `إيصال #${paymentReceipt.id}`})`;
+
+          if (paymentReceipt.currency && paymentReceipt.currency !== 'LYD') {
+            // حساب القيمة التقريبية بالعملة الأجنبية لهذه الدفعة
+            const exchangeRate = Number(paymentReceipt.exchangeRate) || 1;
+            const foreignAmount = Number(data.amount) / exchangeRate;
+            movementDesc += ` [مقابل ${foreignAmount.toFixed(2)} ${paymentReceipt.currency}]`;
+          }
+
           await TreasuryController.withdrawFromTreasury(
             data.treasuryId,
             Number(data.amount),
             TransactionSource.PAYMENT,
             'PaymentReceiptInstallment',
             installment.id,
-            `دفعة للمورد (${paymentReceipt.description || `إيصال #${paymentReceipt.id}`})`,
+            movementDesc,
             data.userId
           );
         } catch (treasuryError) {

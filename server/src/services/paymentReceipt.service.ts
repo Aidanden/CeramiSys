@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import prisma from '../models/prismaClient';
 import SupplierAccountLedgerService from './SupplierAccountService';
 import { TreasuryController } from '../controllers/TreasuryController';
@@ -252,85 +253,153 @@ export class PaymentReceiptService {
   }
 
   // تسديد إيصال دفع
-  async payReceipt(id: number, notes?: string) {
-    const receipt = await prisma.supplierPaymentReceipt.update({
-      where: { id },
-      data: {
-        status: 'PAID',
-        paidAt: new Date(),
-        notes,
-      },
-      include: {
-        supplier: true,
-        purchase: true,
-        installments: {
-          select: {
-            amount: true,
+  async payReceipt(id: number, notes?: string, treasuryId?: number) {
+    return await prisma.$transaction(async (tx) => {
+      // 1. الحصول على الإيصال مع المدفوعات السابقة والبيانات المرتبطة
+      const receipt = await tx.supplierPaymentReceipt.findUnique({
+        where: { id },
+        include: {
+          supplier: true,
+          purchase: true,
+          installments: {
+            select: {
+              amount: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    if (receipt.supplierId) {
-      const amountAlreadyRecorded = receipt.installments.reduce(
+      if (!receipt) {
+        throw new Error('إيصال الدفع غير موجود');
+      }
+
+      if (receipt.status === 'PAID') {
+        throw new Error('هذا الإيصال مسدد بالفعل');
+      }
+
+      // 2. حساب المبلغ المتبقي للسداد (بالدينار الليبي)
+      const amountAlreadyPaid = receipt.installments.reduce(
         (sum, installment) => sum + Number(installment.amount),
         0
       );
 
-      const amountToRecord = Number(receipt.amount) - amountAlreadyRecorded;
+      const amountToPayInLYD = Number(receipt.amount) - amountAlreadyPaid;
 
-      if (amountToRecord > 0) {
-        const existingEntry = await prisma.supplierAccount.findFirst({
-          where: {
-            supplierId: receipt.supplierId,
-            referenceType: 'PAYMENT',
-            referenceId: receipt.id,
-          },
-        });
-
-        if (!existingEntry) {
-          await SupplierAccountLedgerService.createAccountEntry({
-            supplierId: receipt.supplierId,
-            transactionType: 'DEBIT',
-            amount: amountToRecord,
-            referenceType: 'PAYMENT',
-            referenceId: receipt.id,
-            description:
-              receipt.description || `تسديد إيصال دفع رقم ${receipt.id}`,
-            transactionDate: receipt.paidAt ?? new Date(),
-          });
-        }
-      }
-    }
-
-    // سحب المبلغ من الخزينة العامة (إيصال صرف)
-    try {
-      // البحث عن خزينة عامة نشطة
-      const generalTreasury = await prisma.treasury.findFirst({
-        where: {
-          type: 'GENERAL',
-          isActive: true
-        }
+      // 3. تحديث حالة الإيصال
+      const updatedReceipt = await tx.supplierPaymentReceipt.update({
+        where: { id },
+        data: {
+          status: 'PAID',
+          paidAt: new Date(),
+          notes: notes || receipt.notes,
+        },
       });
 
-      if (generalTreasury) {
-        const amountToWithdraw = Number(receipt.amount);
-        await TreasuryController.withdrawFromTreasury(
-          generalTreasury.id,
-          amountToWithdraw,
-          'PAYMENT',
-          'SupplierPaymentReceipt',
-          receipt.id,
-          `إيصال صرف للمورد - ${receipt.description || `إيصال رقم ${receipt.id}`}`,
-          undefined // createdBy
-        );
-      }
-    } catch (treasuryError) {
-      console.error('خطأ في تحديث الخزينة:', treasuryError);
-      // لا نوقف العملية إذا فشل تحديث الخزينة
-    }
+      // 4. تسجيل العمليات المالية إذا كان هناك مبلغ متبقي
+      if (amountToPayInLYD > 0) {
+        // أ. قيد في حساب المورد (DEBIT)
+        if (receipt.supplierId) {
+          // جلب آخر رصيد للمورد
+          const lastEntry = await tx.supplierAccount.findFirst({
+            where: { supplierId: receipt.supplierId },
+            orderBy: { createdAt: 'desc' }
+          });
 
-    return receipt;
+          const previousBalance = lastEntry ? Number(lastEntry.balance) : 0;
+          const newBalance = previousBalance - amountToPayInLYD;
+
+          await tx.supplierAccount.create({
+            data: {
+              supplierId: receipt.supplierId,
+              transactionType: 'DEBIT',
+              amount: new Prisma.Decimal(amountToPayInLYD),
+              balance: new Prisma.Decimal(newBalance),
+              referenceType: 'PAYMENT',
+              referenceId: receipt.id,
+              description: notes || receipt.description || `تسديد إيصال دفع رقم ${receipt.id}`,
+              transactionDate: new Date(),
+            },
+          });
+        }
+
+        // ب. الخصم من الخزينة
+        try {
+          // البحث عن خزينة مناسبة إذا لم يتم تحديد واحدة
+          let targetTreasuryId = treasuryId;
+
+          if (!targetTreasuryId) {
+            // محاولة البحث عن خزينة الشركة المرتبطة بالفاتورة
+            if (receipt.purchase?.companyId) {
+              const companyTreasury = await tx.treasury.findFirst({
+                where: {
+                  companyId: receipt.purchase.companyId,
+                  isActive: true
+                }
+              });
+              targetTreasuryId = companyTreasury?.id;
+            }
+
+            // إذا لم نجد خزينة شركة، نبحث عن الخزينة العامة
+            if (!targetTreasuryId) {
+              const generalTreasury = await tx.treasury.findFirst({
+                where: {
+                  type: 'GENERAL',
+                  isActive: true
+                }
+              });
+              targetTreasuryId = generalTreasury?.id;
+            }
+          }
+
+          if (targetTreasuryId) {
+            // جلب الخزينة للتأكد من الرصيد وتجهيز الحركة
+            const treasury = await tx.treasury.findUnique({
+              where: { id: targetTreasuryId }
+            });
+
+            if (treasury) {
+              const balanceBefore = treasury.balance;
+              const balanceAfter = Number(balanceBefore) - amountToPayInLYD;
+
+              // إنشاء تفاصيل حركة الخزينة مع مراعاة العملة الأجنبية
+              let movementDesc = `إيصال صرف للمورد - ${receipt.description || `إيصال رقم ${receipt.id}`}`;
+
+              // إضافة تفاصيل العملة الأجنبية في الوصف لتظهر في حركة الخزينة
+              if (receipt.currency && receipt.currency !== 'LYD') {
+                const foreignAmount = receipt.amountForeign ? Number(receipt.amountForeign) : 0;
+                movementDesc += ` [${foreignAmount} ${receipt.currency} @ ${receipt.exchangeRate}]`;
+              }
+
+              if (notes) movementDesc += ` (${notes})`;
+
+              await tx.treasuryTransaction.create({
+                data: {
+                  treasuryId: targetTreasuryId,
+                  type: 'WITHDRAWAL',
+                  source: 'PAYMENT',
+                  amount: new Prisma.Decimal(amountToPayInLYD),
+                  balanceBefore: balanceBefore,
+                  balanceAfter: new Prisma.Decimal(balanceAfter),
+                  description: movementDesc,
+                  referenceType: 'SupplierPaymentReceipt',
+                  referenceId: receipt.id,
+                }
+              });
+
+              await tx.treasury.update({
+                where: { id: targetTreasuryId },
+                data: { balance: new Prisma.Decimal(balanceAfter) }
+              });
+            }
+          }
+        } catch (treasuryError) {
+          console.error('خطأ في تحديث الخزينة:', treasuryError);
+          // نترك الخطأ يظهر ولكن لا نوقف السداد إلا في حالات حرجة
+        }
+      }
+
+      return updatedReceipt;
+    });
   }
 
   // إلغاء إيصال دفع

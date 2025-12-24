@@ -21,13 +21,13 @@ export class PaymentReceiptController {
       if (!id) {
         return res.status(400).json({ error: 'معرف الإيصال مطلوب' });
       }
-      
+
       const receipt = await paymentReceiptService.getPaymentReceiptById(id);
-      
+
       if (!receipt) {
         return res.status(404).json({ error: 'إيصال الدفع غير موجود' });
       }
-      
+
       return res.json(receipt);
     } catch (error: any) {
       console.error('خطأ في جلب إيصال الدفع:', error);
@@ -83,8 +83,8 @@ export class PaymentReceiptController {
       if (!id) {
         return res.status(400).json({ error: 'معرف الإيصال مطلوب' });
       }
-      const { notes } = req.body;
-      const receipt = await paymentReceiptService.payReceipt(id, notes);
+      const { notes, treasuryId } = req.body;
+      const receipt = await paymentReceiptService.payReceipt(id, notes, treasuryId);
       return res.json(receipt);
     } catch (error: any) {
       console.error('خطأ في تسديد إيصال الدفع:', error);

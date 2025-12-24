@@ -45,6 +45,7 @@ import { settingsApi } from "@/state/settingsApi"; // إضافة settingsApi
 import { productCostApi } from "@/state/productCostApi"; // إضافة productCostApi
 import { payrollApi } from "@/state/payrollApi"; // إضافة payrollApi
 import { badDebtApi } from "@/state/badDebtApi"; // إضافة badDebtApi
+import { generalReceiptApi } from "@/state/generalReceiptApi"; // إضافة generalReceiptApi
 import { setupListeners } from "@reduxjs/toolkit/query";
 import {
   persistStore,
@@ -128,6 +129,7 @@ const rootReducer = combineReducers({
   [productCostApi.reducerPath]: productCostApi.reducer, // إضافة productCostApi.reducer
   [payrollApi.reducerPath]: payrollApi.reducer, // إضافة payrollApi.reducer
   [badDebtApi.reducerPath]: badDebtApi.reducer, // إضافة badDebtApi.reducer
+  [generalReceiptApi.reducerPath]: generalReceiptApi.reducer, // إضافة generalReceiptApi.reducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -141,7 +143,7 @@ export const makeStore = () => {
         serializableCheck: {
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
-      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, purchaseExpenseApi.middleware, paymentReceiptsApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware, notificationsApi.middleware, saleReturnsApi.middleware, saleReturnApi.middleware, returnPaymentApi.middleware, warehouseApi.middleware, customerAccountApi.middleware, supplierAccountApi.middleware, damageReportsApi.middleware, externalStoresApi.middleware, externalStoreInvoicesApi.middleware, storePortalApi.middleware, treasuryApi.middleware, settingsApi.middleware, productCostApi.middleware, payrollApi.middleware, badDebtApi.middleware), // إضافة middleware
+      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, purchaseExpenseApi.middleware, paymentReceiptsApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware, notificationsApi.middleware, saleReturnsApi.middleware, saleReturnApi.middleware, returnPaymentApi.middleware, warehouseApi.middleware, customerAccountApi.middleware, supplierAccountApi.middleware, damageReportsApi.middleware, externalStoresApi.middleware, externalStoreInvoicesApi.middleware, storePortalApi.middleware, treasuryApi.middleware, settingsApi.middleware, productCostApi.middleware, payrollApi.middleware, badDebtApi.middleware, generalReceiptApi.middleware), // إضافة middleware
   });
 };
 

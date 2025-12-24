@@ -991,6 +991,61 @@ enum TransactionSource {
   SALARY
   BONUS
   BAD_DEBT
+  GENERAL_RECEIPT
+}
+
+// ========== نظام الإيصلات العامة والقروض المتبادلة ==========
+
+// جهات الاتصال المالية (تجار، أشخاص مقرضين، إلخ)
+model FinancialContact {
+  id              Int                       @id @default(autoincrement())
+  name            String
+  phone           String?
+  note            String?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  isActive        Boolean                   @default(true)
+  accountEntries  FinancialContactAccount[]
+  generalReceipts GeneralReceipt[]
+}
+
+// كشف حساب جهة الاتصال المالية
+model FinancialContactAccount {
+  id              Int                     @id @default(autoincrement())
+  contactId       Int
+  transactionType TransactionType         // DEPOSIT (له) / WITHDRAWAL (عليه)
+  amount          Decimal                 @db.Decimal(18, 4)
+  balance         Decimal                 @db.Decimal(18, 4)
+  referenceType   String                  // "GENERAL_RECEIPT"
+  referenceId     Int
+  description     String?
+  transactionDate DateTime                @default(now())
+  createdAt       DateTime                @default(now())
+  contact         FinancialContact        @relation(fields: [contactId], references: [id])
+
+  @@index([contactId])
+  @@index([transactionDate])
+}
+
+// الإيصالات العامة (قبض / صرف)
+model GeneralReceipt {
+  id              Int               @id @default(autoincrement())
+  contactId       Int
+  treasuryId      Int
+  type            TransactionType   // DEPOSIT (قبض) / WITHDRAWAL (صرف)
+  amount          Decimal           @db.Decimal(18, 4)
+  description     String?
+  notes           String?
+  receiptNumber   String?
+  paymentDate     DateTime          @default(now())
+  createdBy       String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  contact         FinancialContact  @relation(fields: [contactId], references: [id])
+  
+  @@index([contactId])
+  @@index([treasuryId])
+  @@index([paymentDate])
 }
 
 // ========== نظام المرتبات ==========
