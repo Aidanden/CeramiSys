@@ -7,6 +7,7 @@ import {
   TopProductsReportQueryDto,
   SupplierReportQueryDto,
   PurchaseReportQueryDto,
+  ProductMovementReportQueryDto,
 } from "../dto/reportsDto";
 
 export class ReportsController {
@@ -210,6 +211,39 @@ export class ReportsController {
       res.status(500).json({
         success: false,
         message: error.message || "حدث خطأ أثناء جلب تقرير المشتريات",
+      });
+    }
+  };
+
+  /**
+   * GET /api/reports/product-movement
+   * تقرير حركة الصنف
+   */
+  getProductMovementReport = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userCompanyId = (req as any).user?.companyId;
+      const isSystemUser = (req as any).user?.isSystemUser;
+
+      if (!userCompanyId) {
+        res.status(401).json({
+          success: false,
+          message: "غير مصرح - معرف الشركة مفقود",
+        });
+        return;
+      }
+
+      const validatedQuery = ProductMovementReportQueryDto.parse(req.query);
+      const report = await this.reportsService.getProductMovementReport(validatedQuery, userCompanyId, isSystemUser);
+
+      res.json({
+        success: true,
+        data: report,
+      });
+    } catch (error: any) {
+      console.error("Error in getProductMovementReport:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "حدث خطأ أثناء جلب تقرير حركة الصنف",
       });
     }
   };

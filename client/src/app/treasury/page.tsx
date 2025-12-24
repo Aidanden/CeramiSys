@@ -33,7 +33,7 @@ import {
     TrendingDown,
     DollarSign,
     CreditCard,
-    PiggyBank,
+    Printer,
 } from 'lucide-react';
 
 // تنسيق العملة
@@ -293,6 +293,185 @@ export default function TreasuryPage() {
         setShowTransactionModal(true);
     };
 
+    // طباعة حركات الخزينة
+    const handlePrintTransactions = () => {
+        const transactions = transactionsData?.transactions || [];
+        if (transactions.length === 0) {
+            alert('لا توجد حركات للطباعة');
+            return;
+        }
+
+        // الحصول على اسم الخزينة المختارة
+        const selectedTreasuryName = selectedTreasury
+            ? treasuries?.find((t: Treasury) => t.id === selectedTreasury)?.name
+            : 'جميع الخزائن';
+
+        // ترجمة نوع الحركة للفلتر
+        const getTypeFilterLabel = (type: string) => {
+            switch (type) {
+                case 'DEPOSIT': return 'إيداع';
+                case 'WITHDRAWAL': return 'سحب';
+                case 'TRANSFER': return 'تحويل';
+                default: return 'جميع الأنواع';
+            }
+        };
+
+        const printContent = `
+            <!DOCTYPE html>
+            <html dir="rtl" lang="ar">
+            <head>
+                <meta charset="UTF-8">
+                <title>تقرير حركات الخزينة</title>
+                <style>
+                    body {
+                        font-family: 'Arial', 'Tahoma', sans-serif;
+                        padding: 20px;
+                        direction: rtl;
+                    }
+                    .header {
+                        text-align: center;
+                        margin-bottom: 30px;
+                        border-bottom: 3px solid #1e40af;
+                        padding-bottom: 20px;
+                    }
+                    .header h1 {
+                        color: #1e40af;
+                        margin: 0 0 10px 0;
+                        font-size: 28px;
+                    }
+                    .filters-info {
+                        background: #f3f4f6;
+                        padding: 15px;
+                        border-radius: 8px;
+                        margin-bottom: 20px;
+                    }
+                    .filters-info p {
+                        margin: 5px 0;
+                        font-size: 14px;
+                    }
+                    .filters-info strong {
+                        color: #1e40af;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-top: 20px;
+                    }
+                    th {
+                        background: #1e40af;
+                        color: white;
+                        padding: 12px 8px;
+                        text-align: right;
+                        font-size: 13px;
+                    }
+                    td {
+                        border: 1px solid #ddd;
+                        padding: 10px 8px;
+                        font-size: 12px;
+                    }
+                    tr:nth-child(even) {
+                        background: #f9fafb;
+                    }
+                    .amount-deposit {
+                        color: #059669;
+                        font-weight: bold;
+                    }
+                    .amount-withdrawal {
+                        color: #dc2626;
+                        font-weight: bold;
+                    }
+                    .type-badge {
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        font-size: 11px;
+                        font-weight: bold;
+                    }
+                    .type-deposit {
+                        background: #dcfce7;
+                        color: #166534;
+                    }
+                    .type-withdrawal {
+                        background: #fee2e2;
+                        color: #991b1b;
+                    }
+                    .type-transfer {
+                        background: #e9d5ff;
+                        color: #6b21a8;
+                    }
+                    .print-date {
+                        text-align: left;
+                        font-size: 12px;
+                        color: #666;
+                        margin-top: 30px;
+                    }
+                    @media print {
+                        body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>🏦 تقرير حركات الخزينة</h1>
+                </div>
+                
+                <div class="filters-info">
+                    <p><strong>الخزينة:</strong> ${selectedTreasuryName}</p>
+                    <p><strong>نوع الحركة:</strong> ${getTypeFilterLabel(transactionTypeFilter)}</p>
+                    <p><strong>الفترة:</strong> ${dateFrom ? 'من ' + dateFrom : 'من البداية'} ${dateTo ? ' إلى ' + dateTo : ' إلى الآن'}</p>
+                    <p><strong>عدد الحركات:</strong> ${transactions.length}</p>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>م</th>
+                            <th>التاريخ</th>
+                            <th>الخزينة</th>
+                            <th>النوع</th>
+                            <th>المصدر</th>
+                            <th>المبلغ</th>
+                            <th>الرصيد بعد</th>
+                            <th>الوصف</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${transactions.map((t: TreasuryTransaction, index: number) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${formatDate(t.createdAt)}</td>
+                                <td>${t.treasury?.name || '-'}</td>
+                                <td>
+                                    <span class="type-badge type-${t.type.toLowerCase()}">
+                                        ${getTransactionTypeLabel(t.type)}
+                                    </span>
+                                </td>
+                                <td>${getTransactionSourceLabel(t.source)}</td>
+                                <td class="${t.type === 'DEPOSIT' || t.source === 'TRANSFER_IN' ? 'amount-deposit' : 'amount-withdrawal'}">
+                                    ${t.type === 'DEPOSIT' || t.source === 'TRANSFER_IN' ? '+' : '-'}${formatCurrency(Number(t.amount))}
+                                </td>
+                                <td>${formatCurrency(Number(t.balanceAfter))}</td>
+                                <td>${t.description || '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <p class="print-date">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-LY', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+            </body>
+            </html>
+        `;
+
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+            }, 500);
+        }
+    };
+
     return (
         <div className="p-6 space-y-6">
             {/* Header */}
@@ -356,7 +535,7 @@ export default function TreasuryPage() {
                     <MainStatCard
                         title="الخزينة العامة"
                         value={formatCurrency(stats.totalGeneralBalance)}
-                        icon={PiggyBank}
+                        icon={Wallet}
                         iconBgColor="bg-yellow-500"
                     />
                     <MainStatCard
@@ -475,7 +654,7 @@ export default function TreasuryPage() {
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                     {/* Filters */}
                     <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                             <select
                                 value={selectedTreasury || ''}
                                 onChange={(e) => setSelectedTreasury(e.target.value ? Number(e.target.value) : null)}
@@ -510,6 +689,14 @@ export default function TreasuryPage() {
                                 className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                 placeholder="إلى تاريخ"
                             />
+                            <button
+                                onClick={handlePrintTransactions}
+                                className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                title="طباعة الحركات"
+                            >
+                                <Printer className="w-5 h-5" />
+                                <span>طباعة</span>
+                            </button>
                         </div>
                     </div>
 

@@ -1,19 +1,33 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   useGetSalesReportQuery,
   useGetStockReportQuery,
   useGetCustomerReportQuery,
   useGetTopProductsReportQuery,
   useGetSupplierReportQuery,
-  useGetPurchaseReportQuery
+  useGetPurchaseReportQuery,
+  useGetProductMovementReportQuery
 } from "@/state/reportsApi";
 import { useGetCompaniesQuery } from "@/state/companyApi";
-import { BarChart3, ShoppingCart, Users, FileText, Search, X, Building2 } from "lucide-react";
+import { useGetProductsQuery } from "@/state/productsApi";
+import {
+  BarChart3,
+  ShoppingCart,
+  Users,
+  FileText,
+  Search,
+  X,
+  Building2,
+  ArrowRight,
+  ArrowLeft,
+  RotateCcw,
+  AlertCircle
+} from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 
-type ReportType = "sales" | "stock" | "customers" | "top-products" | "suppliers" | "purchases";
+type ReportType = "sales" | "stock" | "customers" | "top-products" | "suppliers" | "purchases" | "product-movement";
 
 export default function ReportsPage() {
   const [activeReport, setActiveReport] = useState<ReportType>("sales");
@@ -22,12 +36,38 @@ export default function ReportsPage() {
     endDate: "",
   });
 
-  // فلتر الشركة
+  // فلتر الشركة والصنف
   const [selectedCompanyId, setSelectedCompanyId] = useState<number | undefined>(undefined);
+  const [selectedProductId, setSelectedProductId] = useState<number | undefined>(undefined);
+
+  // حالات البحث عن الصنف (حركة صنف)
+  const [productNameSearch, setProductNameSearch] = useState('');
+  const [productCodeSearch, setProductCodeSearch] = useState('');
+  const [showCodeDropdown, setShowCodeDropdown] = useState(false);
+  const [showNameDropdown, setShowNameDropdown] = useState(false);
+
+  // إغلاق القوائم عند النقر في الخارج
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.code-dropdown-container')) setShowCodeDropdown(false);
+      if (!target.closest('.name-dropdown-container')) setShowNameDropdown(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // جلب قائمة الشركات
   const { data: companiesData } = useGetCompaniesQuery({ limit: 100 });
   const companies = companiesData?.data?.companies || [];
+
+  // جلب الأصناف لاختيار صنف في التقرير
+  const { data: productsData } = useGetProductsQuery({
+    limit: 10000,
+    companyId: selectedCompanyId,
+    strict: !!selectedCompanyId // إذا تم اختيار شركة، جلب أصنافها فقط. وإذا كانت جميع الشركات، جلب الكل.
+  });
+  const products = productsData?.data?.products || [];
 
   // Pagination state لكل تقرير
   const [currentPage, setCurrentPage] = useState(1);
@@ -55,13 +95,25 @@ export default function ReportsPage() {
     supplierReportPhone: "",
   });
 
+  // دالة لتوحيد الحروف العربية لتحسين البحث
+  const normalizeArabic = (text: string): string => {
+    if (!text) return "";
+    return text
+      .toString()
+      .toLowerCase()
+      .trim()
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/ة/g, 'ه')
+      .replace(/ى/g, 'ي')
+      .replace(/[\u064B-\u0652]/g, ''); // إزالة التشكيل
+  };
+
   // دالة مساعدة للبحث النصي المحسن (تدعم العربية والإنجليزية)
   const textSearch = (text: string | null | undefined, query: string): boolean => {
     if (!text || !query) return true;
-    const normalizedText = text.toString().toLowerCase().trim();
-    const normalizedQuery = query.toLowerCase().trim();
-    // البحث الجزئي - يبحث عن أي جزء من النص
-    return normalizedText.includes(normalizedQuery);
+    const normText = normalizeArabic(text);
+    const normQuery = normalizeArabic(query);
+    return normText.includes(normQuery);
   };
 
   const printRef = useRef<HTMLDivElement>(null);
@@ -181,7 +233,6 @@ export default function ReportsPage() {
         if (filters.productCode && !textSearch(item.product.sku, filters.productCode)) return false;
         return true;
       });
-      tableHeaders = ['الترتيب', 'كود الصنف', 'المنتج', 'الكمية المباعة', 'الإيرادات', 'عدد المبيعات'];
       tableRows = (item: any, index: number) => `
         <tr>
           <td style="text-align: center; font-weight: bold;">${index + 1}</td>
@@ -192,6 +243,27 @@ export default function ReportsPage() {
           <td>${item.salesCount.toLocaleString('ar-LY')}</td>
         </tr>
       `;
+    } else if (activeReport === 'product-movement' && productMovementReport) {
+      const data = productMovementReport.data;
+      printData = data.movements;
+      tableHeaders = ['التاريخ', 'النوع', 'الوصف', 'الوارد', 'الصادر', 'الرصيد'];
+      tableRows = (m: any) => `
+        <tr>
+          <td>${new Date(m.date).toLocaleDateString('ar-LY')}</td>
+          <td>${m.type === 'SALE' ? 'بيع' : m.type === 'PURCHASE' ? 'شراء' : m.type === 'RETURN' ? 'مردود' : m.type === 'DAMAGE' ? 'تالف' : 'افتتاحي'}</td>
+          <td>${m.description}</td>
+          <td style="color: ${m.qtyIn > 0 ? 'green' : 'black'}">${m.qtyIn > 0 ? m.qtyIn.toLocaleString('ar-LY') : '-'}</td>
+          <td style="color: ${m.qtyOut > 0 ? 'red' : 'black'}">${m.qtyOut > 0 ? m.qtyOut.toLocaleString('ar-LY') : '-'}</td>
+          <td style="font-weight: bold;">${m.balance.toLocaleString('ar-LY')}</td>
+        </tr>
+      `;
+      // إضافة معلومات الصنف للطباعة
+      stats = {
+        'اسم الصنف': data.product.name,
+        'الكود': data.product.sku,
+        'رصيد أول المدة': data.openingBalance.toLocaleString('ar-LY'),
+        'المخزون الحالي': data.currentStock.toLocaleString('ar-LY')
+      };
     }
 
     const printWindow = window.open('', '_blank');
@@ -414,6 +486,11 @@ export default function ReportsPage() {
     { skip: activeReport !== "purchases" }
   );
 
+  const { data: productMovementReport, isLoading: movementLoading } = useGetProductMovementReportQuery(
+    { ...dateRange, companyId: selectedCompanyId, productId: selectedProductId! },
+    { skip: activeReport !== "product-movement" || !selectedProductId }
+  );
+
   const reports = [
     { id: "sales" as ReportType, name: "تقرير المبيعات", icon: BarChart3, color: "blue" },
     { id: "purchases" as ReportType, name: "تقرير المشتريات", icon: ShoppingCart, color: "teal" },
@@ -421,9 +498,10 @@ export default function ReportsPage() {
     { id: "customers" as ReportType, name: "تقرير العملاء", icon: Users, color: "orange" },
     { id: "suppliers" as ReportType, name: "تقرير الموردين", icon: Users, color: "indigo" },
     { id: "top-products" as ReportType, name: "الأكثر مبيعاً", icon: FileText, color: "red" },
+    { id: "product-movement" as ReportType, name: "حركة صنف", icon: RotateCcw, color: "purple" },
   ];
 
-  const isLoading = salesLoading || stockLoading || customerLoading || topProductsLoading || supplierLoading || purchaseLoading;
+  const isLoading = salesLoading || stockLoading || customerLoading || topProductsLoading || supplierLoading || purchaseLoading || movementLoading;
 
   return (
     <div className="p-6">
@@ -457,7 +535,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Filters Section */}
-      {(activeReport === "sales" || activeReport === "stock" || activeReport === "customers" || activeReport === "top-products" || activeReport === "suppliers" || activeReport === "purchases") && (
+      {(activeReport === "sales" || activeReport === "stock" || activeReport === "customers" || activeReport === "top-products" || activeReport === "suppliers" || activeReport === "purchases" || activeReport === "product-movement") && (
         <div className="bg-white p-4 rounded-lg shadow mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
@@ -468,6 +546,9 @@ export default function ReportsPage() {
               onClick={() => {
                 setFilters({ customerName: "", invoiceNumber: "", productName: "", productCode: "", minAmount: "", maxAmount: "", supplierName: "", supplierPhone: "", invoiceAmount: "", customerPhone: "", supplierReportName: "", supplierReportPhone: "" });
                 setSelectedCompanyId(undefined);
+                setSelectedProductId(undefined);
+                setProductCodeSearch('');
+                setProductNameSearch('');
               }}
               className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
             >
@@ -729,6 +810,131 @@ export default function ReportsPage() {
                   />
                 </div>
               </>
+            )}
+
+            {/* Product Movement Report Filters */}
+            {activeReport === "product-movement" && (
+              <div className="md:col-span-2 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* البحث بالكود */}
+                  <div className="relative code-dropdown-container">
+                    <label className="block text-sm text-gray-600 mb-1">🔢 البحث بالكود</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={productCodeSearch}
+                        onChange={(e) => {
+                          setProductCodeSearch(e.target.value);
+                          setShowCodeDropdown(true);
+                          setShowNameDropdown(false);
+                        }}
+                        onFocus={() => productCodeSearch && setShowCodeDropdown(true)}
+                        placeholder="أدخل كود الصنف..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm"
+                      />
+                      {showCodeDropdown && productCodeSearch && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                          {products
+                            .filter((p: any) => p.sku.toLowerCase().trim() === productCodeSearch.toLowerCase().trim())
+                            .map((p: any) => (
+                              <div
+                                key={p.id}
+                                onClick={() => {
+                                  setSelectedProductId(p.id);
+                                  setProductCodeSearch(p.sku);
+                                  setProductNameSearch(p.name);
+                                  setShowCodeDropdown(false);
+                                }}
+                                className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 text-right"
+                              >
+                                <div className="flex justify-between items-center">
+                                  <div className="font-bold text-gray-900 text-sm">{p.sku}</div>
+                                  <div className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">
+                                    {p.createdByCompany?.name || 'شركة غير معروفة'}
+                                  </div>
+                                </div>
+                                <div className="text-xs text-gray-500 truncate">{p.name}</div>
+                              </div>
+                            ))}
+                          {products.filter((p: any) => p.sku.toLowerCase().trim() === productCodeSearch.toLowerCase().trim()).length === 0 && (
+                            <div className="px-3 py-2 text-sm text-gray-500 text-center">لا توجد نتائج</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* البحث بالاسم */}
+                  <div className="relative name-dropdown-container">
+                    <label className="block text-sm text-gray-600 mb-1">🔍 البحث بالاسم</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={productNameSearch}
+                        onChange={(e) => {
+                          setProductNameSearch(e.target.value);
+                          setShowNameDropdown(true);
+                          setShowCodeDropdown(false);
+                        }}
+                        onFocus={() => productNameSearch && setShowNameDropdown(true)}
+                        placeholder="ابحث باسم الصنف..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm"
+                      />
+                      {showNameDropdown && productNameSearch && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                          {products
+                            .filter((p: any) => normalizeArabic(p.name).includes(normalizeArabic(productNameSearch)))
+                            .slice(0, 20)
+                            .map((p: any) => (
+                              <div
+                                key={p.id}
+                                onClick={() => {
+                                  setSelectedProductId(p.id);
+                                  setProductNameSearch(p.name);
+                                  setProductCodeSearch(p.sku);
+                                  setShowNameDropdown(false);
+                                }}
+                                className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 text-right"
+                              >
+                                <div className="flex justify-between items-center">
+                                  <div className="font-bold text-gray-900 text-sm">{p.name}</div>
+                                  <div className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">
+                                    {p.createdByCompany?.name || 'شركة غير معروفة'}
+                                  </div>
+                                </div>
+                                <div className="text-xs text-gray-500 truncate">كود: {p.sku}</div>
+                              </div>
+                            ))}
+                          {products.filter((p: any) => normalizeArabic(p.name).includes(normalizeArabic(productNameSearch))).length === 0 && (
+                            <div className="px-3 py-2 text-sm text-gray-500 text-center">لا توجد نتائج</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {selectedProductId && (
+                  <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg border border-blue-200 text-sm flex items-center justify-between animate-in fade-in slide-in-from-top-1">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-2 w-2 rounded-full bg-blue-600"></span>
+                      <span>الصنف المختار: <span className="font-bold">{products.find((p: any) => p.id === selectedProductId)?.name}</span></span>
+                      <span className="text-xs text-blue-500 bg-blue-100 px-1.5 py-0.5 rounded">كود: {products.find((p: any) => p.id === selectedProductId)?.sku}</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedProductId(undefined);
+                        setProductNameSearch('');
+                        setProductCodeSearch('');
+                      }}
+                      className="p-1 hover:bg-blue-200 rounded-full transition-colors"
+                      title="إلغاء الاختيار"
+                    >
+                      <X className="w-4 h-4 text-blue-900" />
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -1332,7 +1538,110 @@ export default function ReportsPage() {
             </div>
           </div>
         )}
+
+        {/* Product Movement Report */}
+        {activeReport === "product-movement" && (
+          <div className="space-y-6">
+            {!selectedProductId ? (
+              <div className="bg-blue-50 border-r-4 border-blue-500 p-8 rounded-lg text-center">
+                <AlertCircle className="w-12 h-12 text-blue-500 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-blue-800">يرجى اختيار صنف</h3>
+                <p className="text-blue-600 mt-2">يرجى اختيار صنف من قائمة الفلاتر بالأعلى لعرض تقرير حركة الصنف</p>
+              </div>
+            ) : movementLoading ? (
+              <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100 italic text-gray-400">
+                جاري التحميل...
+              </div>
+            ) : productMovementReport && (
+              <>
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-white p-4 rounded-lg shadow border-b-4 border-gray-500">
+                    <p className="text-sm text-gray-600">رصيد أول المدة</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {productMovementReport.data.openingBalance.toLocaleString("ar-LY")} <span className="text-xs">{productMovementReport.data.product.unit || 'وحدة'}</span>
+                    </p>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow border-b-4 border-green-500">
+                    <p className="text-sm text-gray-600">إجمالي الوارد</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {productMovementReport.data.movements.reduce((sum: number, m: any) => sum + m.qtyIn, 0).toLocaleString("ar-LY")}
+                    </p>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow border-b-4 border-red-500">
+                    <p className="text-sm text-gray-600">إجمالي الصادر</p>
+                    <p className="text-2xl font-bold text-red-600">
+                      {productMovementReport.data.movements.reduce((sum: number, m: any) => sum + m.qtyOut, 0).toLocaleString("ar-LY")}
+                    </p>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow border-b-4 border-blue-600">
+                    <p className="text-sm text-gray-600">المخزون الحالي</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {productMovementReport.data.currentStock.toLocaleString("ar-LY")}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Movements Table */}
+                <div className="bg-white rounded-lg shadow overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">التاريخ</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">النوع</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الوصف</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الوارد</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الصادر</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الرصيد التحليلي</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {paginateData(productMovementReport.data.movements).map((m: any, idx: number) => (
+                          <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {new Date(m.date).toLocaleDateString("ar-LY")}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${m.type === 'SALE' ? 'bg-blue-100 text-blue-800' :
+                                m.type === 'PURCHASE' ? 'bg-green-100 text-green-800' :
+                                  m.type === 'RETURN' ? 'bg-orange-100 text-orange-800' :
+                                    m.type === 'DAMAGE' ? 'bg-red-100 text-red-800' :
+                                      'bg-gray-100 text-gray-800'
+                                }`}>
+                                {m.type === 'SALE' && <ArrowRight className="w-3 h-3" />}
+                                {m.type === 'PURCHASE' && <ArrowLeft className="w-3 h-3" />}
+                                {m.type === 'SALE' ? 'بيع' : m.type === 'PURCHASE' ? 'شراء' : m.type === 'RETURN' ? 'مردود' : m.type === 'DAMAGE' ? 'تالف' : 'افتتاحي'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600">
+                              {m.description}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                              {m.qtyIn > 0 ? `+${m.qtyIn.toLocaleString("ar-LY")}` : "-"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
+                              {m.qtyOut > 0 ? `-${m.qtyOut.toLocaleString("ar-LY")}` : "-"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                              {m.balance.toLocaleString("ar-LY")}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <Pagination
+                    totalItems={productMovementReport.data.movements.length}
+                    filteredItems={productMovementReport.data.movements}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
+
     </div>
   );
 }

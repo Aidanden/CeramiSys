@@ -47,6 +47,13 @@ export interface PurchaseReportQuery {
   purchaseType?: "CASH" | "CREDIT";
 }
 
+export interface ProductMovementReportQuery {
+  productId: number;
+  companyId?: number;
+  startDate?: string;
+  endDate?: string;
+}
+
 export const reportsApi = createApi({
   reducerPath: "reportsApi",
   baseQuery: baseQueryWithAuthInterceptor,
@@ -109,6 +116,15 @@ export const reportsApi = createApi({
         params,
       }),
     }),
+
+    // تقرير حركة الصنف
+    getProductMovementReport: build.query({
+      query: (params: ProductMovementReportQuery) => ({
+        url: "/reports/product-movement",
+        method: "GET",
+        params,
+      }),
+    }),
   }),
 });
 
@@ -119,4 +135,5 @@ export const {
   useGetTopProductsReportQuery,
   useGetSupplierReportQuery,
   useGetPurchaseReportQuery,
+  useGetProductMovementReportQuery,
 } = reportsApi;

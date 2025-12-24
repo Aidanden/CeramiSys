@@ -62,3 +62,13 @@ export const PurchaseReportQueryDto = z.object({
 });
 
 export type PurchaseReportQuery = z.infer<typeof PurchaseReportQueryDto>;
+
+// DTO لتقرير حركة الصنف
+export const ProductMovementReportQueryDto = z.object({
+  productId: z.string().transform(Number),
+  companyId: z.string().optional().transform(Number),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+});
+
+export type ProductMovementReportQuery = z.infer<typeof ProductMovementReportQueryDto>;

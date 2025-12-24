@@ -59,6 +59,7 @@ export interface GetProductsQuery {
   sku?: string;
   companyId?: number;
   unit?: string;
+  strict?: boolean;
 }
 
 export interface UpdateStockRequest {
@@ -138,28 +139,29 @@ export const productsApi = createApi({
     getProducts: builder.query<ProductsResponse, GetProductsQuery>({
       query: (params = {}) => {
         const searchParams = new URLSearchParams();
-        
+
         if (params.page) searchParams.append('page', params.page.toString());
         if (params.limit) searchParams.append('limit', params.limit.toString());
         if (params.search) searchParams.append('search', params.search);
         if (params.sku) searchParams.append('sku', params.sku);
         if (params.companyId) searchParams.append('companyId', params.companyId.toString());
         if (params.unit) searchParams.append('unit', params.unit);
-        
+        if (params.strict) searchParams.append('strict', 'true');
+
         // إضافة timestamp لمنع الـ cache في المتصفح
         searchParams.append('_t', Date.now().toString());
-        
+
         const queryString = searchParams.toString();
         return `/products${queryString ? `?${queryString}` : ''}`;
       },
       // إجبار إعادة الجلب دائماً - بدون cache
       keepUnusedDataFor: 0,
-      providesTags: (result) => 
+      providesTags: (result) =>
         result?.data?.products
           ? [
-              ...result.data.products.map(({ id }) => ({ type: 'Product' as const, id })),
-              { type: 'Products', id: 'LIST' },
-            ]
+            ...result.data.products.map(({ id }) => ({ type: 'Product' as const, id })),
+            { type: 'Products', id: 'LIST' },
+          ]
           : [{ type: 'Products', id: 'LIST' }],
     }),
 
@@ -226,10 +228,10 @@ export const productsApi = createApi({
       async onQueryStarted({ productId, quantity }, { dispatch, queryFulfilled }) {
         try {
           await queryFulfilled;
-          
+
           // تحديث فوري لجميع الـ queries
           dispatch(productsApi.util.invalidateTags([{ type: 'Products', id: 'LIST' }]));
-          
+
         } catch {
           // في حالة الخطأ، سيتم التعامل معه في المكون
         }
@@ -251,10 +253,10 @@ export const productsApi = createApi({
       async onQueryStarted({ productId, sellPrice }, { dispatch, queryFulfilled }) {
         try {
           await queryFulfilled;
-          
+
           // تحديث فوري لجميع الـ queries
           dispatch(productsApi.util.invalidateTags([{ type: 'Products', id: 'LIST' }]));
-          
+
         } catch {
           // في حالة الخطأ، سيتم التعامل معه في المكون
         }
@@ -283,40 +285,40 @@ export const productsApi = createApi({
     }),
 
     // الحصول على الأصناف التي ستنتهي قريباً
-        getLowStockProducts: builder.query<{
-          success: boolean;
-          message: string;
-          data: LowStockProduct[];
-        }, { limit?: number; companyId?: number }>({
-          query: (params = {}) => {
-            const searchParams = new URLSearchParams();
-            if (params.limit) searchParams.append('limit', params.limit.toString());
-            if (params.companyId) searchParams.append('companyId', params.companyId.toString());
-            return `/products/low-stock?${searchParams.toString()}`;
-          },
-          providesTags: ['ProductStats'],
-        }),
+    getLowStockProducts: builder.query<{
+      success: boolean;
+      message: string;
+      data: LowStockProduct[];
+    }, { limit?: number; companyId?: number }>({
+      query: (params = {}) => {
+        const searchParams = new URLSearchParams();
+        if (params.limit) searchParams.append('limit', params.limit.toString());
+        if (params.companyId) searchParams.append('companyId', params.companyId.toString());
+        return `/products/low-stock?${searchParams.toString()}`;
+      },
+      providesTags: ['ProductStats'],
+    }),
 
-        getParentCompanyProducts: builder.query<{
-          success: boolean;
-          message: string;
-          data: Array<{
-            id: number;
-            name: string;
-            sku: string;
-            unit: string;
-            unitsPerBox: number;
-            currentStock: number;
-            unitPrice: number;
-          }>;
-        }, { parentCompanyId: number }>({
-          query: (params) => {
-            const searchParams = new URLSearchParams();
-            searchParams.append('parentCompanyId', params.parentCompanyId.toString());
-            return `/products/parent-company?${searchParams.toString()}`;
-          },
-          providesTags: ['Product'],
-        }),
+    getParentCompanyProducts: builder.query<{
+      success: boolean;
+      message: string;
+      data: Array<{
+        id: number;
+        name: string;
+        sku: string;
+        unit: string;
+        unitsPerBox: number;
+        currentStock: number;
+        unitPrice: number;
+      }>;
+    }, { parentCompanyId: number }>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        searchParams.append('parentCompanyId', params.parentCompanyId.toString());
+        return `/products/parent-company?${searchParams.toString()}`;
+      },
+      providesTags: ['Product'],
+    }),
   }),
 });
 

@@ -26,4 +26,7 @@ router.get("/suppliers", reportsController.getSupplierReport);
 // تقرير المشتريات
 router.get("/purchases", reportsController.getPurchaseReport);
 
+// تقرير حركة الصنف
+router.get("/product-movement", reportsController.getProductMovementReport);
+
 export default router;

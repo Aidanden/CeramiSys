@@ -105,6 +105,10 @@ export class GetProductsQueryDto {
   @IsOptional()
   @IsString({ message: 'الوحدة يجب أن تكون نص' })
   unit?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  strict?: boolean;
 }
 
 // DTO لتحديث المخزون

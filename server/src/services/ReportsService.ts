@@ -5,7 +5,8 @@ import {
   CustomerReportQuery,
   TopProductsReportQuery,
   SupplierReportQuery,
-  PurchaseReportQuery
+  PurchaseReportQuery,
+  ProductMovementReportQuery
 } from "../dto/reportsDto";
 
 export class ReportsService {
@@ -398,6 +399,165 @@ export class ReportsService {
         totalCredit,
         purchaseCount: purchases.length,
       }
+    };
+  }
+
+  /**
+   * تقرير حركة صنف
+   */
+  async getProductMovementReport(query: ProductMovementReportQuery, userCompanyId: number, isSystemUser: boolean = false) {
+    const { productId, companyId: queryCompanyId, startDate: sDate, endDate: eDate } = query;
+    const companyId = queryCompanyId || (isSystemUser !== true ? userCompanyId : undefined);
+
+    if (!companyId) throw new Error("يجب تحديد الشركة");
+
+    const startDate = sDate ? new Date(sDate) : null;
+    const endDate = eDate ? new Date(eDate) : new Date();
+
+    // 1. معلومات الصنف والمخزون الحالي
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true, sku: true, name: true, unit: true, createdAt: true }
+    });
+
+    if (!product) throw new Error("الصنف غير موجود");
+
+    const stock = await this.prisma.stock.findUnique({
+      where: { companyId_productId: { companyId, productId } }
+    });
+
+    const currentQty = stock ? Number(stock.boxes) : 0;
+
+    // 2. جلب جميع الحركات تاريخياً
+    // المبيعات (نقص)
+    const sales = await this.prisma.saleLine.findMany({
+      where: { productId, sale: { companyId, status: 'APPROVED' } },
+      include: { sale: { select: { createdAt: true, invoiceNumber: true, customer: { select: { name: true } } } } }
+    });
+
+    // المشتريات (زيادة)
+    const purchases = await this.prisma.purchaseLine.findMany({
+      where: { productId, purchase: { companyId, isApproved: true } },
+      include: { purchase: { select: { createdAt: true, supplier: { select: { name: true } } } } }
+    });
+
+    // المشتريات من الشركة الأم (زيادة)
+    const parentPurchases = await this.prisma.purchaseFromParentLine.findMany({
+      where: { productId, purchase: { branchCompanyId: companyId } },
+      include: { purchase: { select: { createdAt: true, invoiceNumber: true } } }
+    });
+
+    // مردودات المبيعات (زيادة)
+    const saleReturns = await this.prisma.saleReturnLine.findMany({
+      where: { productId, saleReturn: { companyId } },
+      include: { saleReturn: { select: { createdAt: true, sale: { select: { invoiceNumber: true } } } } }
+    });
+
+    // المردودات للموردين (نقص) - إذا كانت موجودة في النظام
+    // ملاحظة: قد لا يكون هناك موديل PurchaseReturnLine حالياً، إذا وجد يجب إضافته
+
+    // التالف (نقص)
+    const damages = await this.prisma.damageReportLine.findMany({
+      where: { productId, damageReport: { companyId, status: 'APPROVED' } },
+      include: { damageReport: { select: { createdAt: true, reason: true } } }
+    });
+
+    // 3. توحيد الحركات في قائمة واحدة
+    const allMovements: any[] = [
+      ...sales.map(s => ({
+        date: s.sale.createdAt,
+        type: 'SALE',
+        description: `بيع: فاتورة ${s.sale.invoiceNumber || '-'} (${s.sale.customer?.name || 'عميل نقدي'})`,
+        qtyIn: 0,
+        qtyOut: Number(s.qty),
+      })),
+      ...purchases.map(p => ({
+        date: p.purchase.createdAt,
+        type: 'PURCHASE',
+        description: `شراء: مورد ${p.purchase.supplier?.name || '-'}`,
+        qtyIn: Number(p.qty),
+        qtyOut: 0,
+      })),
+      ...parentPurchases.map((p: any) => ({
+        date: p.purchase.createdAt,
+        type: 'PURCHASE',
+        description: `شراء من الشركة الأم: فاتورة ${p.purchase.invoiceNumber || '-'}`,
+        qtyIn: Number(p.qty),
+        qtyOut: 0,
+      })),
+      ...saleReturns.map(r => ({
+        date: r.saleReturn.createdAt,
+        type: 'RETURN',
+        description: `مردود مبيعات: فاتورة ${r.saleReturn.sale?.invoiceNumber || '-'}`,
+        qtyIn: Number(r.qty),
+        qtyOut: 0,
+      })),
+      ...damages.map((d: any) => ({
+        date: d.damageReport.createdAt,
+        type: 'DAMAGE',
+        description: `تالف: ${d.damageReport.reason || 'بدون وصف'}`,
+        qtyIn: 0,
+        qtyOut: Number(d.quantity),
+      }))
+    ];
+
+    // ترتيب الحركات حسب التاريخ تصاعدياً
+    allMovements.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    // 4. حساب "رصيد البداية الأول" (قبل كل الحركات)
+    // الكمية الحالية = الرصيد الأول + (مجموع الداخل - مجموع الخارج)
+    // الرصيد الأول = الكمية الحالية - (مجموع الداخل - مجموع الخارج)
+    const totalIn = allMovements.reduce((sum, m) => sum + m.qtyIn, 0);
+    const totalOut = allMovements.reduce((sum, m) => sum + m.qtyOut, 0);
+    const initialQty = currentQty - (totalIn - totalOut);
+
+    // 5. بناء التقرير النهائي وحساب الأرصدة المتراكمة
+    let runningBalance = initialQty;
+    const finalMovements: any[] = [];
+
+    // حساب رصيد أول المدة للفترة المختارة
+    let openingBalanceInPeriod = initialQty;
+    if (startDate) {
+      openingBalanceInPeriod = initialQty + allMovements
+        .filter(m => m.date < startDate)
+        .reduce((sum, m) => sum + m.qtyIn - m.qtyOut, 0);
+    }
+
+    // إضافة سطر "بضاعة أول المدة" في بداية الفترة المختارة
+    finalMovements.push({
+      date: startDate || product.createdAt,
+      type: 'INITIAL',
+      description: startDate ? 'بضاعة أول المدة (للفترة المختارة)' : (initialQty > 0 ? 'بضاعة أول المدة / رصيد افتتاحي' : 'إضافة صنف (رصيد 0)'),
+      qtyIn: (startDate ? 0 : (initialQty > 0 ? initialQty : 0)),
+      qtyOut: 0,
+      balance: openingBalanceInPeriod
+    });
+
+    allMovements.forEach(m => {
+      runningBalance = runningBalance + m.qtyIn - m.qtyOut;
+      m.balance = runningBalance;
+
+      // فلترة الحركات حسب التواريخ المطلوبة
+      const dateOk = (!startDate || m.date >= startDate) && (m.date <= endDate);
+      if (dateOk) {
+        finalMovements.push(m);
+      }
+    });
+
+    return {
+      product: {
+        id: product.id,
+        sku: product.sku,
+        name: product.name,
+        unit: product.unit
+      },
+      period: {
+        from: startDate,
+        to: endDate
+      },
+      openingBalance: openingBalanceInPeriod,
+      movements: finalMovements.sort((a, b) => b.date.getTime() - a.date.getTime()), // الأحدث أولاً للعرض
+      currentStock: currentQty
     };
   }
 }

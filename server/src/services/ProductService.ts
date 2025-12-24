@@ -39,11 +39,11 @@ export class ProductService {
       // - إذا لم يتم تمرير companyId: جميع الأصناف (لجميع المستخدمين)
       // - إذا تم تمرير companyId آخر: أصناف تلك الشركة + التقازي
       if (companyId) {
-        if (companyId === 1) {
-          // التقازي فقط
-          companyConditions = [{ createdByCompanyId: 1 }];
+        if (companyId === 1 || query.strict) {
+          // شركة واحدة فقط (التقازي فقط أو طلب فلترة دقيقة)
+          companyConditions = [{ createdByCompanyId: companyId }];
         } else {
-          // شركة أخرى + التقازي
+          // شركة أخرى + التقازي (الوضع الافتراضي للمبيعات)
           companyConditions = [
             { createdByCompanyId: companyId },
             { createdByCompanyId: 1 }
