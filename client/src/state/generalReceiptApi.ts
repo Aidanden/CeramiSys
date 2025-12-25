@@ -1,11 +1,14 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuthInterceptor } from "./apiUtils";
+import { treasuryApi } from "./treasuryApi";
 
 export interface FinancialContact {
     id: number;
     name: string;
     phone?: string;
     note?: string;
+    totalDeposit?: number;
+    totalWithdrawal?: number;
     currentBalance?: number;
 }
 
@@ -63,7 +66,22 @@ export const generalReceiptApi = createApi({
                 method: "POST",
                 body: receipt,
             }),
-            invalidatesTags: ["GeneralReceipts", "FinancialContacts", "Treasury"],
+            async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+                try {
+                    await queryFulfilled;
+                    // تحديث الخزائن والحركات في الذاكرة المؤقتة التابعة لـ treasuryApi
+                    dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryStats', 'TreasuryTransaction']));
+                } catch (err) {
+                    console.error("Error updating treasury cache:", err);
+                }
+            },
+            invalidatesTags: (result, error, { contactId }) => [
+                "GeneralReceipts",
+                "FinancialContacts",
+                { type: "FinancialContacts" as const, id: contactId },
+                "Treasury",
+                { type: "FinancialContactStatement" as const, id: contactId },
+            ],
         }),
         getContactStatement: build.query<any[], number>({
             query: (id) => `/general/contacts/${id}/statement`,

@@ -8,14 +8,34 @@ export interface CreateFinancialContactInput {
 
 class FinancialContactService {
     async getAllContacts() {
-        return prisma.financialContact.findMany({
+        const contacts = await prisma.financialContact.findMany({
             where: { isActive: true },
             orderBy: { name: 'asc' },
             include: {
-                _count: {
-                    select: { generalReceipts: true }
+                accountEntries: {
+                    orderBy: { transactionDate: 'desc' },
                 }
             }
+        });
+
+        return contacts.map(c => {
+            const totalDeposit = c.accountEntries
+                .filter(e => e.transactionType === 'DEPOSIT')
+                .reduce((sum, e) => sum + Number(e.amount), 0);
+            const totalWithdrawal = c.accountEntries
+                .filter(e => e.transactionType === 'WITHDRAWAL')
+                .reduce((sum, e) => sum + Number(e.amount), 0);
+
+            // الرصيد هو الفرق بين المقبوضات والمدفوعات
+            const currentBalance = totalDeposit - totalWithdrawal;
+
+            return {
+                ...c,
+                totalDeposit,
+                totalWithdrawal,
+                currentBalance,
+                accountEntries: c.accountEntries.slice(0, 5) // إرجاع آخر 5 حركات فقط لتوفير البيانات
+            };
         });
     }
 

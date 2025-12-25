@@ -58,7 +58,7 @@ class GeneralReceiptService {
                     amount: amountDecimal,
                     balanceBefore: balanceBefore,
                     balanceAfter: balanceAfter,
-                    description: `إيصال عام (${data.type === 'DEPOSIT' ? 'قبض' : 'صرف'}) - ${data.description || ''}`,
+                    description: `إيصال خارجي (${data.type === 'DEPOSIT' ? 'قبض' : 'صرف'}) - ${data.description || ''}`,
                     referenceType: 'GeneralReceipt',
                     referenceId: receipt.id,
                     createdBy: data.createdBy

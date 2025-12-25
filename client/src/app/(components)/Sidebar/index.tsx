@@ -219,7 +219,7 @@ const Sidebar = () => {
           <SidebarLink
             href="/general-receipts"
             icon={ArrowRightLeft}
-            label="إيصالات وقروض عامة"
+            label="إيصالات خارجية"
             isCollapsed={isSidebarCollapsed}
           />
           {canAccessScreen('/payroll') && (
