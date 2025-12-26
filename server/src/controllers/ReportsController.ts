@@ -8,6 +8,7 @@ import {
   SupplierReportQueryDto,
   PurchaseReportQueryDto,
   ProductMovementReportQueryDto,
+  FinancialReportQueryDto
 } from "../dto/reportsDto";
 
 export class ReportsController {
@@ -244,6 +245,39 @@ export class ReportsController {
       res.status(500).json({
         success: false,
         message: error.message || "حدث خطأ أثناء جلب تقرير حركة الصنف",
+      });
+    }
+  };
+
+  /**
+   * GET /api/reports/financial
+   * تقرير الأرباح (التقرير المالي)
+   */
+  getFinancialReport = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userCompanyId = (req as any).user?.companyId;
+      const isSystemUser = (req as any).user?.isSystemUser;
+
+      if (!userCompanyId) {
+        res.status(401).json({
+          success: false,
+          message: "غير مصرح - معرف الشركة مفقود",
+        });
+        return;
+      }
+
+      const validatedQuery = FinancialReportQueryDto.parse(req.query);
+      const report = await this.reportsService.getFinancialReport(validatedQuery, userCompanyId, isSystemUser);
+
+      res.json({
+        success: true,
+        data: report,
+      });
+    } catch (error: any) {
+      console.error("Error in getFinancialReport:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "حدث خطأ أثناء جلب التقرير المالي",
       });
     }
   };

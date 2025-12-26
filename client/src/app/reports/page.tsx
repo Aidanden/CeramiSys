@@ -8,8 +8,10 @@ import {
   useGetTopProductsReportQuery,
   useGetSupplierReportQuery,
   useGetPurchaseReportQuery,
-  useGetProductMovementReportQuery
+  useGetProductMovementReportQuery,
+  useGetProfitReportQuery
 } from "@/state/reportsApi";
+
 import { useGetCompaniesQuery } from "@/state/companyApi";
 import { useGetProductsQuery } from "@/state/productsApi";
 import {
@@ -23,11 +25,13 @@ import {
   ArrowRight,
   ArrowLeft,
   RotateCcw,
-  AlertCircle
+  AlertCircle,
+  TrendingUp,
+  Layout
 } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 
-type ReportType = "sales" | "stock" | "customers" | "top-products" | "suppliers" | "purchases" | "product-movement";
+type ReportType = "sales" | "stock" | "customers" | "top-products" | "suppliers" | "purchases" | "product-movement" | "profit";
 
 export default function ReportsPage() {
   const [activeReport, setActiveReport] = useState<ReportType>("sales");
@@ -241,6 +245,22 @@ export default function ReportsPage() {
           <td>${item.totalQty.toLocaleString('ar-LY')} ${item.product.unit || 'وحدة'}</td>
           <td style="font-weight: bold;">${item.totalRevenue.toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</td>
           <td>${item.salesCount.toLocaleString('ar-LY')}</td>
+        </tr>
+      `;
+    } else if (activeReport === 'profit' && financialReport) {
+      stats = financialReport.data.stats;
+      tableHeaders = ['البيان', 'القيمة (د.ل)'];
+      printData = [
+        { label: 'إجمالي المبيعات', value: stats.totalSales },
+        { label: 'تكلفة البضاعة المباعة', value: stats.totalCogs },
+        { label: 'تكلفة المردودات', value: stats.totalReturnCost },
+        { label: 'تكلفة التالف (الهالك)', value: stats.totalDamageCost },
+        { label: 'صافي الربح الحقيقي', value: stats.netProfit },
+      ];
+      tableRows = (item: any) => `
+        <tr style="${item.label === 'صافي الربح الحقيقي' ? 'font-weight: bold; background-color: #f1f5f9; font-size: 14px;' : ''}">
+          <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${item.label}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: left; font-family: monospace;">${item.value.toLocaleString('ar-LY', { minimumFractionDigits: 2 })}</td>
         </tr>
       `;
     } else if (activeReport === 'product-movement' && productMovementReport) {
@@ -491,6 +511,11 @@ export default function ReportsPage() {
     { skip: activeReport !== "product-movement" || !selectedProductId }
   );
 
+  const { data: financialReport, isLoading: financialLoading } = useGetProfitReportQuery(
+    { ...dateRange, companyId: selectedCompanyId, productId: selectedProductId },
+    { skip: activeReport !== "profit" }
+  );
+
   const reports = [
     { id: "sales" as ReportType, name: "تقرير المبيعات", icon: BarChart3, color: "blue" },
     { id: "purchases" as ReportType, name: "تقرير المشتريات", icon: ShoppingCart, color: "teal" },
@@ -499,9 +524,11 @@ export default function ReportsPage() {
     { id: "suppliers" as ReportType, name: "تقرير الموردين", icon: Users, color: "indigo" },
     { id: "top-products" as ReportType, name: "الأكثر مبيعاً", icon: FileText, color: "red" },
     { id: "product-movement" as ReportType, name: "حركة صنف", icon: RotateCcw, color: "purple" },
+    { id: "profit" as ReportType, name: "الأرباح والخسائر", icon: TrendingUp, color: "indigo" },
   ];
 
-  const isLoading = salesLoading || stockLoading || customerLoading || topProductsLoading || supplierLoading || purchaseLoading || movementLoading;
+  const isLoading = salesLoading || stockLoading || customerLoading || topProductsLoading ||
+    supplierLoading || purchaseLoading || movementLoading || financialLoading;
 
   return (
     <div className="p-6">
@@ -535,7 +562,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Filters Section */}
-      {(activeReport === "sales" || activeReport === "stock" || activeReport === "customers" || activeReport === "top-products" || activeReport === "suppliers" || activeReport === "purchases" || activeReport === "product-movement") && (
+      {(activeReport === "sales" || activeReport === "stock" || activeReport === "customers" || activeReport === "top-products" || activeReport === "suppliers" || activeReport === "purchases" || activeReport === "product-movement" || activeReport === "profit") && (
         <div className="bg-white p-4 rounded-lg shadow mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
@@ -1640,8 +1667,97 @@ export default function ReportsPage() {
             )}
           </div>
         )}
-      </div>
 
+        {/* Financial (Profit) Report */}
+        {activeReport === "profit" && financialLoading ? (
+          <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100 italic text-gray-400">
+            جاري التحميل...
+          </div>
+        ) : activeReport === "profit" && financialReport && (
+          <div className="space-y-6">
+            {/* Main Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-2xl shadow-lg relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+                  <TrendingUp className="w-16 h-16 text-white" />
+                </div>
+                <p className="text-blue-100 text-sm font-medium mb-1">إجمالي المبيعات</p>
+                <p className="text-3xl font-bold text-white">
+                  {financialReport.data.stats.totalSales.toLocaleString("ar-LY")} <span className="text-sm font-normal">د.ل</span>
+                </p>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-amber-500">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-amber-100 p-2 rounded-lg">
+                    <ArrowLeft className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <p className="text-slate-600 font-medium">تكلفة البضاعة المباعة</p>
+                </div>
+                <p className="text-2xl font-bold text-slate-800">
+                  {financialReport.data.stats.totalCogs.toLocaleString("ar-LY")} <span className="text-sm text-slate-400">د.ل</span>
+                </p>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-orange-500">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-orange-100 p-2 rounded-lg">
+                    <RotateCcw className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <p className="text-slate-600 font-medium">تكلفة المردودات</p>
+                </div>
+                <p className="text-2xl font-bold text-slate-800">
+                  {financialReport.data.stats.totalReturnCost.toLocaleString("ar-LY")} <span className="text-sm text-slate-400">د.ل</span>
+                </p>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-red-500">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-red-100 p-2 rounded-lg">
+                    <AlertCircle className="w-5 h-5 text-red-600" />
+                  </div>
+                  <p className="text-slate-600 font-medium">تكلفة التالف</p>
+                </div>
+                <p className="text-2xl font-bold text-slate-800">
+                  {financialReport.data.stats.totalDamageCost.toLocaleString("ar-LY")} <span className="text-sm text-slate-400">د.ل</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Net Profit Card */}
+            <div className={`p-8 rounded-3xl shadow-xl border-2 ${financialReport.data.stats.netProfit >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+              <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="space-y-2 text-center md:text-right">
+                  <h3 className={`text-xl font-bold ${financialReport.data.stats.netProfit >= 0 ? 'text-green-800' : 'text-red-800'}`}>صافي الربح الحقيقي</h3>
+                  <p className="text-slate-500 text-sm">بناءً على التكلفة الفعلية للمخزون ناقص الهالك والمردودات</p>
+                </div>
+                <div className="text-center md:text-left">
+                  <p className={`text-5xl font-black ${financialReport.data.stats.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {financialReport.data.stats.netProfit.toLocaleString("ar-LY")} <span className="text-2xl font-bold">د.ل</span>
+                  </p>
+                  <div className="mt-2 flex items-center gap-2 justify-center md:justify-end">
+                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${financialReport.data.stats.netProfit >= 0 ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
+                      هامش الربح: {financialReport.data.stats.profitMargin.toFixed(2)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Accounting Equation Disclaimer */}
+            <div className="bg-slate-50 border border-slate-200 p-6 rounded-2xl">
+              <h4 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                <Layout className="w-5 h-5 text-slate-600" />
+                ملاحظة محاسبية دقيقة
+              </h4>
+              <p className="text-slate-600 text-sm leading-relaxed">
+                يتم احتساب صافي الربح بناءً على المعادلة: (إجمالي المبيعات) - (تكلفة البضاعة المباعة) - (تكلفة المرتجعات) - (تكلفة التالف).
+                يتم تقييم المردودات والتالف بسعر التكلفة المخزن في النظام لضمان دقة النتائج المالية.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -29,4 +29,7 @@ router.get("/purchases", reportsController.getPurchaseReport);
 // تقرير حركة الصنف
 router.get("/product-movement", reportsController.getProductMovementReport);
 
+// تقرير الأرباح (التقرير المالي)
+router.get("/financial", reportsController.getFinancialReport);
+
 export default router;

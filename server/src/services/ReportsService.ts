@@ -6,7 +6,8 @@ import {
   TopProductsReportQuery,
   SupplierReportQuery,
   PurchaseReportQuery,
-  ProductMovementReportQuery
+  ProductMovementReportQuery,
+  FinancialReportQuery
 } from "../dto/reportsDto";
 
 export class ReportsService {
@@ -558,6 +559,128 @@ export class ReportsService {
       openingBalance: openingBalanceInPeriod,
       movements: finalMovements.sort((a, b) => b.date.getTime() - a.date.getTime()), // الأحدث أولاً للعرض
       currentStock: currentQty
+    };
+  }
+
+  /**
+   * تقرير الأرباح (التقرير المالي)
+   */
+  async getFinancialReport(query: FinancialReportQuery, userCompanyId: number, isSystemUser: boolean = false) {
+    const { companyId: qCompanyId, productId: qProductId, startDate: sDate, endDate: eDate } = query;
+    const companyId = qCompanyId || (isSystemUser !== true ? userCompanyId : undefined);
+
+    const startDate = sDate ? new Date(sDate) : null;
+    const endDate = eDate ? new Date(eDate) : new Date();
+
+    const dateFilter = {
+      ...(startDate || endDate ? {
+        createdAt: {
+          ...(startDate && { gte: startDate }),
+          ...(endDate && { lte: endDate }),
+        }
+      } : {}),
+    };
+
+    // 1. المبيعات (إجمالي المبيعات)
+    const sales = await this.prisma.sale.findMany({
+      where: {
+        ...(companyId && { companyId }),
+        status: 'APPROVED',
+        ...dateFilter,
+        ...(qProductId && { lines: { some: { productId: qProductId } } }),
+      },
+      include: {
+        lines: {
+          where: {
+            ...(qProductId && { productId: qProductId })
+          },
+          include: {
+            product: { select: { cost: true } }
+          }
+        }
+      }
+    });
+
+    // 2. المردودات (المرتجعات)
+    const returns = await this.prisma.saleReturn.findMany({
+      where: {
+        ...(companyId && { companyId }),
+        status: 'APPROVED',
+        ...dateFilter,
+        ...(qProductId && { lines: { some: { productId: qProductId } } }),
+      },
+      include: {
+        lines: {
+          where: {
+            ...(qProductId && { productId: qProductId })
+          },
+          include: {
+            product: { select: { cost: true } }
+          }
+        }
+      }
+    });
+
+    // 3. التالف (الهالك)
+    const damages = await this.prisma.damageReport.findMany({
+      where: {
+        ...(companyId && { companyId }),
+        status: 'APPROVED',
+        ...dateFilter,
+        ...(qProductId && { lines: { some: { productId: qProductId } } }),
+      },
+      include: {
+        lines: {
+          where: {
+            ...(qProductId && { productId: qProductId })
+          },
+          include: {
+            product: { select: { cost: true } }
+          }
+        }
+      }
+    });
+
+    // الحسابات
+    let totalSalesValue = 0;
+    let totalCogs = 0;
+    let totalReturnCost = 0;
+    let totalDamageCost = 0;
+
+    sales.forEach(sale => {
+      sale.lines.forEach(line => {
+        totalSalesValue += Number(line.subTotal);
+        const cost = line.product.cost ? Number(line.product.cost) : 0;
+        totalCogs += Number(line.qty) * cost;
+      });
+    });
+
+    returns.forEach(ret => {
+      ret.lines.forEach(line => {
+        const cost = line.product.cost ? Number(line.product.cost) : 0;
+        totalReturnCost += Number(line.qty) * cost;
+      });
+    });
+
+    damages.forEach(dmg => {
+      dmg.lines.forEach(line => {
+        const cost = line.product.cost ? Number(line.product.cost) : 0;
+        totalDamageCost += Number(line.quantity) * cost;
+      });
+    });
+
+    const netProfit = totalSalesValue - totalCogs - totalReturnCost - totalDamageCost;
+
+    return {
+      period: { from: startDate, to: endDate },
+      stats: {
+        totalSales: totalSalesValue,
+        totalCogs,
+        totalReturnCost,
+        totalDamageCost,
+        netProfit,
+        profitMargin: totalSalesValue > 0 ? (netProfit / totalSalesValue) * 100 : 0
+      }
     };
   }
 }

@@ -15,14 +15,49 @@ import {
     usePaySalaryMutation,
     usePayMultipleSalariesMutation,
     useGetSalaryPaymentsQuery,
+    useGetSalaryStatementQuery,
     usePayBonusMutation,
     useGetPayrollStatsQuery,
     Employee,
     SalaryPayment,
+    SalaryStatement
 } from '@/state/payrollApi';
 import { useGetTreasuriesQuery } from '@/state/treasuryApi';
 import { useGetCompaniesQuery } from '@/state/companyApi';
-import { Users, Calendar, BarChart3, Gift } from 'lucide-react';
+// Lucide icons aligned with project identity (Sidebar & Other screens)
+// Lucide icons aligned with project identity
+import {
+    Users,
+    Calendar,
+    BarChart3,
+    FileText,
+    Edit,
+    Trash2,
+    Plus,
+    Search,
+    Wallet,
+    X,
+    Layout,
+    ShoppingBag,
+    ArrowRightLeft,
+    CircleDollarSign,
+    CreditCard,
+    TrendingUp,
+    BarChart3 as LucideBarChart // Renamed to avoid confusion with BarChart from recharts
+} from 'lucide-react';
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    Cell,
+    PieChart,
+    Pie,
+    Legend
+} from 'recharts';
 
 interface MainStatCardProps {
     title: string;
@@ -81,6 +116,7 @@ export default function PayrollPage() {
     const [showPayModal, setShowPayModal] = useState(false);
     const [showBonusModal, setShowBonusModal] = useState(false);
     const [showBatchPayModal, setShowBatchPayModal] = useState(false);
+    const [showStatementModal, setShowStatementModal] = useState(false);
     const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
     const [selectedEmployees, setSelectedEmployees] = useState<number[]>([]);
@@ -106,6 +142,7 @@ export default function PayrollPage() {
         month: currentDate.getMonth() + 1,
         year: currentDate.getFullYear(),
         amount: '',
+        type: 'PARTIAL' as 'PARTIAL' | 'FINAL', // Default to partial/advance
         treasuryId: '',
         notes: ''
     });
@@ -233,6 +270,7 @@ export default function PayrollPage() {
                 month: payForm.month,
                 year: payForm.year,
                 amount: parseFloat(payForm.amount) || selectedEmployee.baseSalary,
+                type: payForm.type,
                 treasuryId: parseInt(payForm.treasuryId),
                 notes: payForm.notes || undefined
             }).unwrap();
@@ -241,9 +279,9 @@ export default function PayrollPage() {
             setSelectedEmployee(null);
             resetPayForm();
             refetchEmployees();
-            alert('تم صرف المرتب بنجاح');
+            alert('تم صرف المبلغ بنجاح');
         } catch (error: any) {
-            alert(error.data?.message || 'حدث خطأ أثناء صرف المرتب');
+            alert(error.data?.message || 'حدث خطأ أثناء صرف المبلغ');
         }
     };
 
@@ -320,6 +358,7 @@ export default function PayrollPage() {
             month: currentDate.getMonth() + 1,
             year: currentDate.getFullYear(),
             amount: '',
+            type: 'PARTIAL',
             treasuryId: '',
             notes: ''
         });
@@ -381,6 +420,21 @@ export default function PayrollPage() {
         }
     };
 
+    const openStatementModal = (employee: Employee) => {
+        setSelectedEmployee(employee);
+        setShowStatementModal(true);
+    };
+
+    const openAdvanceModal = (employee: Employee) => {
+        setSelectedEmployee(employee);
+        setPayForm({
+            ...payForm,
+            amount: '',
+            type: 'PARTIAL'
+        });
+        setShowPayModal(true);
+    };
+
     return (
         <div className="p-6 bg-gray-50 min-h-screen" dir="rtl">
             {/* Header */}
@@ -432,7 +486,7 @@ export default function PayrollPage() {
                         title="مكافآت هذا العام"
                         value={formatCurrency(stats.thisYear.totalBonuses)}
                         subtitle={`${stats.thisYear.bonusesPaid} مكافأة`}
-                        icon={Gift}
+                        icon={Calendar} // Replaced Gift
                         iconBgColor="bg-orange-500"
                     />
                 </div>
@@ -549,31 +603,45 @@ export default function PayrollPage() {
                                                         <div className="flex gap-2">
                                                             <button
                                                                 onClick={() => openPayModal(employee)}
-                                                                className="px-3 py-1 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 text-sm"
-                                                                title="صرف مرتب"
+                                                                className="p-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
+                                                                title="صرف مرتب نهائي"
                                                             >
-                                                                💵
+                                                                <CircleDollarSign className="w-5 h-5" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => openAdvanceModal(employee)}
+                                                                className="p-2 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-600 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
+                                                                title="صرف سلفة / دفعة"
+                                                            >
+                                                                <ArrowRightLeft className="w-5 h-5 rotate-90" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => openStatementModal(employee)}
+                                                                className="p-2 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-600 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
+                                                                title="كشف حركة المرتب"
+                                                            >
+                                                                <FileText className="w-5 h-5" />
                                                             </button>
                                                             <button
                                                                 onClick={() => openBonusModal(employee)}
-                                                                className="px-3 py-1 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 text-sm"
+                                                                className="p-2 bg-orange-50 text-orange-600 rounded-xl hover:bg-orange-600 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
                                                                 title="صرف مكافأة"
                                                             >
-                                                                🎁
+                                                                <Layout className="w-5 h-5" />
                                                             </button>
                                                             <button
                                                                 onClick={() => openEditModal(employee)}
-                                                                className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-sm"
+                                                                className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
                                                                 title="تعديل"
                                                             >
-                                                                ✏️
+                                                                <Edit className="w-5 h-5" />
                                                             </button>
                                                             <button
                                                                 onClick={() => handleDeleteEmployee(employee)}
-                                                                className="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm"
+                                                                className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
                                                                 title="حذف"
                                                             >
-                                                                🗑️
+                                                                <Trash2 className="w-5 h-5" />
                                                             </button>
                                                         </div>
                                                     </td>
@@ -667,10 +735,121 @@ export default function PayrollPage() {
                         </div>
                     )}
 
-                    {/* Stats Tab - Placeholder */}
+                    {/* Stats Tab */}
                     {activeTab === 'stats' && (
-                        <div className="text-center py-10 text-gray-500">
-                            إحصائيات تفصيلية - قيد التطوير
+                        <div className="space-y-8 animate-fadeIn">
+                            {/* Summary Stats Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <TrendingUp className="w-8 h-8 opacity-50" />
+                                        <span className="bg-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">سنوي</span>
+                                    </div>
+                                    <p className="text-blue-100 text-sm font-medium mb-1">إجمالي المنصرف (رواتب ومكافآت)</p>
+                                    <p className="text-3xl font-bold">{formatCurrency(stats?.thisYear.grandTotal || 0)}</p>
+                                    <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center text-xs">
+                                        <span>عدد الدفعات: {stats?.thisYear.salariesPaid}</span>
+                                        <span>+ {stats?.thisYear.bonusesPaid} مكافأة</span>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="bg-green-100 p-2 rounded-lg">
+                                            <LucideBarChart className="w-5 h-5 text-green-600" />
+                                        </div>
+                                        <h4 className="font-bold text-slate-800">توزيع المصروفات</h4>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <div className="flex justify-between text-sm mb-1">
+                                                <span className="text-slate-500">المرتبات الأساسية</span>
+                                                <span className="font-bold text-slate-700">{Math.round((stats?.thisYear.totalSalaries || 0) / (stats?.thisYear.grandTotal || 1) * 100)}%</span>
+                                            </div>
+                                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(stats?.thisYear.totalSalaries || 0) / (stats?.thisYear.grandTotal || 1) * 100}%` }}></div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex justify-between text-sm mb-1">
+                                                <span className="text-slate-500">المكافآت والزيادات</span>
+                                                <span className="font-bold text-slate-700">{Math.round((stats?.thisYear.totalBonuses || 0) / (stats?.thisYear.grandTotal || 1) * 100)}%</span>
+                                            </div>
+                                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                <div className="h-full bg-orange-500 rounded-full" style={{ width: `${(stats?.thisYear.totalBonuses || 0) / (stats?.thisYear.grandTotal || 1) * 100}%` }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="bg-purple-100 p-2 rounded-lg">
+                                            <Layout className="w-5 h-5 text-purple-600" />
+                                        </div>
+                                        <h4 className="font-bold text-slate-800">التوزيع حسب الخزينة</h4>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {stats?.treasuryDistribution.map((t, idx) => (
+                                            <div key={idx} className="flex justify-between items-center text-sm">
+                                                <span className="text-slate-600">{t.name}</span>
+                                                <span className="font-bold text-slate-800">{formatCurrency(t.amount)}</span>
+                                            </div>
+                                        ))}
+                                        {(!stats?.treasuryDistribution || stats.treasuryDistribution.length === 0) && (
+                                            <p className="text-slate-400 text-xs text-center py-4 italic">لا توجد بيانات توزيع</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Charts Section */}
+                            <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+                                <div className="bg-white border border-slate-100 rounded-2xl p-8 shadow-sm">
+                                    <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+                                        <div>
+                                            <h4 className="text-xl font-bold text-slate-800">التحليل الشهري للمصروفات</h4>
+                                            <p className="text-sm text-slate-500">عرض إجمالي المرتبات والمكافآت لكل شهر من السنة الحالية</p>
+                                        </div>
+                                        <div className="flex gap-4">
+                                            <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+                                                <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+                                                مرتبات
+                                            </div>
+                                            <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+                                                <span className="w-3 h-3 bg-orange-500 rounded-full"></span>
+                                                مكافآت
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="h-[400px] w-full" dir="ltr">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={stats?.monthlyBreakdown} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                                <XAxis
+                                                    dataKey="monthName"
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }}
+                                                    dy={10}
+                                                />
+                                                <YAxis
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }}
+                                                    tickFormatter={(value) => `${value}`}
+                                                />
+                                                <Tooltip
+                                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px' }}
+                                                    cursor={{ fill: '#f8fafc' }}
+                                                />
+                                                <Bar dataKey="salaries" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} barSize={40} />
+                                                <Bar dataKey="bonuses" stackId="a" fill="#f97316" radius={[6, 6, 0, 0]} barSize={40} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -799,6 +978,19 @@ export default function PayrollPage() {
                             <button onClick={() => { setShowPayModal(false); setSelectedEmployee(null); }} className="text-white hover:text-gray-200">✕</button>
                         </div>
                         <div className="p-6 space-y-4">
+                            <div className="bg-blue-50 p-4 rounded-lg flex justify-between items-center mb-4">
+                                <div>
+                                    <p className="text-xs text-blue-600">الراتب الأساسي</p>
+                                    <p className="text-lg font-bold text-blue-800">{formatCurrency(selectedEmployee.baseSalary)}</p>
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-xs text-blue-600">توع الصرف</p>
+                                    <span className={`px-2 py-1 rounded-md text-xs font-bold ${payForm.type === 'FINAL' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                        {payForm.type === 'FINAL' ? 'تسوية نهائية' : 'دفعة / سلفة'}
+                                    </span>
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">الشهر</label>
@@ -825,22 +1017,37 @@ export default function PayrollPage() {
                                     </select>
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">المبلغ</label>
-                                <input
-                                    type="number"
-                                    value={payForm.amount}
-                                    onChange={(e) => setPayForm({ ...payForm, amount: e.target.value })}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                                    placeholder={`الراتب الأساسي: ${formatCurrency(selectedEmployee.baseSalary)}`}
-                                />
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">نوع العملية</label>
+                                    <select
+                                        value={payForm.type}
+                                        onChange={(e) => setPayForm({ ...payForm, type: e.target.value as any, amount: e.target.value === 'FINAL' ? selectedEmployee.baseSalary.toString() : payForm.amount })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="PARTIAL">دفعة جزئية / سلفة</option>
+                                        <option value="FINAL">تسوية نهائية (الراتب)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">المبلغ</label>
+                                    <input
+                                        type="number"
+                                        value={payForm.amount}
+                                        onChange={(e) => setPayForm({ ...payForm, amount: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        placeholder={payForm.type === 'FINAL' ? selectedEmployee.baseSalary.toString() : "أدخل المبلغ..."}
+                                    />
+                                </div>
                             </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">الخزينة *</label>
                                 <select
                                     value={payForm.treasuryId}
                                     onChange={(e) => setPayForm({ ...payForm, treasuryId: e.target.value })}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     required
                                 >
                                     <option value="">اختر الخزينة</option>
@@ -856,7 +1063,7 @@ export default function PayrollPage() {
                                 <textarea
                                     value={payForm.notes}
                                     onChange={(e) => setPayForm({ ...payForm, notes: e.target.value })}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     rows={2}
                                 />
                             </div>
@@ -871,9 +1078,9 @@ export default function PayrollPage() {
                             <button
                                 onClick={handlePaySalary}
                                 disabled={payingOne}
-                                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                                className={`px-6 py-2 text-white rounded-lg transition-colors shadow-sm disabled:opacity-50 ${payForm.type === 'FINAL' ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-600 hover:bg-amber-700'}`}
                             >
-                                صرف المرتب
+                                {payForm.type === 'FINAL' ? 'إتمام التسوية النهائية' : 'صرف الدفعة / السلفة'}
                             </button>
                         </div>
                     </div>
@@ -1031,6 +1238,187 @@ export default function PayrollPage() {
                     </div>
                 </div>
             )}
+            {/* Salary Statement Modal */}
+            {showStatementModal && selectedEmployee && (
+                <SalaryStatementModal
+                    employeeId={selectedEmployee.id}
+                    month={payForm.month}
+                    year={payForm.year}
+                    onClose={() => setShowStatementModal(false)}
+                />
+            )}
+
+            <style jsx global>{`
+                @media print {
+                    body * { visibility: hidden !important; }
+                    #print-section, #print-section * { visibility: visible !important; }
+                    #print-section { 
+                        position: absolute !important; 
+                        left: 0 !important; 
+                        top: 0 !important; 
+                        width: 100% !important; 
+                        padding: 20px !important;
+                    }
+                    .no-print { display: none !important; }
+                }
+            `}</style>
+        </div>
+    );
+}
+
+// ========== Salary Statement Modal Component ==========
+function SalaryStatementModal({ employeeId, month, year, onClose }: { employeeId: number; month: number; year: number; onClose: () => void }) {
+    const { data, isLoading } = useGetSalaryStatementQuery({ employeeId, month, year });
+    const statement = data?.data;
+
+    const handlePrint = () => {
+        window.print();
+    };
+
+    if (isLoading) return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div className="bg-white p-6 rounded-xl">جاري تحميل كشف الحركة...</div>
+        </div>
+    );
+
+    if (!statement) return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div className="bg-white p-6 rounded-xl">حدث خطأ في تحميل البيانات</div>
+        </div>
+    );
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                <div className="bg-purple-600 text-white px-8 py-5 flex justify-between items-center no-print">
+                    <h3 className="text-xl font-bold flex items-center gap-2 font-cairo">
+                        <FileText className="w-6 h-6" />
+                        كشف حركة المرتب التفصيلي
+                    </h3>
+                    <div className="flex gap-4">
+                        <button onClick={handlePrint} className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 font-medium border border-white/30">
+                            <Plus className="w-4 h-4 rotate-45" /> {/* Just to use an icon if Printer fails */}
+                            طباعة الكشف
+                        </button>
+                        <button onClick={onClose} className="text-white hover:text-gray-200 transition-colors">
+                            <X className="w-8 h-8" />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="p-8 overflow-y-auto flex-1" id="print-section" dir="rtl">
+                    {/* Header for Print */}
+                    <div className="text-center mb-8 border-b-2 border-purple-100 pb-6">
+                        <h2 className="text-2xl font-bold text-slate-800 mb-2">كشف حركة المرتب الشهرية</h2>
+                        <div className="flex justify-center gap-8 text-slate-600 font-medium">
+                            <p>الشهر: <span className="text-purple-700">{statement.monthName}</span></p>
+                            <p>السنة: <span className="text-purple-700">{statement.year}</span></p>
+                        </div>
+                    </div>
+
+                    {/* Employee Info Card */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 text-right">
+                            <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">بيانات الموظف</h4>
+                            <p className="text-xl font-bold text-slate-800 mb-1">{statement.employee.name}</p>
+                            <p className="text-slate-500">{statement.employee.jobTitle || 'موظف'}</p>
+                        </div>
+                        <div className="bg-purple-50 p-6 rounded-2xl border border-purple-100 grid grid-cols-3 gap-4 text-right">
+                            <div className="text-center">
+                                <p className="text-xs text-purple-600 mb-1">الراتب الأساسي</p>
+                                <p className="text-lg font-bold text-slate-800">{new Intl.NumberFormat('ar-LY').format(statement.summary.baseSalary)}</p>
+                            </div>
+                            <div className="text-center border-x border-purple-200">
+                                <p className="text-xs text-purple-600 mb-1">إجمالي المنصرف</p>
+                                <p className="text-lg font-bold text-green-600">{new Intl.NumberFormat('ar-LY').format(statement.summary.totalPaid)}</p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-xs text-purple-600 mb-1">المتبقي</p>
+                                <p className={`text-lg font-bold ${statement.summary.remaining > 0 ? 'text-amber-600' : 'text-slate-800'}`}>
+                                    {new Intl.NumberFormat('ar-LY').format(statement.summary.remaining)}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Movements Table */}
+                    <div className="mb-6">
+                        <h4 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
+                            📊 سجل الحركات المالية
+                        </h4>
+                        <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                            <table className="w-full text-right border-collapse">
+                                <thead className="bg-slate-50">
+                                    <tr>
+                                        <th className="px-4 py-4 text-xs font-bold text-slate-500 border-b">تاريخ الحركة</th>
+                                        <th className="px-4 py-4 text-xs font-bold text-slate-500 border-b">نوع الحركة</th>
+                                        <th className="px-4 py-4 text-xs font-bold text-slate-500 border-b">المبلغ</th>
+                                        <th className="px-4 py-4 text-xs font-bold text-slate-500 border-b">الخزينة</th>
+                                        <th className="px-4 py-4 text-xs font-bold text-slate-500 border-b">الإيصال</th>
+                                        <th className="px-4 py-4 text-xs font-bold text-slate-500 border-b">ملاحظات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {statement.movements.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={6} className="px-4 py-10 text-center text-slate-400 italic">لاتوجد حركات مسجلة لهذا الشهر</td>
+                                        </tr>
+                                    ) : (
+                                        statement.movements.map((move, idx) => (
+                                            <tr key={move.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                                                <td className="px-4 py-4 text-sm text-slate-600 font-medium whitespace-nowrap">
+                                                    {new Date(move.date).toLocaleDateString('ar-LY')}
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${move.type === 'تسوية نهائية'
+                                                        ? 'bg-green-100 text-green-700 border border-green-200'
+                                                        : 'bg-amber-100 text-amber-700 border border-amber-200'
+                                                        }`}>
+                                                        {move.type}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-4 text-sm font-bold text-slate-800">
+                                                    {new Intl.NumberFormat('ar-LY').format(move.amount)} د.ل
+                                                </td>
+                                                <td className="px-4 py-4 text-sm text-slate-600">{move.treasury}</td>
+                                                <td className="px-4 py-4 text-xs font-mono text-slate-500">{move.receiptNumber || '-'}</td>
+                                                <td className="px-4 py-4 text-xs text-slate-500">{move.notes || '-'}</td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                                <tfoot className="bg-slate-100/50 font-bold border-t-2 border-slate-200">
+                                    <tr>
+                                        <td colSpan={2} className="px-4 py-4 text-slate-700">إجمالي مدفوعات الشهر</td>
+                                        <td className="px-4 py-4 text-green-700 text-lg">
+                                            {new Intl.NumberFormat('ar-LY').format(statement.summary.totalPaid)} د.ل
+                                        </td>
+                                        <td colSpan={3}></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Footer for print */}
+                    <div className="mt-12 hidden print:grid grid-cols-2 gap-12 text-center items-end">
+                        <div className="space-y-12">
+                            <p className="font-bold border-b border-slate-300 pb-2">توقيع الموظف</p>
+                            <p className="text-slate-400 text-xs text-center">________________________</p>
+                        </div>
+                        <div className="space-y-12">
+                            <p className="font-bold border-b border-slate-300 pb-2">ختم وتوقيع الإدارة المالية</p>
+                            <p className="text-slate-400 text-xs text-center">________________________</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="px-8 py-4 bg-slate-50 border-t border-slate-200 flex justify-end no-print">
+                    <button onClick={onClose} className="px-6 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-medium">
+                        إغلاق الكشف
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }

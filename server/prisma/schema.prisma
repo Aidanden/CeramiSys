@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../src/generated/client"
 }
 
 datasource db {
@@ -823,6 +824,7 @@ model Treasury {
   updatedAt     DateTime              @updatedAt
   company       Company?              @relation(fields: [companyId], references: [id])
   transactions  TreasuryTransaction[]
+  salaryPayments SalaryPayment[]
 
   @@index([companyId])
   @@index([type])
@@ -1079,6 +1081,7 @@ model SalaryPayment {
   amount          Decimal           @db.Decimal(18, 4)  // المبلغ المصروف
   month           Int               // الشهر (1-12)
   year            Int               // السنة
+  type            SalaryPaymentType @default(PARTIAL)   // نوع الحركة: دفعة جزئية / تسوية نهائية
   treasuryId      Int               // الخزينة المستخدمة
   receiptNumber   String?           // رقم إيصال الصرف
   paymentDate     DateTime          @default(now())
@@ -1086,8 +1089,8 @@ model SalaryPayment {
   createdBy       String?
   createdAt       DateTime          @default(now())
   employee        Employee          @relation(fields: [employeeId], references: [id])
+  treasury        Treasury          @relation(fields: [treasuryId], references: [id])
   
-  @@unique([employeeId, month, year])  // لا يمكن صرف نفس الشهر مرتين
   @@index([employeeId])
   @@index([month, year])
   @@index([treasuryId])
@@ -1158,4 +1161,9 @@ enum BonusType {
   RAISE       // زيادة راتب
   INCENTIVE   // حافز
   OVERTIME    // إضافي
+}
+
+enum SalaryPaymentType {
+  PARTIAL     // دفعة جزئية (سلفة)
+  FINAL       // تسوية نهائية
 }

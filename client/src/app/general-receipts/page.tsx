@@ -51,6 +51,9 @@ export default function GeneralReceiptsPage() {
     const [receiptType, setReceiptType] = useState<'DEPOSIT' | 'WITHDRAWAL'>('DEPOSIT');
     const [selectedContactId, setSelectedContactId] = useState<number | null>(null);
     const [showStatementModal, setShowStatementModal] = useState(false);
+    const [contactSearchTerm, setContactSearchTerm] = useState('');
+    const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
+    const [showReceiptPrintModal, setShowReceiptPrintModal] = useState(false);
 
     // Queries & Mutations
     const { data: contacts, isLoading: contactsLoading, refetch: refetchContacts } = useGetFinancialContactsQuery();
@@ -105,6 +108,11 @@ export default function GeneralReceiptsPage() {
         setShowStatementModal(true);
     };
 
+    const openReceiptPrint = (receipt: any) => {
+        setSelectedReceipt(receipt);
+        setShowReceiptPrintModal(true);
+    };
+
     const handlePrint = () => {
         window.print();
     };
@@ -145,33 +153,57 @@ export default function GeneralReceiptsPage() {
                 </div>
             </div>
 
-            {/* Tabs */}
-            <div className="flex gap-1 bg-surface-primary p-1 rounded-2xl shadow-sm border border-border-primary w-fit">
-                <button
-                    onClick={() => setActiveTab('receipts')}
-                    className={`px-6 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === 'receipts' ? 'bg-primary-600 text-white shadow-md' : 'text-text-secondary hover:bg-background-secondary'}`}
-                >
-                    سجل الإيصالات
-                </button>
-                <button
-                    onClick={() => setActiveTab('contacts')}
-                    className={`px-6 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === 'contacts' ? 'bg-primary-600 text-white shadow-md' : 'text-text-secondary hover:bg-background-secondary'}`}
-                >
-                    جهات الاتصال والشركاء
-                </button>
+            {/* Tabs & Search */}
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+                <div className="flex gap-1 bg-surface-primary p-1 rounded-2xl shadow-sm border border-border-primary w-fit">
+                    <button
+                        onClick={() => setActiveTab('receipts')}
+                        className={`px-6 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === 'receipts' ? 'bg-primary-600 text-white shadow-md' : 'text-text-secondary hover:bg-background-secondary'}`}
+                    >
+                        سجل الإيصالات
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('contacts')}
+                        className={`px-6 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === 'contacts' ? 'bg-primary-600 text-white shadow-md' : 'text-text-secondary hover:bg-background-secondary'}`}
+                    >
+                        جهات الاتصال والشركاء
+                    </button>
+                </div>
+
+                {activeTab === 'contacts' && (
+                    <div className="relative w-full md:w-96 group">
+                        <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-disabled group-focus-within:text-primary-600 transition-colors" />
+                        <input
+                            type="text"
+                            placeholder="بحث بالاسم أو رقم الهاتف..."
+                            value={contactSearchTerm}
+                            onChange={(e) => setContactSearchTerm(e.target.value)}
+                            className="w-full pr-12 pl-4 py-3 bg-white border border-border-primary rounded-2xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all outline-none font-medium text-text-primary shadow-sm"
+                        />
+                    </div>
+                )}
             </div>
 
             {activeTab === 'receipts' ? (
-                <div className="grid grid-cols-1 gap-6">
+                <div id="printable-registry" className="grid grid-cols-1 gap-6 print-content">
                     <div className="bg-surface-primary rounded-3xl shadow-sm border border-border-primary overflow-hidden">
                         <div className="p-6 border-b border-border-primary flex items-center justify-between">
                             <h2 className="font-bold text-text-primary flex items-center gap-2">
                                 <FileText className="w-5 h-5 text-primary-500" />
                                 آخر العمليات المسجلة
                             </h2>
-                            <button onClick={() => refetchReceipts()} className="p-2 text-text-muted hover:text-primary-600 transition-colors">
-                                <RefreshCw className="w-5 h-5" />
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={handlePrint}
+                                    className="flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-700 rounded-xl hover:bg-slate-100 transition-all text-sm font-bold border border-border-primary"
+                                >
+                                    <FileText className="w-4 h-4 text-primary-500" />
+                                    طباعة السجل
+                                </button>
+                                <button onClick={() => refetchReceipts()} className="p-2 text-text-muted hover:text-primary-600 transition-colors">
+                                    <RefreshCw className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-right border-collapse">
@@ -203,7 +235,13 @@ export default function GeneralReceiptsPage() {
                                             </td>
                                             <td className="p-4 text-sm text-text-tertiary">{r.description || '-'}</td>
                                             <td className="p-4">
-                                                <button className="text-primary-600 hover:text-primary-800 underline text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity">تفاصيل</button>
+                                                <button
+                                                    onClick={() => openReceiptPrint(r)}
+                                                    className="bg-primary-50 text-primary-600 p-2 rounded-lg hover:bg-primary-600 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                                                    title="طباعة الإيصال"
+                                                >
+                                                    <FileText className="w-4 h-4" />
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}
@@ -223,50 +261,78 @@ export default function GeneralReceiptsPage() {
                     </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {contacts?.map((c) => (
-                        <div key={c.id} className="bg-surface-primary rounded-3xl shadow-sm border border-border-primary p-6 hover:shadow-xl transition-all hover:-translate-y-1">
-                            <div className="flex justify-between items-start mb-6">
-                                <div className="w-14 h-14 bg-gradient-to-br from-primary-50 to-blue-50 rounded-2xl flex items-center justify-center text-primary-600 font-bold text-2xl shadow-inner border border-surface-primary">
-                                    {c.name.charAt(0)}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    {contacts?.filter(c =>
+                        c.name.toLowerCase().includes(contactSearchTerm.toLowerCase()) ||
+                        (c.phone && c.phone.includes(contactSearchTerm))
+                    ).length === 0 && (
+                            <div className="col-span-full py-16 bg-surface-primary rounded-3xl border-2 border-dashed border-border-primary flex flex-col items-center justify-center gap-4 text-text-disabled">
+                                <Search className="w-12 h-12 opacity-20" />
+                                <p className="text-lg font-bold">لا توجد نتائج تطابق بحثك</p>
+                                <button
+                                    onClick={() => setContactSearchTerm('')}
+                                    className="text-primary-600 hover:underline font-bold"
+                                >
+                                    مسح البحث
+                                </button>
+                            </div>
+                        )}
+                    {contacts?.filter(c =>
+                        c.name.toLowerCase().includes(contactSearchTerm.toLowerCase()) ||
+                        (c.phone && c.phone.includes(contactSearchTerm))
+                    ).map((c) => (
+                        <div key={c.id} className="bg-surface-primary rounded-3xl shadow-sm border border-border-primary p-5 hover:shadow-xl transition-all hover:-translate-y-1 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-1.5 h-full bg-primary-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+                            <div className="flex justify-between items-start mb-5">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-primary-50 to-blue-50 rounded-2xl flex items-center justify-center text-primary-600 font-black text-xl shadow-inner border border-primary-100">
+                                        {c.name.charAt(0)}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h3 className="text-base font-bold text-text-primary truncate" title={c.name}>{c.name}</h3>
+                                        <p className="text-xs text-text-muted flex items-center gap-1">
+                                            <Phone className="w-3 h-3 text-primary-500" />
+                                            {c.phone || 'لا يوجد هاتف'}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${Number(c.currentBalance) >= 0 ? 'bg-success-50 text-success-700 border-success-100' : 'bg-error-50 text-error-700 border-error-100'}`}>
-                                    {Number(c.currentBalance) >= 0 ? 'له رصيد' : 'عليه رصيد'}
+                                <div className={`px-3 py-1 rounded-full text-[10px] font-black border ${Number(c.currentBalance) >= 0 ? 'bg-success-50 text-success-700 border-success-100' : 'bg-error-50 text-error-700 border-error-100'}`}>
+                                    {Number(c.currentBalance) >= 0 ? 'له' : 'عليه'}
                                 </div>
                             </div>
-                            <h3 className="text-xl font-black text-text-primary mb-1">{c.name}</h3>
-                            <p className="text-sm text-text-muted flex items-center gap-2 mb-6">
-                                <Phone className="w-4 h-4 text-text-disabled" />
-                                {c.phone || 'بدون رقم هاتف'}
-                            </p>
 
-                            <div className="bg-background-secondary rounded-2xl p-5 mb-8 border border-border-primary shadow-inner space-y-4">
-                                <div>
-                                    <p className="text-[10px] text-text-tertiary font-black mb-1 uppercase tracking-wider">إجمالي ما له (دائن)</p>
-                                    <p className="text-lg font-bold text-success-600 tabular-nums">
+                            <div className="grid grid-cols-2 gap-3 mb-5">
+                                <div className="bg-background-secondary/50 rounded-xl p-3 border border-border-primary">
+                                    <p className="text-[10px] text-text-tertiary font-bold uppercase mb-1">له (دائن)</p>
+                                    <p className="text-sm font-bold text-success-600 truncate">
                                         {formatCurrency(Number(c.totalDeposit || 0))}
                                     </p>
                                 </div>
-                                <div>
-                                    <p className="text-[10px] text-text-tertiary font-black mb-1 uppercase tracking-wider">إجمالي ما عليه (مدين)</p>
-                                    <p className="text-lg font-bold text-error-600 tabular-nums">
+                                <div className="bg-background-secondary/50 rounded-xl p-3 border border-border-primary">
+                                    <p className="text-[10px] text-text-tertiary font-bold uppercase mb-1">عليه (مدين)</p>
+                                    <p className="text-sm font-bold text-error-600 truncate">
                                         {formatCurrency(Number(c.totalWithdrawal || 0))}
-                                    </p>
-                                </div>
-                                <div className="pt-3 border-t border-border-primary">
-                                    <p className="text-[10px] text-text-tertiary font-black mb-1 uppercase tracking-wider">الرصيد التحليلي (صافي)</p>
-                                    <p className={`text-3xl font-black tabular-nums ${Number(c.currentBalance) >= 0 ? 'text-success-600' : 'text-error-600'}`}>
-                                        {formatCurrency(Math.abs(Number(c.currentBalance || 0)))}
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="flex gap-3">
+                            <div className="bg-gradient-to-l from-background-secondary/80 to-transparent rounded-xl p-4 border border-border-primary mb-5 flex justify-between items-center">
+                                <div>
+                                    <p className="text-[10px] text-text-tertiary font-black mb-0.5 uppercase">الرصيد الصافي</p>
+                                    <p className={`text-xl font-black tabular-nums ${Number(c.currentBalance) >= 0 ? 'text-success-600' : 'text-error-600'}`}>
+                                        {formatCurrency(Math.abs(Number(c.currentBalance || 0)))}
+                                    </p>
+                                </div>
+                                <Wallet className={`w-5 h-5 ${Number(c.currentBalance) >= 0 ? 'text-success-500' : 'text-error-500'} opacity-50`} />
+                            </div>
+
+                            <div className="flex gap-2">
                                 <button
                                     onClick={() => openStatement(c.id)}
-                                    className="flex-1 py-3.5 bg-surface-primary border border-border-primary rounded-2xl text-xs font-black text-text-secondary hover:bg-background-secondary flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95"
+                                    className="flex-1 py-2.5 bg-white border border-border-primary rounded-xl text-xs font-bold text-text-secondary hover:bg-background-secondary flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95"
                                 >
-                                    <RefreshCw className="w-4 h-4 text-primary-500" />
+                                    <RefreshCw className="w-3.5 h-3.5 text-primary-500" />
                                     كشف حساب
                                 </button>
                                 <button
@@ -275,22 +341,22 @@ export default function GeneralReceiptsPage() {
                                         setReceiptType('DEPOSIT');
                                         setShowReceiptModal(true);
                                     }}
-                                    className="p-3.5 bg-primary-600 text-white rounded-2xl hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/20 active:scale-95"
+                                    className="p-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/20 active:scale-95"
+                                    title="عملية جديدة"
                                 >
-                                    <Plus className="w-6 h-6 font-black" />
+                                    <Plus className="w-5 h-5 font-black" />
                                 </button>
                             </div>
                         </div>
                     ))}
                     <button
                         onClick={() => setShowContactModal(true)}
-                        className="group relative bg-surface-primary border-2 border-dashed border-border-primary rounded-3xl p-10 flex flex-col items-center justify-center gap-5 text-text-disabled hover:border-primary-400 hover:bg-primary-50/20 transition-all duration-300 overflow-hidden"
+                        className="group relative bg-white border-2 border-dashed border-border-primary rounded-3xl p-6 flex flex-col items-center justify-center gap-4 text-text-disabled hover:border-primary-400 hover:bg-primary-50/20 transition-all duration-300"
                     >
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary-50/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <div className="w-16 h-16 rounded-3xl bg-background-secondary flex items-center justify-center group-hover:bg-surface-primary group-hover:shadow-lg transition-all duration-500 relative z-10">
-                            <UserPlus className="w-8 h-8 group-hover:text-primary-600 group-hover:scale-110 transition-all" />
+                        <div className="w-12 h-12 rounded-2xl bg-background-secondary flex items-center justify-center group-hover:bg-white group-hover:shadow-md transition-all">
+                            <UserPlus className="w-6 h-6 group-hover:text-primary-600" />
                         </div>
-                        <span className="font-black text-sm relative z-10 group-hover:text-primary-600 transition-colors">إضافة شخص أو تاجر جديد</span>
+                        <span className="font-bold text-xs group-hover:text-primary-600">إضافة شخص/شريك</span>
                     </button>
                 </div>
             )}
@@ -488,66 +554,7 @@ export default function GeneralReceiptsPage() {
                             </div>
                         </div>
 
-                        {/* Print Only Styles (Refined to prevent blank pages) */}
-                        <style jsx global>{`
-                            @media print {
-                                /* 1. Default: Hide everything */
-                                html, body {
-                                    height: auto !important;
-                                    overflow: visible !important;
-                                    background: white !important;
-                                }
-                                body * {
-                                    visibility: hidden !important;
-                                }
-                                
-                                /* 2. Show only our target and its descendants */
-                                #printable-modal-root, 
-                                #printable-modal-root * {
-                                    visibility: visible !important;
-                                }
-                                
-                                /* 3. Force-position the target at the top of the print page */
-                                #printable-modal-root {
-                                    position: absolute !important;
-                                    top: 0 !important;
-                                    left: 0 !important;
-                                    width: 100% !important;
-                                    display: block !important;
-                                    background: white !important;
-                                    padding: 0 !important;
-                                    margin: 0 !important;
-                                    z-index: 999999 !important;
-                                }
 
-                                /* 4. Strip modal-specific constraints (scrollbars/shadows) */
-                                #printable-modal-root > div {
-                                    position: relative !important;
-                                    max-height: none !important;
-                                    height: auto !important;
-                                    overflow: visible !important;
-                                    width: 100% !important;
-                                    box-shadow: none !important;
-                                    border: none !important;
-                                    margin: 0 !important;
-                                    transform: none !important;
-                                }
-
-                                #printable-statement {
-                                    height: auto !important;
-                                    overflow: visible !important;
-                                    padding: 40px !important;
-                                }
-
-                                .no-print {
-                                    display: none !important;
-                                }
-
-                                @page {
-                                    margin: 2cm;
-                                }
-                            }
-                        `}</style>
 
                         <div id="printable-statement" className="flex-1 overflow-y-auto p-8 bg-background-secondary/30 space-y-8 print:bg-white">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -609,6 +616,202 @@ export default function GeneralReceiptsPage() {
                     </div>
                 </div>
             )}
+            {/* Modal: Receipt Print (Professional Receipt Template) */}
+            {showReceiptPrintModal && selectedReceipt && (
+                <div id="printable-receipt-root" className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
+                        <div className="px-8 py-4 border-b border-border-primary flex items-center justify-between bg-white text-text-primary no-print">
+                            <h2 className="text-lg font-bold">معاينة الإيصال قبل الطباعة</h2>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handlePrint}
+                                    className="flex items-center gap-2 px-5 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all font-bold"
+                                >
+                                    <FileText className="w-5 h-5" />
+                                    تأكيد الطباعة
+                                </button>
+                                <button
+                                    onClick={() => setShowReceiptPrintModal(false)}
+                                    className="p-2 text-text-muted hover:bg-background-secondary rounded-lg transition-all"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="p-10 bg-white" id="receipt-content">
+                            {/* Receipt Design Start */}
+                            <div className="border-4 border-double border-slate-900 p-8 rounded-sm relative">
+                                {/* Header */}
+                                <div className="text-center space-y-2 mb-8">
+                                    <h1 className="text-3xl font-black text-slate-900 tracking-tighter">CeramiSys</h1>
+                                    <p className="text-sm font-bold text-slate-600">لإدارة السيراميك والمواد الصحية</p>
+                                    <div className="w-32 h-1 bg-slate-900 mx-auto mt-4 rounded-full"></div>
+                                </div>
+
+                                {/* Receipt Title */}
+                                <div className="flex justify-between items-center mb-10 border-b-2 border-slate-200 pb-4">
+                                    <div className="bg-slate-900 text-white px-6 py-2 rounded-lg font-black text-xl">
+                                        {selectedReceipt.type === 'DEPOSIT' ? 'إيصال قبض نقد' : 'إيصال صرف نقد'}
+                                    </div>
+                                    <div className="text-left font-bold text-slate-600">
+                                        <p>رقم الإيصال: <span className="text-slate-900">#{selectedReceipt.id}</span></p>
+                                        <p>التاريخ: <span className="text-slate-900 text-sm ltr rtl:hidden">{formatDate(selectedReceipt.paymentDate)}</span></p>
+                                    </div>
+                                </div>
+
+                                {/* Main Details */}
+                                <div className="space-y-6 mb-12">
+                                    <div className="flex border-b border-slate-100 pb-2">
+                                        <span className="w-32 text-slate-500 font-bold">يصرف لـ / استلم من:</span>
+                                        <span className="flex-1 text-xl font-black text-slate-900 decoration-dotted underline decoration-slate-300 underline-offset-8">
+                                            {selectedReceipt.contact?.name}
+                                        </span>
+                                    </div>
+                                    <div className="flex border-b border-slate-100 pb-2">
+                                        <span className="w-32 text-slate-500 font-bold">مبلـغ وقدره:</span>
+                                        <span className="flex-1 text-2xl font-black text-slate-900 bg-slate-50 px-4 py-1 rounded border border-slate-100">
+                                            {formatCurrency(Number(selectedReceipt.amount))}
+                                        </span>
+                                    </div>
+                                    <div className="flex border-b border-slate-100 pb-2">
+                                        <span className="w-32 text-slate-500 font-bold">وذلـك عـن:</span>
+                                        <span className="flex-1 text-lg font-bold text-slate-700">
+                                            {selectedReceipt.description || 'لا يوجد بيان'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Footer / Signatures */}
+                                <div className="grid grid-cols-2 gap-20 pt-10">
+                                    <div className="text-center space-y-12">
+                                        <p className="font-bold text-slate-500">توقيع المستلم</p>
+                                        <div className="border-t-2 border-dotted border-slate-400 w-full mx-auto"></div>
+                                    </div>
+                                    <div className="text-center space-y-12">
+                                        <p className="font-bold text-slate-500">توقيع المحاسب</p>
+                                        <div className="border-t-2 border-dotted border-slate-400 w-full mx-auto"></div>
+                                    </div>
+                                </div>
+
+                                {/* Watermark or Background touch */}
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] -rotate-45 pointer-events-none">
+                                    <Building2 className="w-96 h-96" />
+                                </div>
+                            </div>
+                            {/* Receipt Design End */}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Global Print Styles - Consolidated & Optimized */}
+            <style jsx global>{`
+                @media print {
+                    /* Reset defaults to prevent extra pages and blank output */
+                    html, body {
+                        height: auto !important;
+                        overflow: hidden !important;
+                        background: white !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        width: 100% !important;
+                    }
+                    
+                    /* Hide everything by default including fixed backgrounds */
+                    body * {
+                        visibility: hidden !important;
+                        box-shadow: none !important;
+                        position: static !important;
+                    }
+
+                    /* 1. Printing the Registry Tab (Sajel) */
+                    #printable-registry, 
+                    #printable-registry * {
+                        visibility: visible !important;
+                    }
+                    #printable-registry {
+                        position: absolute !important;
+                        top: 0 !important;
+                        left: 0 !important;
+                        width: 100% !important;
+                        display: block !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                    }
+
+                    /* 2. Printing Statement Modal */
+                    #printable-modal-root, 
+                    #printable-modal-root * {
+                        visibility: visible !important;
+                    }
+                    #printable-modal-root {
+                        position: absolute !important;
+                        top: 0 !important;
+                        left: 0 !important;
+                        width: 100% !important;
+                        display: block !important;
+                        background: white !important;
+                        z-index: 9999 !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                    }
+                    #printable-modal-root > div {
+                        position: relative !important;
+                        max-height: none !important;
+                        height: auto !important;
+                        overflow: visible !important;
+                        box-shadow: none !important;
+                        border: none !important;
+                        width: 100% !important;
+                    }
+
+                    /* 3. Printing Receipt Modal */
+                    #printable-receipt-root,
+                    #printable-receipt-root * {
+                        visibility: visible !important;
+                    }
+                    #printable-receipt-root {
+                        position: absolute !important;
+                        top: 0 !important;
+                        left: 0 !important;
+                        width: 100% !important;
+                        display: block !important;
+                        z-index: 9999 !important;
+                        background: white !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                    }
+                    #printable-receipt-root > div {
+                        box-shadow: none !important;
+                        border: none !important;
+                        max-width: none !important;
+                        width: 100% !important;
+                    }
+
+                    /* Fix for Tables and Containers */
+                    table { page-break-inside: auto; width: 100% !important; border-collapse: collapse !important; }
+                    tr { page-break-inside: avoid; page-break-after: auto; }
+                    thead { display: table-header-group; }
+                    tfoot { display: table-footer-group; }
+
+                    /* Utilities to strike out extra space */
+                    .no-print, button, .no-print *, select, input, [role="tablist"], header, nav, aside {
+                        display: none !important;
+                        visibility: hidden !important;
+                        height: 0 !important;
+                        width: 0 !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        overflow: hidden !important;
+                    }
+
+                    @page {
+                        margin: 1cm;
+                        size: auto;
+                    }
+                }
+            `}</style>
         </div>
     );
 }

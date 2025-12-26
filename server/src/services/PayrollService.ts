@@ -3,10 +3,9 @@
  * خدمة المرتبات والموظفين
  */
 
-import { PrismaClient, TransactionSource, BonusType } from '@prisma/client';
+import { TransactionSource, BonusType } from '@prisma/client';
+import prisma from '../models/prismaClient';
 import TreasuryController from '../controllers/TreasuryController';
-
-const prisma = new PrismaClient();
 
 // Types
 interface CreateEmployeeDto {
@@ -36,6 +35,7 @@ interface PaySalaryDto {
     month: number;
     year: number;
     amount: number;
+    type: 'PARTIAL' | 'FINAL';
     treasuryId: number;
     notes?: string;
     createdBy?: string;
@@ -255,17 +255,18 @@ export class PayrollService {
             throw new Error('لا يمكن صرف راتب لموظف غير نشط');
         }
 
-        // 2. التحقق من عدم صرف راتب هذا الشهر سابقاً
-        const existingPayment = await prisma.salaryPayment.findFirst({
+        // 2. التحقق من حالة الراتب لهذا الشهر (اختياري: يمكن التحقق إذا كانت هناك تسوية نهائية بالفعل)
+        const finalPayment = await prisma.salaryPayment.findFirst({
             where: {
                 employeeId: data.employeeId,
                 month: data.month,
-                year: data.year
+                year: data.year,
+                type: 'FINAL'
             }
         });
 
-        if (existingPayment) {
-            throw new Error(`تم صرف راتب شهر ${data.month}/${data.year} لهذا الموظف بالفعل`);
+        if (finalPayment) {
+            throw new Error(`تمت التسوية النهائية لراتب شهر ${data.month}/${data.year} لهذا الموظف بالفعل. لا يمكن إضافة حركات إضافية.`);
         }
 
         // 3. التحقق من رصيد الخزينة
@@ -291,6 +292,7 @@ export class PayrollService {
                 amount: data.amount,
                 month: data.month,
                 year: data.year,
+                type: data.type as any, // 'PARTIAL' | 'FINAL'
                 treasuryId: data.treasuryId,
                 receiptNumber,
                 notes: data.notes,
@@ -299,18 +301,22 @@ export class PayrollService {
             include: {
                 employee: {
                     select: { name: true, jobTitle: true }
+                },
+                treasury: {
+                    select: { name: true }
                 }
             }
         });
 
         // 6. خصم المبلغ من الخزينة وتسجيل الحركة
+        const movementType = data.type === 'FINAL' ? 'تسوية نهائية' : 'دفعة جزئية / سلفة';
         await this.withdrawFromTreasury(
             data.treasuryId,
             data.amount,
             TransactionSource.SALARY,
             'SALARY_PAYMENT',
             salaryPayment.id,
-            `صرف راتب شهر ${data.month}/${data.year} للموظف: ${employee.name}`,
+            `صرف (${movementType}) شهر ${data.month}/${data.year} للموظف: ${employee.name}`,
             data.createdBy
         );
 
@@ -357,6 +363,7 @@ export class PayrollService {
                     month: data.month,
                     year: data.year,
                     amount: Number(employee.baseSalary),
+                    type: 'FINAL', // Mass payout is usually final
                     treasuryId: data.treasuryId,
                     createdBy: data.createdBy
                 });
@@ -492,33 +499,24 @@ export class PayrollService {
         const where: any = {};
         if (companyId) where.employee = { companyId };
 
-        // إجمالي الموظفين النشطين
+        // 1. إجمالي الموظفين النشطين
         const totalActiveEmployees = await prisma.employee.count({
             where: { isActive: true, ...(companyId && { companyId }) }
         });
 
-        // إجمالي المرتبات المصروفة هذا الشهر
+        // 2. إجمالي المرتبات والمكافآت (ملخص)
         const thisMonthSalaries = await prisma.salaryPayment.aggregate({
-            where: {
-                ...where,
-                month: currentMonth,
-                year: currentYear
-            },
+            where: { ...where, month: currentMonth, year: currentYear },
             _sum: { amount: true },
             _count: true
         });
 
-        // إجمالي المرتبات المصروفة هذا العام
         const thisYearSalaries = await prisma.salaryPayment.aggregate({
-            where: {
-                ...where,
-                year: currentYear
-            },
+            where: { ...where, year: currentYear },
             _sum: { amount: true },
             _count: true
         });
 
-        // إجمالي المكافآت هذا العام
         const thisYearBonuses = await prisma.employeeBonus.aggregate({
             where: {
                 ...where,
@@ -530,6 +528,52 @@ export class PayrollService {
             _sum: { amount: true },
             _count: true
         });
+
+        // 3. تحليل شهري للسنة الحالية (Graph Data)
+        const monthlyBreakdown = await Promise.all(
+            Array.from({ length: 12 }, (_, i) => i + 1).map(async (month) => {
+                const salaries = await prisma.salaryPayment.aggregate({
+                    where: { ...where, month, year: currentYear },
+                    _sum: { amount: true }
+                });
+
+                const bonuses = await prisma.employeeBonus.aggregate({
+                    where: {
+                        ...where,
+                        paymentDate: {
+                            gte: new Date(currentYear, month - 1, 1),
+                            lte: new Date(currentYear, month, 0)
+                        }
+                    },
+                    _sum: { amount: true }
+                });
+
+                return {
+                    month,
+                    monthName: this.getArabicMonthName(month),
+                    salaries: Number(salaries._sum.amount || 0),
+                    bonuses: Number(bonuses._sum.amount || 0),
+                    total: Number(salaries._sum.amount || 0) + Number(bonuses._sum.amount || 0)
+                };
+            })
+        );
+
+        // 4. توزيع الصرف حسب الخزينة
+        const treasuryDistribution = await prisma.salaryPayment.groupBy({
+            by: ['treasuryId'],
+            where: { ...where, year: currentYear },
+            _sum: { amount: true },
+        });
+
+        const treasuries = await prisma.treasury.findMany({
+            where: { id: { in: treasuryDistribution.map(d => d.treasuryId) } },
+            select: { id: true, name: true }
+        });
+
+        const formattedTreasuryDist = treasuryDistribution.map(dist => ({
+            name: treasuries.find(t => t.id === dist.treasuryId)?.name || 'غير معروف',
+            amount: Number(dist._sum.amount || 0)
+        }));
 
         return {
             totalActiveEmployees,
@@ -543,13 +587,78 @@ export class PayrollService {
                 bonusesPaid: thisYearBonuses._count,
                 totalBonuses: Number(thisYearBonuses._sum.amount || 0),
                 grandTotal: Number(thisYearSalaries._sum.amount || 0) + Number(thisYearBonuses._sum.amount || 0)
-            }
+            },
+            monthlyBreakdown,
+            treasuryDistribution: formattedTreasuryDist
         };
     }
 
     /**
      * سجل المرتبات لشهر معين
      */
+    /**
+     * كشف حركة مرتب الموظف لشهر معين
+     */
+    async getEmployeeSalaryStatement(employeeId: number, month: number, year: number) {
+        const employee = await prisma.employee.findUnique({
+            where: { id: employeeId },
+            include: { company: true }
+        });
+
+        if (!employee) throw new Error('الموظف غير موجود');
+
+        // الحركات (دفعات المرتب)
+        const payments = await prisma.salaryPayment.findMany({
+            where: { employeeId, month, year },
+            include: { treasury: { select: { name: true } } },
+            orderBy: { paymentDate: 'asc' }
+        });
+
+        // المكافآت (اختياري: يمكن تضمينها في كشف الحركة إذا كانت مرتبطة بالشهر)
+        const bonuses = await prisma.employeeBonus.findMany({
+            where: {
+                employeeId,
+                paymentDate: {
+                    gte: new Date(year, month - 1, 1),
+                    lte: new Date(year, month, 0)
+                }
+            },
+            orderBy: { paymentDate: 'asc' }
+        });
+
+        const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+        const baseSalary = Number(employee.baseSalary);
+        const remaining = baseSalary - totalPaid;
+
+        return {
+            employee: {
+                id: employee.id,
+                name: employee.name,
+                jobTitle: employee.jobTitle,
+                baseSalary: baseSalary
+            },
+            month,
+            year,
+            monthName: this.getArabicMonthName(month),
+            summary: {
+                baseSalary,
+                totalPaid,
+                remaining
+            },
+            movements: [
+                ...payments.map(p => ({
+                    id: p.id,
+                    date: p.paymentDate,
+                    type: p.type === 'FINAL' ? 'تسوية نهائية' : 'دفعة جزئية / سلفة',
+                    amount: Number(p.amount),
+                    treasury: p.treasury.name,
+                    receiptNumber: p.receiptNumber,
+                    notes: p.notes
+                }))
+            ]
+        };
+    }
+
     async getSalaryPaymentsByMonth(month: number, year: number, companyId?: number) {
         const payments = await prisma.salaryPayment.findMany({
             where: {
@@ -560,7 +669,8 @@ export class PayrollService {
             include: {
                 employee: {
                     select: { id: true, name: true, jobTitle: true, baseSalary: true }
-                }
+                },
+                treasury: { select: { name: true } }
             },
             orderBy: { paymentDate: 'desc' }
         });

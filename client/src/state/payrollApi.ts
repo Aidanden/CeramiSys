@@ -84,13 +84,50 @@ export interface PayrollStats {
         totalBonuses: number;
         grandTotal: number;
     };
+    monthlyBreakdown: {
+        month: number;
+        monthName: string;
+        salaries: number;
+        bonuses: number;
+        total: number;
+    }[];
+    treasuryDistribution: {
+        name: string;
+        amount: number;
+    }[];
+}
+
+export interface SalaryStatement {
+    employee: {
+        id: number;
+        name: string;
+        jobTitle?: string;
+        baseSalary: number;
+    };
+    month: number;
+    year: number;
+    monthName: string;
+    summary: {
+        baseSalary: number;
+        totalPaid: number;
+        remaining: number;
+    };
+    movements: {
+        id: number;
+        date: string;
+        type: string;
+        amount: number;
+        treasury: string;
+        receiptNumber?: string;
+        notes?: string;
+    }[];
 }
 
 // API Definition
 export const payrollApi = createApi({
     reducerPath: "payrollApi",
     baseQuery: baseQueryWithAuthInterceptor,
-    tagTypes: ["Employees", "Employee", "SalaryPayments", "Bonuses", "PayrollStats"],
+    tagTypes: ["Employees", "Employee", "SalaryPayments", "Bonuses", "PayrollStats", "SalaryStatement"],
     endpoints: (builder) => ({
         // ============== الموظفين ==============
 
@@ -143,6 +180,7 @@ export const payrollApi = createApi({
             month: number;
             year: number;
             amount: number;
+            type: 'PARTIAL' | 'FINAL';
             treasuryId: number;
             notes?: string;
         }>({
@@ -151,7 +189,7 @@ export const payrollApi = createApi({
                 method: "POST",
                 body: data,
             }),
-            invalidatesTags: ["SalaryPayments", "PayrollStats", "Employees"],
+            invalidatesTags: ["SalaryPayments", "PayrollStats", "Employees", "SalaryStatement"],
         }),
 
         payMultipleSalaries: builder.mutation<{
@@ -185,6 +223,11 @@ export const payrollApi = createApi({
                 return `payroll/salaries?${searchParams.toString()}`;
             },
             providesTags: ["SalaryPayments"],
+        }),
+
+        getSalaryStatement: builder.query<{ success: boolean; data: SalaryStatement }, { employeeId: number; month: number; year: number }>({
+            query: ({ employeeId, month, year }) => `payroll/salaries/statement/${employeeId}?month=${month}&year=${year}`,
+            providesTags: (result, error, { employeeId }) => [{ type: "SalaryStatement", id: employeeId }],
         }),
 
         // ============== المكافآت ==============
@@ -229,6 +272,7 @@ export const {
     usePaySalaryMutation,
     usePayMultipleSalariesMutation,
     useGetSalaryPaymentsQuery,
+    useGetSalaryStatementQuery,
     usePayBonusMutation,
     useGetPayrollStatsQuery,
 } = payrollApi;

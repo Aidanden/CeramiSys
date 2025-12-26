@@ -37,6 +37,9 @@ router.post('/salaries/pay-multiple', authMiddleware, PayrollController.payMulti
 // الحصول على سجل مرتبات شهر معين
 router.get('/salaries', authMiddleware, PayrollController.getSalaryPaymentsByMonth.bind(PayrollController));
 
+// الحصول على كشف حركة مرتب موظف
+router.get('/salaries/statement/:employeeId', authMiddleware, PayrollController.getEmployeeSalaryStatement.bind(PayrollController));
+
 // ============== المكافآت والزيادات ==============
 
 // صرف مكافأة أو زيادة

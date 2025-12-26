@@ -54,6 +54,13 @@ export interface ProductMovementReportQuery {
   endDate?: string;
 }
 
+export interface FinancialReportQuery {
+  startDate?: string;
+  endDate?: string;
+  companyId?: number;
+  productId?: number;
+}
+
 export const reportsApi = createApi({
   reducerPath: "reportsApi",
   baseQuery: baseQueryWithAuthInterceptor,
@@ -125,6 +132,16 @@ export const reportsApi = createApi({
         params,
       }),
     }),
+
+    // تقرير الأرباح (التقرير المالي)
+    // Updated to include full financial stats
+    getProfitReport: build.query({
+      query: (params: FinancialReportQuery) => ({
+        url: "/reports/financial",
+        method: "GET",
+        params,
+      }),
+    }),
   }),
 });
 
@@ -136,4 +153,5 @@ export const {
   useGetSupplierReportQuery,
   useGetPurchaseReportQuery,
   useGetProductMovementReportQuery,
+  useGetProfitReportQuery,
 } = reportsApi;

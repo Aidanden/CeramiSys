@@ -22,6 +22,15 @@ export const StockReportQueryDto = z.object({
 export type StockReportQuery = z.infer<typeof StockReportQueryDto>;
 
 // DTO لتقرير الأرباح
+export const FinancialReportQueryDto = z.object({
+  companyId: z.string().optional().transform(Number),
+  productId: z.string().optional().transform(Number),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+});
+
+export type FinancialReportQuery = z.infer<typeof FinancialReportQueryDto>;
+
 // DTO لتقرير العملاء
 export const CustomerReportQueryDto = z.object({
   companyId: z.string().optional().transform(Number),

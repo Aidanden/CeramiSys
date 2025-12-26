@@ -27,7 +27,13 @@
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "baseUrl": ".",
+    "paths": {
+      "@prisma/client": [
+        "./src/generated/client"
+      ]
+    }
   },
   "include": [
     "src/**/*"

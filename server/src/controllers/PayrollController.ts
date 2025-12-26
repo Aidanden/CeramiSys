@@ -175,12 +175,12 @@ class PayrollController {
      */
     async paySalary(req: AuthRequest, res: Response) {
         try {
-            const { employeeId, month, year, amount, treasuryId, notes } = req.body;
+            const { employeeId, month, year, amount, type, treasuryId, notes } = req.body;
 
-            if (!employeeId || !month || !year || !amount || !treasuryId) {
+            if (!employeeId || !month || !year || !amount || !treasuryId || !type) {
                 res.status(400).json({
                     success: false,
-                    message: 'جميع الحقول مطلوبة: معرف الموظف، الشهر، السنة، المبلغ، الخزينة'
+                    message: 'جميع الحقول مطلوبة: معرف الموظف، الشهر، السنة، المبلغ، النوع، الخزينة'
                 });
                 return;
             }
@@ -190,6 +190,7 @@ class PayrollController {
                 month: parseInt(month),
                 year: parseInt(year),
                 amount: parseFloat(amount),
+                type: type, // PARTIAL or FINAL
                 treasuryId: parseInt(treasuryId),
                 notes,
                 createdBy: req.user?.UserID
@@ -250,6 +251,42 @@ class PayrollController {
             res.status(400).json({
                 success: false,
                 message: error.message || 'حدث خطأ أثناء صرف المرتبات'
+            });
+        }
+    }
+
+    /**
+     * الحصول على كشف حركة مرتب موظف
+     */
+    async getEmployeeSalaryStatement(req: AuthRequest, res: Response) {
+        try {
+            const { employeeId } = req.params;
+            const { month, year } = req.query;
+
+            if (!employeeId || !month || !year) {
+                res.status(400).json({
+                    success: false,
+                    message: 'معرف الموظف والشهر والسنة مطلوبة'
+                });
+                return;
+            }
+
+            const statement = await PayrollService.getEmployeeSalaryStatement(
+                parseInt(employeeId),
+                parseInt(month as string),
+                parseInt(year as string)
+            );
+
+            res.json({
+                success: true,
+                message: 'تم جلب كشف حركة المرتب بنجاح',
+                data: statement
+            });
+        } catch (error: any) {
+            console.error('خطأ في جلب كشف حركة المرتب:', error);
+            res.status(500).json({
+                success: false,
+                message: error.message || 'حدث خطأ أثناء جلب كشف حركة المرتب'
             });
         }
     }
