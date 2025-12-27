@@ -10,7 +10,8 @@ import {
   ShoppingBag,
   DollarSign,
   Filter,
-  Eye
+  Eye,
+  Shield
 } from 'lucide-react';
 import {
   useGetProductsQuery,
@@ -24,6 +25,7 @@ import {
   UpdateProductRequest
 } from '@/state/productsApi';
 import { useGetCompaniesQuery } from '@/state/companyApi';
+import { useGetProductGroupsQuery } from '@/state/productGroupsApi';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/app/redux';
 import { formatArabicNumber, formatArabicCurrency, formatArabicQuantity, formatArabicArea } from '@/utils/formatArabicNumbers';
@@ -109,6 +111,7 @@ const ProductsPage = () => {
   });
 
   const { data: companiesData, isLoading: isLoadingCompanies } = useGetCompaniesQuery({ limit: 100 });
+  const { data: groupsData } = useGetProductGroupsQuery();
 
   const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
   const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
@@ -727,6 +730,14 @@ const ProductsPage = () => {
 
 
             <button
+              onClick={() => router.push('/products/groups')}
+              className="flex items-center gap-2 bg-slate-600 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-all duration-200 shadow-md hover:shadow-lg"
+            >
+              <Shield className="w-5 h-5" />
+              مجموعات الأصناف
+            </button>
+
+            <button
               onClick={() => setIsCreateModalOpen(true)}
               className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-all duration-200 shadow-md hover:shadow-lg"
             >
@@ -1059,31 +1070,31 @@ const ProductsPage = () => {
                     />
                   </th>
                 )}
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{width: '22%'}}>
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '22%' }}>
                   الصنف
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{width: '6%'}}>
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '6%' }}>
                   الرمز
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden sm:table-cell" style={{width: '6%'}}>
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden sm:table-cell" style={{ width: '6%' }}>
                   الوحدة
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{width: '7%'}}>
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '7%' }}>
                   المخزون
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden md:table-cell" style={{width: '10%'}}>
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden md:table-cell" style={{ width: '10%' }}>
                   الكمية (م²)
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{width: '9%'}}>
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '9%' }}>
                   السعر
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden md:table-cell" style={{width: '9%'}}>
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden md:table-cell" style={{ width: '9%' }}>
                   التكلفة
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden lg:table-cell" style={{width: '13%'}}>
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden lg:table-cell" style={{ width: '13%' }}>
                   الشركة
                 </th>
-                <th className="px-2 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{width: '18%'}}>
+                <th className="px-2 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '18%' }}>
                   الإجراءات
                 </th>
               </tr>
@@ -1141,163 +1152,163 @@ const ProductsPage = () => {
               ) : (
                 products.map((product) => (
                   <tr key={product.id} className={`hover:bg-background-hover transition-all duration-200 ${selectedProducts.has(product.id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
-                      {isBulkPrintMode && (
-                        <td className="px-3 sm:px-4 lg:px-6 py-4 text-center">
-                          <input
-                            type="checkbox"
-                            checked={selectedProducts.has(product.id)}
-                            onChange={() => toggleProductSelection(product.id)}
-                            disabled={!product.qrCode}
-                            className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 disabled:opacity-50"
-                          />
-                        </td>
+                    {isBulkPrintMode && (
+                      <td className="px-3 sm:px-4 lg:px-6 py-4 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedProducts.has(product.id)}
+                          onChange={() => toggleProductSelection(product.id)}
+                          disabled={!product.qrCode}
+                          className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 disabled:opacity-50"
+                        />
+                      </td>
+                    )}
+                    <td className="px-2 py-3">
+                      <div className="flex items-center space-x-2 space-x-reverse">
+                        <div className="flex-shrink-0 h-7 w-7">
+                          <div className="h-7 w-7 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 flex items-center justify-center">
+                            <ShoppingBag className="w-3.5 h-3.5" />
+                          </div>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-medium text-text-primary whitespace-normal break-words" title={product.name}>
+                            {product.name}
+                          </div>
+                          <div className="text-xs text-text-secondary sm:hidden">
+                            {product.unit || '-'} • {product.createdByCompany.name}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-2 py-3 text-sm text-text-primary">
+                      <code className="bg-background-tertiary px-1.5 py-0.5 rounded text-xs font-mono">
+                        {product.sku}
+                      </code>
+                    </td>
+                    <td className="px-2 py-3 text-sm text-text-primary hidden sm:table-cell">
+                      <span className="inline-flex px-1.5 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 rounded-full">
+                        {product.unit || '-'}
+                      </span>
+                    </td>
+                    <td className="px-2 py-3 text-sm text-text-primary">
+                      <div className="flex flex-col items-start">
+                        <span className={`inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full ${((product.stock as any)?.[0]?.boxes || 0) > 0
+                          ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-200'
+                          : 'bg-error-100 dark:bg-error-900/30 text-error-800 dark:text-error-200'
+                          }`}>
+                          {formatArabicQuantity((product.stock as any)?.[0]?.boxes || 0)}
+                        </span>
+                        <span className="text-xs text-text-secondary mt-0.5">
+                          {product.unit === 'صندوق' ? 'صندوق' : (product.unit || 'وحدة')}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-2 py-3 text-sm text-gray-900 hidden md:table-cell">
+                      {product.unit === 'صندوق' && product.unitsPerBox ? (
+                        <div className="text-center">
+                          <div className="font-medium text-blue-600 text-sm">
+                            {formatArabicArea(Number((product.stock as any)?.[0]?.boxes || 0) * Number(product.unitsPerBox))} م²
+                          </div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {formatArabicArea(product.unitsPerBox)} م² × {formatArabicQuantity((product.stock as any)?.[0]?.boxes || 0)}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-center block">-</span>
                       )}
-                      <td className="px-2 py-3">
-                        <div className="flex items-center space-x-2 space-x-reverse">
-                          <div className="flex-shrink-0 h-7 w-7">
-                            <div className="h-7 w-7 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 flex items-center justify-center">
-                              <ShoppingBag className="w-3.5 h-3.5" />
-                            </div>
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="text-xs font-medium text-text-primary whitespace-normal break-words" title={product.name}>
-                              {product.name}
-                            </div>
-                            <div className="text-xs text-text-secondary sm:hidden">
-                              {product.unit || '-'} • {product.createdByCompany.name}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-2 py-3 text-sm text-text-primary">
-                        <code className="bg-background-tertiary px-1.5 py-0.5 rounded text-xs font-mono">
-                          {product.sku}
-                        </code>
-                      </td>
-                      <td className="px-2 py-3 text-sm text-text-primary hidden sm:table-cell">
-                        <span className="inline-flex px-1.5 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 rounded-full">
-                          {product.unit || '-'}
-                        </span>
-                      </td>
-                      <td className="px-2 py-3 text-sm text-text-primary">
-                        <div className="flex flex-col items-start">
-                          <span className={`inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full ${((product.stock as any)?.[0]?.boxes || 0) > 0
-                            ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-200'
-                            : 'bg-error-100 dark:bg-error-900/30 text-error-800 dark:text-error-200'
-                            }`}>
-                            {formatArabicQuantity((product.stock as any)?.[0]?.boxes || 0)}
-                          </span>
-                          <span className="text-xs text-text-secondary mt-0.5">
-                            {product.unit === 'صندوق' ? 'صندوق' : (product.unit || 'وحدة')}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-2 py-3 text-sm text-gray-900 hidden md:table-cell">
-                        {product.unit === 'صندوق' && product.unitsPerBox ? (
-                          <div className="text-center">
-                            <div className="font-medium text-blue-600 text-sm">
-                              {formatArabicArea(Number((product.stock as any)?.[0]?.boxes || 0) * Number(product.unitsPerBox))} م²
-                            </div>
-                            <div className="text-xs text-gray-500 mt-0.5">
-                              {formatArabicArea(product.unitsPerBox)} م² × {formatArabicQuantity((product.stock as any)?.[0]?.boxes || 0)}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400 text-center block">-</span>
-                        )}
-                      </td>
-                      <td className="px-2 py-3 text-sm text-gray-900">
-                        <div className="font-medium text-green-600">
-                          {product.price?.sellPrice
-                            ? formatArabicCurrency(product.price.sellPrice)
-                            : '-'}
-                        </div>
-                      </td>
-                      <td className="px-2 py-3 text-sm text-gray-900 hidden md:table-cell">
-                        <div className="font-medium text-orange-600">
-                          {product.cost !== undefined && product.cost !== null
-                            ? formatArabicCurrency(product.cost)
-                            : '0'}
-                        </div>
-                      </td>
-                      <td className="px-2 py-3 text-sm text-gray-900 hidden lg:table-cell">
-                        <span className="inline-block max-w-full px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full truncate" title={product.createdByCompany.name}>
-                          {product.createdByCompany.name}
-                        </span>
-                      </td>
-                      <td className="px-2 py-3 text-center text-sm font-medium">
-                        <div className="flex items-center justify-center gap-1 flex-wrap">
-                          {/* الأزرار الأساسية - تظهر دائماً */}
-                          <button
-                            onClick={() => {
-                              setSelectedProduct(product);
-                              setIsEditModalOpen(true);
-                            }}
-                            className="text-blue-600 hover:text-blue-900 p-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                            title="تعديل"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedProduct(product);
-                              setIsStockModalOpen(true);
-                            }}
-                            className="text-green-600 hover:text-green-900 p-1.5 rounded-md hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
-                            title="إدارة المخزون"
-                          >
-                            <ShoppingBag className="w-4 h-4" />
-                          </button>
+                    </td>
+                    <td className="px-2 py-3 text-sm text-gray-900">
+                      <div className="font-medium text-green-600">
+                        {product.price?.sellPrice
+                          ? formatArabicCurrency(product.price.sellPrice)
+                          : '-'}
+                      </div>
+                    </td>
+                    <td className="px-2 py-3 text-sm text-gray-900 hidden md:table-cell">
+                      <div className="font-medium text-orange-600">
+                        {product.cost !== undefined && product.cost !== null
+                          ? formatArabicCurrency(product.cost)
+                          : '0'}
+                      </div>
+                    </td>
+                    <td className="px-2 py-3 text-sm text-gray-900 hidden lg:table-cell">
+                      <span className="inline-block max-w-full px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full truncate" title={product.createdByCompany.name}>
+                        {product.createdByCompany.name}
+                      </span>
+                    </td>
+                    <td className="px-2 py-3 text-center text-sm font-medium">
+                      <div className="flex items-center justify-center gap-1 flex-wrap">
+                        {/* الأزرار الأساسية - تظهر دائماً */}
+                        <button
+                          onClick={() => {
+                            setSelectedProduct(product);
+                            setIsEditModalOpen(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-900 p-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                          title="تعديل"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedProduct(product);
+                            setIsStockModalOpen(true);
+                          }}
+                          className="text-green-600 hover:text-green-900 p-1.5 rounded-md hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                          title="إدارة المخزون"
+                        >
+                          <ShoppingBag className="w-4 h-4" />
+                        </button>
 
-                          {/* الأزرار الإضافية - تظهر في الشاشات المتوسطة وما فوق */}
-                          <button
-                            onClick={() => {
-                              setSelectedProduct(product);
-                              setIsPriceModalOpen(true);
-                            }}
-                            className="text-purple-600 hover:text-purple-900 p-1.5 rounded-md hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors hidden sm:block"
-                            title="إدارة السعر"
-                          >
-                            <DollarSign className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleGenerateQR(product)}
-                            className="text-indigo-600 hover:text-indigo-900 p-1.5 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors hidden md:block"
-                            title="عرض QR Code"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handlePrintQRDirect(product)}
-                            className="text-blue-600 hover:text-blue-900 p-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors hidden lg:block"
-                            title="طباعة QR Code"
-                            disabled={!product.qrCode}
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                            </svg>
-                          </button>
+                        {/* الأزرار الإضافية - تظهر في الشاشات المتوسطة وما فوق */}
+                        <button
+                          onClick={() => {
+                            setSelectedProduct(product);
+                            setIsPriceModalOpen(true);
+                          }}
+                          className="text-purple-600 hover:text-purple-900 p-1.5 rounded-md hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors hidden sm:block"
+                          title="إدارة السعر"
+                        >
+                          <DollarSign className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleGenerateQR(product)}
+                          className="text-indigo-600 hover:text-indigo-900 p-1.5 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors hidden md:block"
+                          title="عرض QR Code"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handlePrintQRDirect(product)}
+                          className="text-blue-600 hover:text-blue-900 p-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors hidden lg:block"
+                          title="طباعة QR Code"
+                          disabled={!product.qrCode}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                          </svg>
+                        </button>
 
-                          {/* زر الحذف - يظهر في الشاشات الكبيرة فقط */}
-                          <button
-                            onClick={() => {
-                              setSelectedProduct(product);
-                              setIsDeleteModalOpen(true);
-                            }}
-                            className="text-red-600 hover:text-red-900 p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors hidden lg:block"
-                            title="حذف"
-                            disabled={isDeleting}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                    ))
+                        {/* زر الحذف - يظهر في الشاشات الكبيرة فقط */}
+                        <button
+                          onClick={() => {
+                            setSelectedProduct(product);
+                            setIsDeleteModalOpen(true);
+                          }}
+                          className="text-red-600 hover:text-red-900 p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors hidden lg:block"
+                          title="حذف"
+                          disabled={isDeleting}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
-                  </tbody>
+            </tbody>
           </table>
         </div>
 
@@ -1461,6 +1472,7 @@ const ProductsPage = () => {
                 createdByCompanyId: Number(companyId),
                 sellPrice: formData.get('sellPrice') && formData.get('sellPrice') !== '' ? Number(formData.get('sellPrice')) : undefined,
                 initialBoxes: formData.get('initialBoxes') && formData.get('initialBoxes') !== '' ? Number(formData.get('initialBoxes')) : undefined,
+                groupId: formData.get('groupId') && formData.get('groupId') !== '' ? Number(formData.get('groupId')) : undefined,
               };
               console.log('Sending product data:', productData);
               handleCreateProduct(productData);
@@ -1527,6 +1539,23 @@ const ProductsPage = () => {
                       </p>
                     </>
                   )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    مجموعة الأصناف (اختياري - للخصومات)
+                  </label>
+                  <select
+                    name="groupId"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">لا توجد مجموعة</option>
+                    {groupsData?.data?.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name} (أقصى خصم: {group.maxDiscountPercentage}%)
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1646,6 +1675,7 @@ const ProductsPage = () => {
                 sku: formData.get('sku') as string,
                 name: formData.get('name') as string,
                 unit: formData.get('unit') as string || undefined,
+                groupId: formData.get('groupId') ? parseInt(formData.get('groupId') as string) : undefined,
               };
 
               // إرسال unitsPerBox فقط للصندوق
@@ -1707,6 +1737,24 @@ const ProductsPage = () => {
                     <option value="قطعة">قطعة</option>
                     <option value="كيس">كيس</option>
                     <option value="لتر">لتر</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    مجموعة الأصناف (اختياري - للخصومات)
+                  </label>
+                  <select
+                    name="groupId"
+                    defaultValue={selectedProduct.groupId || ''}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">لا توجد مجموعة</option>
+                    {groupsData?.data?.map((group: any) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name} (أقصى خصم: {group.maxDiscountPercentage}%)
+                      </option>
+                    ))}
                   </select>
                 </div>
 

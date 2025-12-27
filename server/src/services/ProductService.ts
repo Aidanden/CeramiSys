@@ -143,6 +143,7 @@ export class ProductService {
           updatedAt: product.updatedAt,
           stock: stockData,
           price: priceData,
+          groupId: product.groupId ?? undefined
         };
       });
 
@@ -226,6 +227,7 @@ export class ProductService {
           sellPrice: Number(product.prices[0].sellPrice),
           updatedAt: product.prices[0].updatedAt
         } : undefined,
+        groupId: product.groupId ?? undefined
       };
     } catch (error) {
       console.error('خطأ في جلب الصنف:', error);
@@ -269,6 +271,7 @@ export class ProductService {
           unit: data.unit,
           unitsPerBox: data.unitsPerBox,
           createdByCompanyId: data.createdByCompanyId,
+          groupId: data.groupId,
         },
         include: {
           createdByCompany: {
@@ -342,6 +345,7 @@ export class ProductService {
         createdByCompany: product.createdByCompany,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
+        groupId: product.groupId ?? undefined
       };
     } catch (error) {
       console.error('خطأ في إنشاء الصنف:', error);
@@ -391,6 +395,7 @@ export class ProductService {
           ...(data.sku && { sku: data.sku }),
           ...(data.name && { name: data.name }),
           ...(data.unit !== undefined && { unit: data.unit }),
+          ...(data.groupId !== undefined && { groupId: data.groupId }),
         },
         include: {
           createdByCompany: {
@@ -474,6 +479,7 @@ export class ProductService {
           sellPrice: Number(product.prices[0].sellPrice),
           updatedAt: product.prices[0].updatedAt
         } : undefined,
+        groupId: product.groupId ?? undefined
       };
     } catch (error) {
       console.error('خطأ في تحديث الصنف:', error);

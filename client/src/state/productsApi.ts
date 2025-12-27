@@ -32,6 +32,12 @@ export interface Product {
     sellPrice: number;
     updatedAt: string;
   };
+  groupId?: number;
+  group?: {
+    id: number;
+    name: string;
+    maxDiscountPercentage: number;
+  };
 }
 
 export interface CreateProductRequest {
@@ -42,6 +48,7 @@ export interface CreateProductRequest {
   createdByCompanyId: number;
   sellPrice?: number;
   initialBoxes?: number; // عدد الصناديق الأولية
+  groupId?: number;
 }
 
 export interface UpdateProductRequest {
@@ -50,6 +57,7 @@ export interface UpdateProductRequest {
   unit?: string;
   unitsPerBox?: number; // عدد الوحدات في الصندوق
   sellPrice?: number;
+  groupId?: number;
 }
 
 export interface GetProductsQuery {

@@ -46,6 +46,7 @@ import { productCostApi } from "@/state/productCostApi"; // إضافة productCo
 import { payrollApi } from "@/state/payrollApi"; // إضافة payrollApi
 import { badDebtApi } from "@/state/badDebtApi"; // إضافة badDebtApi
 import { generalReceiptApi } from "@/state/generalReceiptApi"; // إضافة generalReceiptApi
+import { productGroupsApi } from "@/state/productGroupsApi"; // إضافة productGroupsApi
 import { setupListeners } from "@reduxjs/toolkit/query";
 import {
   persistStore,
@@ -130,6 +131,7 @@ const rootReducer = combineReducers({
   [payrollApi.reducerPath]: payrollApi.reducer, // إضافة payrollApi.reducer
   [badDebtApi.reducerPath]: badDebtApi.reducer, // إضافة badDebtApi.reducer
   [generalReceiptApi.reducerPath]: generalReceiptApi.reducer, // إضافة generalReceiptApi.reducer
+  [productGroupsApi.reducerPath]: productGroupsApi.reducer, // إضافة productGroupsApi.reducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -143,7 +145,7 @@ export const makeStore = () => {
         serializableCheck: {
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
-      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, purchaseExpenseApi.middleware, paymentReceiptsApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware, notificationsApi.middleware, saleReturnsApi.middleware, saleReturnApi.middleware, returnPaymentApi.middleware, warehouseApi.middleware, customerAccountApi.middleware, supplierAccountApi.middleware, damageReportsApi.middleware, externalStoresApi.middleware, externalStoreInvoicesApi.middleware, storePortalApi.middleware, treasuryApi.middleware, settingsApi.middleware, productCostApi.middleware, payrollApi.middleware, badDebtApi.middleware, generalReceiptApi.middleware), // إضافة middleware
+      }).concat(authApi.middleware, usersApi.middleware, permissionsApi.middleware, companyApi.middleware, productsApi.middleware, salesApi.middleware, salePaymentApi.middleware, interCompanySalesApi.middleware, purchaseApi.middleware, purchaseExpenseApi.middleware, paymentReceiptsApi.middleware, activityApi.middleware, complexInterCompanySalesApi.middleware, reportsApi.middleware, notificationsApi.middleware, saleReturnsApi.middleware, saleReturnApi.middleware, returnPaymentApi.middleware, warehouseApi.middleware, customerAccountApi.middleware, supplierAccountApi.middleware, damageReportsApi.middleware, externalStoresApi.middleware, externalStoreInvoicesApi.middleware, storePortalApi.middleware, treasuryApi.middleware, settingsApi.middleware, productCostApi.middleware, payrollApi.middleware, badDebtApi.middleware, generalReceiptApi.middleware, productGroupsApi.middleware), // إضافة middleware
   });
 };
 

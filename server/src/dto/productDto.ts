@@ -43,6 +43,10 @@ export class CreateProductDto {
   @IsNumber({ maxDecimalPlaces: 4 }, { message: 'عدد الصناديق الأولية يجب أن يكون رقم صالح' })
   @Min(0, { message: 'عدد الصناديق الأولية يجب أن يكون أكبر من أو يساوي صفر' })
   initialBoxes?: number;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'معرف المجموعة يجب أن يكون رقم' })
+  groupId?: number;
 }
 
 // DTO لتحديث صنف
@@ -72,6 +76,10 @@ export class UpdateProductDto {
   @IsNumber({ maxDecimalPlaces: 4 }, { message: 'سعر البيع يجب أن يكون رقم صالح' })
   @Min(0, { message: 'سعر البيع يجب أن يكون أكبر من أو يساوي صفر' })
   sellPrice?: number;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'معرف المجموعة يجب أن يكون رقم' })
+  groupId?: number;
 }
 
 // DTO لاستعلام الأصناف
@@ -173,6 +181,12 @@ export interface ProductResponseDto {
   price?: {
     sellPrice: number;
     updatedAt: Date;
+  };
+  groupId?: number;
+  group?: {
+    id: number;
+    name: string;
+    maxDiscountPercentage: number;
   };
 }
 

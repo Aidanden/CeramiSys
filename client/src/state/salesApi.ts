@@ -25,6 +25,8 @@ export interface SaleLine {
   isFromParentCompany?: boolean;
   parentUnitPrice?: number; // سعر التكلفة (من الشركة الأم)
   branchUnitPrice?: number; // سعر البيع (للزبون)
+  discountPercentage?: number;
+  discountAmount?: number;
 }
 
 export interface Sale {
@@ -79,6 +81,8 @@ export interface CreateSaleRequest {
     productId: number;
     qty: number;
     unitPrice: number;
+    discountPercentage?: number;
+    discountAmount?: number;
   }[];
   // ملاحظة: saleType و paymentMethod سيحددهما المحاسب لاحقاً
 }
@@ -92,6 +96,8 @@ export interface UpdateSaleRequest {
     productId: number;
     qty: number;
     unitPrice: number;
+    discountPercentage?: number;
+    discountAmount?: number;
   }[];
 }
 

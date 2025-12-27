@@ -44,6 +44,10 @@ export const SCREEN_PERMISSIONS = {
   EXTERNAL_STORES: 'screen.external_stores',
   EXTERNAL_STORE_INVOICES: 'screen.external_store_invoices',
 
+  // صلاحيات إضافية
+  PRODUCT_DISCOUNT: 'screen.product_discount',
+  PRODUCT_GROUPS: 'screen.product_groups',
+
   // صلاحية شاملة (للمدير)
   ALL: 'screen.all'
 } as const;
@@ -91,6 +95,15 @@ export const SCREEN_METADATA: ScreenMetadata[] = [
     category: 'inventory',
     description: 'إدارة المنتجات والمخزون',
     icon: 'ShoppingBag'
+  },
+  {
+    id: 'product-groups',
+    name: 'مجموعات الأصناف',
+    route: '/products/groups',
+    permission: SCREEN_PERMISSIONS.PRODUCT_GROUPS,
+    category: 'inventory',
+    description: 'إدارة مجموعات الأصناف والخصومات المسموح بها',
+    icon: 'Shield'
   },
 
   // شاشات المبيعات

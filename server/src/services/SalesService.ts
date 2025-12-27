@@ -39,6 +39,7 @@ export class SalesService {
           ...(isSystemUser !== true && { createdByCompanyId: userCompanyId })
         },
         include: {
+          group: true,
           stocks: isSystemUser ? true : {
             where: { companyId: userCompanyId }
           },
@@ -55,6 +56,19 @@ export class SalesService {
       // ملاحظة: لا نتحقق من المخزون هنا لأن الفاتورة مبدئية
       // سيتم التحقق من المخزون عند اعتماد الفاتورة من المحاسب
 
+      // التحقق من الخصومات المسموح بها
+      for (const line of data.lines) {
+        if (line.discountPercentage && line.discountPercentage > 0) {
+          const product = products.find(p => p.id === line.productId) as any;
+          // الحصول على أقصى خصم من المجموعة أو 100 إذا لم تكن هناك مجموعة
+          const maxDiscount = product?.group ? Number(product.group.maxDiscountPercentage) : 100;
+
+          if (line.discountPercentage > maxDiscount) {
+            throw new Error(`الخصم المحدد للصنف "${product?.name}" (${line.discountPercentage}%) يتجاوز الحد الأقصى المسموح به (${maxDiscount}%)`);
+          }
+        }
+      }
+
       // توليد رقم الفاتورة تلقائياً
       const invoiceNumber = await this.generateInvoiceNumber(userCompanyId);
 
@@ -62,7 +76,7 @@ export class SalesService {
       // حساب المجموع الإجمالي
       let total = 0;
       for (const line of data.lines) {
-        const subTotal = line.qty * line.unitPrice;
+        const subTotal = line.qty * line.unitPrice - (line.discountAmount || 0);
         total += subTotal;
       }
 
@@ -90,7 +104,9 @@ export class SalesService {
               // للأصناف من الشركة الأم
               isFromParentCompany: line.isFromParentCompany || false,
               parentUnitPrice: line.parentUnitPrice || null,
-              branchUnitPrice: line.branchUnitPrice || null
+              branchUnitPrice: line.branchUnitPrice || null,
+              discountPercentage: line.discountPercentage || 0,
+              discountAmount: line.discountAmount || 0
             }))
           }
         },
@@ -133,6 +149,8 @@ export class SalesService {
           product: line.product,
           qty: Number(line.qty),
           unitPrice: Number(line.unitPrice),
+          discountPercentage: Number((line as any).discountPercentage || 0),
+          discountAmount: Number((line as any).discountAmount || 0),
           subTotal: Number(line.subTotal)
         }))
       };
@@ -254,8 +272,10 @@ export class SalesService {
                 unitPrice: true,
                 subTotal: true,
                 product: {
-                  select: { id: true, sku: true, name: true, unit: true, unitsPerBox: true }
-                }
+                  select: { id: true, sku: true, name: true, unit: true, unitsPerBox: true, groupId: true }
+                },
+                discountPercentage: true,
+                discountAmount: true
               }
             },
             dispatchOrders: {
@@ -328,6 +348,8 @@ export class SalesService {
               product: line.product,
               qty: Number(line.qty),
               unitPrice: Number(line.unitPrice),
+              discountPercentage: Number((line as any).discountPercentage || 0),
+              discountAmount: Number((line as any).discountAmount || 0),
               subTotal: Number(line.subTotal)
             }))
           })),
@@ -363,7 +385,7 @@ export class SalesService {
           lines: {
             include: {
               product: {
-                select: { id: true, sku: true, name: true, unit: true, unitsPerBox: true }
+                select: { id: true, sku: true, name: true, unit: true, unitsPerBox: true, groupId: true }
               }
             }
           },
@@ -400,7 +422,9 @@ export class SalesService {
           product: line.product,
           qty: Number(line.qty),
           unitPrice: Number(line.unitPrice),
-          subTotal: Number(line.subTotal)
+          subTotal: Number(line.subTotal),
+          discountPercentage: Number((line as any).discountPercentage || 0),
+          discountAmount: Number((line as any).discountAmount || 0)
         }))
       };
     } catch (error) {
@@ -535,11 +559,24 @@ export class SalesService {
             ...(isSystemUser !== true && { createdByCompanyId: userCompanyId })
           },
           include: {
+            group: true,
             stocks: isSystemUser ? true : {
               where: { companyId: userCompanyId }
             }
           }
         });
+        // التحقق من الخصومات المسموح بها في التحديث
+        for (const line of data.lines) {
+          if (line.discountPercentage && line.discountPercentage > 0) {
+            const product = products.find(p => p.id === line.productId) as any;
+            // الحصول على أقصى خصم من المجموعة أو 100 إذا لم تكن هناك مجموعة
+            const maxDiscount = product?.group ? Number(product.group.maxDiscountPercentage) : 100;
+
+            if (line.discountPercentage > maxDiscount) {
+              throw new Error(`الخصم المحدد للصنف "${product?.name}" (${line.discountPercentage}%) يتجاوز الحد الأقصى المسموح به (${maxDiscount}%)`);
+            }
+          }
+        }
 
         for (const line of data.lines) {
           const product = products.find(p => p.id === line.productId);
@@ -596,7 +633,7 @@ export class SalesService {
       if (data.lines) {
         total = 0;
         for (const line of data.lines) {
-          total += line.qty * line.unitPrice;
+          total += line.qty * line.unitPrice - (line.discountAmount || 0);
         }
       }
 
@@ -621,7 +658,9 @@ export class SalesService {
                 productId: line.productId,
                 qty: line.qty,
                 unitPrice: line.unitPrice,
-                subTotal: line.qty * line.unitPrice
+                discountPercentage: line.discountPercentage || 0,
+                discountAmount: line.discountAmount || 0,
+                subTotal: line.qty * line.unitPrice - (line.discountAmount || 0)
               }))
             }
           })

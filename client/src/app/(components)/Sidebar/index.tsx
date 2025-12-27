@@ -22,6 +22,7 @@ import {
   Wallet,
   TrendingDown as Returns,
   FileText as Receipt,
+  Shield,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -188,6 +189,15 @@ const Sidebar = () => {
               href="/products"
               icon={ShoppingBag}
               label="الأصناف والمخزن"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
+
+          {canAccessScreen('/products/groups') && (
+            <SidebarLink
+              href="/products/groups"
+              icon={Shield}
+              label="مجموعات الأصناف"
               isCollapsed={isSidebarCollapsed}
             />
           )}

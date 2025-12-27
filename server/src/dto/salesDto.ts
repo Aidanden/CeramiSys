@@ -38,7 +38,9 @@ export const CreateSaleLineDtoSchema = z.object({
   // للأصناف من الشركة الأم
   isFromParentCompany: z.boolean().optional(),
   parentUnitPrice: z.number().min(0).optional(),
-  branchUnitPrice: z.number().min(0).optional()
+  branchUnitPrice: z.number().min(0).optional(),
+  discountPercentage: z.number().min(0).max(100).optional(),
+  discountAmount: z.number().min(0).optional()
 });
 
 export const CreateSaleDtoSchema = z.object({

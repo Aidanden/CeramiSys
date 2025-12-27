@@ -37,6 +37,8 @@ interface LocalSaleLine {
   isFromParentCompany?: boolean;
   parentUnitPrice?: number;
   branchUnitPrice?: number;
+  discountPercentage?: number;
+  discountAmount?: number;
 }
 
 // نوع محلي لطلب إنشاء المبيعات
@@ -265,16 +267,15 @@ const SalesPage = () => {
   // حساب المجموع بناءً على نوع الوحدة
   const calculateLineTotal = (line: any) => {
     const product = productsData?.data?.products?.find(p => p.id === line.productId);
-    if (!product) return line.qty * line.unitPrice;
+    let baseTotal = 0;
 
-    // إذا كانت الوحدة صندوق، اضرب في عدد الأمتار
-    if (product.unit === 'صندوق' && product.unitsPerBox) {
-      const totalMeters = line.qty * Number(product.unitsPerBox);
-      return totalMeters * line.unitPrice;
+    if (product && product.unit === 'صندوق' && product.unitsPerBox) {
+      baseTotal = (line.qty || 0) * Number(product.unitsPerBox) * (line.unitPrice || 0);
+    } else {
+      baseTotal = (line.qty || 0) * (line.unitPrice || 0);
     }
 
-    // للوحدات الأخرى (كيس، قطعة، لتر)
-    return line.qty * line.unitPrice;
+    return baseTotal - (line.discountAmount || 0);
   };
 
   // دالة مساعدة للتركيز السريع على مربع اختيار الصنف
@@ -558,10 +559,12 @@ const SalesPage = () => {
       const product = productsData?.data?.products?.find(p => p.id === line.productId);
 
       // إنشاء السطر الأساسي
-      let processedLine: any = {
+        let processedLine: any = {
         productId: line.productId,
         qty: line.qty,
-        unitPrice: line.unitPrice
+        unitPrice: line.unitPrice,
+        discountPercentage: line.discountPercentage,
+        discountAmount: line.discountAmount
       };
 
       // للصناديق: ضرب السعر في عدد الأمتار
@@ -622,8 +625,10 @@ const SalesPage = () => {
         qty: line.qty,
         parentUnitPrice,
         branchUnitPrice,
-        subTotal: line.qty * branchUnitPrice,
-        isFromParentCompany: line.isFromParentCompany || false
+        subTotal: line.qty * branchUnitPrice - (line.discountAmount || 0),
+        isFromParentCompany: line.isFromParentCompany || false,
+        discountPercentage: line.discountPercentage,
+        discountAmount: line.discountAmount
       };
     });
 
@@ -1070,8 +1075,8 @@ const SalesPage = () => {
             }}
             disabled={user?.isSystemUser ? !selectedCompanyId : !user?.companyId}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${(user?.isSystemUser ? selectedCompanyId : user?.companyId)
-                ? 'bg-success-600 hover:bg-success-700 text-white shadow-md hover:shadow-lg'
-                : 'bg-background-tertiary text-text-muted cursor-not-allowed'
+              ? 'bg-success-600 hover:bg-success-700 text-white shadow-md hover:shadow-lg'
+              : 'bg-background-tertiary text-text-muted cursor-not-allowed'
               }`}
             title={(user?.isSystemUser ? !selectedCompanyId : !user?.companyId) ? 'يجب اختيار الشركة أولاً' : 'إنشاء فاتورة جديدة'}
           >
@@ -1421,10 +1426,10 @@ const SalesPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${sale.status === 'DRAFT'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : sale.status === 'APPROVED'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : sale.status === 'APPROVED'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
                           }`}>
                           {sale.status === 'DRAFT' ? 'مبدئية' :
                             sale.status === 'APPROVED' ? 'معتمدة' : 'ملغية'}
@@ -1534,8 +1539,8 @@ const SalesPage = () => {
                     key={i + 1}
                     onClick={() => setCurrentPage(i + 1)}
                     className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === i + 1
-                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                      ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                       }`}
                   >
                     {i + 1}
@@ -2098,8 +2103,8 @@ const SalesPage = () => {
                     type="submit"
                     disabled={isCreating || isCreatingComplex || !saleForm.customerId}
                     className={`flex items-center gap-2 px-8 py-3 rounded-lg shadow-md transition-all duration-200 font-medium text-base ${!saleForm.customerId
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white hover:shadow-lg'
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white hover:shadow-lg'
                       } ${(isCreating || isCreatingComplex) ? 'opacity-50' : ''}`}
                   >
                     <span>{(isCreating || isCreatingComplex) ? '⏳' : '💾'}</span>
@@ -2236,10 +2241,10 @@ const SalesPage = () => {
                   <div>
                     <span className="font-medium">الحالة:</span>
                     <span className={`ml-2 px-2 py-1 text-xs font-semibold rounded-full ${selectedSale!.status === 'DRAFT'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : selectedSale!.status === 'APPROVED'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : selectedSale!.status === 'APPROVED'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
                       }`}>
                       {selectedSale!.status === 'DRAFT' ? 'مبدئية' :
                         selectedSale!.status === 'APPROVED' ? 'معتمدة' : 'ملغية'}

@@ -138,7 +138,16 @@ exports.Prisma.ProductScalarFieldEnum = {
   updatedAt: 'updatedAt',
   unitsPerBox: 'unitsPerBox',
   qrCode: 'qrCode',
-  cost: 'cost'
+  cost: 'cost',
+  groupId: 'groupId'
+};
+
+exports.Prisma.ProductGroupScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  maxDiscountPercentage: 'maxDiscountPercentage',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.ProductCostLogScalarFieldEnum = {
@@ -268,7 +277,9 @@ exports.Prisma.SaleLineScalarFieldEnum = {
   subTotal: 'subTotal',
   isFromParentCompany: 'isFromParentCompany',
   parentUnitPrice: 'parentUnitPrice',
-  branchUnitPrice: 'branchUnitPrice'
+  branchUnitPrice: 'branchUnitPrice',
+  discountPercentage: 'discountPercentage',
+  discountAmount: 'discountAmount'
 };
 
 exports.Prisma.SalePaymentScalarFieldEnum = {
@@ -972,6 +983,7 @@ exports.BonusType = exports.$Enums.BonusType = {
 exports.Prisma.ModelName = {
   Company: 'Company',
   Product: 'Product',
+  ProductGroup: 'ProductGroup',
   ProductCostLog: 'ProductCostLog',
   Stock: 'Stock',
   CompanyProductPrice: 'CompanyProductPrice',

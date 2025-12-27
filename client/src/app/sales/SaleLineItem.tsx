@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { useGetUserScreensQuery } from '@/state/permissionsApi';
 
 // CSS لمنع التكرار
 const preventDuplicateCSS = `
@@ -63,20 +64,20 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
 }) => {
   // تحميل هامش الربح من الإعدادات
   const [profitMargin, setProfitMargin] = React.useState(20);
-  
+
   React.useEffect(() => {
     const savedMargin = localStorage.getItem('profitMargin');
     if (savedMargin) {
       setProfitMargin(parseFloat(savedMargin));
     }
   }, []);
-  
+
   // فلترة الأصناف حسب نوع البند (يجب أن يكون قبل استخدامه)
   const lineFilteredProducts = filteredProducts.filter((product: any) => {
     if (!currentCompanyId) {
       return false;
     }
-    
+
     if (line.isFromParentCompany) {
       // عرض أصناف الشركة الأم (التقازي = ID 1) فقط
       const isFromParent = product.createdByCompanyId === 1;
@@ -87,7 +88,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
       return isFromCurrent;
     }
   });
-  
+
   // Debug log للتحقق من الفلترة
   console.log('🔍 SaleLineItem فلترة:', {
     lineIndex: index,
@@ -102,7 +103,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
     // عينة من الأصناف المفلترة
     sampleFilteredProducts: lineFilteredProducts.slice(0, 3).map((p: any) => ({ id: p.id, name: p.name, companyId: p.createdByCompanyId }))
   });
-  
+
   // التأكد من أن الصنف المختار موجود في القائمة المفلترة
   // إذا لم يكن موجوداً (مثل عند إضافته عبر QR Code)، نضيفه
   const displayProducts = React.useMemo(() => {
@@ -110,25 +111,25 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
     if (!line.productId) {
       return lineFilteredProducts;
     }
-    
+
     // التحقق من وجود الصنف المختار في القائمة المفلترة
     const existsInFiltered = lineFilteredProducts.some((p: any) => p.id === line.productId);
-    
+
     if (!existsInFiltered) {
       // البحث عن الصنف في جميع الأصناف (filteredProducts) أو استخدام selectedProduct
       const productToAdd = selectedProduct || filteredProducts.find((p: any) => p.id === line.productId);
-      
+
       if (productToAdd) {
         // إضافة الصنف المختار في بداية القائمة
         console.log('➕ إضافة الصنف المختار للقائمة:', productToAdd.name);
         return [productToAdd, ...lineFilteredProducts];
       }
     }
-    
+
     // إذا كان الصنف موجوداً في القائمة المفلترة
     return lineFilteredProducts;
   }, [lineFilteredProducts, selectedProduct, line.productId, filteredProducts]);
-  
+
   // Debug log لـ displayProducts
   console.log('📋 displayProducts:', {
     lineIndex: index,
@@ -141,6 +142,12 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
   // حالات محلية للحقول لتجنب فقدان التركيز
   const [localPrice, setLocalPrice] = React.useState(line.unitPrice || '');
   const [localQty, setLocalQty] = React.useState(line.qty > 0 ? line.qty : '');
+  const [localDiscountPercentage, setLocalDiscountPercentage] = React.useState(line.discountPercentage || 0);
+  const [localDiscountAmount, setLocalDiscountAmount] = React.useState(line.discountAmount || 0);
+  const [isDiscountEnabled, setIsDiscountEnabled] = React.useState(line.discountPercentage > 0 || line.discountAmount > 0);
+
+  // جلب صلاحيات المستخدم
+  const canApplyDiscount = true; // تفعيل الخصم للجميع حالياً لضمان ظهوره
 
   // تحديث الحالات المحلية عند تغيير القيم من الخارج
   React.useEffect(() => {
@@ -158,7 +165,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
         updateSaleLine(index, 'unitPrice', localPrice);
       }
     }, 100);
-    
+
     return () => clearTimeout(timer);
   }, [localPrice, index, updateSaleLine, line.unitPrice]);
 
@@ -187,26 +194,41 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
         updateSaleLine(index, 'qty', qtyValue);
       }
     }, 100);
-    
+
     return () => clearTimeout(timer);
   }, [localQty, index, updateSaleLine, line.qty, line.productId, displayProducts]);
 
+  // تحديث الخصم عند تغيير السعر أو الكمية
+  React.useEffect(() => {
+    if (isDiscountEnabled) {
+      const price = Number(localPrice) || 0;
+      const qty = Number(localQty) || 0;
+      const amount = (price * qty * Number(localDiscountPercentage)) / 100;
+      setLocalDiscountAmount(amount);
+      updateSaleLine(index, 'discountAmount', amount);
+      updateSaleLine(index, 'discountPercentage', localDiscountPercentage);
+    } else {
+      setLocalDiscountAmount(0);
+      updateSaleLine(index, 'discountAmount', 0);
+      updateSaleLine(index, 'discountPercentage', 0);
+    }
+  }, [localDiscountPercentage, localPrice, localQty, isDiscountEnabled, index, updateSaleLine]);
+
   return (
-    <div 
+    <div
       data-line-index={index}
       data-product-id={line.productId || 'new'}
       data-testid={`sale-line-item-${index}`}
-      className={`sale-line-item p-5 bg-white rounded-xl shadow-md border-2 transition-all duration-300 hover:shadow-lg ${
-        line.isFromParentCompany 
-          ? 'border-orange-200 bg-gradient-to-r from-orange-50 to-white hover:border-orange-300' 
-          : 'border-gray-200 hover:border-blue-300'
-      }`}
-      style={{ 
+      className={`sale-line-item p-5 bg-white rounded-xl shadow-md border-2 transition-all duration-300 hover:shadow-lg ${line.isFromParentCompany
+        ? 'border-orange-200 bg-gradient-to-r from-orange-50 to-white hover:border-orange-300'
+        : 'border-gray-200 hover:border-blue-300'
+        }`}
+      style={{
         position: 'relative',
         zIndex: 1,
-        isolation: 'isolate' 
+        isolation: 'isolate'
       }}>
-      
+
       {/* Header Row - نوع الصنف */}
       <div className="flex items-center justify-between mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
         <div className="flex items-center gap-3">
@@ -222,23 +244,22 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
               updateSaleLine(index, 'parentUnitPrice', 0);
               updateSaleLine(index, 'branchUnitPrice', 0);
             }}
-            className={`px-3 py-2 border rounded-lg text-sm font-medium focus:ring-2 focus:outline-none transition-colors ${
-              line.isFromParentCompany
-                ? 'border-slate-300 bg-slate-100 text-slate-800 focus:ring-slate-200 focus:border-slate-400'
-                : 'border-slate-300 bg-white text-slate-700 focus:ring-blue-200 focus:border-blue-400'
-            }`}
+            className={`px-3 py-2 border rounded-lg text-sm font-medium focus:ring-2 focus:outline-none transition-colors ${line.isFromParentCompany
+              ? 'border-slate-300 bg-slate-100 text-slate-800 focus:ring-slate-200 focus:border-slate-400'
+              : 'border-slate-300 bg-white text-slate-700 focus:ring-blue-200 focus:border-blue-400'
+              }`}
           >
             <option value="current">الشركة الحالية</option>
             <option value="parent">مخزن التقازي</option>
           </select>
-          
+
           {line.isFromParentCompany && (
             <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-slate-200 text-slate-700 border border-slate-300">
               مخزن التقازي
             </span>
           )}
         </div>
-        
+
         <button
           type="button"
           onClick={() => removeSaleLine(index)}
@@ -253,14 +274,13 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
 
       {/* Main Content - Responsive Grid */}
       {/* ⚠️ تحذير: هذا هو المكان الوحيد لحقول الكمية والسعر والمجموع - لا يجب تكرارها */}
-      <div 
-        className={`grid grid-cols-1 md:grid-cols-2 gap-3 items-end ${
-          selectedProduct?.unit === 'صندوق' ? 'lg:grid-cols-6' : 'lg:grid-cols-5'
-        }`}
+      <div
+        className={`grid grid-cols-1 md:grid-cols-2 gap-3 items-end ${selectedProduct?.unit === 'صندوق' ? 'lg:grid-cols-6' : 'lg:grid-cols-5'
+          }`}
         data-line-index={index}
         data-testid={`sale-line-item-${index}`}
       >
-        
+
         {/* اختيار الصنف - قائمة منسدلة عادية */}
         <div className={selectedProduct?.unit === 'صندوق' ? 'lg:col-span-2' : 'lg:col-span-2'}>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -271,23 +291,23 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
             onChange={(e) => {
               const productId = Number(e.target.value);
               const product = displayProducts.find((p: any) => p.id === productId);
-              
+
               updateSaleLine(index, 'productId', productId);
-              
+
               if (product) {
                 // عرض سعر البيع الأصلي من قاعدة البيانات دائماً
                 const originalPrice = Number(product.price?.sellPrice || 0);
                 // تنسيق السعر لإزالة الأرقام العشرية الزائدة
                 const formattedPrice = Math.round(originalPrice * 100) / 100;
                 updateSaleLine(index, 'unitPrice', formattedPrice);
-                
+
                 if (line.isFromParentCompany) {
                   // حفظ سعر الشركة الأم للمرجعية والتحقق من الحد الأدنى
                   updateSaleLine(index, 'parentUnitPrice', originalPrice);
                   // حساب السعر المقترح مع هامش الربح (للعرض فقط)
                   const suggestedPrice = originalPrice * (1 + profitMargin / 100);
                   updateSaleLine(index, 'branchUnitPrice', suggestedPrice);
-                  
+
                   console.log(`💰 صنف من الشركة الأم:`, {
                     product: product.name,
                     originalPrice,
@@ -301,13 +321,13 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
             required
           >
             <option value={0}>
-              {displayProducts.length > 0 
-                ? 'اختر الصنف...' 
-                : (line.isFromParentCompany 
-                    ? 'لا توجد أصناف من مخزن التقازي' 
-                    : (currentCompanyId === 1 
-                        ? 'لا توجد أصناف في مخزن التقازي' 
-                        : 'لا توجد أصناف من الشركة الحالية'))
+              {displayProducts.length > 0
+                ? 'اختر الصنف...'
+                : (line.isFromParentCompany
+                  ? 'لا توجد أصناف من مخزن التقازي'
+                  : (currentCompanyId === 1
+                    ? 'لا توجد أصناف في مخزن التقازي'
+                    : 'لا توجد أصناف من الشركة الحالية'))
               }
             </option>
             {/* إذا كان هناك صنف مختار ولكنه غير موجود في displayProducts، نعرضه */}
@@ -323,7 +343,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
             ))}
           </select>
         </div>
-        
+
         {/* الكمية */}
         <div>
           <label htmlFor={`qty-${index}-${line.productId || 'new'}`} className="block text-sm font-medium text-gray-700 mb-2">
@@ -349,17 +369,16 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
               const value = e.target.value;
               setLocalQty(value);
             }}
-            className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:outline-none transition-colors ${
-              selectedProduct && selectedProduct.stock && Number(localQty) > ((() => {
-                let stock = selectedProduct.stock.find((s: any) => s.companyId === selectedProduct.createdByCompanyId);
-                if (!stock || stock.boxes === 0) {
-                  stock = selectedProduct.stock.find((s: any) => s.companyId === currentCompanyId);
-                }
-                return stock?.boxes || 0;
-              })())
-                ? 'border-red-300 bg-red-50 focus:ring-red-200 focus:border-red-500'
-                : 'border-gray-300 bg-white focus:ring-blue-200 focus:border-blue-400'
-            }`}
+            className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:outline-none transition-colors ${selectedProduct && selectedProduct.stock && Number(localQty) > ((() => {
+              let stock = selectedProduct.stock.find((s: any) => s.companyId === selectedProduct.createdByCompanyId);
+              if (!stock || stock.boxes === 0) {
+                stock = selectedProduct.stock.find((s: any) => s.companyId === currentCompanyId);
+              }
+              return stock?.boxes || 0;
+            })())
+              ? 'border-red-300 bg-red-50 focus:ring-red-200 focus:border-red-500'
+              : 'border-gray-300 bg-white focus:ring-blue-200 focus:border-blue-400'
+              }`}
             placeholder="أدخل الكمية"
             min="0"
             max={(() => {
@@ -379,19 +398,19 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
             }
             return stock?.boxes || 0;
           })()) && (
-            <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
-              <span>⚠️</span>
-              <span>الكمية المطلوبة أكبر من المتوفر في المخزون ({(() => {
-                let stock = selectedProduct.stock.find((s: any) => s.companyId === selectedProduct.createdByCompanyId);
-                if (!stock || stock.boxes === 0) {
-                  stock = selectedProduct.stock.find((s: any) => s.companyId === currentCompanyId);
-                }
-                return stock?.boxes || 0;
-              })()})</span>
-            </p>
-          )}
+              <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                <span>⚠️</span>
+                <span>الكمية المطلوبة أكبر من المتوفر في المخزون ({(() => {
+                  let stock = selectedProduct.stock.find((s: any) => s.companyId === selectedProduct.createdByCompanyId);
+                  if (!stock || stock.boxes === 0) {
+                    stock = selectedProduct.stock.find((s: any) => s.companyId === currentCompanyId);
+                  }
+                  return stock?.boxes || 0;
+                })()})</span>
+              </p>
+            )}
         </div>
-        
+
         {/* إجمالي الأمتار المربعة (للصناديق فقط) */}
         {selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox && line.qty > 0 && (
           <div>
@@ -405,7 +424,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
             </div>
           </div>
         )}
-        
+
         {/* السعر */}
         <div>
           <label htmlFor={`price-${index}-${line.productId || 'new'}`} className="block text-sm font-medium text-gray-700 mb-2">
@@ -424,35 +443,85 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
               const value = e.target.value;
               setLocalPrice(value);
             }}
-            className="w-full px-3 py-2 border border-gray-300 bg-white rounded-lg text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-400 focus:outline-none transition-colors"
-            placeholder="أدخل السعر"
-            min="0"
-            step="0.01"
-            required
+            readOnly
+            className="w-full px-3 py-2 border border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed rounded-lg text-sm focus:outline-none transition-colors"
           />
         </div>
-        
+
         {/* المجموع */}
-        <div>
+        <div className={canApplyDiscount ? 'lg:col-span-1' : ''}>
           <label htmlFor={`total-${index}-${line.productId || 'new'}`} className="block text-sm font-medium text-gray-700 mb-2">المجموع</label>
-          <div 
+          <div
             id={`total-${index}-${line.productId || 'new'}`}
-            className={`px-3 py-2 rounded-lg border-2 ${
-              calculateLineTotal(line) > 0 
-                ? 'bg-gradient-to-r from-green-50 to-green-100 border-green-200' 
-                : 'bg-gray-50 border-gray-200'
-            }`}
+            className={`px-3 py-2 rounded-lg border-2 ${calculateLineTotal(line) > 0
+              ? 'bg-gradient-to-r from-green-50 to-green-100 border-green-200'
+              : 'bg-gray-50 border-gray-200'
+              }`}
           >
-            <span className={`text-sm font-bold block text-center ${
-              calculateLineTotal(line) > 0 ? 'text-green-700' : 'text-gray-500'
-            }`}>
+            <span className={`text-sm font-bold block text-center ${calculateLineTotal(line) > 0 ? 'text-green-700' : 'text-gray-500'
+              }`}>
               {calculateLineTotal(line) > 0 ? formatArabicCurrency(calculateLineTotal(line)) : '---'}
             </span>
           </div>
         </div>
-        
+
+        {/* حقل الخصم - يظهر فقط إذا كان للمستخدم صلاحية */}
+        {canApplyDiscount && (
+          <div className="lg:col-span-6 mt-3 pt-3 border-t border-dashed border-gray-200">
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isDiscountEnabled}
+                  onChange={(e) => setIsDiscountEnabled(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">تطبيق خصم</span>
+              </label>
+
+              {isDiscountEnabled && (
+                <div className="flex items-center gap-3 flex-1 animate-in fade-in slide-in-from-right-2 duration-300">
+                  <div className="w-32">
+                    <label className="block text-xs text-gray-500 mb-1">النسبة (%)</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={localDiscountPercentage}
+                        onChange={(e) => {
+                          let val = Number(e.target.value);
+                          const maxDisc = Number(selectedProduct?.group?.maxDiscountPercentage || 100);
+                          if (val > maxDisc) val = maxDisc;
+                          if (val < 0) val = 0;
+                          setLocalDiscountPercentage(val);
+                        }}
+                        className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-200 outline-none"
+                        min="0"
+                        max={selectedProduct?.group?.maxDiscountPercentage || 100}
+                      />
+                      <span className="absolute left-2 top-1.5 text-gray-400 text-xs">%</span>
+                    </div>
+                  </div>
+
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-500 mb-1">قيمة الخصم</label>
+                    <div className="px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-sm font-bold text-amber-700">
+                      -{formatArabicCurrency(localDiscountAmount)}
+                    </div>
+                  </div>
+
+                  {selectedProduct?.group && (
+                    <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                      مجموعة: {selectedProduct.group.name} | أقصى خصم: {selectedProduct.group.maxDiscountPercentage}%
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
       </div>
-      
+
       {/* معلومات إضافية للأصناف من الشركة الأم */}
       {line.isFromParentCompany && line.parentUnitPrice && line.parentUnitPrice > 0 && (
         <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
@@ -473,8 +542,8 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
               <span className="text-gray-600 font-medium">السعر المقترح:</span>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-green-600">
-                  {line.branchUnitPrice && line.branchUnitPrice > 0 
-                    ? formatArabicCurrency(line.branchUnitPrice) 
+                  {line.branchUnitPrice && line.branchUnitPrice > 0
+                    ? formatArabicCurrency(line.branchUnitPrice)
                     : formatArabicCurrency(line.parentUnitPrice * (1 + profitMargin / 100))
                   }
                 </span>
@@ -490,7 +559,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
           </div>
         </div>
       )}
-      
+
     </div>
   );
 };
@@ -503,6 +572,8 @@ export default React.memo(SaleLineItem, (prevProps, nextProps) => {
     prevProps.line.productId === nextProps.line.productId &&
     prevProps.line.qty === nextProps.line.qty &&
     prevProps.line.unitPrice === nextProps.line.unitPrice &&
-    prevProps.line.isFromParentCompany === nextProps.line.isFromParentCompany
+    prevProps.line.isFromParentCompany === nextProps.line.isFromParentCompany &&
+    prevProps.line.discountPercentage === nextProps.line.discountPercentage &&
+    prevProps.line.discountAmount === nextProps.line.discountAmount
   );
 });
