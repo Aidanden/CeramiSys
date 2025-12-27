@@ -15,8 +15,7 @@ import {
     X,
     AlertCircle,
     ShoppingCart,
-    Package,
-    Calculator
+    Package
 } from 'lucide-react';
 
 interface InvoiceLine {
@@ -37,7 +36,7 @@ export default function StoreInvoicesPage() {
     const { data: productsData, isLoading: productsLoading, refetch: refetchProducts } = useGetAvailableProductsQuery();
     const { data: currentUser } = useGetCurrentUserQuery();
     const [createInvoice, { isLoading: isCreating }] = useCreateInvoiceMutation();
-    
+
     // إعادة جلب البيانات عند تغيير المستخدم
     useEffect(() => {
         if (currentUser) {
@@ -47,7 +46,8 @@ export default function StoreInvoicesPage() {
     }, [currentUser?.user?.storeId, refetchInvoices, refetchProducts]);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [skuSearch, setSkuSearch] = useState('');
+    const [nameSearch, setNameSearch] = useState('');
 
     // Form State
     const [lines, setLines] = useState<InvoiceLine[]>([]);
@@ -56,10 +56,15 @@ export default function StoreInvoicesPage() {
     const [error, setError] = useState<string | null>(null);
 
     // Filtered Products for Dropdown
-    const filteredProducts = productsData?.filter(p =>
-        p.product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.product.sku.toLowerCase().includes(searchTerm.toLowerCase())
-    ) || [];
+    const filteredProducts = productsData?.filter(p => {
+        const matchesSku = skuSearch ? p.product.sku.toLowerCase() === skuSearch.toLowerCase() : true;
+        const matchesName = nameSearch ? p.product.name.toLowerCase().includes(nameSearch.toLowerCase()) : true;
+
+        // Show results only if at least one search term is entered
+        if (!skuSearch && !nameSearch) return false;
+
+        return matchesSku && matchesName;
+    }) || [];
 
     // Add Product to Line
     const handleAddProduct = (productId: string) => {
@@ -187,14 +192,14 @@ export default function StoreInvoicesPage() {
             console.log('Adding new line to cart');
             const unit = productData.product.unit || 'قطعة';
             const unitsPerBox = productData.product.unitsPerBox ? Number(productData.product.unitsPerBox) : null;
-            
+
             // حساب الإجمالي بناءً على نوع الوحدة
             let subTotal = Number(taqaziPrice);
             if (unit === 'صندوق' && unitsPerBox) {
                 // للصناديق: السعر × عدد الأمتار في الصندوق
                 subTotal = Number(taqaziPrice) * unitsPerBox;
             }
-            
+
             const newLine: InvoiceLine = {
                 productId: productData.productId,
                 productName: productData.product.name,
@@ -211,8 +216,10 @@ export default function StoreInvoicesPage() {
             setLines([...lines, newLine]);
         }
 
+
         setSelectedProduct('');
-        setSearchTerm('');
+        setSkuSearch('');
+        setNameSearch('');
         console.log('=== handleAddProduct completed ===');
     };
 
@@ -243,7 +250,7 @@ export default function StoreInvoicesPage() {
 
         setLines(newLines);
     };
-    
+
     // حساب إجمالي الأمتار لبند معين
     const calculateTotalMeters = (line: InvoiceLine): number => {
         if (line.unit === 'صندوق' && line.unitsPerBox) {
@@ -351,7 +358,7 @@ export default function StoreInvoicesPage() {
                                             {invoice.customerName || 'عميل نقدي'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
-                                            {Number(invoice.total).toLocaleString('ar-EG')} د.ل
+                                            {Number(invoice.total).toLocaleString('en-US')} د.ل
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${invoice.status === 'APPROVED' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
@@ -396,22 +403,42 @@ export default function StoreInvoicesPage() {
                         {/* Modal Body */}
                         <div className="flex-1 overflow-y-auto p-6 space-y-6">
                             {/* Product Search */}
-                            <div className="relative">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            <div className="relative z-50">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     إضافة منتج
                                 </label>
-                                <div className="relative">
-                                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                                    <input
-                                        type="text"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        placeholder="ابحث عن منتج بالاسم أو الكود..."
-                                        className="w-full pr-10 pl-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                    />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Search by Code (Exact Match) */}
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                            <Search className="h-5 w-5 text-gray-400" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={skuSearch}
+                                            onChange={(e) => setSkuSearch(e.target.value)}
+                                            placeholder="بحث بالكود (مطابقة تامة)"
+                                            className="block w-full pr-10 pl-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900 dark:text-white font-mono"
+                                        />
+                                    </div>
+
+                                    {/* Search by Name (Like Match) */}
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                            <Search className="h-5 w-5 text-gray-400" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={nameSearch}
+                                            onChange={(e) => setNameSearch(e.target.value)}
+                                            placeholder="بحث بالاسم"
+                                            className="block w-full pr-10 pl-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900 dark:text-white"
+                                        />
+                                    </div>
                                 </div>
+
                                 {/* Dropdown Results */}
-                                {searchTerm && (
+                                {(skuSearch || nameSearch) && (
                                     <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                                         {filteredProducts.length > 0 ? (
                                             filteredProducts.map((item: any) => (
@@ -422,7 +449,7 @@ export default function StoreInvoicesPage() {
                                                 >
                                                     <div>
                                                         <div className="font-medium text-gray-900 dark:text-white">{item.product.name}</div>
-                                                        <div className="text-xs text-gray-500 dark:text-gray-400">{item.product.sku}</div>
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">{item.product.sku}</div>
                                                         <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                                                             متوفر: {
                                                                 (() => {
@@ -433,7 +460,7 @@ export default function StoreInvoicesPage() {
                                                         </div>
                                                     </div>
                                                     <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                                                        {item.product.prices?.find((p: any) => p.company?.code === 'TAQAZI' || p.company?.code === 'TG')?.sellPrice || item.product.prices?.[0]?.sellPrice || 0} د.ل
+                                                        {Number(item.product.prices?.find((p: any) => p.company?.code === 'TAQAZI' || p.company?.code === 'TG')?.sellPrice || item.product.prices?.[0]?.sellPrice || 0).toLocaleString('en-US')} د.ل
                                                     </div>
                                                 </button>
                                             ))
@@ -449,14 +476,14 @@ export default function StoreInvoicesPage() {
                             {/* ملاحظة مهمة عن البيع بالمتر */}
                             <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-4 rounded-lg border-2 border-blue-300 dark:border-blue-700">
                                 <div className="flex items-start gap-3">
-                                    <Calculator className="text-blue-600 dark:text-blue-400 mt-0.5" size={24} />
+                                    <FileText className="text-blue-600 dark:text-blue-400 mt-0.5" size={24} />
                                     <div>
                                         <p className="text-sm text-blue-900 dark:text-blue-100 font-bold mb-1">
                                             ملاحظة مهمة: البيع بالمتر المربع
                                         </p>
                                         <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
-                                            • للأصناف التي وحدتها "صندوق": السعر يكون <strong>بالمتر المربع</strong><br/>
-                                            • الإجمالي = عدد الصناديق × عدد الأمتار في الصندوق × سعر المتر<br/>
+                                            • للأصناف التي وحدتها "صندوق": السعر يكون <strong>بالمتر المربع</strong><br />
+                                            • الإجمالي = عدد الصناديق × عدد الأمتار في الصندوق × سعر المتر<br />
                                             • <strong>السعر ثابت</strong> ولا يمكن تعديله
                                         </p>
                                     </div>
@@ -484,11 +511,10 @@ export default function StoreInvoicesPage() {
                                                         <div className="text-sm font-medium text-gray-900 dark:text-white">{line.productName}</div>
                                                         <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">{line.sku}</div>
                                                         <div className="flex items-center gap-2 mt-1">
-                                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                                                line.unit === 'صندوق' 
-                                                                    ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' 
-                                                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                                                            }`}>
+                                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${line.unit === 'صندوق'
+                                                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+                                                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                                                }`}>
                                                                 <Package size={10} className="ml-1" />
                                                                 {line.unit}
                                                             </span>
@@ -539,7 +565,7 @@ export default function StoreInvoicesPage() {
                                                     <td className="px-4 py-3 text-center">
                                                         <div className="bg-green-100 dark:bg-green-900/30 px-2 py-2 rounded-lg">
                                                             <span className="text-sm font-bold text-green-700 dark:text-green-300">
-                                                                {line.subTotal.toLocaleString('ar-EG')}
+                                                                {line.subTotal.toLocaleString('en-US')}
                                                             </span>
                                                             <span className="text-xs text-green-600 dark:text-green-400 block">د.ل</span>
                                                         </div>
@@ -573,7 +599,7 @@ export default function StoreInvoicesPage() {
                                                 <td className="px-4 py-4 text-center">
                                                     <div className="bg-green-600 text-white px-4 py-2 rounded-lg">
                                                         <span className="text-xl font-bold">
-                                                            {totalAmount.toLocaleString('ar-EG')}
+                                                            {totalAmount.toLocaleString('en-US')}
                                                         </span>
                                                         <span className="text-sm block">د.ل</span>
                                                     </div>

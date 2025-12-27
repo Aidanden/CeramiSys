@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowRight, Users, Package, FileText, Phone, MapPin, RefreshCw, AlertCircle, Plus, Edit, Search, Check, X, Trash2, Settings } from 'lucide-react';
+import { ArrowRight, Users, Package, FileText, Phone, MapPin, RefreshCw, AlertCircle, Plus, Edit, Search, X, Trash2, Settings } from 'lucide-react';
 import {
     useGetStoreByIdQuery,
     useUpdateStoreMutation,
@@ -46,7 +46,8 @@ export default function ExternalStoreDetailsPage() {
     // Product Management State
     const [activeProductTab, setActiveProductTab] = useState<'list' | 'manage'>('list');
     const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
-    const [productSearch, setProductSearch] = useState('');
+    const [skuSearch, setSkuSearch] = useState('');
+    const [nameSearch, setNameSearch] = useState('');
 
     const [updateStore, { isLoading: isUpdatingStore }] = useUpdateStoreMutation();
     const [createStoreUser, { isLoading: isCreatingUser }] = useCreateStoreUserMutation();
@@ -54,7 +55,7 @@ export default function ExternalStoreDetailsPage() {
     const [assignProducts, { isLoading: isAssigningProducts }] = useAssignProductsMutation();
 
     const { data: productsResponse, isLoading: isLoadingProducts } = useGetProductsQuery(
-        { limit: 200, page: 1 },
+        { limit: 10000, page: 1 },
         { skip: !storeId }
     );
     const availableProducts = productsResponse?.data?.products ?? [];
@@ -82,14 +83,20 @@ export default function ExternalStoreDetailsPage() {
     }, [store?.productAssignments]);
 
     const filteredProducts = useMemo(() => {
-        const term = productSearch.trim().toLowerCase();
-        if (!term) {
-            return availableProducts;
+        let result = availableProducts;
+
+        if (skuSearch.trim()) {
+            const term = skuSearch.trim().toLowerCase();
+            result = result.filter((product) => product.sku.toLowerCase() === term);
         }
-        return availableProducts.filter((product) =>
-            product.name.toLowerCase().includes(term) || product.sku.toLowerCase().includes(term)
-        );
-    }, [availableProducts, productSearch]);
+
+        if (nameSearch.trim()) {
+            const term = nameSearch.trim().toLowerCase();
+            result = result.filter((product) => product.name.toLowerCase().includes(term));
+        }
+
+        return result;
+    }, [availableProducts, skuSearch, nameSearch]);
 
     const handleStoreFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -193,8 +200,8 @@ export default function ExternalStoreDetailsPage() {
     const renderStatusBadge = () => (
         <span
             className={`px-4 py-1.5 rounded-full text-sm font-semibold shadow-sm transition-colors ${store?.isActive
-                    ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800'
-                    : 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800'
+                ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800'
+                : 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800'
                 }`}
         >
             {store?.isActive ? 'نشط' : 'غير نشط'}
@@ -509,8 +516,8 @@ export default function ExternalStoreDetailsPage() {
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.isActive
-                                                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                                                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                                                                 }`}>
                                                                 {user.isActive ? 'نشط' : 'محظور'}
                                                             </span>
@@ -650,8 +657,8 @@ export default function ExternalStoreDetailsPage() {
                                     <button
                                         onClick={() => setActiveProductTab('list')}
                                         className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${activeProductTab === 'list'
-                                                ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm'
-                                                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                                            ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm'
+                                            : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700/50'
                                             }`}
                                     >
                                         المنتجات الحالية
@@ -659,8 +666,8 @@ export default function ExternalStoreDetailsPage() {
                                     <button
                                         onClick={() => setActiveProductTab('manage')}
                                         className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${activeProductTab === 'manage'
-                                                ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm'
-                                                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                                            ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm'
+                                            : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700/50'
                                             }`}
                                     >
                                         تعديل القائمة
@@ -699,13 +706,25 @@ export default function ExternalStoreDetailsPage() {
                                 </div>
                             ) : (
                                 <>
-                                    <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+                                    <div className="p-4 border-b border-gray-100 dark:border-gray-700 space-y-3">
                                         <div className="relative">
                                             <input
                                                 type="text"
-                                                placeholder="بحث عن منتج..."
-                                                value={productSearch}
-                                                onChange={(e) => setProductSearch(e.target.value)}
+                                                placeholder="بحث بالكود (مطابقة تامة)"
+                                                value={skuSearch}
+                                                onChange={(e) => setSkuSearch(e.target.value)}
+                                                className="w-full pl-4 pr-10 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
+                                            />
+                                            <div className="absolute right-3 top-2.5 text-gray-400">
+                                                <Search size={18} />
+                                            </div>
+                                        </div>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                placeholder="بحث بالاسم"
+                                                value={nameSearch}
+                                                onChange={(e) => setNameSearch(e.target.value)}
                                                 className="w-full pl-4 pr-10 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             />
                                             <div className="absolute right-3 top-2.5 text-gray-400">
@@ -724,8 +743,8 @@ export default function ExternalStoreDetailsPage() {
                                                 <label
                                                     key={product.id}
                                                     className={`flex items-center p-3 rounded-xl cursor-pointer transition-all ${selectedProducts.includes(product.id)
-                                                            ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
-                                                            : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 border border-transparent'
+                                                        ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
+                                                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 border border-transparent'
                                                         }`}
                                                 >
                                                     <input

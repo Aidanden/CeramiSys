@@ -1,6 +1,5 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { baseQueryWithAuthInterceptor } from './apiUtils';
 
 export type InvoiceStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
@@ -58,16 +57,7 @@ export interface InvoiceStats {
 
 export const externalStoreInvoicesApi = createApi({
     reducerPath: 'externalStoreInvoicesApi',
-    baseQuery: fetchBaseQuery({
-        baseUrl: `${API_BASE_URL}/api`,
-        prepareHeaders: (headers) => {
-            const token = localStorage.getItem('token');
-            if (token) {
-                headers.set('authorization', `Bearer ${token}`);
-            }
-            return headers;
-        },
-    }),
+    baseQuery: baseQueryWithAuthInterceptor,
     tagTypes: ['ExternalStoreInvoices', 'InvoiceStats'],
     endpoints: (builder) => ({
         // Get all invoices (admin)
@@ -88,6 +78,7 @@ export const externalStoreInvoicesApi = createApi({
                 params,
             }),
             providesTags: ['ExternalStoreInvoices'],
+            keepUnusedDataFor: 0,
         }),
 
         // Get invoice by ID

@@ -8,7 +8,29 @@ import {
     useGetInvoiceStatsQuery,
     InvoiceStatus,
 } from '@/state/externalStoreInvoicesApi';
-import { CheckCircle, XCircle, Clock, Eye, TrendingUp, FileText } from 'lucide-react';
+import { X, Eye, TrendingUp, FileText } from 'lucide-react';
+
+const CheckCircle = ({ size = 24, className = "" }: { size?: number, className?: string }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </svg>
+);
+
+const Clock = ({ size = 24, className = "" }: { size?: number, className?: string }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>
+);
+
+const XCircle = ({ size = 24, className = "" }: { size?: number, className?: string }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="15" y1="9" x2="9" y2="15"></line>
+        <line x1="9" y1="9" x2="15" y2="15"></line>
+    </svg>
+);
 
 export default function ExternalStoreInvoicesPage() {
     const [page, setPage] = useState(1);
@@ -64,6 +86,125 @@ export default function ExternalStoreInvoicesPage() {
         return badges[status];
     };
 
+    const handlePrintIssueOrder = (invoice: any) => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html dir="rtl">
+            <head>
+                <meta charset="UTF-8">
+                <title>أمر صرف مخزني - ${invoice.invoiceNumber}</title>
+                <style>
+                    body { font-family: 'Cairo', 'Tahoma', 'Arial', sans-serif; padding: 20px; direction: rtl; }
+                    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+                    .header h1 { margin: 0 0 10px 0; font-size: 24px; }
+                    .header h2 { margin: 0; font-size: 18px; color: #666; font-family: sans-serif; }
+                    
+                    .info-grid { 
+                        display: grid; 
+                        grid-template-columns: repeat(2, 1fr); 
+                        gap: 20px; 
+                        margin-bottom: 30px; 
+                        border: 1px solid #ddd;
+                        padding: 15px;
+                        border-radius: 8px;
+                        background-color: #f9f9f9;
+                    }
+                    .info-item { display: flex; gap: 10px; align-items: center; }
+                    .label { font-weight: bold; color: #444; min-width: 100px; }
+                    
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+                    th, td { border: 1px solid #000; padding: 12px; text-align: center; }
+                    th { bg-color: #f0f0f0; font-weight: bold; font-size: 14px; }
+                    
+                    .footer { margin-top: 60px; display: flex; justify-content: space-between; text-align: center; padding: 0 40px; }
+                    .signature-box { width: 200px; }
+                    .signature-line { margin-top: 40px; border-top: 1px solid #000; }
+                    
+                    @media print {
+                        body { padding: 0; }
+                        button { display: none; }
+                        .info-grid { background-color: #fff; border: 1px solid #000; }
+                        th { background-color: #eee !important; -webkit-print-color-adjust: exact; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>أمر صرف مخزني</h1>
+                    <h2>Warehouse Issue Order</h2>
+                </div>
+                
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="label">رقم الإذن:</span>
+                        <span>${invoice.invoiceNumber || invoice.id}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">التاريخ:</span>
+                        <span>${new Date(invoice.createdAt).toLocaleDateString('en-US')}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">المحل الطالب:</span>
+                        <span>${invoice.store.name}</span>
+                    </div>
+                     <div class="info-item">
+                        <span class="label">المرجع:</span>
+                        <span>طلب #${invoice.id}</span>
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 50px">#</th>
+                            <th>كود الصنف</th>
+                            <th>اسم الصنف</th>
+                            <th style="width: 150px">الكمية</th>
+                            <th>ملاحظات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${invoice.lines.map((line: any, index: number) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td style="font-family: monospace; font-weight: bold;">${line.product.sku || '-'}</td>
+                                <td style="text-align: right;">${line.product.name}</td>
+                                <td style="font-weight: bold; font-size: 16px;">${Number(line.qty).toLocaleString('en-US')}</td>
+                                <td></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <div class="footer">
+                    <div class="signature-box">
+                        <div style="font-weight: bold; margin-bottom: 10px;">المستلم</div>
+                        <div class="signature-line"></div>
+                    </div>
+                    <div class="signature-box">
+                        <div style="font-weight: bold; margin-bottom: 10px;">أمين المخزن</div>
+                        <div class="signature-line"></div>
+                    </div>
+                    <div class="signature-box">
+                        <div style="font-weight: bold; margin-bottom: 10px;">اعتماد المحاسبة</div>
+                        <div class="signature-line"></div>
+                    </div>
+                </div>
+
+                <script>
+                    window.onload = function() { 
+                        setTimeout(function() { window.print(); }, 500); 
+                    }
+                </script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
+
     return (
         <div className="p-6" dir="rtl">
             {/* Header */}
@@ -114,7 +255,7 @@ export default function ExternalStoreInvoicesPage() {
                             <div>
                                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">إجمالي المبيعات</p>
                                 <p className="text-2xl font-bold text-blue-600">
-                                    {Number(stats.totalAmount).toLocaleString('ar-EG')} د.ل
+                                    {Number(stats.totalAmount).toLocaleString('en-US')} د.ل
                                 </p>
                             </div>
                             <TrendingUp className="text-blue-600" size={32} />
@@ -180,13 +321,13 @@ export default function ExternalStoreInvoicesPage() {
                                     return (
                                         <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                                #{invoice.id}
+                                                {invoice.invoiceNumber || `#${invoice.id}`}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                                 {invoice.store.name}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                                {Number(invoice.total).toLocaleString('ar-EG')} د.ل
+                                                {Number(invoice.total).toLocaleString('en-US')} د.ل
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusBadge.class}`}>
@@ -194,7 +335,7 @@ export default function ExternalStoreInvoicesPage() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                                                {new Date(invoice.createdAt).toLocaleDateString('ar-EG')}
+                                                {new Date(invoice.createdAt).toLocaleDateString('en-US')}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm">
                                                 <button
@@ -267,7 +408,7 @@ export default function ExternalStoreInvoicesPage() {
                                 <div>
                                     <p className="text-sm text-gray-600 dark:text-gray-400">التاريخ</p>
                                     <p className="font-medium text-gray-900 dark:text-white">
-                                        {new Date(selectedInvoice.createdAt).toLocaleString('ar-EG')}
+                                        {new Date(selectedInvoice.createdAt).toLocaleString('en-US')}
                                     </p>
                                 </div>
                                 <div>
@@ -295,10 +436,10 @@ export default function ExternalStoreInvoicesPage() {
                                             {selectedInvoice.lines.map((line: any) => (
                                                 <tr key={line.id}>
                                                     <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{line.product.name}</td>
-                                                    <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{Number(line.qty).toLocaleString('ar-EG')}</td>
-                                                    <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{Number(line.unitPrice).toLocaleString('ar-EG')}</td>
+                                                    <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{Number(line.qty).toLocaleString('en-US')}</td>
+                                                    <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{Number(line.unitPrice).toLocaleString('en-US')}</td>
                                                     <td className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white">
-                                                        {Number(line.subTotal).toLocaleString('ar-EG')} د.ل
+                                                        {Number(line.subTotal).toLocaleString('en-US')} د.ل
                                                     </td>
                                                 </tr>
                                             ))}
@@ -307,7 +448,7 @@ export default function ExternalStoreInvoicesPage() {
                                             <tr>
                                                 <td colSpan={3} className="px-4 py-2 text-right font-bold text-gray-900 dark:text-white">الإجمالي</td>
                                                 <td className="px-4 py-2 text-sm font-bold text-gray-900 dark:text-white">
-                                                    {Number(selectedInvoice.total).toLocaleString('ar-EG')} د.ل
+                                                    {Number(selectedInvoice.total).toLocaleString('en-US')} د.ل
                                                 </td>
                                             </tr>
                                         </tfoot>
@@ -356,6 +497,22 @@ export default function ExternalStoreInvoicesPage() {
                                             رفض
                                         </button>
                                     </div>
+                                </div>
+                            )}
+
+                            {selectedInvoice.status === 'APPROVED' && (
+                                <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+                                    <button
+                                        onClick={() => handlePrintIssueOrder(selectedInvoice)}
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                            <rect x="6" y="14" width="12" height="8"></rect>
+                                        </svg>
+                                        طباعة أمر صرف مخزني
+                                    </button>
                                 </div>
                             )}
                         </div>

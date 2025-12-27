@@ -81,7 +81,7 @@ app.use('/api', (req, res, next) => {
       res.set('Cache-Control', 'public, max-age=60');
     }
     // بيانات حساسة - بدون cache
-    else if (path.includes('/auth') || path.includes('/permissions')) {
+    else if (path.includes('/auth') || path.includes('/permissions') || path.includes('/external-store-invoices')) {
       res.set('Cache-Control', 'private, no-cache');
     }
     // افتراضي - cache قصير

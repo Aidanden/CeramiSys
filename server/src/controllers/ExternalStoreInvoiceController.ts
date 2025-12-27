@@ -23,6 +23,13 @@ export class ExternalStoreInvoiceController {
 
             const skip = (Number(page) - 1) * Number(limit);
 
+            console.log('DEBUG: getInvoices called', {
+                isStoreUser,
+                query: req.query,
+                storeUser: (req as any).storeUser,
+                user: (req as any).user
+            });
+
             const where: any = {};
 
             // إذا كان مستخدم محل، نعرض فقط فواتير محله
@@ -168,8 +175,8 @@ export class ExternalStoreInvoiceController {
             const invoiceLines = lines.map((line: any) => {
                 // استخدام subTotal المُرسل من الـ frontend إذا كان موجوداً
                 // وإلا حساب الإجمالي بالطريقة العادية
-                const subTotal = line.subTotal 
-                    ? Number(line.subTotal) 
+                const subTotal = line.subTotal
+                    ? Number(line.subTotal)
                     : Number(line.qty) * Number(line.unitPrice);
                 total += subTotal;
                 return {
@@ -180,10 +187,18 @@ export class ExternalStoreInvoiceController {
                 };
             });
 
+            // Generate Invoice Number
+            // Format: S{StoreId}-{Year}{Month}{Day}-{Random}
+            const date = new Date();
+            const dateStr = date.toISOString().slice(2, 10).replace(/-/g, '');
+            const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            const invoiceNumber = `S${req.storeUser.storeId}-${dateStr}-${random}`;
+
             // إنشاء الفاتورة
             const invoice = await prisma.externalStoreInvoice.create({
                 data: {
                     storeId: req.storeUser.storeId,
+                    invoiceNumber,
                     total,
                     notes,
                     lines: {
@@ -240,8 +255,8 @@ export class ExternalStoreInvoiceController {
             let total = 0;
             const invoiceLines = lines.map((line: any) => {
                 // استخدام subTotal المُرسل من الـ frontend إذا كان موجوداً
-                const subTotal = line.subTotal 
-                    ? Number(line.subTotal) 
+                const subTotal = line.subTotal
+                    ? Number(line.subTotal)
                     : Number(line.qty) * Number(line.unitPrice);
                 total += subTotal;
                 return {
