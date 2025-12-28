@@ -11,7 +11,8 @@ import {
     Search,
     Check,
     X,
-    Loader2
+    Loader2,
+    Eye
 } from 'lucide-react';
 import {
     useGetProductGroupsQuery,
@@ -20,6 +21,7 @@ import {
     useDeleteProductGroupMutation,
     useGetProductsWithGroupStatusQuery,
     useAssignProductsToGroupMutation,
+    useRemoveProductsFromGroupMutation,
     ProductGroup,
     ProductWithGroupStatus
 } from '@/state/productGroupsApi';
@@ -44,12 +46,18 @@ const ProductGroupsPage = () => {
     const [skuSearchTerm, setSkuSearchTerm] = useState('');
     const [nameSearchTerm, setNameSearchTerm] = useState('');
 
+    // حالة عرض أصناف المجموعة
+    const [viewingGroup, setViewingGroup] = useState<ProductGroup | null>(null);
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [removeProducts, { isLoading: isRemoving }] = useRemoveProductsFromGroupMutation();
+    const [productViewSearch, setProductViewSearch] = useState('');
+
     const groups = groupsResponse?.data || [];
 
     // جلب الأصناف عند فتح نافذة إضافة الأصناف
     const { data: productsResponse, isLoading: isLoadingProducts } = useGetProductsWithGroupStatusQuery(
-        selectedGroupForProducts?.id,
-        { skip: !isProductsModalOpen }
+        selectedGroupForProducts?.id || viewingGroup?.id,
+        { skip: !isProductsModalOpen && !isViewModalOpen }
     );
 
     const products = productsResponse?.data || [];
@@ -59,18 +67,18 @@ const ProductGroupsPage = () => {
     // الاسم: مطابقة جزئية (like)
     const filteredProducts = useMemo(() => {
         let result = products;
-        
+
         // البحث بالكود - مطابقة تامة
         if (skuSearchTerm.trim()) {
             result = result.filter(p => p.sku === skuSearchTerm.trim());
         }
-        
+
         // البحث بالاسم - مطابقة جزئية (like)
         if (nameSearchTerm.trim()) {
             const term = nameSearchTerm.toLowerCase().trim();
             result = result.filter(p => p.name.toLowerCase().includes(term));
         }
-        
+
         return result;
     }, [products, skuSearchTerm, nameSearchTerm]);
 
@@ -169,6 +177,47 @@ const ProductGroupsPage = () => {
         }
     };
 
+    const handleOpenViewModal = (group: ProductGroup) => {
+        setViewingGroup(group);
+        setProductViewSearch('');
+        setIsViewModalOpen(true);
+    };
+
+    const handleCloseViewModal = () => {
+        setViewingGroup(null);
+        setProductViewSearch('');
+        setIsViewModalOpen(false);
+    };
+
+    const handleRemoveFromGroup = async (productId: number) => {
+        if (!confirm('هل أنت متأكد من إزالة هذا الصنف من المجموعة؟')) return;
+
+        try {
+            await removeProducts({ productIds: [productId] }).unwrap();
+            notifications.custom.success('تم إزالة الصنف من المجموعة');
+            refetch(); // تحديث القائمة
+        } catch (error: any) {
+            notifications.custom.error(error.data?.message || 'حدث خطأ أثناء الإزالة');
+        }
+    };
+
+    // تصفية الأصناف للمجموعة المعروضة
+    const groupProducts = useMemo(() => {
+        if (!viewingGroup) return [];
+        // الأصناف التي تنتمي لهذه المجموعة فقط
+        let result = products.filter(p => p.groupId === viewingGroup.id);
+
+        if (productViewSearch.trim()) {
+            const term = productViewSearch.toLowerCase().trim();
+            result = result.filter(p =>
+                p.name.toLowerCase().includes(term) ||
+                p.sku.toLowerCase().includes(term) ||
+                p.companyName.toLowerCase().includes(term)
+            );
+        }
+        return result;
+    }, [products, viewingGroup, productViewSearch]);
+
     return (
         <div className="p-6 max-w-5xl mx-auto animate-in fade-in duration-500">
             <div className="flex justify-between items-center mb-8">
@@ -225,6 +274,13 @@ const ProductGroupsPage = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => handleOpenViewModal(group)}
+                                                className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                                                title="عرض الأصناف"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                            </button>
                                             <button
                                                 onClick={() => handleOpenProductsModal(group)}
                                                 className="p-1.5 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors"
@@ -356,7 +412,7 @@ const ProductGroupsPage = () => {
                                         />
                                     </div>
                                 </div>
-                                
+
                                 {/* البحث بالاسم - مطابقة جزئية */}
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-600 mb-1.5">اسم الصنف (بحث جزئي)</label>
@@ -497,6 +553,99 @@ const ProductGroupsPage = () => {
                     </div>
                 </div>
             )}
+
+            {/* نافذة عرض أصناف المجموعة */}
+            {
+                isViewModalOpen && viewingGroup && (
+                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200">
+                            {/* رأس النافذة */}
+                            <div className="p-6 border-b border-slate-100 flex justify-between items-center shrink-0">
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-800">
+                                        أصناف المجموعة: <span className="text-blue-600">{viewingGroup.name}</span>
+                                    </h3>
+                                    <p className="text-sm text-slate-500 mt-1">
+                                        عدد الأصناف: {formatArabicNumber(groupProducts.length)}
+                                    </p>
+                                </div>
+                                <button onClick={handleCloseViewModal} className="text-slate-400 hover:text-slate-600 transition-colors text-2xl">&times;</button>
+                            </div>
+
+                            {/* شريط البحث */}
+                            <div className="p-4 border-b border-slate-100 shrink-0">
+                                <div className="relative">
+                                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        value={productViewSearch}
+                                        onChange={(e) => setProductViewSearch(e.target.value)}
+                                        placeholder="بحث في أصناف المجموعة..."
+                                        className="w-full pr-10 pl-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* قائمة الأصناف */}
+                            <div className="flex-1 overflow-y-auto p-4">
+                                {isLoadingProducts ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                                        <span className="mr-3 text-slate-600">جاري تحميل الأصناف...</span>
+                                    </div>
+                                ) : groupProducts.length === 0 ? (
+                                    <div className="text-center py-12 text-slate-500 flex flex-col items-center">
+                                        <Package className="w-12 h-12 text-slate-300 mb-3" />
+                                        <p>لا توجد أصناف في هذه المجموعة</p>
+                                        {productViewSearch && <p className="text-sm mt-1">جرب البحث بكلمات مختلفة</p>}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {groupProducts.map((product) => (
+                                            <div
+                                                key={product.id}
+                                                className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 hover:border-slate-300 hover:shadow-sm transition-all group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500">
+                                                        <Package className="w-5 h-5" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-semibold text-slate-800">{product.name}</div>
+                                                        <div className="flex items-center gap-3 text-sm text-slate-500">
+                                                            <span className="bg-slate-100 px-2 py-0.5 rounded font-mono text-xs">{product.sku}</span>
+                                                            <span>{product.companyName}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    onClick={() => handleRemoveFromGroup(product.id)}
+                                                    disabled={isRemoving}
+                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                                    title="إزالة من المجموعة"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* تذييل النافذة */}
+                            <div className="p-4 border-t border-slate-100 flex justify-end shrink-0 bg-slate-50">
+                                <button
+                                    onClick={handleCloseViewModal}
+                                    className="px-6 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl font-semibold hover:bg-slate-50 transition-all shadow-sm"
+                                >
+                                    إغلاق
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
         </div>
     );
 };

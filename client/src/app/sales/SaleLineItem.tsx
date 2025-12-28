@@ -203,16 +203,26 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
     if (isDiscountEnabled) {
       const price = Number(localPrice) || 0;
       const qty = Number(localQty) || 0;
-      const amount = (price * qty * Number(localDiscountPercentage)) / 100;
-      setLocalDiscountAmount(amount);
-      updateSaleLine(index, 'discountAmount', amount);
-      updateSaleLine(index, 'discountPercentage', localDiscountPercentage);
+      const unitsPerBox = Number(selectedProduct?.unitsPerBox) || 1;
+      const totalBeforeDiscount = (selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox)
+        ? qty * unitsPerBox * price
+        : qty * price;
+
+      if (totalBeforeDiscount > 0) {
+        // حساب النسبة بناءً على المبلغ المدخل
+        const percentage = (Number(localDiscountAmount) / totalBeforeDiscount) * 100;
+        setLocalDiscountPercentage(Number(percentage.toFixed(2)));
+
+        updateSaleLine(index, 'discountAmount', Number(localDiscountAmount));
+        updateSaleLine(index, 'discountPercentage', Number(percentage.toFixed(2)));
+      }
     } else {
       setLocalDiscountAmount(0);
+      setLocalDiscountPercentage(0);
       updateSaleLine(index, 'discountAmount', 0);
       updateSaleLine(index, 'discountPercentage', 0);
     }
-  }, [localDiscountPercentage, localPrice, localQty, isDiscountEnabled, index, updateSaleLine]);
+  }, [localDiscountAmount, localPrice, localQty, isDiscountEnabled, index, updateSaleLine, selectedProduct?.unit, selectedProduct?.unitsPerBox]);
 
   return (
     <div
@@ -481,37 +491,49 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
 
               {isDiscountEnabled && (
                 <div className="flex items-center gap-3 flex-1 animate-in fade-in slide-in-from-right-2 duration-300">
-                  <div className="w-32">
-                    <label className="block text-xs text-gray-500 mb-1">النسبة (%)</label>
+                  <div className="w-40">
+                    <label className="block text-xs text-gray-500 mb-1">مبلغ الخصم (د.ل)</label>
                     <div className="relative">
                       <input
                         type="number"
-                        value={localDiscountPercentage}
+                        value={localDiscountAmount}
                         onChange={(e) => {
                           let val = Number(e.target.value);
-                          const maxDisc = Number(selectedProduct?.group?.maxDiscountPercentage || 100);
-                          if (val > maxDisc) val = maxDisc;
+                          const price = Number(localPrice) || 0;
+                          const qty = Number(localQty) || 0;
+                          const unitsPerBox = Number(selectedProduct?.unitsPerBox) || 1;
+                          const totalBeforeDiscount = (selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox)
+                            ? qty * unitsPerBox * price
+                            : qty * price;
+                          const maxDiscPerc = Number(selectedProduct?.group?.maxDiscountPercentage || 100);
+                          const maxAllowedAmount = (totalBeforeDiscount * maxDiscPerc) / 100;
+
+                          if (val > maxAllowedAmount) val = maxAllowedAmount;
                           if (val < 0) val = 0;
-                          setLocalDiscountPercentage(val);
+
+                          setLocalDiscountAmount(val);
                         }}
                         className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-200 outline-none"
                         min="0"
-                        max={selectedProduct?.group?.maxDiscountPercentage || 100}
                       />
-                      <span className="absolute left-2 top-1.5 text-gray-400 text-xs">%</span>
                     </div>
                   </div>
 
-                  <div className="flex-1">
-                    <label className="block text-xs text-gray-500 mb-1">قيمة الخصم</label>
-                    <div className="px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-sm font-bold text-amber-700">
-                      -{formatArabicCurrency(localDiscountAmount)}
+                  <div className="w-32">
+                    <label className="block text-xs text-gray-500 mb-1">النسبة (%)</label>
+                    <div className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-600">
+                      {localDiscountPercentage}%
                     </div>
                   </div>
 
                   {selectedProduct?.group && (
-                    <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100">
-                      مجموعة: {selectedProduct.group.name} | أقصى خصم: {selectedProduct.group.maxDiscountPercentage}%
+                    <div className="flex flex-col gap-1">
+                      <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                        مجموعة: {selectedProduct.group.name} | أقصى خصم: {selectedProduct.group.maxDiscountPercentage}%
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        أقصى مبلغ مسموح: {formatArabicCurrency((((Number(localPrice) || 0) * (Number(localQty) || 0) * (selectedProduct?.unit === 'صندوق' ? Number(selectedProduct.unitsPerBox) || 1 : 1)) * (selectedProduct.group.maxDiscountPercentage)) / 100)}
+                      </div>
                     </div>
                   )}
                 </div>

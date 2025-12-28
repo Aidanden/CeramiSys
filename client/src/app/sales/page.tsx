@@ -34,6 +34,8 @@ interface LocalSaleLine {
   productId: number;
   qty: number;
   unitPrice: number;
+  unit?: string;
+  unitsPerBox?: number;
   isFromParentCompany?: boolean;
   parentUnitPrice?: number;
   branchUnitPrice?: number;
@@ -559,7 +561,7 @@ const SalesPage = () => {
       const product = productsData?.data?.products?.find(p => p.id === line.productId);
 
       // إنشاء السطر الأساسي
-        let processedLine: any = {
+      let processedLine: any = {
         productId: line.productId,
         qty: line.qty,
         unitPrice: line.unitPrice,
@@ -774,7 +776,9 @@ const SalesPage = () => {
     setEditLines(sale.lines.map(line => ({
       productId: line.productId,
       qty: Number(line.qty),
-      unitPrice: Number(line.unitPrice)
+      unitPrice: Number(line.unitPrice),
+      discountPercentage: line.discountPercentage || 0,
+      discountAmount: line.discountAmount || 0
     })));
     // مسح حقول البحث
     setProductCodeSearch('');
@@ -843,10 +847,33 @@ const SalesPage = () => {
     setEditLines(prev => prev.filter((_, i) => i !== index));
   };
 
-  const updateEditLine = (index: number, field: 'productId' | 'qty' | 'unitPrice', value: number) => {
-    setEditLines(prev => prev.map((line, i) =>
-      i === index ? { ...line, [field]: value } : line
-    ));
+  const updateEditLine = (index: number, field: string, value: any) => {
+    setEditLines(prev => prev.map((line, i) => {
+      if (i !== index) return line;
+
+      const newLine = { ...line, [field]: value };
+      const product = productsData?.data?.products?.find(p => p.id === newLine.productId);
+
+      // حساب الخصم التلقائي
+      if (field === 'discountPercentage' || field === 'qty' || field === 'unitPrice' || field === 'productId') {
+        const upb = (product?.unit === 'صندوق' && product.unitsPerBox) ? Number(product.unitsPerBox) : 1;
+        const totalBeforeDiscount = newLine.qty * newLine.unitPrice * upb;
+        if (field === 'discountPercentage') {
+          newLine.discountAmount = (value / 100) * totalBeforeDiscount;
+        } else {
+          // تحديث قيمة الخصم بناءً على النسبة القديمة إذا تغير السعر أو الكمية
+          newLine.discountAmount = ((newLine.discountPercentage || 0) / 100) * totalBeforeDiscount;
+        }
+      } else if (field === 'discountAmount') {
+        const upb = (product?.unit === 'صندوق' && product.unitsPerBox) ? Number(product.unitsPerBox) : 1;
+        const totalBeforeDiscount = newLine.qty * newLine.unitPrice * upb;
+        if (totalBeforeDiscount > 0) {
+          newLine.discountPercentage = (value / totalBeforeDiscount) * 100;
+        }
+      }
+
+      return newLine;
+    }));
   };
 
   // دالة لتحديث السعر من السعر/متر
@@ -2266,9 +2293,10 @@ const SalesPage = () => {
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">كود الصنف</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الصنف</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الكمية</th>
-                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الكمية (متر)</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">سعر الوحدة</th>
-                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">المجموع</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الإجمالي</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الخصم</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الصافي</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
@@ -2295,20 +2323,26 @@ const SalesPage = () => {
                               <td className="px-4 py-2 text-sm">
                                 <span className="font-medium text-blue-600">{formatArabicNumber(line.qty)}</span>
                                 <span className="text-gray-600 mr-1">{line.product?.unit || 'وحدة'}</span>
-                              </td>
-                              <td className="px-4 py-2 text-sm">
-                                {isBox && unitsPerBox ? (
-                                  <>
-                                    <span className="font-medium text-blue-600">{formatArabicArea(line.qty * unitsPerBox)}</span>
-                                    <span className="text-gray-600 mr-1">م²</span>
-                                  </>
-                                ) : (
-                                  <span className="text-gray-400">-</span>
+                                {isBox && unitsPerBox && (
+                                  <span className="block text-xs text-blue-500 font-medium whitespace-nowrap">
+                                    {formatArabicArea(line.qty * unitsPerBox)} م²
+                                  </span>
                                 )}
                               </td>
                               <td className="px-4 py-2 text-sm">
                                 <span className="font-medium">{formatArabicCurrency(displayPrice)}</span>
                                 {isBox && <span className="text-gray-500 text-xs block">/م²</span>}
+                              </td>
+                              <td className="px-4 py-2 text-sm">
+                                {formatArabicCurrency(line.qty * line.unitPrice)}
+                              </td>
+                              <td className="px-4 py-2 text-sm text-red-600">
+                                {line.discountAmount && line.discountAmount > 0 ? (
+                                  <>
+                                    <span>{formatArabicCurrency(line.discountAmount)}</span>
+                                    <span className="text-xs block">({formatArabicNumber(line.discountPercentage || 0)}%)</span>
+                                  </>
+                                ) : '-'}
                               </td>
                               <td className="px-4 py-2 text-sm font-medium text-green-600">{formatArabicCurrency(line.subTotal)}</td>
                             </tr>
@@ -2596,7 +2630,7 @@ const SalesPage = () => {
                       const unitsPerBox = product?.unitsPerBox ? Number(product.unitsPerBox) : null;
                       const totalUnits = unitsPerBox && line.qty ? line.qty * unitsPerBox : null;
                       const pricePerUnit = unitsPerBox && line.unitPrice ? line.unitPrice / unitsPerBox : null;
-                      const subtotal = line.qty * line.unitPrice;
+                      const subtotal = (line.qty * line.unitPrice) - (line.discountAmount || 0);
 
                       return (
                         <div key={index} className="bg-white p-4 rounded-lg border-2 border-gray-200 shadow-sm hover:border-orange-300 transition-colors">
@@ -2633,11 +2667,6 @@ const SalesPage = () => {
                                 className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                                 required
                               />
-                              {totalUnits && (
-                                <p className="text-xs text-blue-600 mt-0.5">
-                                  📏 {formatArabicNumber(totalUnits.toFixed(2))} متر
-                                </p>
-                              )}
                             </div>
 
                             {/* السعر */}
@@ -2654,25 +2683,49 @@ const SalesPage = () => {
                                 className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                                 required
                               />
-                              {unitsPerBox && line.unitPrice > 0 && (
-                                <p className="text-xs text-blue-600 mt-0.5">
-                                  📦 {formatArabicCurrency(line.unitPrice)}/صندوق
-                                </p>
-                              )}
                             </div>
 
                             {/* زر الحذف */}
-                            <div className="col-span-1 flex items-end">
+                            <div className="col-span-1 flex items-start pt-6">
                               <button
                                 type="button"
                                 onClick={() => removeEditLine(index)}
-                                className="w-full p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
                                 title="حذف"
                               >
-                                <svg className="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
                               </button>
+                            </div>
+                          </div>
+
+                          {/* صف الخصم (اختياري) */}
+                          <div className="grid grid-cols-12 gap-3 mt-2 pt-2 border-t border-dashed border-gray-100">
+                            <div className="col-span-5">
+                              {totalUnits && (
+                                <p className="text-xs text-blue-600">
+                                  📏 {formatArabicNumber(totalUnits.toFixed(2))} متر
+                                </p>
+                              )}
+                            </div>
+                            <div className="col-span-3">
+                              <label className="block text-[10px] font-medium text-gray-500 mb-0.5">الخصم (%)</label>
+                              <input
+                                type="number"
+                                value={line.discountPercentage || 0}
+                                onChange={(e) => updateEditLine(index, 'discountPercentage', Number(e.target.value))}
+                                className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-orange-500"
+                              />
+                            </div>
+                            <div className="col-span-3">
+                              <label className="block text-[10px] font-medium text-gray-500 mb-0.5">مبلغ الخصم</label>
+                              <input
+                                type="number"
+                                value={line.discountAmount || 0}
+                                onChange={(e) => updateEditLine(index, 'discountAmount', Number(e.target.value))}
+                                className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-orange-500"
+                              />
                             </div>
                           </div>
 
@@ -2729,7 +2782,7 @@ const SalesPage = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-medium text-gray-700">المجموع الجديد:</span>
                     <span className="text-2xl font-bold text-blue-600">
-                      {formatArabicCurrency(editLines.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0))}
+                      {formatArabicCurrency(editLines.reduce((sum, line) => sum + (line.qty * line.unitPrice) - (line.discountAmount || 0), 0))}
                     </span>
                   </div>
                 </div>

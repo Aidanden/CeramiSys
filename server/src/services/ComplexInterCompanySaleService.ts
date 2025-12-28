@@ -21,6 +21,8 @@ export interface ComplexInterCompanySaleLine {
   branchUnitPrice: number;  // سعر الإمارات (مع هامش الربح)
   subTotal: number;
   isFromParentCompany?: boolean; // هل الصنف من الشركة الأم؟
+  discountPercentage?: number;
+  discountAmount?: number;
 }
 
 export interface CreateComplexInterCompanySaleRequest {
@@ -150,7 +152,9 @@ export class ComplexInterCompanySaleService {
                 subTotal: line.subTotal,
                 isFromParentCompany: line.isFromParentCompany || false,
                 parentUnitPrice: line.parentUnitPrice || null,
-                branchUnitPrice: line.branchUnitPrice || null
+                branchUnitPrice: line.branchUnitPrice || null,
+                discountPercentage: line.discountPercentage || 0,
+                discountAmount: line.discountAmount || 0
               }))
             }
           }

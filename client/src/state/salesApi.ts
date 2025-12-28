@@ -81,6 +81,8 @@ export interface CreateSaleRequest {
     productId: number;
     qty: number;
     unitPrice: number;
+    unit?: string;
+    unitsPerBox?: number;
     discountPercentage?: number;
     discountAmount?: number;
   }[];
@@ -256,7 +258,7 @@ export const salesApi = createApi({
           company: { id: arg.companyId, name: 'جاري التحميل...' },
           notes: arg.notes || '',
           lines: arg.lines || [],
-          totalAmount: arg.lines?.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0) || 0,
+          totalAmount: arg.lines?.reduce((sum, line) => sum + (line.qty * line.unitPrice) - (line.discountAmount || 0), 0) || 0,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           createdBy: 1,

@@ -59,7 +59,7 @@ export class SalesService {
       // التحقق من الخصومات المسموح بها
       for (const line of data.lines) {
         if (line.discountPercentage && line.discountPercentage > 0) {
-          const product = products.find(p => p.id === line.productId) as any;
+          const product = products.find((p: any) => p.id === line.productId) as any;
           // الحصول على أقصى خصم من المجموعة أو 100 إذا لم تكن هناك مجموعة
           const maxDiscount = product?.group ? Number(product.group.maxDiscountPercentage) : 100;
 
@@ -76,7 +76,7 @@ export class SalesService {
       // حساب المجموع الإجمالي
       let total = 0;
       for (const line of data.lines) {
-        const subTotal = line.qty * line.unitPrice - (line.discountAmount || 0);
+        const subTotal = (line.qty * line.unitPrice) - (line.discountAmount || 0);
         total += subTotal;
       }
 
@@ -96,18 +96,20 @@ export class SalesService {
           remainingAmount: total, // ✅ المبلغ المتبقي = المجموع (لم يُدفع شيء)
           isFullyPaid: false,
           lines: {
-            create: data.lines.map(line => ({
-              productId: line.productId,
-              qty: line.qty,
-              unitPrice: line.unitPrice,
-              subTotal: line.qty * line.unitPrice,
-              // للأصناف من الشركة الأم
-              isFromParentCompany: line.isFromParentCompany || false,
-              parentUnitPrice: line.parentUnitPrice || null,
-              branchUnitPrice: line.branchUnitPrice || null,
-              discountPercentage: line.discountPercentage || 0,
-              discountAmount: line.discountAmount || 0
-            }))
+            create: data.lines.map(line => {
+              return {
+                productId: line.productId,
+                qty: line.qty,
+                unitPrice: line.unitPrice,
+                subTotal: (line.qty * line.unitPrice) - (line.discountAmount || 0),
+                // للأصناف من الشركة الأم
+                isFromParentCompany: line.isFromParentCompany || false,
+                parentUnitPrice: line.parentUnitPrice || null,
+                branchUnitPrice: line.branchUnitPrice || null,
+                discountPercentage: line.discountPercentage || 0,
+                discountAmount: line.discountAmount || 0
+              }
+            })
           }
         },
         include: {
@@ -437,6 +439,7 @@ export class SalesService {
    * تحديث فاتورة مبيعات
    */
   async updateSale(id: number, data: UpdateSaleDto, userCompanyId: number, isSystemUser: boolean = false) {
+    let products: any[] = [];
     try {
       // التحقق من وجود الفاتورة
       const existingSale = await this.prisma.sale.findFirst({
@@ -513,7 +516,7 @@ export class SalesService {
         const stockUpdates = [];
 
         for (const line of existingSale.lines) {
-          const oldProduct = oldProducts.find(p => p.id === line.productId);
+          const oldProduct = oldProducts.find((p: any) => p.id === line.productId);
           if (!oldProduct) continue;
 
           // حساب الصناديق المطلوبة:
@@ -553,7 +556,7 @@ export class SalesService {
 
         // التحقق من توفر المخزون للبنود الجديدة
         const productIds = data.lines.map(line => line.productId);
-        const products = await this.prisma.product.findMany({
+        products = await this.prisma.product.findMany({
           where: {
             id: { in: productIds },
             ...(isSystemUser !== true && { createdByCompanyId: userCompanyId })
@@ -565,10 +568,11 @@ export class SalesService {
             }
           }
         });
+
         // التحقق من الخصومات المسموح بها في التحديث
         for (const line of data.lines) {
           if (line.discountPercentage && line.discountPercentage > 0) {
-            const product = products.find(p => p.id === line.productId) as any;
+            const product = products.find((p: any) => p.id === line.productId) as any;
             // الحصول على أقصى خصم من المجموعة أو 100 إذا لم تكن هناك مجموعة
             const maxDiscount = product?.group ? Number(product.group.maxDiscountPercentage) : 100;
 
@@ -579,12 +583,12 @@ export class SalesService {
         }
 
         for (const line of data.lines) {
-          const product = products.find(p => p.id === line.productId);
+          const product = products.find((p: any) => p.id === line.productId);
           if (!product) continue;
 
           // للـ System User: نبحث عن المخزون في الشركة المحددة
           const stock = isSystemUser
-            ? product.stocks.find(s => s.companyId === userCompanyId)
+            ? product.stocks.find((s: any) => s.companyId === userCompanyId)
             : product.stocks[0];
 
           // حساب الصناديق المطلوبة:
@@ -628,12 +632,12 @@ export class SalesService {
         });
       }
 
-      // حساب المجموع الجديد
       let total = Number(existingSale.total);
       if (data.lines) {
+        // إعادة حساب المجموع الجديد
         total = 0;
         for (const line of data.lines) {
-          total += line.qty * line.unitPrice - (line.discountAmount || 0);
+          total += (line.qty * line.unitPrice) - (line.discountAmount || 0);
         }
       }
 
@@ -654,14 +658,16 @@ export class SalesService {
           isFullyPaid: data.lines ? (newRemainingAmount <= 0) : undefined, // ✅ تحديث حالة الدفع
           ...(data.lines && {
             lines: {
-              create: data.lines.map(line => ({
-                productId: line.productId,
-                qty: line.qty,
-                unitPrice: line.unitPrice,
-                discountPercentage: line.discountPercentage || 0,
-                discountAmount: line.discountAmount || 0,
-                subTotal: line.qty * line.unitPrice - (line.discountAmount || 0)
-              }))
+              create: data.lines.map(line => {
+                return {
+                  productId: line.productId,
+                  qty: line.qty,
+                  unitPrice: line.unitPrice,
+                  discountPercentage: line.discountPercentage || 0,
+                  discountAmount: line.discountAmount || 0,
+                  subTotal: (line.qty * line.unitPrice) - (line.discountAmount || 0)
+                }
+              })
             }
           })
         },
@@ -768,7 +774,7 @@ export class SalesService {
 
         // فصل أصناف التقازي من البنود الجديدة
         const parentCompanyLines = data.lines.filter(line => {
-          const product = updatedSale.lines.find(l => l.productId === line.productId)?.product;
+          const product = updatedSale.lines.find((l: any) => l.productId === line.productId)?.product;
           return product && product.createdByCompanyId === 1; // ID الشركة الأم = 1
         });
 
@@ -798,11 +804,11 @@ export class SalesService {
           const parentSaleNewLines = [];
 
           for (const line of parentCompanyLines) {
-            const product = updatedSale.lines.find(l => l.productId === line.productId)?.product;
+            const product = updatedSale.lines.find((l: any) => l.productId === line.productId)?.product;
             if (!product) continue;
 
             // ✅ استخدام السعر الأصلي من فاتورة التقازي القديمة (سعر الجملة الثابت)
-            const oldLine = oldParentSale.lines.find(l => l.productId === line.productId);
+            const oldLine = oldParentSale.lines.find((l: any) => l.productId === line.productId);
             let originalPrice;
 
             if (oldLine) {

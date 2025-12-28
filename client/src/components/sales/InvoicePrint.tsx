@@ -89,69 +89,73 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ sale }) => {
         width: '100%',
         borderCollapse: 'collapse',
         marginBottom: '30px',
-        fontSize: '13px'
+        fontSize: '11px'
       }}>
         <thead>
           <tr style={{ backgroundColor: '#1e40af', color: 'white' }}>
-            <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>م</th>
-            <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'right' }}>الصنف</th>
-            <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>الكود</th>
-            <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>الكمية</th>
-            <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>الكمية (متر)</th>
-            <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>سعر الوحدة</th>
-            <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>الإجمالي</th>
+            <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>م</th>
+            <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'right' }}>الصنف/الكود</th>
+            <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>الكمية</th>
+            <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>الكمية (متر)</th>
+            <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>سعر الوحدة</th>
+            <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>المجموع الجمالي</th>
+            <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>الخصم</th>
+            <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>الصافي</th>
           </tr>
         </thead>
         <tbody>
           {sale.lines.map((line, index) => {
-            // حساب الأمتار المربعة وسعر المتر للأصناف بوحدة صندوق
             const isBox = line.product?.unit === 'صندوق';
             const unitsPerBox = line.product?.unitsPerBox ? Number(line.product.unitsPerBox) : null;
-
-            // السعر: إذا صندوق نعرض سعر المتر، وإلا نعرض سعر الوحدة
             const displayPrice = isBox && unitsPerBox ? line.unitPrice / unitsPerBox : line.unitPrice;
+
+            // حساب الإجمالي قبل الخصم
+            const lineBaseTotal = isBox && unitsPerBox
+              ? line.qty * unitsPerBox * displayPrice
+              : line.qty * displayPrice;
 
             return (
               <tr key={line.id || index} style={{ borderBottom: '1px solid #ddd' }}>
-                <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>
+                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
                   {formatArabicNumber(index + 1)}
                 </td>
-                <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'right' }}>
-                  <div>{line.product?.name || 'غير معروف'}</div>
+                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'right' }}>
+                  <div style={{ fontWeight: 'bold' }}>{line.product?.name || 'غير معروف'}</div>
+                  <div style={{ fontSize: '10px', color: '#666' }}>ID: {line.product?.sku || '-'}</div>
                   {isBox && unitsPerBox && (
-                    <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
+                    <div style={{ fontSize: '9px', color: '#666', marginTop: '2px' }}>
                       ({formatArabicNumber(unitsPerBox)} م²/صندوق)
                     </div>
                   )}
                 </td>
-                <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>
-                  {line.product?.sku || '-'}
+                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                  {formatArabicNumber(line.qty)} {line.product?.unit || 'وحدة'}
                 </td>
-                <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>
-                  <div style={{ fontWeight: 'bold', color: '#2563eb' }}>
-                    {formatArabicNumber(line.qty)} {line.product?.unit || 'وحدة'}
-                  </div>
-                </td>
-                <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>
+                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
                   {isBox && unitsPerBox ? (
-                    <div style={{ fontWeight: 'bold', color: '#2563eb' }}>
+                    <div style={{ fontWeight: 'bold' }}>
                       {formatArabicNumber((line.qty * unitsPerBox).toFixed(2))} م²
                     </div>
                   ) : (
                     <span style={{ color: '#999' }}>-</span>
                   )}
                 </td>
-                <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>
-                  <div style={{ fontWeight: 'bold' }}>
-                    {formatArabicCurrency(displayPrice)}
-                  </div>
-                  {isBox && (
-                    <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
-                      /م²
-                    </div>
-                  )}
+                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                  <div>{formatArabicCurrency(displayPrice)}</div>
+                  {isBox && <div style={{ fontSize: '9px', color: '#666' }}>/م²</div>}
                 </td>
-                <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center', fontWeight: 'bold', color: '#059669' }}>
+                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                  {formatArabicCurrency(lineBaseTotal)}
+                </td>
+                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center', color: '#dc2626' }}>
+                  {line.discountAmount && line.discountAmount > 0 ? (
+                    <>
+                      <div>{formatArabicCurrency(line.discountAmount)}</div>
+                      <div style={{ fontSize: '9px' }}>({formatArabicNumber(line.discountPercentage || 0)}%)</div>
+                    </>
+                  ) : '-'}
+                </td>
+                <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center', fontWeight: 'bold', color: '#1e40af' }}>
                   {formatArabicCurrency(line.subTotal)}
                 </td>
               </tr>
@@ -159,11 +163,11 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ sale }) => {
           })}
         </tbody>
         <tfoot>
-          <tr style={{ backgroundColor: '#f3f4f6', fontWeight: 'bold', fontSize: '16px' }}>
-            <td colSpan={6} style={{ padding: '15px', border: '1px solid #ddd', textAlign: 'left' }}>
-              المجموع الإجمالي
+          <tr style={{ backgroundColor: '#f3f4f6', fontWeight: 'bold', fontSize: '14px' }}>
+            <td colSpan={7} style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>
+              المجموع النهائي
             </td>
-            <td style={{ padding: '15px', border: '1px solid #ddd', textAlign: 'center', color: '#1e40af' }}>
+            <td style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center', color: '#1e40af' }}>
               {formatArabicCurrency(total)}
             </td>
           </tr>
