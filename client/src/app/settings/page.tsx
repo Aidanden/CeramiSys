@@ -9,6 +9,8 @@ export default function SettingsPage() {
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [lowStockThreshold, setLowStockThreshold] = useState('10');
   const [profitMargin, setProfitMargin] = useState('20');
+  const [enableLineDiscount, setEnableLineDiscount] = useState(true);
+  const [enableInvoiceDiscount, setEnableInvoiceDiscount] = useState(true);
   const { success, error } = useToast();
 
   // أسعار الصرف من قاعدة البيانات
@@ -41,6 +43,12 @@ export default function SettingsPage() {
     if (savedMargin) {
       setProfitMargin(savedMargin);
     }
+
+    const savedLineDisc = localStorage.getItem('enableLineDiscount');
+    setEnableLineDiscount(savedLineDisc === null ? true : savedLineDisc === 'true');
+
+    const savedInvDisc = localStorage.getItem('enableInvoiceDiscount');
+    setEnableInvoiceDiscount(savedInvDisc === null ? true : savedInvDisc === 'true');
   }, [exchangeRates]);
 
   // حفظ الإعدادات
@@ -78,6 +86,8 @@ export default function SettingsPage() {
       localStorage.setItem('whatsappNumber', cleanNumber);
       localStorage.setItem('lowStockThreshold', threshold.toString());
       localStorage.setItem('profitMargin', margin.toString());
+      localStorage.setItem('enableLineDiscount', enableLineDiscount.toString());
+      localStorage.setItem('enableInvoiceDiscount', enableInvoiceDiscount.toString());
       success('تم حفظ الإعدادات بنجاح');
     } catch (err) {
       error('حدث خطأ أثناء حفظ الإعدادات');
@@ -91,9 +101,13 @@ export default function SettingsPage() {
     localStorage.removeItem('whatsappNumber');
     localStorage.removeItem('lowStockThreshold');
     localStorage.removeItem('profitMargin');
+    localStorage.removeItem('enableLineDiscount');
+    localStorage.removeItem('enableInvoiceDiscount');
     setWhatsappNumber('');
     setLowStockThreshold('10');
     setProfitMargin('20');
+    setEnableLineDiscount(true);
+    setEnableInvoiceDiscount(true);
     success('تم مسح الإعدادات');
   };
 
@@ -246,6 +260,55 @@ export default function SettingsPage() {
             <p className="mt-1 text-sm text-gray-500">
               📊 مثال: إذا كان سعر الشركة الأم 100 د.ل وهامش الربح 20%، سيكون سعر البيع 120 د.ل
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Discount Settings Card */}
+      <div className="bg-white rounded-lg shadow-sm border border-border-primary p-6 mb-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-text-primary">إعدادات الخصومات</h2>
+            <p className="text-sm text-text-secondary">التحكم في ظهور حقول الخصم في الفواتير</p>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div>
+              <h3 className="text-sm font-bold text-gray-800">تفعيل الخصم على المنتج</h3>
+              <p className="text-xs text-gray-500 mt-1">إظهار حقول الخصم لكل صنف في الفاتورة بشكل مستقل</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={enableLineDiscount}
+                onChange={(e) => setEnableLineDiscount(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div>
+              <h3 className="text-sm font-bold text-gray-800">تفعيل الخصم على إجمالي الفاتورة</h3>
+              <p className="text-xs text-gray-500 mt-1">إتاحة إضافة خصم نهائي على المبلغ الإجمالي للفاتورة</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={enableInvoiceDiscount}
+                onChange={(e) => setEnableInvoiceDiscount(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+            </label>
           </div>
         </div>
       </div>

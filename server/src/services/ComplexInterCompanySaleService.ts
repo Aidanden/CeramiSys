@@ -33,6 +33,8 @@ export interface CreateComplexInterCompanySaleRequest {
   profitMargin?: number; // هامش الربح (نسبة مئوية)
   customerSaleType?: 'CASH' | 'CREDIT'; // نوع فاتورة العميل: نقدي أو آجل
   customerPaymentMethod?: 'CASH' | 'BANK' | 'CARD'; // طريقة الدفع: كاش، حوالة، بطاقة
+  totalDiscountPercentage?: number;
+  totalDiscountAmount?: number;
 }
 
 export interface ComplexInterCompanySaleResult {
@@ -125,7 +127,14 @@ export class ComplexInterCompanySaleService {
         // المعلومات محفوظة في `isFromParentCompany` و `parentUnitPrice` في SaleLine
 
         // 3. إنشاء فاتورة بيع واحدة للعميل من الشركة التابعة (تحتوي على كل الأصناف)
-        const customerSaleTotal = data.lines.reduce((sum, line) => sum + line.subTotal, 0);
+        const subTotalLines = data.lines.reduce((sum, line) => sum + line.subTotal, 0);
+
+        let totalDiscountAmount = data.totalDiscountAmount || 0;
+        if (data.totalDiscountPercentage && data.totalDiscountPercentage > 0) {
+          totalDiscountAmount = (subTotalLines * data.totalDiscountPercentage) / 100;
+        }
+
+        const customerSaleTotal = subTotalLines - totalDiscountAmount;
         const customerSaleType = 'CREDIT'; // ✅ جميع الفواتير آجلة
         const customerPaymentMethod = null; // سيُحدد لاحقاً عند الاعتماد
         const customerPaidAmount = 0; // لم يُدفع شيء
@@ -143,6 +152,8 @@ export class ComplexInterCompanySaleService {
             paidAmount: customerPaidAmount,
             remainingAmount: customerRemainingAmount,
             isFullyPaid: customerIsFullyPaid,
+            totalDiscountPercentage: data.totalDiscountPercentage || 0,
+            totalDiscountAmount: totalDiscountAmount,
             status: 'DRAFT', // مبدئية - في انتظار اعتماد المحاسب
             lines: {
               create: data.lines.map(line => ({

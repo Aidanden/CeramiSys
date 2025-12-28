@@ -47,6 +47,8 @@ interface LocalSaleLine {
 interface LocalCreateSaleRequest {
   customerId?: number;
   notes?: string;
+  totalDiscountPercentage?: number;
+  totalDiscountAmount?: number;
   lines: LocalSaleLine[];
 }
 
@@ -80,7 +82,11 @@ const SalesPage = () => {
     productId: number;
     qty: number;
     unitPrice: number;
+    discountPercentage?: number;
+    discountAmount?: number;
   }>>([]);
+  const [editTotalDiscountPercentage, setEditTotalDiscountPercentage] = useState(0);
+  const [editTotalDiscountAmount, setEditTotalDiscountAmount] = useState(0);
   const [customerSearchTerm, setCustomerSearchTerm] = useState('');
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
   const [selectedCustomerName, setSelectedCustomerName] = useState('');
@@ -90,8 +96,22 @@ const SalesPage = () => {
   const [saleForm, setSaleForm] = useState<LocalCreateSaleRequest>({
     customerId: undefined,
     notes: '', // ملاحظات اختيارية
+    totalDiscountPercentage: 0,
+    totalDiscountAmount: 0,
     lines: []
   });
+
+  // Settings from localStorage
+  const [enableLineDiscount, setEnableLineDiscount] = useState(true);
+  const [enableInvoiceDiscount, setEnableInvoiceDiscount] = useState(true);
+
+  useEffect(() => {
+    const savedLineDisc = localStorage.getItem('enableLineDiscount');
+    setEnableLineDiscount(savedLineDisc === null ? true : savedLineDisc === 'true');
+
+    const savedInvDisc = localStorage.getItem('enableInvoiceDiscount');
+    setEnableInvoiceDiscount(savedInvDisc === null ? true : savedInvDisc === 'true');
+  }, [showCreateSaleModal, showEditModal]);
 
   // Product search states
   const [productNameSearch, setProductNameSearch] = useState(''); // البحث بالاسم (like)
@@ -578,10 +598,12 @@ const SalesPage = () => {
     });
 
     // إضافة companyId للطلب
-    const saleRequest = {
+    const saleRequest: any = {
       ...saleForm,
       lines: processedLines,
-      companyId: targetCompanyId
+      companyId: targetCompanyId,
+      totalDiscountPercentage: saleForm.totalDiscountPercentage || 0,
+      totalDiscountAmount: saleForm.totalDiscountAmount || 0
     };
 
     await createSale(saleRequest).unwrap();
@@ -642,7 +664,9 @@ const SalesPage = () => {
       lines: complexLines,
       profitMargin,
       customerSaleType: 'CREDIT', // آجل كما هو مطلوب
-      customerPaymentMethod: 'CASH' // افتراضي
+      customerPaymentMethod: 'CASH', // افتراضي
+      totalDiscountPercentage: saleForm.totalDiscountPercentage || 0,
+      totalDiscountAmount: saleForm.totalDiscountAmount || 0
     };
 
     const result = await createComplexInterCompanySale(complexSaleRequest).unwrap();
@@ -785,6 +809,8 @@ const SalesPage = () => {
     setProductNameSearch('');
     setShowCodeDropdown(false);
     setShowNameDropdown(false);
+    setEditTotalDiscountPercentage(Number(sale.totalDiscountPercentage || 0));
+    setEditTotalDiscountAmount(Number(sale.totalDiscountAmount || 0));
     // تعيين الشركة المختارة للبحث عن المنتجات
     if (sale.companyId) {
       setSelectedCompanyId(sale.companyId);
@@ -820,7 +846,9 @@ const SalesPage = () => {
         data: {
           customerId,
           invoiceNumber: invoiceNumber || undefined,
-          lines: editLines
+          lines: editLines,
+          totalDiscountPercentage: editTotalDiscountPercentage || 0,
+          totalDiscountAmount: editTotalDiscountAmount || 0
         }
       }).unwrap();
 
@@ -2048,6 +2076,7 @@ const SalesPage = () => {
                             calculateLineTotal={calculateLineTotal}
                             formatArabicCurrency={formatArabicCurrency}
                             filteredProducts={productsData?.data?.products || []}
+                            enableLineDiscount={enableLineDiscount}
                           />
                         );
                       })
@@ -2100,13 +2129,86 @@ const SalesPage = () => {
                         }
                       })()}
 
+                      {/* خصم إجمالي الفاتورة */}
+                      {enableInvoiceDiscount && (
+                        <div className="mt-4 p-4 bg-gray-50 border-2 border-gray-200 rounded-lg">
+                          <label className="block text-sm font-bold text-gray-700 mb-3">
+                            💸 خصم إجمالي الفاتورة:
+                          </label>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">نسبة الخصم (%)</label>
+                              <input
+                                type="number"
+                                value={saleForm.totalDiscountPercentage || 0}
+                                onChange={(e) => {
+                                  let perc = Number(e.target.value);
+                                  if (perc < 0) perc = 0;
+                                  if (perc > 100) perc = 100;
+
+                                  const subTotal = saleForm.lines.reduce((sum, line) => sum + calculateLineTotal(line), 0);
+                                  const amount = (subTotal * perc) / 100;
+
+                                  setSaleForm(prev => ({
+                                    ...prev,
+                                    totalDiscountPercentage: perc,
+                                    totalDiscountAmount: amount
+                                  }));
+                                }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500"
+                                min="0"
+                                max="100"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">مبلغ الخصم (د.ل)</label>
+                              <input
+                                type="number"
+                                value={saleForm.totalDiscountAmount || 0}
+                                onChange={(e) => {
+                                  let amount = Number(e.target.value);
+                                  const subTotal = saleForm.lines.reduce((sum, line) => sum + calculateLineTotal(line), 0);
+
+                                  if (amount < 0) amount = 0;
+                                  if (amount > subTotal) amount = subTotal;
+
+                                  const perc = subTotal > 0 ? (amount / subTotal) * 100 : 0;
+
+                                  setSaleForm(prev => ({
+                                    ...prev,
+                                    totalDiscountAmount: amount,
+                                    totalDiscountPercentage: Number(perc.toFixed(2))
+                                  }));
+                                }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500"
+                                min="0"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* المجموع الإجمالي */}
                       <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-lg">
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-gray-700">المجموع الإجمالي:</span>
-                          <span className="text-2xl font-bold text-green-600">
-                            {formatArabicCurrency(saleForm.lines.reduce((sum, line) => sum + calculateLineTotal(line), 0))}
-                          </span>
+                        <div className="flex flex-col gap-2">
+                          <div className="flex justify-between items-center text-sm text-gray-600">
+                            <span>المجموع الفرعي:</span>
+                            <span>{formatArabicCurrency(saleForm.lines.reduce((sum, line) => sum + calculateLineTotal(line), 0))}</span>
+                          </div>
+                          {saleForm.totalDiscountAmount && saleForm.totalDiscountAmount > 0 ? (
+                            <div className="flex justify-between items-center text-sm text-red-600 font-medium">
+                              <span>إجمالي الخصم ({saleForm.totalDiscountPercentage}%):</span>
+                              <span>-{formatArabicCurrency(saleForm.totalDiscountAmount)}</span>
+                            </div>
+                          ) : null}
+                          <div className="flex justify-between items-center pt-2 border-t border-green-200">
+                            <span className="text-lg font-bold text-gray-700">الصافي النهائي:</span>
+                            <span className="text-2xl font-bold text-green-600">
+                              {formatArabicCurrency(
+                                saleForm.lines.reduce((sum, line) => sum + calculateLineTotal(line), 0) - (saleForm.totalDiscountAmount || 0)
+                              )}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </>
@@ -2353,9 +2455,20 @@ const SalesPage = () => {
                   </div>
                 </div>
 
-                <div className="border-t pt-4">
-                  <div className="text-right text-lg font-bold">
-                    المجموع الإجمالي: {formatArabicCurrency(selectedSale!.total)}
+                <div className="border-t pt-4 space-y-2">
+                  <div className="flex justify-between items-center text-gray-600">
+                    <span className="font-medium">المجموع الفرعي:</span>
+                    <span>{formatArabicCurrency(selectedSale!.lines.reduce((sum, line) => sum + Number(line.subTotal), 0))}</span>
+                  </div>
+                  {selectedSale!.totalDiscountAmount && Number(selectedSale!.totalDiscountAmount) > 0 ? (
+                    <div className="flex justify-between items-center text-red-600">
+                      <span className="font-medium">خصم إجمالي الفاتورة ({Number(selectedSale!.totalDiscountPercentage)}%):</span>
+                      <span>-{formatArabicCurrency(Number(selectedSale!.totalDiscountAmount))}</span>
+                    </div>
+                  ) : null}
+                  <div className="flex justify-between items-center text-lg font-bold border-t pt-2 mt-2">
+                    <span>الصافي النهائي:</span>
+                    <span>{formatArabicCurrency(Number(selectedSale!.total))}</span>
                   </div>
                 </div>
 
@@ -2776,14 +2889,81 @@ const SalesPage = () => {
                 )}
               </div>
 
+              {/* خصم إجمالي الفاتورة (تعديل) */}
+              {enableInvoiceDiscount && (
+                <div className="mb-6 p-4 bg-gray-50 border-2 border-gray-200 rounded-lg">
+                  <label className="block text-sm font-bold text-gray-700 mb-3">
+                    💸 خصم إجمالي الفاتورة:
+                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">نسبة الخصم (%)</label>
+                      <input
+                        type="number"
+                        value={editTotalDiscountPercentage || 0}
+                        onChange={(e) => {
+                          let perc = Number(e.target.value);
+                          if (perc < 0) perc = 0;
+                          if (perc > 100) perc = 100;
+
+                          const subTotal = editLines.reduce((sum, line) => sum + (line.qty * line.unitPrice) - (line.discountAmount || 0), 0);
+                          const amount = (subTotal * perc) / 100;
+
+                          setEditTotalDiscountPercentage(perc);
+                          setEditTotalDiscountAmount(amount);
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500"
+                        min="0"
+                        max="100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">مبلغ الخصم (د.ل)</label>
+                      <input
+                        type="number"
+                        value={editTotalDiscountAmount || 0}
+                        onChange={(e) => {
+                          let amount = Number(e.target.value);
+                          const subTotal = editLines.reduce((sum, line) => sum + (line.qty * line.unitPrice) - (line.discountAmount || 0), 0);
+
+                          if (amount < 0) amount = 0;
+                          if (amount > subTotal) amount = subTotal;
+
+                          const perc = subTotal > 0 ? (amount / subTotal) * 100 : 0;
+
+                          setEditTotalDiscountAmount(amount);
+                          setEditTotalDiscountPercentage(Number(perc.toFixed(2)));
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* المجموع الجديد */}
               {editLines.length > 0 && (
                 <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-medium text-gray-700">المجموع الجديد:</span>
-                    <span className="text-2xl font-bold text-blue-600">
-                      {formatArabicCurrency(editLines.reduce((sum, line) => sum + (line.qty * line.unitPrice) - (line.discountAmount || 0), 0))}
-                    </span>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-between items-center text-sm text-gray-600">
+                      <span>المجموع الفرعي:</span>
+                      <span>{formatArabicCurrency(editLines.reduce((sum, line) => sum + (line.qty * line.unitPrice) - (line.discountAmount || 0), 0))}</span>
+                    </div>
+                    {editTotalDiscountAmount > 0 ? (
+                      <div className="flex justify-between items-center text-sm text-red-600 font-medium">
+                        <span>إجمالي الخصم ({editTotalDiscountPercentage}%):</span>
+                        <span>-{formatArabicCurrency(editTotalDiscountAmount)}</span>
+                      </div>
+                    ) : null}
+                    <div className="flex justify-between items-center pt-2 border-t border-blue-200">
+                      <span className="text-lg font-bold text-gray-700">الصافي النهائي:</span>
+                      <span className="text-2xl font-bold text-blue-600">
+                        {formatArabicCurrency(
+                          editLines.reduce((sum, line) => sum + (line.qty * line.unitPrice) - (line.discountAmount || 0), 0) - editTotalDiscountAmount
+                        )}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}

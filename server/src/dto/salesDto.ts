@@ -48,6 +48,8 @@ export const CreateSaleDtoSchema = z.object({
   customerId: z.number().int().positive().optional(),
   invoiceNumber: z.string().optional(),
   notes: z.string().optional(), // ملاحظات
+  totalDiscountPercentage: z.number().min(0).max(100).optional(),
+  totalDiscountAmount: z.number().min(0).optional(),
   lines: z.array(CreateSaleLineDtoSchema).min(1, 'يجب إضافة بند واحد على الأقل')
   // ملاحظة: saleType و paymentMethod سيحددهما المحاسب لاحقاً
 });
@@ -57,6 +59,8 @@ export const UpdateSaleDtoSchema = z.object({
   invoiceNumber: z.string().optional(),
   saleType: z.nativeEnum(SaleType).optional(),
   paymentMethod: z.nativeEnum(PaymentMethod).optional(),
+  totalDiscountPercentage: z.number().min(0).max(100).optional(),
+  totalDiscountAmount: z.number().min(0).optional(),
   lines: z.array(CreateSaleLineDtoSchema).optional()
 });
 

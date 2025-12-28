@@ -73,12 +73,19 @@ export class SalesService {
       const invoiceNumber = await this.generateInvoiceNumber(userCompanyId);
 
 
-      // حساب المجموع الإجمالي
-      let total = 0;
+      // حساب المجموع الإجمالي من البنود
+      let subTotalFromLines = 0;
       for (const line of data.lines) {
-        const subTotal = (line.qty * line.unitPrice) - (line.discountAmount || 0);
-        total += subTotal;
+        subTotalFromLines += (line.qty * line.unitPrice) - (line.discountAmount || 0);
       }
+
+      // حساب الخصم على إجمالي الفاتورة
+      let totalDiscountAmount = data.totalDiscountAmount || 0;
+      if (data.totalDiscountPercentage && data.totalDiscountPercentage > 0) {
+        totalDiscountAmount = (subTotalFromLines * data.totalDiscountPercentage) / 100;
+      }
+
+      const total = subTotalFromLines - totalDiscountAmount;
 
       // إنشاء الفاتورة كمسودة (DRAFT)
       const sale = await this.prisma.sale.create({
@@ -87,6 +94,8 @@ export class SalesService {
           customerId: data.customerId,
           invoiceNumber: invoiceNumber,
           total: total,
+          totalDiscountPercentage: data.totalDiscountPercentage || 0,
+          totalDiscountAmount: totalDiscountAmount,
           status: 'DRAFT', // فاتورة مبدئية
           notes: data.notes || null,
           // جميع الفواتير آجلة
@@ -635,9 +644,38 @@ export class SalesService {
       let total = Number(existingSale.total);
       if (data.lines) {
         // إعادة حساب المجموع الجديد
-        total = 0;
+        let subTotalFromLines = 0;
         for (const line of data.lines) {
-          total += (line.qty * line.unitPrice) - (line.discountAmount || 0);
+          subTotalFromLines += (line.qty * line.unitPrice) - (line.discountAmount || 0);
+        }
+
+        // حساب الخصم على إجمالي الفاتورة (نستخدم القيم الجديدة إذا توفرت، وإلا القديمة)
+        const discPercentage = data.totalDiscountPercentage !== undefined ? data.totalDiscountPercentage : Number(existingSale.totalDiscountPercentage || 0);
+        let discAmount = data.totalDiscountAmount !== undefined ? data.totalDiscountAmount : Number(existingSale.totalDiscountAmount || 0);
+
+        if (data.totalDiscountPercentage !== undefined && data.totalDiscountPercentage > 0) {
+          discAmount = (subTotalFromLines * discPercentage) / 100;
+        } else if (data.totalDiscountAmount !== undefined) {
+          discAmount = data.totalDiscountAmount;
+        } else if (existingSale.totalDiscountPercentage && Number(existingSale.totalDiscountPercentage) > 0) {
+          discAmount = (subTotalFromLines * Number(existingSale.totalDiscountPercentage)) / 100;
+        }
+
+        total = subTotalFromLines - discAmount;
+      } else {
+        // إذا لم يتم تعديل البنود، نحدث الخصم الإجمالي فقط إذا تغير
+        if (data.totalDiscountPercentage !== undefined || data.totalDiscountAmount !== undefined) {
+          const currentSubTotal = Number(existingSale.total) + Number(existingSale.totalDiscountAmount || 0);
+          const discPercentage = data.totalDiscountPercentage !== undefined ? data.totalDiscountPercentage : Number(existingSale.totalDiscountPercentage || 0);
+          let discAmount = data.totalDiscountAmount !== undefined ? data.totalDiscountAmount : Number(existingSale.totalDiscountAmount || 0);
+
+          if (data.totalDiscountPercentage !== undefined) {
+            discAmount = (currentSubTotal * discPercentage) / 100;
+          }
+
+          total = currentSubTotal - discAmount;
+        } else {
+          total = Number(existingSale.total);
         }
       }
 
@@ -653,9 +691,11 @@ export class SalesService {
           invoiceNumber: data.invoiceNumber,
           saleType: data.saleType,
           paymentMethod: data.paymentMethod,
-          total: data.lines ? total : undefined,
-          remainingAmount: data.lines ? newRemainingAmount : undefined, // ✅ تحديث المبلغ المتبقي
-          isFullyPaid: data.lines ? (newRemainingAmount <= 0) : undefined, // ✅ تحديث حالة الدفع
+          total: total,
+          totalDiscountPercentage: data.totalDiscountPercentage,
+          totalDiscountAmount: data.lines || data.totalDiscountPercentage !== undefined || data.totalDiscountAmount !== undefined ? (Number(existingSale.total) + Number(existingSale.totalDiscountAmount || 0) - total) : undefined,
+          remainingAmount: newRemainingAmount, // ✅ تحديث المبلغ المتبقي
+          isFullyPaid: newRemainingAmount <= 0, // ✅ تحديث حالة الدفع
           ...(data.lines && {
             lines: {
               create: data.lines.map(line => {

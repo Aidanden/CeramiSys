@@ -12,8 +12,9 @@ interface InvoicePrintProps {
 }
 
 export const InvoicePrint: React.FC<InvoicePrintProps> = ({ sale }) => {
-  // حساب الإجمالي
-  const total = sale.lines.reduce((sum, line) => sum + line.subTotal, 0);
+  // حساب المجموع الفرعي للبنود
+  const subTotal = sale.lines.reduce((sum, line) => sum + Number(line.subTotal), 0);
+  const total = Number(sale.total);
 
   return (
     <div className="print-invoice" style={{
@@ -163,9 +164,27 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ sale }) => {
           })}
         </tbody>
         <tfoot>
+          <tr style={{ fontWeight: 'normal', fontSize: '13px', color: '#666' }}>
+            <td colSpan={7} style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'left' }}>
+              المجموع الفرعي (قبل خصم الفاتورة)
+            </td>
+            <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+              {formatArabicCurrency(subTotal)}
+            </td>
+          </tr>
+          {sale.totalDiscountAmount && Number(sale.totalDiscountAmount) > 0 ? (
+            <tr style={{ fontWeight: 'normal', fontSize: '13px', color: '#dc2626' }}>
+              <td colSpan={7} style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'left' }}>
+                خصم إجمالي الفاتورة ({formatArabicNumber(Number(sale.totalDiscountPercentage || 0))}%)
+              </td>
+              <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                -{formatArabicCurrency(Number(sale.totalDiscountAmount))}
+              </td>
+            </tr>
+          ) : null}
           <tr style={{ backgroundColor: '#f3f4f6', fontWeight: 'bold', fontSize: '14px' }}>
             <td colSpan={7} style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>
-              المجموع النهائي
+              الصافي النهائي (المطالب بدفعه)
             </td>
             <td style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center', color: '#1e40af' }}>
               {formatArabicCurrency(total)}

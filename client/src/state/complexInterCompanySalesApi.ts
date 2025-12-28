@@ -27,6 +27,8 @@ export interface CreateComplexInterCompanySaleRequest {
   profitMargin?: number; // هامش الربح (نسبة مئوية)
   customerSaleType: 'CASH' | 'CREDIT'; // نوع فاتورة العميل: نقدي أو آجل
   customerPaymentMethod: 'CASH' | 'BANK' | 'CARD'; // طريقة الدفع: كاش، حوالة، بطاقة
+  totalDiscountPercentage?: number;
+  totalDiscountAmount?: number;
 }
 
 export interface ComplexInterCompanySaleResult {

@@ -48,6 +48,7 @@ interface SaleLineItemProps {
   calculateLineTotal: (line: any) => number;
   formatArabicCurrency: (amount: number) => string;
   filteredProducts: any[];
+  enableLineDiscount?: boolean;
 }
 
 const SaleLineItem: React.FC<SaleLineItemProps> = ({
@@ -60,7 +61,8 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
   removeSaleLine,
   calculateLineTotal,
   formatArabicCurrency,
-  filteredProducts
+  filteredProducts,
+  enableLineDiscount = true
 }) => {
   // تحميل هامش الربح من الإعدادات
   const [profitMargin, setProfitMargin] = React.useState(20);
@@ -147,7 +149,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
   const [isDiscountEnabled, setIsDiscountEnabled] = React.useState(line.discountPercentage > 0 || line.discountAmount > 0);
 
   // جلب صلاحيات المستخدم
-  const canApplyDiscount = true; // تفعيل الخصم للجميع حالياً لضمان ظهوره
+  const canApplyDiscount = enableLineDiscount; // استخدام الإعداد الممرر من الصفحة الرئيسية
 
   // تحديث الحالات المحلية عند تغيير القيم من الخارج
   React.useEffect(() => {
