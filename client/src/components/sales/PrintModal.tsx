@@ -11,9 +11,17 @@ interface PrintModalProps {
   sale: Sale | null;
   isOpen: boolean;
   onClose: () => void;
+  enableLineDiscount?: boolean;
+  enableInvoiceDiscount?: boolean;
 }
 
-export const PrintModal: React.FC<PrintModalProps> = ({ sale, isOpen, onClose }) => {
+export const PrintModal: React.FC<PrintModalProps> = ({
+  sale,
+  isOpen,
+  onClose,
+  enableLineDiscount = true,
+  enableInvoiceDiscount = true
+}) => {
   const printRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
@@ -87,7 +95,7 @@ export const PrintModal: React.FC<PrintModalProps> = ({ sale, isOpen, onClose })
   return (
     <>
       {/* Overlay */}
-      <div 
+      <div
         className="fixed inset-0 bg-black bg-opacity-50 z-50"
         onClick={onClose}
       />
@@ -134,10 +142,10 @@ export const PrintModal: React.FC<PrintModalProps> = ({ sale, isOpen, onClose })
 
             {/* Preview */}
             <div className="border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-              <div 
+              <div
                 ref={printRef}
                 className="bg-white"
-                style={{ 
+                style={{
                   transform: 'scale(0.5)',
                   transformOrigin: 'top center',
                   width: '200%',
@@ -145,7 +153,11 @@ export const PrintModal: React.FC<PrintModalProps> = ({ sale, isOpen, onClose })
                 }}
               >
                 {/* الفاتورة فقط - إيصال القبض يتم إصداره من شاشة المحاسب */}
-                <InvoicePrint sale={sale} />
+                <InvoicePrint
+                  sale={sale}
+                  enableLineDiscount={enableLineDiscount}
+                  enableInvoiceDiscount={enableInvoiceDiscount}
+                />
               </div>
             </div>
           </div>

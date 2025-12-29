@@ -9,9 +9,15 @@ import { formatArabicNumber, formatArabicCurrency } from '@/utils/formatArabicNu
 
 interface InvoicePrintProps {
   sale: Sale;
+  enableLineDiscount?: boolean;
+  enableInvoiceDiscount?: boolean;
 }
 
-export const InvoicePrint: React.FC<InvoicePrintProps> = ({ sale }) => {
+export const InvoicePrint: React.FC<InvoicePrintProps> = ({
+  sale,
+  enableLineDiscount = true,
+  enableInvoiceDiscount = true
+}) => {
   // حساب المجموع الفرعي للبنود
   const subTotal = sale.lines.reduce((sum, line) => sum + Number(line.subTotal), 0);
   const total = Number(sale.total);
@@ -100,7 +106,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ sale }) => {
             <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>الكمية (متر)</th>
             <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>سعر الوحدة</th>
             <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>المجموع الجمالي</th>
-            <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>الخصم</th>
+            {enableLineDiscount && <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>الخصم</th>}
             <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>الصافي</th>
           </tr>
         </thead>
@@ -148,14 +154,16 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ sale }) => {
                 <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
                   {formatArabicCurrency(lineBaseTotal)}
                 </td>
-                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center', color: '#dc2626' }}>
-                  {line.discountAmount && line.discountAmount > 0 ? (
-                    <>
-                      <div>{formatArabicCurrency(line.discountAmount)}</div>
-                      <div style={{ fontSize: '9px' }}>({formatArabicNumber(line.discountPercentage || 0)}%)</div>
-                    </>
-                  ) : '-'}
-                </td>
+                {enableLineDiscount && (
+                  <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center', color: '#dc2626' }}>
+                    {line.discountAmount && line.discountAmount > 0 ? (
+                      <>
+                        <div>{formatArabicCurrency(line.discountAmount)}</div>
+                        <div style={{ fontSize: '9px' }}>({formatArabicNumber(line.discountPercentage || 0)}%)</div>
+                      </>
+                    ) : '-'}
+                  </td>
+                )}
                 <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center', fontWeight: 'bold', color: '#1e40af' }}>
                   {formatArabicCurrency(line.subTotal)}
                 </td>
@@ -165,16 +173,16 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ sale }) => {
         </tbody>
         <tfoot>
           <tr style={{ fontWeight: 'normal', fontSize: '13px', color: '#666' }}>
-            <td colSpan={7} style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'left' }}>
+            <td colSpan={enableLineDiscount ? 7 : 6} style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'left' }}>
               المجموع الفرعي (قبل خصم الفاتورة)
             </td>
             <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
               {formatArabicCurrency(subTotal)}
             </td>
           </tr>
-          {sale.totalDiscountAmount && Number(sale.totalDiscountAmount) > 0 ? (
+          {enableInvoiceDiscount && sale.totalDiscountAmount && Number(sale.totalDiscountAmount) > 0 ? (
             <tr style={{ fontWeight: 'normal', fontSize: '13px', color: '#dc2626' }}>
-              <td colSpan={7} style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'left' }}>
+              <td colSpan={enableLineDiscount ? 7 : 6} style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'left' }}>
                 خصم إجمالي الفاتورة ({formatArabicNumber(Number(sale.totalDiscountPercentage || 0))}%)
               </td>
               <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
@@ -183,7 +191,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({ sale }) => {
             </tr>
           ) : null}
           <tr style={{ backgroundColor: '#f3f4f6', fontWeight: 'bold', fontSize: '14px' }}>
-            <td colSpan={7} style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>
+            <td colSpan={enableLineDiscount ? 7 : 6} style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>
               الصافي النهائي (المطالب بدفعه)
             </td>
             <td style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center', color: '#1e40af' }}>

@@ -111,7 +111,7 @@ const SalesPage = () => {
 
     const savedInvDisc = localStorage.getItem('enableInvoiceDiscount');
     setEnableInvoiceDiscount(savedInvDisc === null ? true : savedInvDisc === 'true');
-  }, [showCreateSaleModal, showEditModal]);
+  }, [showCreateSaleModal, showEditModal, selectedSale, showPrintModal]);
 
   // Product search states
   const [productNameSearch, setProductNameSearch] = useState(''); // البحث بالاسم (like)
@@ -2158,6 +2158,7 @@ const SalesPage = () => {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500"
                                 min="0"
                                 max="100"
+                                step="any"
                               />
                             </div>
                             <div>
@@ -2182,6 +2183,7 @@ const SalesPage = () => {
                                 }}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500"
                                 min="0"
+                                step="any"
                               />
                             </div>
                           </div>
@@ -2397,7 +2399,7 @@ const SalesPage = () => {
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الكمية</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">سعر الوحدة</th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الإجمالي</th>
-                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الخصم</th>
+                          {enableLineDiscount && <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الخصم</th>}
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الصافي</th>
                         </tr>
                       </thead>
@@ -2438,14 +2440,16 @@ const SalesPage = () => {
                               <td className="px-4 py-2 text-sm">
                                 {formatArabicCurrency(line.qty * line.unitPrice)}
                               </td>
-                              <td className="px-4 py-2 text-sm text-red-600">
-                                {line.discountAmount && line.discountAmount > 0 ? (
-                                  <>
-                                    <span>{formatArabicCurrency(line.discountAmount)}</span>
-                                    <span className="text-xs block">({formatArabicNumber(line.discountPercentage || 0)}%)</span>
-                                  </>
-                                ) : '-'}
-                              </td>
+                              {enableLineDiscount && (
+                                <td className="px-4 py-2 text-sm text-red-600">
+                                  {line.discountAmount && line.discountAmount > 0 ? (
+                                    <>
+                                      <span>{formatArabicCurrency(line.discountAmount)}</span>
+                                      <span className="text-xs block">({formatArabicNumber(line.discountPercentage || 0)}%)</span>
+                                    </>
+                                  ) : '-'}
+                                </td>
+                              )}
                               <td className="px-4 py-2 text-sm font-medium text-green-600">{formatArabicCurrency(line.subTotal)}</td>
                             </tr>
                           );
@@ -2460,7 +2464,7 @@ const SalesPage = () => {
                     <span className="font-medium">المجموع الفرعي:</span>
                     <span>{formatArabicCurrency(selectedSale!.lines.reduce((sum, line) => sum + Number(line.subTotal), 0))}</span>
                   </div>
-                  {selectedSale!.totalDiscountAmount && Number(selectedSale!.totalDiscountAmount) > 0 ? (
+                  {enableInvoiceDiscount && selectedSale!.totalDiscountAmount && Number(selectedSale!.totalDiscountAmount) > 0 ? (
                     <div className="flex justify-between items-center text-red-600">
                       <span className="font-medium">خصم إجمالي الفاتورة ({Number(selectedSale!.totalDiscountPercentage)}%):</span>
                       <span>-{formatArabicCurrency(Number(selectedSale!.totalDiscountAmount))}</span>
@@ -2915,6 +2919,7 @@ const SalesPage = () => {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500"
                         min="0"
                         max="100"
+                        step="any"
                       />
                     </div>
                     <div>
@@ -2936,6 +2941,7 @@ const SalesPage = () => {
                         }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500"
                         min="0"
+                        step="any"
                       />
                     </div>
                   </div>
@@ -3035,6 +3041,8 @@ const SalesPage = () => {
           setShowPrintModal(false);
           setSaleToPrint(null);
         }}
+        enableLineDiscount={enableLineDiscount}
+        enableInvoiceDiscount={enableInvoiceDiscount}
       />
     </div>
   );
