@@ -21,6 +21,7 @@ export default function SettingsPage() {
   const [eurRate, setEurRate] = useState('5.20');
   const [isSavingRates, setIsSavingRates] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingDiscounts, setIsSavingDiscounts] = useState(false);
 
   // تحديث الحقول عند تحميل البيانات
   useEffect(() => {
@@ -51,7 +52,7 @@ export default function SettingsPage() {
     setEnableInvoiceDiscount(savedInvDisc === null ? true : savedInvDisc === 'true');
   }, [exchangeRates]);
 
-  // حفظ الإعدادات
+  // حفظ إعدادات الواتساب والمخزون
   const handleSave = () => {
     if (!whatsappNumber.trim()) {
       error('يرجى إدخال رقم الواتساب');
@@ -82,12 +83,10 @@ export default function SettingsPage() {
     setIsSaving(true);
 
     try {
-      // حفظ في localStorage
+      // حفظ في localStorage (بدون إعدادات الخصومات)
       localStorage.setItem('whatsappNumber', cleanNumber);
       localStorage.setItem('lowStockThreshold', threshold.toString());
       localStorage.setItem('profitMargin', margin.toString());
-      localStorage.setItem('enableLineDiscount', enableLineDiscount.toString());
-      localStorage.setItem('enableInvoiceDiscount', enableInvoiceDiscount.toString());
       success('تم حفظ الإعدادات بنجاح');
     } catch (err) {
       error('حدث خطأ أثناء حفظ الإعدادات');
@@ -96,18 +95,14 @@ export default function SettingsPage() {
     }
   };
 
-  // مسح الإعدادات
+  // مسح إعدادات الواتساب والمخزون
   const handleClear = () => {
     localStorage.removeItem('whatsappNumber');
     localStorage.removeItem('lowStockThreshold');
     localStorage.removeItem('profitMargin');
-    localStorage.removeItem('enableLineDiscount');
-    localStorage.removeItem('enableInvoiceDiscount');
     setWhatsappNumber('');
     setLowStockThreshold('10');
     setProfitMargin('20');
-    setEnableLineDiscount(true);
-    setEnableInvoiceDiscount(true);
     success('تم مسح الإعدادات');
   };
 
@@ -130,6 +125,21 @@ export default function SettingsPage() {
       error('حدث خطأ أثناء حفظ أسعار الصرف');
     } finally {
       setIsSavingRates(false);
+    }
+  };
+
+  // حفظ إعدادات الخصومات
+  const handleSaveDiscountSettings = () => {
+    setIsSavingDiscounts(true);
+
+    try {
+      localStorage.setItem('enableLineDiscount', enableLineDiscount.toString());
+      localStorage.setItem('enableInvoiceDiscount', enableInvoiceDiscount.toString());
+      success('تم حفظ إعدادات الخصومات بنجاح');
+    } catch (err) {
+      error('حدث خطأ أثناء حفظ إعدادات الخصومات');
+    } finally {
+      setIsSavingDiscounts(false);
     }
   };
 
@@ -310,6 +320,17 @@ export default function SettingsPage() {
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
             </label>
           </div>
+
+          <button
+            onClick={handleSaveDiscountSettings}
+            disabled={isSavingDiscounts}
+            className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 transition-colors"
+          >
+            <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            {isSavingDiscounts ? 'جاري الحفظ...' : 'حفظ إعدادات الخصومات'}
+          </button>
         </div>
       </div>
 
@@ -451,7 +472,7 @@ export default function SettingsPage() {
               <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              {isSaving ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
+              {isSaving ? 'جاري الحفظ...' : 'حفظ إعدادات الواتساب والمخزون'}
             </button>
             <button
               onClick={handleClear}

@@ -144,9 +144,26 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
   // حالات محلية للحقول لتجنب فقدان التركيز
   const [localPrice, setLocalPrice] = React.useState(line.unitPrice || '');
   const [localQty, setLocalQty] = React.useState(line.qty > 0 ? line.qty : '');
-  const [localDiscountPercentage, setLocalDiscountPercentage] = React.useState(line.discountPercentage || 0);
-  const [localDiscountAmount, setLocalDiscountAmount] = React.useState(line.discountAmount || 0);
+  const [localDiscountPercentage, setLocalDiscountPercentage] = React.useState(Math.max(0, Number(line.discountPercentage || 0)));
+  const [localDiscountAmount, setLocalDiscountAmount] = React.useState(Math.max(0, Number(line.discountAmount || 0)));
   const [isDiscountEnabled, setIsDiscountEnabled] = React.useState(line.discountPercentage > 0 || line.discountAmount > 0);
+  
+  // هامش الربح المحلي للتعديل (فقط للأصناف من الشركة الأم)
+  const [localProfitMargin, setLocalProfitMargin] = React.useState(() => {
+    // إذا كان من الشركة الأم ولديه سعر، نحسب هامش الربح الفعلي
+    if (line.isFromParentCompany && line.parentUnitPrice && line.unitPrice) {
+      const calculatedMargin = ((line.unitPrice - line.parentUnitPrice) / line.parentUnitPrice) * 100;
+      return Math.max(0, Math.round(calculatedMargin));
+    }
+    return profitMargin;
+  });
+  
+  // تحديث هامش الربح المحلي عندما يتغير من الإعدادات (فقط للأصناف الجديدة)
+  React.useEffect(() => {
+    if (!line.isFromParentCompany || !line.unitPrice) {
+      setLocalProfitMargin(profitMargin);
+    }
+  }, [profitMargin, line.isFromParentCompany, line.unitPrice]);
 
   // جلب صلاحيات المستخدم
   const canApplyDiscount = enableLineDiscount; // استخدام الإعداد الممرر من الصفحة الرئيسية
@@ -156,26 +173,27 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
     setLocalPrice(line.unitPrice || '');
   }, [line.unitPrice]);
 
+  // تحديث localQty فقط عندما يتغير line.qty من الخارج (وليس من debounce)
+  const prevLineQtyRef = React.useRef(line.qty);
   React.useEffect(() => {
-    setLocalQty(line.qty > 0 ? line.qty : '');
-  }, [line.qty]);
+    // تحديث فقط إذا كانت القيمة مختلفة ولم تأتِ من التحديث المحلي
+    if (line.qty !== prevLineQtyRef.current && String(line.qty) !== String(localQty)) {
+      setLocalQty(line.qty > 0 ? line.qty : '');
+      prevLineQtyRef.current = line.qty;
+    }
+  }, [line.qty, localQty]);
 
-  // debounce للسعر
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      if (localPrice !== line.unitPrice) {
-        updateSaleLine(index, 'unitPrice', localPrice);
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [localPrice, index, updateSaleLine, line.unitPrice]);
+  // السعر غير قابل للتعديل - يُحدث فقط من قاعدة البيانات عند اختيار الصنف
+  // تم إلغاء debounce للسعر لأنه لا يمكن تعديله يدوياً
 
   // debounce للكمية مع التحقق من المخزون
   React.useEffect(() => {
     const timer = setTimeout(() => {
       const qtyValue = localQty === '' ? 0 : Number(localQty);
-      if (qtyValue !== line.qty) {
+      const currentLineQty = Number(line.qty) || 0;
+      
+      // تحديث فقط إذا كانت القيمة مختلفة
+      if (Math.abs(qtyValue - currentLineQty) > 0.001) {
         // التحقق من المخزون قبل التحديث
         const product = displayProducts.find((p: any) => p.id === line.productId);
         if (product && product.stock && qtyValue > 0) {
@@ -194,28 +212,37 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
           }
         }
         updateSaleLine(index, 'qty', qtyValue);
+        prevLineQtyRef.current = qtyValue;
       }
-    }, 100);
+    }, 300); // زيادة الوقت قليلاً لتجنب التحديثات السريعة
 
     return () => clearTimeout(timer);
-  }, [localQty, index, updateSaleLine, line.qty, line.productId, displayProducts]);
+  }, [localQty, index, updateSaleLine, line.productId, displayProducts, currentCompanyId]);
 
   // تحديث الخصم عند تغيير السعر أو الكمية
   React.useEffect(() => {
     if (isDiscountEnabled) {
-      const price = Number(localPrice) || 0;
-      const qty = Number(localQty) || 0;
-      const unitsPerBox = Number(selectedProduct?.unitsPerBox) || 1;
-      const totalBeforeDiscount = (selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox)
-        ? qty * unitsPerBox * price
-        : qty * price;
+      const price = Math.max(0, Number(localPrice) || 0);
+      const qty = Math.max(0, Number(localQty) || 0);
+      
+      // حساب totalBeforeDiscount: للصناديق نضرب في عدد الأمتار/القطع
+      let totalBeforeDiscount = 0;
+      if (selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox) {
+        // للصناديق: المجموع = الكمية × عدد الأمتار × سعر الوحدة
+        totalBeforeDiscount = qty * Number(selectedProduct.unitsPerBox) * price;
+      } else {
+        // للوحدات الفردية: المجموع = الكمية × السعر
+        totalBeforeDiscount = qty * price;
+      }
 
       if (totalBeforeDiscount > 0) {
+        // التأكد من أن الخصم غير سالب ولا يتجاوز المجموع
+        const discAmount = Math.max(0, Math.min(totalBeforeDiscount, Number(localDiscountAmount)));
         // حساب النسبة بناءً على المبلغ المدخل
-        const percentage = (Number(localDiscountAmount) / totalBeforeDiscount) * 100;
+        const percentage = Math.max(0, Math.min(100, (discAmount / totalBeforeDiscount) * 100));
         setLocalDiscountPercentage(Number(percentage.toFixed(2)));
 
-        updateSaleLine(index, 'discountAmount', Number(localDiscountAmount));
+        updateSaleLine(index, 'discountAmount', Number(discAmount.toFixed(2)));
         updateSaleLine(index, 'discountPercentage', Number(percentage.toFixed(2)));
       }
     } else {
@@ -224,7 +251,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
       updateSaleLine(index, 'discountAmount', 0);
       updateSaleLine(index, 'discountPercentage', 0);
     }
-  }, [localDiscountAmount, localPrice, localQty, isDiscountEnabled, index, updateSaleLine, selectedProduct?.unit, selectedProduct?.unitsPerBox]);
+  }, [localDiscountAmount, localPrice, localQty, isDiscountEnabled, index, updateSaleLine, selectedProduct]);
 
   return (
     <div
@@ -439,25 +466,62 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
 
         {/* السعر */}
         <div>
-          <label htmlFor={`price-${index}-${line.productId || 'new'}`} className="block text-sm font-medium text-gray-700 mb-2">
-            {selectedProduct?.unit === 'صندوق' ? 'السعر (د.ل/م²)' : 'السعر'}
-            {line.isFromParentCompany && line.parentUnitPrice && (
-              <span className="text-xs text-slate-600 block mt-1">
-                حد أدنى: {formatArabicCurrency(line.parentUnitPrice)}
-              </span>
-            )}
+          <label htmlFor={`price-${index}-${line.productId || 'new'}`} className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <span>سعر البيع</span>
+            <span className="text-red-600 text-xs">🔒</span>
           </label>
-          <input
-            id={`price-${index}-${line.productId || 'new'}`}
-            type="number"
-            value={localPrice}
-            onChange={(e) => {
-              const value = e.target.value;
-              setLocalPrice(value);
-            }}
-            readOnly
-            className="w-full px-3 py-2 border border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed rounded-lg text-sm focus:outline-none transition-colors"
-          />
+          
+          {/* إذا كان من الشركة الأم (التقازي) */}
+          {line.isFromParentCompany && line.parentUnitPrice ? (
+            <div className="space-y-2">
+              {/* سعر الشركة الأم */}
+              <div className="flex items-center justify-between text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                <span className="text-slate-600">سعر التقازي:</span>
+                <span className="font-bold text-slate-700">{formatArabicCurrency(line.parentUnitPrice)}</span>
+              </div>
+              
+              {/* هامش الربح - قابل للتعديل */}
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-gray-600 whitespace-nowrap">هامش الربح:</label>
+                <div className="flex items-center gap-1 flex-1">
+                  <input
+                    type="number"
+                    value={localProfitMargin}
+                    onChange={(e) => {
+                      let margin = Math.max(0, Math.min(100, Number(e.target.value)));
+                      setLocalProfitMargin(margin);
+                      
+                      // حساب السعر الجديد
+                      const basePrice = line.parentUnitPrice || 0;
+                      const newPrice = basePrice * (1 + margin / 100);
+                      
+                      // تحديث السعر في الـ line
+                      updateSaleLine(index, 'unitPrice', Number(newPrice.toFixed(2)));
+                      updateSaleLine(index, 'branchUnitPrice', Number(newPrice.toFixed(2)));
+                    }}
+                    className="w-16 px-2 py-1 text-sm border border-blue-300 rounded-md text-center focus:ring-2 focus:ring-blue-400"
+                    min="0"
+                    max="100"
+                    step="1"
+                  />
+                  <span className="text-xs text-blue-600 font-medium">%</span>
+                </div>
+              </div>
+              
+              {/* السعر النهائي */}
+              <div className="flex items-center justify-between p-2 bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-300 rounded-lg">
+                <span className="text-xs font-medium text-green-700">السعر النهائي:</span>
+                <span className="font-bold text-green-700">
+                  {formatArabicCurrency(line.parentUnitPrice * (1 + localProfitMargin / 100))}
+                </span>
+              </div>
+            </div>
+          ) : (
+            /* السعر العادي للأصناف من الشركة الحالية */
+            <div className="w-full px-3 py-2 border-2 border-gray-300 bg-gray-50 text-gray-700 rounded-lg text-sm font-semibold">
+              {formatArabicCurrency(Number(localPrice) || 0)}
+            </div>
+          )}
         </div>
 
         {/* المجموع */}
@@ -501,17 +565,23 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
                         value={localDiscountAmount}
                         onChange={(e) => {
                           let val = Number(e.target.value);
-                          const price = Number(localPrice) || 0;
-                          const qty = Number(localQty) || 0;
-                          const unitsPerBox = Number(selectedProduct?.unitsPerBox) || 1;
-                          const totalBeforeDiscount = (selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox)
-                            ? qty * unitsPerBox * price
-                            : qty * price;
+                          const price = Math.max(0, Number(localPrice) || 0);
+                          const qty = Math.max(0, Number(localQty) || 0);
+                          
+                          // حساب totalBeforeDiscount: للصناديق نضرب في عدد الأمتار/القطع
+                          let totalBeforeDiscount = 0;
+                          if (selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox) {
+                            // للصناديق: المجموع = الكمية × عدد الأمتار × سعر الوحدة
+                            totalBeforeDiscount = qty * Number(selectedProduct.unitsPerBox) * price;
+                          } else {
+                            // للوحدات الفردية: المجموع = الكمية × السعر
+                            totalBeforeDiscount = qty * price;
+                          }
+                          
                           const maxDiscPerc = Number(selectedProduct?.group?.maxDiscountPercentage || 100);
-                          const maxAllowedAmount = (totalBeforeDiscount * maxDiscPerc) / 100;
+                          const maxAllowedAmount = Math.max(0, (totalBeforeDiscount * maxDiscPerc) / 100);
 
-                          if (val > maxAllowedAmount) val = maxAllowedAmount;
-                          if (val < 0) val = 0;
+                          val = Math.max(0, Math.min(val, maxAllowedAmount));
 
                           setLocalDiscountAmount(val);
                         }}
@@ -535,7 +605,22 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
                         مجموعة: {selectedProduct.group.name} | أقصى خصم: {selectedProduct.group.maxDiscountPercentage}%
                       </div>
                       <div className="text-[10px] text-slate-400">
-                        أقصى مبلغ مسموح: {formatArabicCurrency((((Number(localPrice) || 0) * (Number(localQty) || 0) * (selectedProduct?.unit === 'صندوق' ? Number(selectedProduct.unitsPerBox) || 1 : 1)) * (selectedProduct.group.maxDiscountPercentage)) / 100)}
+                        أقصى مبلغ مسموح: {(() => {
+                          const price = Number(localPrice) || 0;
+                          const qty = Number(localQty) || 0;
+                          let totalBeforeDiscount = 0;
+                          
+                          if (selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox) {
+                            // للصناديق: المجموع = الكمية × عدد الأمتار × سعر الوحدة
+                            totalBeforeDiscount = qty * Number(selectedProduct.unitsPerBox) * price;
+                          } else {
+                            // للوحدات الفردية: المجموع = الكمية × السعر
+                            totalBeforeDiscount = qty * price;
+                          }
+                          
+                          const maxAmount = (totalBeforeDiscount * selectedProduct.group.maxDiscountPercentage) / 100;
+                          return formatArabicCurrency(maxAmount);
+                        })()}
                       </div>
                     </div>
                   )}
@@ -547,43 +632,6 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
 
       </div>
 
-      {/* معلومات إضافية للأصناف من الشركة الأم */}
-      {line.isFromParentCompany && line.parentUnitPrice && line.parentUnitPrice > 0 && (
-        <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
-          <div className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-            <span>💰</span>
-            <span>تفاصيل التسعير (من مخزن التقازي)</span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-            <div className="flex justify-between items-center p-3 bg-white rounded-lg border border-slate-200">
-              <span className="text-gray-600 font-medium">سعر مخزن التقازي:</span>
-              <span className="font-bold text-slate-700">{formatArabicCurrency(line.parentUnitPrice)}</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-white rounded-lg border border-slate-200">
-              <span className="text-gray-600 font-medium">هامش الربح:</span>
-              <span className="font-bold text-blue-600">{profitMargin}%</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-white rounded-lg border border-slate-200">
-              <span className="text-gray-600 font-medium">السعر المقترح:</span>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-green-600">
-                  {line.branchUnitPrice && line.branchUnitPrice > 0
-                    ? formatArabicCurrency(line.branchUnitPrice)
-                    : formatArabicCurrency(line.parentUnitPrice * (1 + profitMargin / 100))
-                  }
-                </span>
-                <span className="text-green-600 text-xs bg-green-100 px-2 py-1 rounded">(+{profitMargin}%)</span>
-              </div>
-            </div>
-          </div>
-          <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-xs text-amber-800 flex items-center gap-2">
-              <span>⚠️</span>
-              <span>لا يمكن البيع بأقل من سعر مخزن التقازي ({formatArabicCurrency(line.parentUnitPrice)})</span>
-            </p>
-          </div>
-        </div>
-      )}
 
     </div>
   );

@@ -46,7 +46,7 @@ const InterCompanySalesPage = () => {
   
   const { data: statsData } = useGetInterCompanySalesStatsQuery();
   const { data: productsData } = useGetProductsQuery({ limit: 1000 });
-  const { data: customersData } = useGetCustomersQuery({ limit: 1000 });
+  const { data: customersData } = useGetCustomersQuery({ limit: 50000 });
   const [createSale, { isLoading: isCreating }] = useCreateInterCompanySaleMutation();
   
   // Filter products based on search

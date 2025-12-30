@@ -52,7 +52,7 @@ const formatArabicQuantity = formatArabicArea;
     { parentCompanyId: selectedParentCompany || 0 },
     { skip: !selectedParentCompany || selectedParentCompany === 0 }
   );
-  const { data: customersData } = useGetCustomersQuery({ limit: 1000 });
+  const { data: customersData } = useGetCustomersQuery({ limit: 50000 });
   const { data: companiesData } = useGetCompaniesQuery({ limit: 1000 });
   const [createSale, { isLoading: isCreating }] = useCreateComplexInterCompanySaleMutation();
 

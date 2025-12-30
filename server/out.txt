@@ -1,7 +1,0 @@
-Start fixing...
-Found 0 main receipts
-
-Main receipts fixed.
-Found 0 expense receipts
-
-Expense receipts fixed.

@@ -18,29 +18,34 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
   enableLineDiscount = true,
   enableInvoiceDiscount = true
 }) => {
-  // حساب المجموع الفرعي للبنود
+  // حساب المجموع الإجمالي للبنود قبل أي خصم
+  const totalItemsBeforeDiscount = sale.lines.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0);
+  // إجمالي خصومات الأصناف
+  const totalLineDiscounts = sale.lines.reduce((sum, line) => sum + Number(line.discountAmount || 0), 0);
+  // المجموع بعد خصومات الأصناف (وقبل خصم الفاتورة)
   const subTotal = sale.lines.reduce((sum, line) => sum + Number(line.subTotal), 0);
   const total = Number(sale.total);
 
   return (
     <div className="print-invoice" style={{
       width: '210mm',
-      minHeight: '297mm',
-      padding: '20mm',
+      maxHeight: '297mm',
+      padding: '15mm',
       backgroundColor: 'white',
       fontFamily: 'Arial, sans-serif',
       direction: 'rtl',
-      pageBreakAfter: 'always'
+      pageBreakAfter: 'always',
+      boxSizing: 'border-box'
     }}>
       {/* رأس الفاتورة */}
-      <div style={{ textAlign: 'center', marginBottom: '30px', borderBottom: '3px solid #333', paddingBottom: '20px' }}>
-        <h1 style={{ fontSize: '32px', margin: '0 0 10px 0', color: '#333' }}>
+      <div style={{ textAlign: 'center', marginBottom: '15px', borderBottom: '2px solid #333', paddingBottom: '10px' }}>
+        <h1 style={{ fontSize: '26px', margin: '0 0 5px 0', color: '#333' }}>
           {sale.company.name}
         </h1>
-        <p style={{ fontSize: '14px', margin: '5px 0', color: '#666' }}>
+        <p style={{ fontSize: '12px', margin: '3px 0', color: '#666' }}>
           كود الشركة: {sale.company.code}
         </p>
-        <h2 style={{ fontSize: '24px', margin: '15px 0 0 0', color: '#2563eb' }}>
+        <h2 style={{ fontSize: '20px', margin: '8px 0 0 0', color: '#2563eb' }}>
           فاتورة مبيعات
         </h2>
       </div>
@@ -49,11 +54,11 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
       <div style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
-        gap: '20px',
-        marginBottom: '30px',
-        padding: '15px',
+        gap: '15px',
+        marginBottom: '15px',
+        padding: '10px',
         backgroundColor: '#f9fafb',
-        borderRadius: '8px'
+        borderRadius: '6px'
       }}>
         <div>
           <p style={{ margin: '5px 0', fontSize: '14px' }}>
@@ -95,8 +100,8 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
       <table style={{
         width: '100%',
         borderCollapse: 'collapse',
-        marginBottom: '30px',
-        fontSize: '11px'
+        marginBottom: '15px',
+        fontSize: '10px'
       }}>
         <thead>
           <tr style={{ backgroundColor: '#1e40af', color: 'white' }}>
@@ -172,27 +177,25 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
           })}
         </tbody>
         <tfoot>
-          <tr style={{ fontWeight: 'normal', fontSize: '13px', color: '#666' }}>
+          <tr style={{ backgroundColor: '#f9fafb', fontWeight: 'bold', fontSize: '12px' }}>
             <td colSpan={enableLineDiscount ? 7 : 6} style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'left' }}>
-              المجموع الفرعي (قبل خصم الفاتورة)
+              إجمالي الفاتورة
             </td>
             <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
-              {formatArabicCurrency(subTotal)}
+              {formatArabicCurrency(totalItemsBeforeDiscount)}
             </td>
           </tr>
-          {enableInvoiceDiscount && sale.totalDiscountAmount && Number(sale.totalDiscountAmount) > 0 ? (
-            <tr style={{ fontWeight: 'normal', fontSize: '13px', color: '#dc2626' }}>
-              <td colSpan={enableLineDiscount ? 7 : 6} style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'left' }}>
-                خصم إجمالي الفاتورة ({formatArabicNumber(Number(sale.totalDiscountPercentage || 0))}%)
-              </td>
-              <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
-                -{formatArabicCurrency(Number(sale.totalDiscountAmount))}
-              </td>
-            </tr>
-          ) : null}
+          <tr style={{ fontWeight: 'normal', fontSize: '11px', color: '#ef4444' }}>
+            <td colSpan={enableLineDiscount ? 7 : 6} style={{ padding: '6px 8px', border: '1px solid #ddd', textAlign: 'left' }}>
+              قيمة الخصم
+            </td>
+            <td style={{ padding: '6px 8px', border: '1px solid #ddd', textAlign: 'center' }}>
+              -{formatArabicCurrency(totalLineDiscounts + (Number(sale.totalDiscountAmount) || 0))}
+            </td>
+          </tr>
           <tr style={{ backgroundColor: '#f3f4f6', fontWeight: 'bold', fontSize: '14px' }}>
             <td colSpan={enableLineDiscount ? 7 : 6} style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>
-              الصافي النهائي (المطالب بدفعه)
+              الإجمالي بعد الخصم
             </td>
             <td style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center', color: '#1e40af' }}>
               {formatArabicCurrency(total)}
@@ -202,8 +205,8 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
       </table>
 
       {/* ملاحظات */}
-      <div style={{ marginTop: '40px', padding: '15px', backgroundColor: '#dbeafe', borderRadius: '8px', border: '1px solid #3b82f6' }}>
-        <p style={{ margin: '0', fontSize: '13px', color: '#1e40af' }}>
+      <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#dbeafe', borderRadius: '6px', border: '1px solid #3b82f6' }}>
+        <p style={{ margin: '0', fontSize: '11px', color: '#1e40af' }}>
           <strong>ملاحظة:</strong> الأصناف المباعة بالصندوق تم عرضها بالأمتار المربعة (م²) مع سعر المتر للوضوح. تفاصيل الصناديق موضحة تحت اسم الصنف.
         </p>
       </div>
@@ -212,32 +215,32 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
       <div style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr 1fr',
-        gap: '30px',
-        marginTop: '60px',
-        paddingTop: '20px',
+        gap: '20px',
+        marginTop: '25px',
+        paddingTop: '15px',
         borderTop: '1px solid #ddd'
       }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ borderTop: '2px solid #333', paddingTop: '10px', marginTop: '40px' }}>
-            <p style={{ margin: '0', fontSize: '13px', fontWeight: 'bold' }}>المحاسب</p>
+          <div style={{ borderTop: '2px solid #333', paddingTop: '8px', marginTop: '25px' }}>
+            <p style={{ margin: '0', fontSize: '11px', fontWeight: 'bold' }}>المحاسب</p>
           </div>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ borderTop: '2px solid #333', paddingTop: '10px', marginTop: '40px' }}>
-            <p style={{ margin: '0', fontSize: '13px', fontWeight: 'bold' }}>المدير</p>
+          <div style={{ borderTop: '2px solid #333', paddingTop: '8px', marginTop: '25px' }}>
+            <p style={{ margin: '0', fontSize: '11px', fontWeight: 'bold' }}>المدير</p>
           </div>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ borderTop: '2px solid #333', paddingTop: '10px', marginTop: '40px' }}>
-            <p style={{ margin: '0', fontSize: '13px', fontWeight: 'bold' }}>العميل</p>
+          <div style={{ borderTop: '2px solid #333', paddingTop: '8px', marginTop: '25px' }}>
+            <p style={{ margin: '0', fontSize: '11px', fontWeight: 'bold' }}>العميل</p>
           </div>
         </div>
       </div>
 
       {/* الختم */}
-      <div style={{ textAlign: 'center', marginTop: '30px', fontSize: '12px', color: '#666' }}>
-        <p style={{ margin: '5px 0' }}>شكراً لتعاملكم معنا</p>
-        <p style={{ margin: '5px 0' }}>تم الطباعة بتاريخ: {new Date().toLocaleDateString('ar-LY')}</p>
+      <div style={{ textAlign: 'center', marginTop: '15px', fontSize: '10px', color: '#666' }}>
+        <p style={{ margin: '3px 0' }}>شكراً لتعاملكم معنا</p>
+        <p style={{ margin: '3px 0' }}>تم الطباعة بتاريخ: {new Date().toLocaleDateString('ar-LY')}</p>
       </div>
     </div>
   );

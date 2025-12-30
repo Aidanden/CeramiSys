@@ -291,12 +291,16 @@ const SalesPage = () => {
     const product = productsData?.data?.products?.find(p => p.id === line.productId);
     let baseTotal = 0;
 
-    if (product && product.unit === 'صندوق' && product.unitsPerBox) {
+    // المجموع = الكمية × إجمالي الوحدات (الأمتار/القطع) × سعر البيع
+    // سعر البيع في قاعدة البيانات = سعر الوحدة الواحدة (متر أو قطعة)
+    if (product?.unit === 'صندوق' && product?.unitsPerBox) {
+      // للصناديق: المجموع = عدد الصناديق × عدد الأمتار/القطع في الصندوق × سعر الوحدة
       baseTotal = (line.qty || 0) * Number(product.unitsPerBox) * (line.unitPrice || 0);
     } else {
+      // للوحدات الفردية: المجموع = الكمية × سعر البيع
       baseTotal = (line.qty || 0) * (line.unitPrice || 0);
     }
-
+    
     return baseTotal - (line.discountAmount || 0);
   };
 
@@ -374,26 +378,46 @@ const SalesPage = () => {
   const handleSelectProductForEdit = (product: any) => {
     console.log('🎯 تم اختيار صنف من القائمة المنسدلة للتعديل:', product);
 
-    // إضافة بند جديد في التعديل
-    addEditLine();
-    const newLineIndex = editLines.length;
+    // تحديد السعر الصحيح (للصناديق: سعر البيع × عدد الأمتار)
+    let unitPrice = product.price?.sellPrice ? Number(product.price.sellPrice) : 0;
+    
+    // للصناديق: ضرب السعر في عدد الأمتار
+    if (product.unit === 'صندوق' && product.unitsPerBox) {
+      unitPrice = unitPrice * Number(product.unitsPerBox);
+    }
+    
+    unitPrice = Number(unitPrice.toFixed(2));
 
-    // تحديد ما إذا كان الصنف من الشركة الأم
-    const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
+    // التحقق من وجود الصنف في القائمة
+    const existingLineIndex = editLines.findIndex(line => line.productId === product.id);
 
-    // تحديث بيانات البند
-    const unitPrice = product.price?.sellPrice ? Number(product.price.sellPrice) : 0;
-    updateEditLine(newLineIndex, 'productId', product.id);
-    updateEditLine(newLineIndex, 'qty', 1);
-    updateEditLine(newLineIndex, 'unitPrice', unitPrice);
+    if (existingLineIndex !== -1) {
+      // الصنف موجود: زيادة الكمية بمقدار 1
+      setEditLines(prev => prev.map((line, index) => {
+        if (index === existingLineIndex) {
+          const newQty = Number((line.qty + 1).toFixed(2));
+          return { ...line, qty: newQty };
+        }
+        return line;
+      }));
+      notifications.custom.info('تحديث الكمية', `تم زيادة كمية ${product.name} إلى ${editLines[existingLineIndex].qty + 1}`);
+    } else {
+      // الصنف غير موجود: إضافة بند جديد
+      setEditLines(prev => [...prev, {
+        productId: product.id,
+        qty: 1,
+        unitPrice: unitPrice,
+        discountPercentage: 0,
+        discountAmount: 0
+      }]);
+      notifications.custom.success('تم بنجاح', `تم إضافة الصنف: ${product.name}`);
+    }
 
     // إغلاق القوائم المنسدلة ومسح البحث
     setShowCodeDropdown(false);
     setShowNameDropdown(false);
     setProductCodeSearch('');
     setProductNameSearch('');
-
-    notifications.custom.success('تم بنجاح', `تم إضافة الصنف: ${product.name}`);
   };
 
   // Handle QR Code scan
@@ -535,7 +559,7 @@ const SalesPage = () => {
     }
   );
 
-  const { data: customersData, isLoading: customersLoading, error: customersError, refetch: refetchCustomers } = useGetCustomersQuery({ limit: 1000 });
+  const { data: customersData, isLoading: customersLoading, error: customersError, refetch: refetchCustomers } = useGetCustomersQuery({ limit: 50000 });
   const { data: companiesData, isLoading: companiesLoading } = useGetCompaniesQuery({ limit: 1000 });
 
   // Auto-select company for non-system users and set default for system users
@@ -796,21 +820,38 @@ const SalesPage = () => {
   // Handle edit sale
   const handleEditSale = (sale: Sale) => {
     setSaleToEdit(sale);
-    // تحميل الأسطر الحالية
-    setEditLines(sale.lines.map(line => ({
-      productId: line.productId,
-      qty: Number(line.qty),
-      unitPrice: Number(line.unitPrice),
-      discountPercentage: line.discountPercentage || 0,
-      discountAmount: line.discountAmount || 0
-    })));
+    // تحميل الأسطر الحالية مع التأكد من عدم وجود قيم سالبة
+    // ومع إضافة معلومة isFromParentCompany من بيانات المنتج
+    // مهم: في قاعدة البيانات، السعر للصناديق مخزون مضروباً في unitsPerBox
+    // لذلك يجب قسمته لنحصل على سعر الوحدة الواحدة (المتر/القطعة)
+    setEditLines(sale.lines.map(line => {
+      const product = productsData?.data?.products?.find(p => p.id === line.productId);
+      const isFromParentCompany = product?.createdByCompanyId === 1 && sale.companyId !== 1;
+      
+      // تحديد السعر الصحيح: إذا كان صندوق، نقسم على unitsPerBox للحصول على سعر الوحدة
+      let unitPrice = Math.max(0, Number(line.unitPrice));
+      if (product?.unit === 'صندوق' && product.unitsPerBox) {
+        unitPrice = unitPrice / Number(product.unitsPerBox);
+      }
+      
+      return {
+        productId: line.productId,
+        qty: Math.max(0, Number(line.qty)),
+        unitPrice: unitPrice,
+        discountPercentage: Math.max(0, Number(line.discountPercentage || 0)),
+        discountAmount: Math.max(0, Number(line.discountAmount || 0)),
+        isFromParentCompany: isFromParentCompany,
+        parentUnitPrice: isFromParentCompany ? (product?.price?.sellPrice || 0) : undefined,
+        branchUnitPrice: isFromParentCompany ? unitPrice : undefined
+      };
+    }));
     // مسح حقول البحث
     setProductCodeSearch('');
     setProductNameSearch('');
     setShowCodeDropdown(false);
     setShowNameDropdown(false);
-    setEditTotalDiscountPercentage(Number(sale.totalDiscountPercentage || 0));
-    setEditTotalDiscountAmount(Number(sale.totalDiscountAmount || 0));
+    setEditTotalDiscountPercentage(Math.max(0, Number(sale.totalDiscountPercentage || 0)));
+    setEditTotalDiscountAmount(Math.max(0, Number(sale.totalDiscountAmount || 0)));
     // تعيين الشركة المختارة للبحث عن المنتجات
     if (sale.companyId) {
       setSelectedCompanyId(sale.companyId);
@@ -841,12 +882,32 @@ const SalesPage = () => {
     }
 
     try {
+      // تحويل الأسعار للـ Backend: للصناديق نضرب في عدد الأمتار
+      const processedLines = editLines.map(line => {
+        const product = productsData?.data?.products?.find(p => p.id === line.productId);
+        
+        let processedLine: any = {
+          productId: line.productId,
+          qty: line.qty,
+          unitPrice: line.unitPrice,
+          discountPercentage: line.discountPercentage,
+          discountAmount: line.discountAmount
+        };
+        
+        // للصناديق: ضرب السعر في عدد الأمتار قبل الحفظ
+        if (product?.unit === 'صندوق' && product.unitsPerBox) {
+          processedLine.unitPrice = line.unitPrice * Number(product.unitsPerBox);
+        }
+        
+        return processedLine;
+      });
+      
       await updateSale({
         id: saleToEdit.id,
         data: {
           customerId,
           invoiceNumber: invoiceNumber || undefined,
-          lines: editLines,
+          lines: processedLines,
           totalDiscountPercentage: editTotalDiscountPercentage || 0,
           totalDiscountAmount: editTotalDiscountAmount || 0
         }
@@ -868,7 +929,13 @@ const SalesPage = () => {
 
   // دوال إدارة الأسطر في التعديل
   const addEditLine = () => {
-    setEditLines(prev => [...prev, { productId: 0, qty: 1, unitPrice: 0 }]);
+    setEditLines(prev => [...prev, { 
+      productId: 0, 
+      qty: 1, 
+      unitPrice: 0,
+      discountPercentage: 0,
+      discountAmount: 0
+    }]);
   };
 
   const removeEditLine = (index: number) => {
@@ -884,19 +951,37 @@ const SalesPage = () => {
 
       // حساب الخصم التلقائي
       if (field === 'discountPercentage' || field === 'qty' || field === 'unitPrice' || field === 'productId') {
-        const upb = (product?.unit === 'صندوق' && product.unitsPerBox) ? Number(product.unitsPerBox) : 1;
-        const totalBeforeDiscount = newLine.qty * newLine.unitPrice * upb;
-        if (field === 'discountPercentage') {
-          newLine.discountAmount = (value / 100) * totalBeforeDiscount;
+        // حساب totalBeforeDiscount: للصناديق نضرب في unitsPerBox
+        let totalBeforeDiscount = 0;
+        if (product?.unit === 'صندوق' && product?.unitsPerBox) {
+          totalBeforeDiscount = Math.max(0, Number((newLine.qty * Number(product.unitsPerBox) * newLine.unitPrice).toFixed(2)));
         } else {
+          totalBeforeDiscount = Math.max(0, Number((newLine.qty * newLine.unitPrice).toFixed(2)));
+        }
+        
+        if (field === 'discountPercentage') {
+          const discPerc = Math.max(0, Math.min(100, Number(value))); // بين 0 و 100
+          newLine.discountPercentage = discPerc;
+          newLine.discountAmount = Math.max(0, Number(((discPerc / 100) * totalBeforeDiscount).toFixed(2)));
+        } else if (field === 'qty' || field === 'unitPrice') {
           // تحديث قيمة الخصم بناءً على النسبة القديمة إذا تغير السعر أو الكمية
-          newLine.discountAmount = ((newLine.discountPercentage || 0) / 100) * totalBeforeDiscount;
+          const discPerc = Math.max(0, Math.min(100, Number(newLine.discountPercentage || 0)));
+          newLine.discountPercentage = discPerc;
+          newLine.discountAmount = Math.max(0, Number(((discPerc / 100) * totalBeforeDiscount).toFixed(2)));
         }
       } else if (field === 'discountAmount') {
-        const upb = (product?.unit === 'صندوق' && product.unitsPerBox) ? Number(product.unitsPerBox) : 1;
-        const totalBeforeDiscount = newLine.qty * newLine.unitPrice * upb;
+        // حساب totalBeforeDiscount: للصناديق نضرب في unitsPerBox
+        let totalBeforeDiscount = 0;
+        if (product?.unit === 'صندوق' && product?.unitsPerBox) {
+          totalBeforeDiscount = Math.max(0, Number((newLine.qty * Number(product.unitsPerBox) * newLine.unitPrice).toFixed(2)));
+        } else {
+          totalBeforeDiscount = Math.max(0, Number((newLine.qty * newLine.unitPrice).toFixed(2)));
+        }
+        
+        const discAmount = Math.max(0, Math.min(totalBeforeDiscount, Number(value))); // بين 0 والمجموع
+        newLine.discountAmount = discAmount;
         if (totalBeforeDiscount > 0) {
-          newLine.discountPercentage = (value / totalBeforeDiscount) * 100;
+          newLine.discountPercentage = Math.max(0, Number(((discAmount / totalBeforeDiscount) * 100).toFixed(2)));
         }
       }
 
@@ -908,7 +993,7 @@ const SalesPage = () => {
   const updatePriceFromUnitPrice = (index: number, pricePerUnit: number) => {
     const product = productsData?.data?.products?.find(p => p.id === editLines[index].productId);
     const unitsPerBox = product?.unitsPerBox ? Number(product.unitsPerBox) : 1;
-    const totalPrice = pricePerUnit * unitsPerBox;
+    const totalPrice = Number((pricePerUnit * unitsPerBox).toFixed(2));
     updateEditLine(index, 'unitPrice', totalPrice);
   };
 
@@ -2193,22 +2278,27 @@ const SalesPage = () => {
                       {/* المجموع الإجمالي */}
                       <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-lg">
                         <div className="flex flex-col gap-2">
-                          <div className="flex justify-between items-center text-sm text-gray-600">
-                            <span>المجموع الفرعي:</span>
-                            <span>{formatArabicCurrency(saleForm.lines.reduce((sum, line) => sum + calculateLineTotal(line), 0))}</span>
+                          <div className="flex justify-between items-center text-sm text-gray-800 font-bold">
+                            <span>إجمالي الفاتورة:</span>
+                            <span>{formatArabicCurrency(saleForm.lines.reduce((sum, line) => {
+                              // استخدام calculateLineTotal للحساب الصحيح (يأخذ بعين الاعتبار الأصناف من الشركة الأم)
+                              const lineTotal = calculateLineTotal({ ...line, discountAmount: 0 }); // بدون خصم هنا
+                              return sum + lineTotal;
+                            }, 0))}</span>
                           </div>
-                          {saleForm.totalDiscountAmount && saleForm.totalDiscountAmount > 0 ? (
-                            <div className="flex justify-between items-center text-sm text-red-600 font-medium">
-                              <span>إجمالي الخصم ({saleForm.totalDiscountPercentage}%):</span>
-                              <span>-{formatArabicCurrency(saleForm.totalDiscountAmount)}</span>
-                            </div>
-                          ) : null}
+                          <div className="flex justify-between items-center text-sm text-red-600 font-medium">
+                            <span>قيمة الخصم:</span>
+                            <span>-{formatArabicCurrency(Math.max(0,
+                              saleForm.lines.reduce((sum, line) => sum + Math.max(0, Number(line.discountAmount || 0)), 0) + Math.max(0, Number(saleForm.totalDiscountAmount || 0))
+                            ))}</span>
+                          </div>
+
                           <div className="flex justify-between items-center pt-2 border-t border-green-200">
                             <span className="text-lg font-bold text-gray-700">الصافي النهائي:</span>
                             <span className="text-2xl font-bold text-green-600">
-                              {formatArabicCurrency(
-                                saleForm.lines.reduce((sum, line) => sum + calculateLineTotal(line), 0) - (saleForm.totalDiscountAmount || 0)
-                              )}
+                              {formatArabicCurrency(Math.max(0,
+                                saleForm.lines.reduce((sum, line) => sum + calculateLineTotal(line), 0) - Math.max(0, Number(saleForm.totalDiscountAmount || 0))
+                              ))}
                             </span>
                           </div>
                         </div>
@@ -2460,19 +2550,20 @@ const SalesPage = () => {
                 </div>
 
                 <div className="border-t pt-4 space-y-2">
-                  <div className="flex justify-between items-center text-gray-600">
-                    <span className="font-medium">المجموع الفرعي:</span>
-                    <span>{formatArabicCurrency(selectedSale!.lines.reduce((sum, line) => sum + Number(line.subTotal), 0))}</span>
+                  <div className="flex justify-between items-center text-gray-800 text-sm font-bold">
+                    <span>إجمالي الفاتورة:</span>
+                    <span>{formatArabicCurrency(Math.max(0, selectedSale!.lines.reduce((sum, line) => sum + (Math.max(0, Number(line.qty)) * Math.max(0, Number(line.unitPrice))), 0)))}</span>
                   </div>
-                  {enableInvoiceDiscount && selectedSale!.totalDiscountAmount && Number(selectedSale!.totalDiscountAmount) > 0 ? (
-                    <div className="flex justify-between items-center text-red-600">
-                      <span className="font-medium">خصم إجمالي الفاتورة ({Number(selectedSale!.totalDiscountPercentage)}%):</span>
-                      <span>-{formatArabicCurrency(Number(selectedSale!.totalDiscountAmount))}</span>
-                    </div>
-                  ) : null}
-                  <div className="flex justify-between items-center text-lg font-bold border-t pt-2 mt-2">
+                  <div className="flex justify-between items-center text-red-600 text-sm">
+                    <span className="font-medium">قيمة الخصم:</span>
+                    <span>-{formatArabicCurrency(Math.max(0,
+                      selectedSale!.lines.reduce((sum, line) => sum + Math.max(0, Number(line.discountAmount || 0)), 0) + Math.max(0, Number(selectedSale!.totalDiscountAmount || 0))
+                    ))}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-lg font-bold border-t-2 border-double border-blue-600 pt-2 mt-2 text-blue-700">
                     <span>الصافي النهائي:</span>
-                    <span>{formatArabicCurrency(Number(selectedSale!.total))}</span>
+                    <span>{formatArabicCurrency(Math.max(0, Number(selectedSale!.total)))}</span>
                   </div>
                 </div>
 
@@ -2592,21 +2683,29 @@ const SalesPage = () => {
                           filteredByCode.map((product: any) => {
                             const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
                             const isFromParentCompany = product.createdByCompanyId !== targetCompanyId && product.createdByCompanyId === 1;
+                            const existingLine = editLines.find(line => line.productId === product.id);
+                            const isInInvoice = !!existingLine;
                             return (
                               <button
                                 key={product.id}
                                 type="button"
                                 onClick={() => handleSelectProductForEdit(product)}
-                                className={`w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors ${isFromParentCompany ? 'hover:bg-orange-50' : 'hover:bg-blue-50'
-                                  }`}
+                                className={`w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors ${
+                                  isInInvoice ? 'bg-green-50 hover:bg-green-100' : (isFromParentCompany ? 'hover:bg-orange-50' : 'hover:bg-blue-50')
+                                }`}
                               >
                                 <div className="flex justify-between items-center">
-                                  <div className="text-sm">
+                                  <div className="text-sm flex-1">
                                     <div className={`font-medium ${isFromParentCompany ? 'text-orange-900' : 'text-gray-900'}`}>
                                       {product.name}
                                       {isFromParentCompany && (
                                         <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 mr-2">
                                           مخزن التقازي
+                                        </span>
+                                      )}
+                                      {isInInvoice && (
+                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-600 text-white mr-2">
+                                          ✓ موجود (الكمية: {existingLine.qty})
                                         </span>
                                       )}
                                     </div>
@@ -2647,21 +2746,29 @@ const SalesPage = () => {
                           filteredByName.slice(0, 10).map((product: any) => {
                             const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
                             const isFromParentCompany = product.createdByCompanyId !== targetCompanyId && product.createdByCompanyId === 1;
+                            const existingLine = editLines.find(line => line.productId === product.id);
+                            const isInInvoice = !!existingLine;
                             return (
                               <button
                                 key={product.id}
                                 type="button"
                                 onClick={() => handleSelectProductForEdit(product)}
-                                className={`w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors ${isFromParentCompany ? 'hover:bg-orange-50' : 'hover:bg-blue-50'
-                                  }`}
+                                className={`w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors ${
+                                  isInInvoice ? 'bg-green-50 hover:bg-green-100' : (isFromParentCompany ? 'hover:bg-orange-50' : 'hover:bg-blue-50')
+                                }`}
                               >
                                 <div className="flex justify-between items-center">
-                                  <div className="text-sm">
+                                  <div className="text-sm flex-1">
                                     <div className={`font-medium ${isFromParentCompany ? 'text-orange-900' : 'text-gray-900'}`}>
                                       {product.name}
                                       {isFromParentCompany && (
                                         <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 mr-2">
                                           مخزن التقازي
+                                        </span>
+                                      )}
+                                      {isInInvoice && (
+                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-600 text-white mr-2">
+                                          ✓ موجود (الكمية: {existingLine.qty})
                                         </span>
                                       )}
                                     </div>
@@ -2737,157 +2844,33 @@ const SalesPage = () => {
                 </div>
 
                 {editLines.length === 0 ? (
-                  <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                    <p className="text-gray-500">لا توجد أصناف. انقر على "إضافة صنف" لإضافة صنف جديد</p>
+                  <div className="text-center py-12 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg">
+                    <div className="text-6xl mb-3">📝</div>
+                    <p className="text-gray-600 font-medium mb-2">لا توجد بنود في الفاتورة</p>
+                    <p className="text-sm text-gray-500">اضغط على "إضافة صنف" لبدء التعديل</p>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                  <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                     {editLines.map((line, index) => {
-                      const product = productsData?.data?.products?.find(p => p.id === line.productId);
-                      const unitsPerBox = product?.unitsPerBox ? Number(product.unitsPerBox) : null;
-                      const totalUnits = unitsPerBox && line.qty ? line.qty * unitsPerBox : null;
-                      const pricePerUnit = unitsPerBox && line.unitPrice ? line.unitPrice / unitsPerBox : null;
-                      const subtotal = (line.qty * line.unitPrice) - (line.discountAmount || 0);
+                      const selectedProduct = productsData?.data?.products?.find(p => p.id === line.productId);
+                      const currentCompanyId = user?.isSystemUser ? selectedCompanyId : (user?.companyId || null);
 
                       return (
-                        <div key={index} className="bg-white p-4 rounded-lg border-2 border-gray-200 shadow-sm hover:border-orange-300 transition-colors">
-                          <div className="grid grid-cols-12 gap-3 items-start">
-                            {/* اختيار الصنف */}
-                            <div className="col-span-5">
-                              <label className="block text-xs font-medium text-gray-700 mb-1">الصنف</label>
-                              <select
-                                value={line.productId}
-                                onChange={(e) => updateEditLine(index, 'productId', Number(e.target.value))}
-                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                required
-                              >
-                                <option value={0}>اختر صنف...</option>
-                                {productsData?.data?.products?.map(product => (
-                                  <option key={product.id} value={product.id}>
-                                    {product.name} - {product.sku}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-
-                            {/* الكمية */}
-                            <div className="col-span-3">
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                الكمية {product?.unit === 'صندوق' && '(صندوق)'}
-                              </label>
-                              <input
-                                type="number"
-                                value={line.qty}
-                                onChange={(e) => updateEditLine(index, 'qty', Number(e.target.value))}
-                                min="0.01"
-                                step="0.01"
-                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                required
-                              />
-                            </div>
-
-                            {/* السعر */}
-                            <div className="col-span-3">
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                السعر/متر
-                              </label>
-                              <input
-                                type="number"
-                                value={pricePerUnit || 0}
-                                onChange={(e) => updatePriceFromUnitPrice(index, Number(e.target.value))}
-                                min="0.01"
-                                step="0.01"
-                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                required
-                              />
-                            </div>
-
-                            {/* زر الحذف */}
-                            <div className="col-span-1 flex items-start pt-6">
-                              <button
-                                type="button"
-                                onClick={() => removeEditLine(index)}
-                                className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                                title="حذف"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* صف الخصم (اختياري) */}
-                          <div className="grid grid-cols-12 gap-3 mt-2 pt-2 border-t border-dashed border-gray-100">
-                            <div className="col-span-5">
-                              {totalUnits && (
-                                <p className="text-xs text-blue-600">
-                                  📏 {formatArabicNumber(totalUnits.toFixed(2))} متر
-                                </p>
-                              )}
-                            </div>
-                            <div className="col-span-3">
-                              <label className="block text-[10px] font-medium text-gray-500 mb-0.5">الخصم (%)</label>
-                              <input
-                                type="number"
-                                value={line.discountPercentage || 0}
-                                onChange={(e) => updateEditLine(index, 'discountPercentage', Number(e.target.value))}
-                                className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-orange-500"
-                              />
-                            </div>
-                            <div className="col-span-3">
-                              <label className="block text-[10px] font-medium text-gray-500 mb-0.5">مبلغ الخصم</label>
-                              <input
-                                type="number"
-                                value={line.discountAmount || 0}
-                                onChange={(e) => updateEditLine(index, 'discountAmount', Number(e.target.value))}
-                                className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:ring-orange-500"
-                              />
-                            </div>
-                          </div>
-
-                          {/* معلومات تفصيلية */}
-                          <div className="mt-3 pt-3 border-t border-gray-200 bg-gradient-to-r from-blue-50 to-green-50 p-2 rounded">
-                            <div className="grid grid-cols-2 gap-2 text-xs">
-                              {/* العمود الأيسر */}
-                              <div className="space-y-1">
-                                {product?.unit && (
-                                  <p className="text-gray-600">
-                                    <span className="font-medium">الوحدة:</span> {product.unit}
-                                  </p>
-                                )}
-                                {unitsPerBox && (
-                                  <p className="text-gray-600">
-                                    <span className="font-medium">متر/صندوق:</span> {formatArabicNumber(unitsPerBox.toFixed(2))}
-                                  </p>
-                                )}
-                                {pricePerUnit && (
-                                  <p className="text-green-700 font-medium">
-                                    السعر/متر: {formatArabicCurrency(pricePerUnit)}
-                                  </p>
-                                )}
-                              </div>
-
-                              {/* العمود الأيمن */}
-                              <div className="space-y-1 text-left">
-                                <p className="text-lg font-bold text-blue-700">
-                                  المجموع: {formatArabicCurrency(subtotal)}
-                                </p>
-                                {totalUnits && (
-                                  <p className="text-gray-600">
-                                    <span className="font-medium">إجمالي الأمتار:</span> {formatArabicNumber(totalUnits.toFixed(2))} م
-                                  </p>
-                                )}
-                                {unitsPerBox && line.unitPrice > 0 && (
-                                  <p className="text-blue-600">
-                                    السعر/صندوق: {formatArabicCurrency(line.unitPrice)}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )
+                        <SaleLineItem
+                          key={`edit-line-${index}`}
+                          line={line}
+                          index={index}
+                          selectedProduct={selectedProduct}
+                          productsData={productsData}
+                          currentCompanyId={currentCompanyId}
+                          updateSaleLine={updateEditLine}
+                          removeSaleLine={removeEditLine}
+                          calculateLineTotal={calculateLineTotal}
+                          formatArabicCurrency={formatArabicCurrency}
+                          filteredProducts={productsData?.data?.products || []}
+                          enableLineDiscount={enableLineDiscount}
+                        />
+                      );
                     })}
                   </div>
                 )}
@@ -2907,11 +2890,13 @@ const SalesPage = () => {
                         value={editTotalDiscountPercentage || 0}
                         onChange={(e) => {
                           let perc = Number(e.target.value);
-                          if (perc < 0) perc = 0;
-                          if (perc > 100) perc = 100;
+                          perc = Math.max(0, Math.min(100, perc));
 
-                          const subTotal = editLines.reduce((sum, line) => sum + (line.qty * line.unitPrice) - (line.discountAmount || 0), 0);
-                          const amount = (subTotal * perc) / 100;
+                          const subTotal = Math.max(0, Number(editLines.reduce((sum, line) => {
+                            const lineTotal = calculateLineTotal(line);
+                            return sum + lineTotal;
+                          }, 0).toFixed(2)));
+                          const amount = Math.max(0, Number(((subTotal * perc) / 100).toFixed(2)));
 
                           setEditTotalDiscountPercentage(perc);
                           setEditTotalDiscountAmount(amount);
@@ -2929,15 +2914,17 @@ const SalesPage = () => {
                         value={editTotalDiscountAmount || 0}
                         onChange={(e) => {
                           let amount = Number(e.target.value);
-                          const subTotal = editLines.reduce((sum, line) => sum + (line.qty * line.unitPrice) - (line.discountAmount || 0), 0);
+                          const subTotal = Math.max(0, Number(editLines.reduce((sum, line) => {
+                            const lineTotal = calculateLineTotal(line);
+                            return sum + lineTotal;
+                          }, 0).toFixed(2)));
 
-                          if (amount < 0) amount = 0;
-                          if (amount > subTotal) amount = subTotal;
+                          amount = Math.max(0, Math.min(subTotal, amount));
 
-                          const perc = subTotal > 0 ? (amount / subTotal) * 100 : 0;
+                          const perc = subTotal > 0 ? Math.max(0, Number(((amount / subTotal) * 100).toFixed(2))) : 0;
 
-                          setEditTotalDiscountAmount(amount);
-                          setEditTotalDiscountPercentage(Number(perc.toFixed(2)));
+                          setEditTotalDiscountAmount(Number(amount.toFixed(2)));
+                          setEditTotalDiscountPercentage(perc);
                         }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-orange-500"
                         min="0"
@@ -2952,22 +2939,31 @@ const SalesPage = () => {
               {editLines.length > 0 && (
                 <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
                   <div className="flex flex-col gap-2">
-                    <div className="flex justify-between items-center text-sm text-gray-600">
-                      <span>المجموع الفرعي:</span>
-                      <span>{formatArabicCurrency(editLines.reduce((sum, line) => sum + (line.qty * line.unitPrice) - (line.discountAmount || 0), 0))}</span>
+                    <div className="flex justify-between items-center text-sm text-gray-800 font-bold">
+                      <span>إجمالي الفاتورة:</span>
+                      <span>{formatArabicCurrency(Number(editLines.reduce((sum, line) => {
+                        // استخدام calculateLineTotal للحساب الصحيح (يأخذ بعين الاعتبار الأصناف من الشركة الأم)
+                        const lineTotal = calculateLineTotal({ ...line, discountAmount: 0 }); // بدون خصم هنا
+                        return sum + lineTotal;
+                      }, 0).toFixed(2)))}</span>
                     </div>
-                    {editTotalDiscountAmount > 0 ? (
-                      <div className="flex justify-between items-center text-sm text-red-600 font-medium">
-                        <span>إجمالي الخصم ({editTotalDiscountPercentage}%):</span>
-                        <span>-{formatArabicCurrency(editTotalDiscountAmount)}</span>
-                      </div>
-                    ) : null}
+                    <div className="flex justify-between items-center text-sm text-red-600 font-medium">
+                      <span>قيمة الخصم:</span>
+                      <span>-{formatArabicCurrency(Math.max(0, Number(
+                        ((enableLineDiscount ? editLines.reduce((sum, line) => sum + Math.max(0, Number(line.discountAmount || 0)), 0) : 0) + (enableInvoiceDiscount ? Math.max(0, Number(editTotalDiscountAmount || 0)) : 0)).toFixed(2)
+                      )))}</span>
+                    </div>
+
                     <div className="flex justify-between items-center pt-2 border-t border-blue-200">
                       <span className="text-lg font-bold text-gray-700">الصافي النهائي:</span>
                       <span className="text-2xl font-bold text-blue-600">
-                        {formatArabicCurrency(
-                          editLines.reduce((sum, line) => sum + (line.qty * line.unitPrice) - (line.discountAmount || 0), 0) - editTotalDiscountAmount
-                        )}
+                        {formatArabicCurrency(Math.max(0, Number(
+                          (editLines.reduce((sum, line) => {
+                            // استخدام calculateLineTotal للحساب الصحيح مع الخصم
+                            const lineTotal = enableLineDiscount ? calculateLineTotal(line) : calculateLineTotal({ ...line, discountAmount: 0 });
+                            return sum + lineTotal;
+                          }, 0) - (enableInvoiceDiscount ? Math.max(0, Number(editTotalDiscountAmount || 0)) : 0)).toFixed(2)
+                        )))}
                       </span>
                     </div>
                   </div>
