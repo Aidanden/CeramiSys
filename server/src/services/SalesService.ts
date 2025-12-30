@@ -700,8 +700,9 @@ export class SalesService {
           saleType: data.saleType,
           paymentMethod: data.paymentMethod,
           total: total,
-          totalDiscountPercentage: data.totalDiscountPercentage,
-          totalDiscountAmount: data.lines || data.totalDiscountPercentage !== undefined || data.totalDiscountAmount !== undefined ? (Number(existingSale.total) + Number(existingSale.totalDiscountAmount || 0) - total) : undefined,
+          // ✅ حفظ قيم الخصم المرسلة مباشرة بدلاً من إعادة حسابها
+          totalDiscountPercentage: data.totalDiscountPercentage !== undefined ? data.totalDiscountPercentage : existingSale.totalDiscountPercentage,
+          totalDiscountAmount: data.totalDiscountAmount !== undefined ? data.totalDiscountAmount : existingSale.totalDiscountAmount,
           remainingAmount: newRemainingAmount, // ✅ تحديث المبلغ المتبقي
           isFullyPaid: newRemainingAmount <= 0, // ✅ تحديث حالة الدفع
           ...(data.lines && {

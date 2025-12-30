@@ -300,7 +300,7 @@ const SalesPage = () => {
       // للوحدات الفردية: المجموع = الكمية × سعر البيع
       baseTotal = (line.qty || 0) * (line.unitPrice || 0);
     }
-    
+
     return baseTotal - (line.discountAmount || 0);
   };
 
@@ -333,27 +333,56 @@ const SalesPage = () => {
   const handleSelectProductFromDropdown = (product: any) => {
     console.log('🎯 تم اختيار صنف من القائمة المنسدلة:', product);
 
-    // إضافة بند جديد
-    addSaleLine();
-    const newLineIndex = saleForm.lines.length;
-
     // تحديد ما إذا كان الصنف من الشركة الأم
     const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
     const isFromParentCompany = product.createdByCompanyId !== targetCompanyId && product.createdByCompanyId === 1;
 
-    // تحديث بيانات البند
-    updateSaleLine(newLineIndex, 'productId', product.id);
-    updateSaleLine(newLineIndex, 'isFromParentCompany', isFromParentCompany);
+    // التحقق من وجود الصنف في الفاتورة
+    const existingLineIndex = saleForm.lines.findIndex(line => line.productId === product.id);
 
-    if (product.price?.sellPrice) {
-      const originalPrice = Number(product.price.sellPrice);
-      const formattedPrice = Math.round(originalPrice * 100) / 100;
-      updateSaleLine(newLineIndex, 'unitPrice', formattedPrice);
+    if (existingLineIndex !== -1) {
+      // الصنف موجود بالفعل - زيادة الكمية
+      const currentQty = saleForm.lines[existingLineIndex].qty || 0;
+      updateSaleLine(existingLineIndex, 'qty', currentQty + 1);
 
-      // إذا كان من الشركة الأم، حفظ السعر للمرجعية
-      if (isFromParentCompany) {
-        updateSaleLine(newLineIndex, 'parentUnitPrice', originalPrice);
+      const companyType = isFromParentCompany ? '(من مخزن التقازي)' : '(من الشركة الحالية)';
+      notifications.custom.success('تم بنجاح', `تم زيادة كمية الصنف: ${product.name} ${companyType}`);
+
+      // التركيز على السطر الموجود
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          focusProductSelect(existingLineIndex);
+        });
+      });
+    } else {
+      // الصنف غير موجود - إضافة بند جديد
+      addSaleLine();
+      const newLineIndex = saleForm.lines.length;
+
+      // تحديث بيانات البند
+      updateSaleLine(newLineIndex, 'productId', product.id);
+      updateSaleLine(newLineIndex, 'isFromParentCompany', isFromParentCompany);
+
+      if (product.price?.sellPrice) {
+        const originalPrice = Number(product.price.sellPrice);
+        const formattedPrice = Math.round(originalPrice * 100) / 100;
+        updateSaleLine(newLineIndex, 'unitPrice', formattedPrice);
+
+        // إذا كان من الشركة الأم، حفظ السعر للمرجعية
+        if (isFromParentCompany) {
+          updateSaleLine(newLineIndex, 'parentUnitPrice', originalPrice);
+        }
       }
+
+      // التركيز على مربع اختيار الصنف للبند الجديد
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          focusProductSelect(newLineIndex);
+        });
+      });
+
+      const companyType = isFromParentCompany ? '(من مخزن التقازي)' : '(من الشركة الحالية)';
+      notifications.custom.success('تم بنجاح', `تم إضافة الصنف: ${product.name} ${companyType}`);
     }
 
     // إغلاق القوائم المنسدلة ومسح البحث
@@ -362,16 +391,6 @@ const SalesPage = () => {
     setProductCodeSearch('');
     setProductNameSearch('');
     setSelectedProductFromSearch(product);
-
-    // التركيز على مربع اختيار الصنف للبند الجديد
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        focusProductSelect(newLineIndex);
-      });
-    });
-
-    const companyType = isFromParentCompany ? '(من مخزن التقازي)' : '(من الشركة الحالية)';
-    notifications.custom.success('تم بنجاح', `تم إضافة الصنف: ${product.name} ${companyType}`);
   };
 
   // دالة اختيار الصنف من القائمة المنسدلة للتعديل
@@ -380,12 +399,10 @@ const SalesPage = () => {
 
     // تحديد السعر الصحيح (للصناديق: سعر البيع × عدد الأمتار)
     let unitPrice = product.price?.sellPrice ? Number(product.price.sellPrice) : 0;
-    
+
     // للصناديق: ضرب السعر في عدد الأمتار
-    if (product.unit === 'صندوق' && product.unitsPerBox) {
-      unitPrice = unitPrice * Number(product.unitsPerBox);
-    }
-    
+
+
     unitPrice = Number(unitPrice.toFixed(2));
 
     // التحقق من وجود الصنف في القائمة
@@ -489,51 +506,87 @@ const SalesPage = () => {
         return;
       }
 
-      console.log('➕ إضافة سطر جديد للفاتورة مع بيانات الصنف...');
+      // التحقق من وجود الصنف في الفاتورة
+      const existingLineIndex = saleForm.lines.findIndex(line => line.productId === product.id);
 
-      // حساب السعر
-      const unitPrice = product.price?.sellPrice ? Number(product.price.sellPrice) : 0;
+      if (existingLineIndex !== -1) {
+        // الصنف موجود بالفعل - زيادة الكمية
+        console.log('🔄 الصنف موجود بالفعل في السطر:', existingLineIndex);
 
-      // إضافة سطر جديد مع بيانات الصنف مباشرة (بدون setTimeout)
-      setSaleForm(prev => {
-        const newLine = {
-          productId: product.id,
-          qty: 1,
-          unitPrice: unitPrice,
-          isFromParentCompany: isFromParentCompany,
-          parentUnitPrice: isFromParentCompany ? unitPrice : 0,
-          branchUnitPrice: 0
-        };
+        setSaleForm(prev => {
+          const updatedLines = [...prev.lines];
+          const currentQty = updatedLines[existingLineIndex].qty || 0;
+          updatedLines[existingLineIndex] = {
+            ...updatedLines[existingLineIndex],
+            qty: currentQty + 1
+          };
 
-        const newLines = [...prev.lines, newLine];
-        const newIndex = newLines.length - 1;
+          console.log('✅ تم زيادة الكمية من', currentQty, 'إلى', currentQty + 1);
 
-        console.log('✅ تم إضافة السطر بالبيانات:', {
-          index: newIndex,
-          productId: product.id,
-          productName: product.name,
-          productCompanyId: product.createdByCompanyId,
-          isFromParentCompany: isFromParentCompany,
-          unitPrice: unitPrice
+          return {
+            ...prev,
+            lines: updatedLines
+          };
         });
 
-        // التركيز على مربع اختيار الصنف للصنف المُضاف
+        // التركيز على السطر الموجود
         requestAnimationFrame(() => {
-          focusProductSelect(newIndex);
+          focusProductSelect(existingLineIndex);
         });
 
-        return {
-          ...prev,
-          lines: newLines
-        };
-      });
+        const sourceCompany = isFromParentCompany ? '(من مخزن التقازي)' : '(من الشركة الحالية)';
+        notifications.custom.success(
+          'تم بنجاح',
+          `تم زيادة كمية الصنف "${product.name}" ${sourceCompany}`
+        );
+      } else {
+        // الصنف غير موجود - إضافة سطر جديد
+        console.log('➕ إضافة سطر جديد للفاتورة مع بيانات الصنف...');
 
-      // إظهار رسالة النجاح مع توضيح مصدر الصنف
-      const sourceCompany = isFromParentCompany ? '(من مخزن التقازي)' : '(من الشركة الحالية)';
-      notifications.custom.success(
-        'تم بنجاح',
-        `تمت إضافة الصنف "${product.name}" ${sourceCompany}`
-      );
+        // حساب السعر
+        const unitPrice = product.price?.sellPrice ? Number(product.price.sellPrice) : 0;
+
+        // إضافة سطر جديد مع بيانات الصنف مباشرة (بدون setTimeout)
+        setSaleForm(prev => {
+          const newLine = {
+            productId: product.id,
+            qty: 1,
+            unitPrice: unitPrice,
+            isFromParentCompany: isFromParentCompany,
+            parentUnitPrice: isFromParentCompany ? unitPrice : 0,
+            branchUnitPrice: 0
+          };
+
+          const newLines = [...prev.lines, newLine];
+          const newIndex = newLines.length - 1;
+
+          console.log('✅ تم إضافة السطر بالبيانات:', {
+            index: newIndex,
+            productId: product.id,
+            productName: product.name,
+            productCompanyId: product.createdByCompanyId,
+            isFromParentCompany: isFromParentCompany,
+            unitPrice: unitPrice
+          });
+
+          // التركيز على مربع اختيار الصنف للصنف المُضاف
+          requestAnimationFrame(() => {
+            focusProductSelect(newIndex);
+          });
+
+          return {
+            ...prev,
+            lines: newLines
+          };
+        });
+
+        // إظهار رسالة النجاح مع توضيح مصدر الصنف
+        const sourceCompany = isFromParentCompany ? '(من مخزن التقازي)' : '(من الشركة الحالية)';
+        notifications.custom.success(
+          'تم بنجاح',
+          `تمت إضافة الصنف "${product.name}" ${sourceCompany}`
+        );
+      }
 
       setShowQRScanner(false);
     } catch (error) {
@@ -827,13 +880,13 @@ const SalesPage = () => {
     setEditLines(sale.lines.map(line => {
       const product = productsData?.data?.products?.find(p => p.id === line.productId);
       const isFromParentCompany = product?.createdByCompanyId === 1 && sale.companyId !== 1;
-      
+
       // تحديد السعر الصحيح: إذا كان صندوق، نقسم على unitsPerBox للحصول على سعر الوحدة
       let unitPrice = Math.max(0, Number(line.unitPrice));
       if (product?.unit === 'صندوق' && product.unitsPerBox) {
         unitPrice = unitPrice / Number(product.unitsPerBox);
       }
-      
+
       return {
         productId: line.productId,
         qty: Math.max(0, Number(line.qty)),
@@ -850,8 +903,11 @@ const SalesPage = () => {
     setProductNameSearch('');
     setShowCodeDropdown(false);
     setShowNameDropdown(false);
+
+    // تحميل قيم الخصم الإجمالي
     setEditTotalDiscountPercentage(Math.max(0, Number(sale.totalDiscountPercentage || 0)));
     setEditTotalDiscountAmount(Math.max(0, Number(sale.totalDiscountAmount || 0)));
+
     // تعيين الشركة المختارة للبحث عن المنتجات
     if (sale.companyId) {
       setSelectedCompanyId(sale.companyId);
@@ -885,7 +941,7 @@ const SalesPage = () => {
       // تحويل الأسعار للـ Backend: للصناديق نضرب في عدد الأمتار
       const processedLines = editLines.map(line => {
         const product = productsData?.data?.products?.find(p => p.id === line.productId);
-        
+
         let processedLine: any = {
           productId: line.productId,
           qty: line.qty,
@@ -893,15 +949,15 @@ const SalesPage = () => {
           discountPercentage: line.discountPercentage,
           discountAmount: line.discountAmount
         };
-        
+
         // للصناديق: ضرب السعر في عدد الأمتار قبل الحفظ
         if (product?.unit === 'صندوق' && product.unitsPerBox) {
           processedLine.unitPrice = line.unitPrice * Number(product.unitsPerBox);
         }
-        
+
         return processedLine;
       });
-      
+
       await updateSale({
         id: saleToEdit.id,
         data: {
@@ -929,9 +985,9 @@ const SalesPage = () => {
 
   // دوال إدارة الأسطر في التعديل
   const addEditLine = () => {
-    setEditLines(prev => [...prev, { 
-      productId: 0, 
-      qty: 1, 
+    setEditLines(prev => [...prev, {
+      productId: 0,
+      qty: 1,
       unitPrice: 0,
       discountPercentage: 0,
       discountAmount: 0
@@ -958,7 +1014,7 @@ const SalesPage = () => {
         } else {
           totalBeforeDiscount = Math.max(0, Number((newLine.qty * newLine.unitPrice).toFixed(2)));
         }
-        
+
         if (field === 'discountPercentage') {
           const discPerc = Math.max(0, Math.min(100, Number(value))); // بين 0 و 100
           newLine.discountPercentage = discPerc;
@@ -977,7 +1033,7 @@ const SalesPage = () => {
         } else {
           totalBeforeDiscount = Math.max(0, Number((newLine.qty * newLine.unitPrice).toFixed(2)));
         }
-        
+
         const discAmount = Math.max(0, Math.min(totalBeforeDiscount, Number(value))); // بين 0 والمجموع
         newLine.discountAmount = discAmount;
         if (totalBeforeDiscount > 0) {
@@ -2690,9 +2746,8 @@ const SalesPage = () => {
                                 key={product.id}
                                 type="button"
                                 onClick={() => handleSelectProductForEdit(product)}
-                                className={`w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors ${
-                                  isInInvoice ? 'bg-green-50 hover:bg-green-100' : (isFromParentCompany ? 'hover:bg-orange-50' : 'hover:bg-blue-50')
-                                }`}
+                                className={`w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors ${isInInvoice ? 'bg-green-50 hover:bg-green-100' : (isFromParentCompany ? 'hover:bg-orange-50' : 'hover:bg-blue-50')
+                                  }`}
                               >
                                 <div className="flex justify-between items-center">
                                   <div className="text-sm flex-1">
@@ -2753,9 +2808,8 @@ const SalesPage = () => {
                                 key={product.id}
                                 type="button"
                                 onClick={() => handleSelectProductForEdit(product)}
-                                className={`w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors ${
-                                  isInInvoice ? 'bg-green-50 hover:bg-green-100' : (isFromParentCompany ? 'hover:bg-orange-50' : 'hover:bg-blue-50')
-                                }`}
+                                className={`w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors ${isInInvoice ? 'bg-green-50 hover:bg-green-100' : (isFromParentCompany ? 'hover:bg-orange-50' : 'hover:bg-blue-50')
+                                  }`}
                               >
                                 <div className="flex justify-between items-center">
                                   <div className="text-sm flex-1">
