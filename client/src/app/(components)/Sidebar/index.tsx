@@ -27,11 +27,13 @@ import {
 import { usePathname } from "next/navigation";
 import React from "react";
 import Link from "next/link";
+import { useGetSalesQuery } from "@/state/salesApi";
 interface SidebarLinkProps {
   href: string;
   icon: LucideIcon;
   label: string;
   isCollapsed: boolean;
+  badgeCount?: number;
 }
 
 const SidebarLink = React.memo(({
@@ -39,6 +41,7 @@ const SidebarLink = React.memo(({
   icon: Icon,
   label,
   isCollapsed,
+  badgeCount,
 }: SidebarLinkProps) => {
   const pathname = usePathname();
   const isActive = pathname === href || (pathname === "/" && href === "/dashboard");
@@ -62,6 +65,14 @@ const SidebarLink = React.memo(({
         >
           {label}
         </span>
+        {badgeCount !== undefined && badgeCount > 0 && !isCollapsed && (
+          <span className="mr-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm animate-pulse">
+            {badgeCount}
+          </span>
+        )}
+        {badgeCount !== undefined && badgeCount > 0 && isCollapsed && (
+          <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
+        )}
         {isActive && !isCollapsed && (
           <div className="absolute left-2 w-1 h-8 bg-white rounded-full"></div>
         )}
@@ -82,6 +93,19 @@ const Sidebar = () => {
   const { data: userData } = useGetCurrentUserQuery();
   const user = userData?.data;
   const isParentCompany = user?.company?.parentId === null; // الشركة الأم ليس لها parentId
+
+  // جلب عدد الفواتير المعلقة (DRAFT)
+  const { data: pendingSalesData } = useGetSalesQuery({
+    status: 'DRAFT',
+    limit: 1,
+    // فلتر حسب الشركة الحالية إذا لم يكن System User
+    companyId: user?.isSystemUser ? undefined : user?.companyId
+  }, {
+    // تحديث البيانات كل 30 ثانية
+    pollingInterval: 30000,
+    skip: !user
+  });
+  const pendingCount = pendingSalesData?.data?.pagination?.total || 0;
 
   // جلب الشاشات المصرح بها للمستخدم
   const { data: userScreensData, isLoading: isLoadingScreens, error: screensError } = useGetUserScreensQuery();
@@ -216,6 +240,7 @@ const Sidebar = () => {
               icon={CreditCard}
               label="مساحة عمل المحاسب"
               isCollapsed={isSidebarCollapsed}
+              badgeCount={pendingCount}
             />
           )}
           {canAccessScreen('/treasury') && (

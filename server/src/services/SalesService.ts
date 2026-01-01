@@ -36,7 +36,12 @@ export class SalesService {
       const products = await this.prisma.product.findMany({
         where: {
           id: { in: productIds },
-          ...(isSystemUser !== true && { createdByCompanyId: userCompanyId })
+          ...(isSystemUser !== true && {
+            OR: [
+              { createdByCompanyId: userCompanyId },
+              { createdByCompanyId: 1 } // السماح بمنتجات شركة التقازي
+            ]
+          })
         },
         include: {
           group: true,
@@ -576,7 +581,12 @@ export class SalesService {
         products = await this.prisma.product.findMany({
           where: {
             id: { in: productIds },
-            ...(isSystemUser !== true && { createdByCompanyId: userCompanyId })
+            ...(isSystemUser !== true && {
+              OR: [
+                { createdByCompanyId: userCompanyId },
+                { createdByCompanyId: 1 } // السماح بمنتجات شركة التقازي
+              ]
+            })
           },
           include: {
             group: true,
@@ -714,7 +724,10 @@ export class SalesService {
                   unitPrice: line.unitPrice,
                   discountPercentage: line.discountPercentage || 0,
                   discountAmount: line.discountAmount || 0,
-                  subTotal: (line.qty * line.unitPrice) - (line.discountAmount || 0)
+                  subTotal: (line.qty * line.unitPrice) - (line.discountAmount || 0),
+                  isFromParentCompany: line.isFromParentCompany || false,
+                  parentUnitPrice: line.parentUnitPrice || null,
+                  branchUnitPrice: line.branchUnitPrice || null
                 }
               })
             }

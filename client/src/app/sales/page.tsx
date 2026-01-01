@@ -41,6 +41,7 @@ interface LocalSaleLine {
   branchUnitPrice?: number;
   discountPercentage?: number;
   discountAmount?: number;
+  profitMargin?: number;
 }
 
 // نوع محلي لطلب إنشاء المبيعات
@@ -84,6 +85,10 @@ const SalesPage = () => {
     unitPrice: number;
     discountPercentage?: number;
     discountAmount?: number;
+    isFromParentCompany?: boolean;
+    parentUnitPrice?: number;
+    branchUnitPrice?: number;
+    profitMargin?: number;
   }>>([]);
   const [editTotalDiscountPercentage, setEditTotalDiscountPercentage] = useState(0);
   const [editTotalDiscountAmount, setEditTotalDiscountAmount] = useState(0);
@@ -365,12 +370,17 @@ const SalesPage = () => {
 
       if (product.price?.sellPrice) {
         const originalPrice = Number(product.price.sellPrice);
-        const formattedPrice = Math.round(originalPrice * 100) / 100;
-        updateSaleLine(newLineIndex, 'unitPrice', formattedPrice);
 
-        // إذا كان من الشركة الأم، حفظ السعر للمرجعية
         if (isFromParentCompany) {
+          const margin = Number(localStorage.getItem('profitMargin')) || 20;
+          const branchPrice = Math.round(originalPrice * (1 + margin / 100) * 100) / 100;
+          updateSaleLine(newLineIndex, 'unitPrice', branchPrice);
           updateSaleLine(newLineIndex, 'parentUnitPrice', originalPrice);
+          updateSaleLine(newLineIndex, 'branchUnitPrice', branchPrice);
+          updateSaleLine(newLineIndex, 'profitMargin', margin);
+        } else {
+          const formattedPrice = Math.round(originalPrice * 100) / 100;
+          updateSaleLine(newLineIndex, 'unitPrice', formattedPrice);
         }
       }
 
@@ -399,11 +409,11 @@ const SalesPage = () => {
 
     // تحديد السعر الصحيح (للصناديق: سعر البيع × عدد الأمتار)
     let unitPrice = product.price?.sellPrice ? Number(product.price.sellPrice) : 0;
-
-    // للصناديق: ضرب السعر في عدد الأمتار
-
-
     unitPrice = Number(unitPrice.toFixed(2));
+
+    // تحديد ما إذا كان الصنف من الشركة الأم
+    const targetCompanyId = user?.isSystemUser ? selectedCompanyId : user?.companyId;
+    const isFromParentCompany = product.createdByCompanyId !== targetCompanyId && product.createdByCompanyId === 1;
 
     // التحقق من وجود الصنف في القائمة
     const existingLineIndex = editLines.findIndex(line => line.productId === product.id);
@@ -417,17 +427,26 @@ const SalesPage = () => {
         }
         return line;
       }));
-      notifications.custom.info('تحديث الكمية', `تم زيادة كمية ${product.name} إلى ${editLines[existingLineIndex].qty + 1}`);
+      const source = isFromParentCompany ? '(من مخزن التقازي)' : '';
+      notifications.custom.info('تحديث الكمية', `تم زيادة كمية ${product.name} ${source} إلى ${editLines[existingLineIndex].qty + 1}`);
     } else {
       // الصنف غير موجود: إضافة بند جديد
+      const margin = Number(localStorage.getItem('profitMargin')) || 20;
+      const branchPrice = isFromParentCompany ? Math.round(unitPrice * (1 + margin / 100) * 100) / 100 : unitPrice;
+
       setEditLines(prev => [...prev, {
         productId: product.id,
         qty: 1,
-        unitPrice: unitPrice,
+        unitPrice: branchPrice,
         discountPercentage: 0,
-        discountAmount: 0
+        discountAmount: 0,
+        isFromParentCompany: isFromParentCompany,
+        parentUnitPrice: isFromParentCompany ? unitPrice : 0,
+        branchUnitPrice: isFromParentCompany ? branchPrice : 0,
+        profitMargin: isFromParentCompany ? margin : 0
       }]);
-      notifications.custom.success('تم بنجاح', `تم إضافة الصنف: ${product.name}`);
+      const source = isFromParentCompany ? '(من مخزن التقازي)' : '';
+      notifications.custom.success('تم بنجاح', `تم إضافة الصنف: ${product.name} ${source}`);
     }
 
     // إغلاق القوائم المنسدلة ومسح البحث
@@ -947,7 +966,11 @@ const SalesPage = () => {
           qty: line.qty,
           unitPrice: line.unitPrice,
           discountPercentage: line.discountPercentage,
-          discountAmount: line.discountAmount
+          discountAmount: line.discountAmount,
+          isFromParentCompany: line.isFromParentCompany || false,
+          parentUnitPrice: line.parentUnitPrice || 0,
+          branchUnitPrice: line.branchUnitPrice || 0,
+          profitMargin: line.profitMargin || 0
         };
 
         // للصناديق: ضرب السعر في عدد الأمتار قبل الحفظ
@@ -990,7 +1013,11 @@ const SalesPage = () => {
       qty: 1,
       unitPrice: 0,
       discountPercentage: 0,
-      discountAmount: 0
+      discountAmount: 0,
+      isFromParentCompany: false,
+      parentUnitPrice: 0,
+      branchUnitPrice: 0,
+      profitMargin: 0
     }]);
   };
 
@@ -1062,7 +1089,8 @@ const SalesPage = () => {
         unitPrice: 0,
         isFromParentCompany: false,
         parentUnitPrice: 0,
-        branchUnitPrice: 0
+        branchUnitPrice: 0,
+        profitMargin: 0
       }];
 
       // التركيز على مربع اختيار الصنف للبند الجديد بعد إضافته

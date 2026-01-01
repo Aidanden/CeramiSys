@@ -60,7 +60,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
     }
   }, [line.qty]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const timer = setTimeout(() => {
       const qtyValue = localQty === '' ? 0 : Number(localQty);
       if (Math.abs(qtyValue - (line.qty || 0)) > 0.001) {
@@ -70,7 +70,32 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
     return () => clearTimeout(timer);
   }, [localQty, index, updateSaleLine]);
 
-  React.useEffect(() => {
+  // تحديث السعر تلقائياً عند تغيير نوع الشركة أو الصنف أو هامش الربح الخاص بالبند
+  useEffect(() => {
+    if (!line.productId) return;
+    const p = productsData?.data?.products?.find((item: any) => item.id === line.productId);
+    if (!p) return;
+
+    const basePrice = Number(p.price?.sellPrice || 0);
+    // استخدام هامش الربح الخاص بالبند إذا كان موجوداً، وإلا استخدام الهامش الافتراضي
+    const currentMargin = line.isFromParentCompany ? (line.profitMargin ?? profitMargin) : 0;
+    const calculatedPrice = Math.round(basePrice * (1 + currentMargin / 100) * 100) / 100;
+
+    if (Math.abs((line.unitPrice || 0) - calculatedPrice) > 0.01) {
+      updateSaleLine(index, 'unitPrice', calculatedPrice);
+      if (line.isFromParentCompany) {
+        updateSaleLine(index, 'parentUnitPrice', basePrice);
+        updateSaleLine(index, 'branchUnitPrice', calculatedPrice);
+        // نحدث الهامش في السطر فقط إذا لم يكن موجوداً لضمان عدم حدوث حلقة
+        if (line.profitMargin === undefined) {
+          updateSaleLine(index, 'profitMargin', profitMargin);
+        }
+      }
+    }
+  }, [line.productId, line.isFromParentCompany, line.profitMargin, profitMargin, productsData, index, updateSaleLine, line.unitPrice]);
+
+  // حساب الخصم بناءً على السعر الحالي والكمية
+  useEffect(() => {
     if (isDiscountEnabled && enableLineDiscount) {
       const price = Number(line.unitPrice) || 0;
       const qty = Number(localQty) || 0;
@@ -114,16 +139,8 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
               value={line.productId}
               onChange={(e) => {
                 const pid = Number(e.target.value);
-                const p = displayProducts.find((item: any) => item.id === pid);
                 updateSaleLine(index, 'productId', pid);
-                if (p) {
-                  const sellPrice = Number(p.price?.sellPrice || 0);
-                  updateSaleLine(index, 'unitPrice', Math.round(sellPrice * 100) / 100);
-                  if (line.isFromParentCompany) {
-                    updateSaleLine(index, 'parentUnitPrice', sellPrice);
-                    updateSaleLine(index, 'branchUnitPrice', sellPrice * (1 + profitMargin / 100));
-                  }
-                }
+                // السعر سيحدث تلقائياً بواسطة useEffect
               }}
               className="w-full bg-transparent text-sm font-bold text-slate-800 outline-none truncate cursor-pointer"
             >
@@ -140,6 +157,24 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
               >
                 {line.isFromParentCompany ? 'التقازي' : 'محلي'}
               </button>
+              {line.isFromParentCompany && (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 bg-orange-100 px-2 py-0.5 rounded-md border border-orange-300 shadow-sm">
+                    <span className="text-[10px] font-black text-orange-700 whitespace-nowrap">هامش الربح:</span>
+                    <input
+                      type="number"
+                      value={line.profitMargin ?? profitMargin}
+                      onChange={(e) => updateSaleLine(index, 'profitMargin', Number(e.target.value))}
+                      className="w-12 bg-white border border-orange-200 rounded px-1 text-xs font-black text-orange-800 outline-none focus:ring-2 focus:ring-orange-200"
+                    />
+                    <span className="text-[10px] font-black text-orange-700">%</span>
+                  </div>
+                  <div className="flex flex-col items-center bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200 shadow-sm min-w-[70px]">
+                    <span className="text-[8px] font-bold text-orange-400 leading-none">سعر التقازي</span>
+                    <span className="text-[10px] font-black text-orange-600">{formatArabicCurrency(line.parentUnitPrice || 0)}</span>
+                  </div>
+                </div>
+              )}
               {selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox && (
                 <span className="text-[9px] font-bold text-slate-400">عبوة: {selectedProduct.unitsPerBox}</span>
               )}
@@ -221,6 +256,7 @@ export default React.memo(SaleLineItem, (p, n) => {
     p.line.qty === n.line.qty &&
     p.line.unitPrice === n.line.unitPrice &&
     p.line.isFromParentCompany === n.line.isFromParentCompany &&
+    p.line.profitMargin === n.line.profitMargin &&
     p.line.discountPercentage === n.line.discountPercentage &&
     p.line.discountAmount === n.line.discountAmount &&
     p.enableLineDiscount === n.enableLineDiscount
