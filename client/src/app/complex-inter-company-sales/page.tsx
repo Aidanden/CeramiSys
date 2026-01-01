@@ -12,39 +12,40 @@ import { useGetCustomersQuery } from '@/state/salesApi';
 import { useGetCompaniesQuery } from '@/state/companyApi';
 import { useToast } from '@/components/ui/Toast';
 import { formatArabicNumber, formatArabicCurrency, formatArabicArea } from '@/utils/formatArabicNumbers';
-import { 
-  ShoppingCart, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  ShoppingCart,
+  DollarSign,
+  TrendingUp,
   TrendingDown,
   Plus,
   X,
   Building2,
   Users
 } from 'lucide-react';
+import { getProfitMargin } from '@/constants/defaults';
 
 const ComplexInterCompanySalesPage = () => {
   const { success, error, warning } = useToast();
-  
+
   // States
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<number | undefined>(undefined);
   const [selectedBranchCompany, setSelectedBranchCompany] = useState<number | undefined>(undefined); // الشركة الفرعية
   const [selectedParentCompany, setSelectedParentCompany] = useState<number | undefined>(undefined);
-  const [profitMargin, setProfitMargin] = useState<number>(20); // 20% هامش ربح افتراضي
+  const [profitMargin, setProfitMargin] = useState<number>(getProfitMargin()); // هامش ربح من الإعدادات
   const [customerSaleType, setCustomerSaleType] = useState<'CASH' | 'CREDIT'>('CASH'); // نوع الفاتورة
   const [customerPaymentMethod, setCustomerPaymentMethod] = useState<'CASH' | 'BANK' | 'CARD'>('CASH'); // طريقة الدفع
   const [lines, setLines] = useState<ComplexInterCompanySaleLine[]>([]);
-  
+
   // Product search states
   const [productSearchTerm, setProductSearchTerm] = useState('');
   const [productCodeSearch, setProductCodeSearch] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
-// Alias for consistency
-const formatArabicQuantity = formatArabicArea;
-  
+  // Alias for consistency
+  const formatArabicQuantity = formatArabicArea;
+
   // API calls
   const { data: statsData } = useGetComplexInterCompanyStatsQuery();
   const { data: productsData } = useGetProductsQuery({ limit: 1000 });
@@ -61,11 +62,11 @@ const formatArabicQuantity = formatArabicArea;
   const currentCompanyId = currentUser?.companyId;
 
   // عرض جميع الشركات في القوائم
-  const parentCompanies = companiesData?.data?.companies?.filter(company => 
+  const parentCompanies = companiesData?.data?.companies?.filter(company =>
     company.isParent === true
   ) || [];
-  
-  const branchCompanies = companiesData?.data?.companies?.filter(company => 
+
+  const branchCompanies = companiesData?.data?.companies?.filter(company =>
     company.isParent === false && company.parentId !== null
   ) || [];
 
@@ -78,23 +79,23 @@ const formatArabicQuantity = formatArabicArea;
       return matchesName && matchesCode;
     });
   }, [parentProductsData, productSearchTerm, productCodeSearch]);
-  
+
   // Auto-select product when exact code match is found (with debounce)
   const handleProductCodeSearch = (code: string) => {
     setProductCodeSearch(code);
-    
+
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
       searchTimeoutRef.current = null;
     }
-    
+
     if (!code || code.trim() === '') {
       setIsSearching(false);
       return;
     }
-    
+
     setIsSearching(true);
-    
+
     searchTimeoutRef.current = setTimeout(() => {
       if (!parentProductsData?.data || !selectedParentCompany) {
         setIsSearching(false);
@@ -107,7 +108,7 @@ const formatArabicQuantity = formatArabicArea;
       const exactMatch = parentProductsData.data.find(
         (product: any) => product.sku.toLowerCase() === code.toLowerCase()
       );
-      
+
       if (exactMatch) {
         handleAddLine();
         const newLineIndex = lines.length;
@@ -119,11 +120,11 @@ const formatArabicQuantity = formatArabicArea;
       } else {
         error('غير موجود', `الصنف بالكود "${code}" غير موجود`);
       }
-      
+
       setIsSearching(false);
     }, 800);
   };
-  
+
   // Calculate total area in square meters
   const calculateTotalArea = () => {
     return lines.reduce((total, line) => {
@@ -173,7 +174,7 @@ const formatArabicQuantity = formatArabicArea;
   const updateLine = (index: number, field: keyof ComplexInterCompanySaleLine, value: any) => {
     const newLines = [...lines];
     newLines[index] = { ...newLines[index], [field]: value };
-    
+
     // If product is selected, get its price from parent company products
     if (field === 'productId' && value > 0) {
       const selectedProduct = parentProductsData?.data?.find((p: any) => p.id === value);
@@ -184,12 +185,12 @@ const formatArabicQuantity = formatArabicArea;
         newLines[index].subTotal = newLines[index].qty * branchPrice;
       }
     }
-    
+
     // Calculate branch unit price with profit margin
     if (field === 'parentUnitPrice' || field === 'qty' || field === 'branchUnitPrice') {
       const parentPrice = field === 'parentUnitPrice' ? value : newLines[index].parentUnitPrice;
       const qty = field === 'qty' ? value : newLines[index].qty;
-      
+
       if (field === 'branchUnitPrice') {
         // User manually changed branch price
         newLines[index].subTotal = qty * value;
@@ -200,7 +201,7 @@ const formatArabicQuantity = formatArabicArea;
         newLines[index].subTotal = qty * branchPrice;
       }
     }
-    
+
     setLines(newLines);
   };
 
@@ -212,7 +213,7 @@ const formatArabicQuantity = formatArabicArea;
   // Handle create sale
   const handleCreateSale = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // التحقق من أن المستخدم العادي لا يمكنه إنشاء فاتورة لشركة أخرى
     if (!currentUser?.isSystemUser) {
       if (selectedParentCompany && selectedParentCompany !== currentCompanyId) {
@@ -224,29 +225,29 @@ const formatArabicQuantity = formatArabicArea;
         return;
       }
     }
-    
+
     if (!selectedCustomer) {
       error('خطأ', 'يجب اختيار العميل');
       return;
     }
-    
+
     if (!selectedParentCompany) {
       error('خطأ', 'يجب اختيار الشركة الأم');
       return;
     }
-    
+
     if (!selectedBranchCompany) {
       error('خطأ', 'يجب اختيار الشركة الفرعية');
       return;
     }
-    
+
     if (lines.length === 0) {
       error('خطأ', 'يجب إضافة بند واحد على الأقل');
       return;
     }
 
     // Validate lines
-    const invalidLines = lines.filter(line => 
+    const invalidLines = lines.filter(line =>
       line.productId === 0 || line.qty <= 0 || line.parentUnitPrice <= 0
     );
 
@@ -265,9 +266,9 @@ const formatArabicQuantity = formatArabicArea;
         customerSaleType: customerSaleType,
         customerPaymentMethod: customerPaymentMethod
       };
-      
+
       console.log('📤 إرسال طلب إنشاء عملية بيع معقدة:', requestData);
-      
+
       const result = await createSale(requestData).unwrap();
 
       console.log('✅ نجح إنشاء العملية:', result);
@@ -277,7 +278,7 @@ const formatArabicQuantity = formatArabicArea;
       setSelectedCustomer(undefined);
       setSelectedBranchCompany(undefined);
       setSelectedParentCompany(undefined);
-      
+
     } catch (err: any) {
       console.error('❌ خطأ في إنشاء العملية:', err);
       console.error('تفاصيل الخطأ:', {
@@ -416,10 +417,10 @@ const formatArabicQuantity = formatArabicArea;
                       const isUserCompany = company.id === currentCompanyId;
                       const isSystemUser = currentUser?.isSystemUser;
                       const isAvailable = isSystemUser || isUserCompany;
-                      
+
                       return (
-                        <option 
-                          key={company.id} 
+                        <option
+                          key={company.id}
                           value={company.id}
                           disabled={!isAvailable}
                         >
@@ -447,10 +448,10 @@ const formatArabicQuantity = formatArabicArea;
                       const isUserCompany = company.id === currentCompanyId;
                       const isSystemUser = currentUser?.isSystemUser;
                       const isAvailable = isSystemUser || isUserCompany;
-                      
+
                       return (
-                        <option 
-                          key={company.id} 
+                        <option
+                          key={company.id}
                           value={company.id}
                           disabled={!isAvailable}
                         >
@@ -509,9 +510,8 @@ const formatArabicQuantity = formatArabicArea;
                   <select
                     value={customerPaymentMethod}
                     onChange={(e) => setCustomerPaymentMethod(e.target.value as 'CASH' | 'BANK' | 'CARD')}
-                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      customerSaleType === 'CREDIT' ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${customerSaleType === 'CREDIT' ? 'bg-gray-100 cursor-not-allowed' : ''
+                      }`}
                     required={customerSaleType !== 'CREDIT'}
                     disabled={customerSaleType === 'CREDIT'}
                   >
@@ -615,11 +615,10 @@ const formatArabicQuantity = formatArabicArea;
                     type="button"
                     onClick={handleAddLine}
                     disabled={!selectedParentCompany || filteredProducts.length === 0}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow-md transition-all duration-200 font-medium ${
-                      selectedParentCompany && filteredProducts.length > 0
-                        ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white hover:shadow-lg' 
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow-md transition-all duration-200 font-medium ${selectedParentCompany && filteredProducts.length > 0
+                        ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white hover:shadow-lg'
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
+                      }`}
                   >
                     <span className="text-lg">➕</span>
                     <span>إضافة بند</span>
@@ -636,13 +635,13 @@ const formatArabicQuantity = formatArabicArea;
                   ) : (
                     lines.map((line, index) => {
                       const selectedProduct = parentProductsData?.data?.find((p: any) => p.id === line.productId);
-                      const totalUnits = selectedProduct?.unitsPerBox && line.qty 
-                        ? Number(line.qty) * Number(selectedProduct.unitsPerBox) 
+                      const totalUnits = selectedProduct?.unitsPerBox && line.qty
+                        ? Number(line.qty) * Number(selectedProduct.unitsPerBox)
                         : 0;
-                      
+
                       const lineProfit = line.subTotal - (line.qty * line.parentUnitPrice);
                       const lineProfitMargin = line.subTotal > 0 ? ((lineProfit / line.subTotal) * 100) : 0;
-                      
+
                       return (
                         <div key={index} className="grid grid-cols-12 gap-3 items-start p-3 bg-white border-2 border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
                           <div className="col-span-3">
@@ -685,7 +684,7 @@ const formatArabicQuantity = formatArabicArea;
                               </div>
                             )}
                           </div>
-                          
+
                           <div className="col-span-1">
                             <label className="block text-xs font-medium text-gray-700 mb-1">
                               {selectedProduct?.unit === 'صندوق' ? 'الصناديق' : `الكمية`}
@@ -694,11 +693,10 @@ const formatArabicQuantity = formatArabicArea;
                               type="number"
                               value={line.qty || ''}
                               onChange={(e) => updateLine(index, 'qty', Number(e.target.value) || 0)}
-                              className={`w-full px-3 py-2 border rounded-md text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                                selectedProduct?.currentStock && line.qty > Number(selectedProduct.currentStock)
-                                  ? 'border-red-300 bg-red-50' 
+                              className={`w-full px-3 py-2 border rounded-md text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${selectedProduct?.currentStock && line.qty > Number(selectedProduct.currentStock)
+                                  ? 'border-red-300 bg-red-50'
                                   : 'border-gray-300'
-                              }`}
+                                }`}
                               placeholder="0"
                               min="0.01"
                               step="0.01"
@@ -710,7 +708,7 @@ const formatArabicQuantity = formatArabicArea;
                               </div>
                             )}
                           </div>
-                          
+
                           <div className="col-span-1">
                             <label className="block text-xs font-medium text-gray-700 mb-1">
                               {selectedProduct?.unit === 'صندوق' ? 'إجمالي المتر' : 'الإجمالي'}
@@ -725,7 +723,7 @@ const formatArabicQuantity = formatArabicArea;
                               </span>
                             </div>
                           </div>
-                          
+
                           <div className="col-span-2">
                             <label className="block text-xs font-medium text-gray-700 mb-1">💰 سعر الأم</label>
                             <input
@@ -739,7 +737,7 @@ const formatArabicQuantity = formatArabicArea;
                               تكلفة: {formatArabicCurrency(line.qty * line.parentUnitPrice)}
                             </div>
                           </div>
-                          
+
                           <div className="col-span-2">
                             <label className="block text-xs font-medium text-gray-700 mb-1">💵 سعر الفرع</label>
                             <input
@@ -756,7 +754,7 @@ const formatArabicQuantity = formatArabicArea;
                               إيراد: {formatArabicCurrency(line.subTotal)}
                             </div>
                           </div>
-                          
+
                           <div className="col-span-2">
                             <label className="block text-xs font-medium text-gray-700 mb-1">📈 الربح</label>
                             <div className="px-2 py-2 bg-orange-50 border border-orange-200 rounded-md">
@@ -768,7 +766,7 @@ const formatArabicQuantity = formatArabicArea;
                               هامش: {formatArabicNumber(lineProfitMargin.toFixed(1))}%
                             </div>
                           </div>
-                          
+
                           <div className="col-span-1">
                             <label className="block text-xs font-medium text-gray-700 mb-1 opacity-0">حذف</label>
                             <button
@@ -796,21 +794,21 @@ const formatArabicQuantity = formatArabicArea;
                           {formatArabicCurrency(parentTotal)}
                         </div>
                       </div>
-                      
+
                       <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border-2 border-green-200">
                         <div className="text-xs text-green-700 font-medium mb-1">💵 إيرادات الفرع</div>
                         <div className="text-xl font-bold text-green-700">
                           {formatArabicCurrency(branchTotal)}
                         </div>
                       </div>
-                      
+
                       <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border-2 border-orange-200">
                         <div className="text-xs text-orange-700 font-medium mb-1">📈 صافي الربح</div>
                         <div className="text-xl font-bold text-orange-700">
                           {formatArabicCurrency(profitAmount)}
                         </div>
                       </div>
-                      
+
                       <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border-2 border-purple-200">
                         <div className="text-xs text-purple-700 font-medium mb-1">📊 هامش الربح</div>
                         <div className="text-xl font-bold text-purple-700">

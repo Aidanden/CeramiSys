@@ -85,8 +85,12 @@ export class SalesService {
       }
 
       // حساب الخصم على إجمالي الفاتورة
-      let totalDiscountAmount = data.totalDiscountAmount || 0;
-      if (data.totalDiscountPercentage && data.totalDiscountPercentage > 0) {
+      let totalDiscountAmount = 0;
+      if (data.totalDiscountAmount && data.totalDiscountAmount > 0) {
+        // إذا تم إرسال مبلغ الخصم مباشرة، نستخدمه كما هو (الأولوية للمبلغ لتجنب أخطاء التقريب)
+        totalDiscountAmount = data.totalDiscountAmount;
+      } else if (data.totalDiscountPercentage && data.totalDiscountPercentage > 0) {
+        // إذا أرسلت النسبة فقط، نحسب المبلغ منها
         totalDiscountAmount = (subTotalFromLines * data.totalDiscountPercentage) / 100;
       }
 
@@ -120,6 +124,7 @@ export class SalesService {
                 isFromParentCompany: line.isFromParentCompany || false,
                 parentUnitPrice: line.parentUnitPrice || null,
                 branchUnitPrice: line.branchUnitPrice || null,
+                profitMargin: line.profitMargin || null,
                 discountPercentage: line.discountPercentage || 0,
                 discountAmount: line.discountAmount || 0
               }
@@ -167,6 +172,10 @@ export class SalesService {
           product: line.product,
           qty: Number(line.qty),
           unitPrice: Number(line.unitPrice),
+          isFromParentCompany: (line as any).isFromParentCompany || false,
+          parentUnitPrice: (line as any).parentUnitPrice ? Number((line as any).parentUnitPrice) : undefined,
+          branchUnitPrice: (line as any).branchUnitPrice ? Number((line as any).branchUnitPrice) : undefined,
+          profitMargin: (line as any).profitMargin ? Number((line as any).profitMargin) : undefined,
           discountPercentage: Number((line as any).discountPercentage || 0),
           discountAmount: Number((line as any).discountAmount || 0),
           subTotal: Number(line.subTotal)
@@ -291,6 +300,10 @@ export class SalesService {
                 qty: true,
                 unitPrice: true,
                 subTotal: true,
+                isFromParentCompany: true,
+                parentUnitPrice: true,
+                branchUnitPrice: true,
+                profitMargin: true,
                 product: {
                   select: { id: true, sku: true, name: true, unit: true, unitsPerBox: true, groupId: true }
                 },
@@ -370,6 +383,10 @@ export class SalesService {
               product: line.product,
               qty: Number(line.qty),
               unitPrice: Number(line.unitPrice),
+              isFromParentCompany: (line as any).isFromParentCompany || false,
+              parentUnitPrice: (line as any).parentUnitPrice ? Number((line as any).parentUnitPrice) : undefined,
+              branchUnitPrice: (line as any).branchUnitPrice ? Number((line as any).branchUnitPrice) : undefined,
+              profitMargin: (line as any).profitMargin ? Number((line as any).profitMargin) : undefined,
               discountPercentage: Number((line as any).discountPercentage || 0),
               discountAmount: Number((line as any).discountAmount || 0),
               subTotal: Number(line.subTotal)
@@ -446,6 +463,10 @@ export class SalesService {
           product: line.product,
           qty: Number(line.qty),
           unitPrice: Number(line.unitPrice),
+          isFromParentCompany: (line as any).isFromParentCompany || false,
+          parentUnitPrice: (line as any).parentUnitPrice ? Number((line as any).parentUnitPrice) : undefined,
+          branchUnitPrice: (line as any).branchUnitPrice ? Number((line as any).branchUnitPrice) : undefined,
+          profitMargin: (line as any).profitMargin ? Number((line as any).profitMargin) : undefined,
           subTotal: Number(line.subTotal),
           discountPercentage: Number((line as any).discountPercentage || 0),
           discountAmount: Number((line as any).discountAmount || 0)
@@ -669,13 +690,18 @@ export class SalesService {
 
         // حساب الخصم على إجمالي الفاتورة (نستخدم القيم الجديدة إذا توفرت، وإلا القديمة)
         const discPercentage = data.totalDiscountPercentage !== undefined ? data.totalDiscountPercentage : Number(existingSale.totalDiscountPercentage || 0);
-        let discAmount = data.totalDiscountAmount !== undefined ? data.totalDiscountAmount : Number(existingSale.totalDiscountAmount || 0);
+        let discAmount = 0;
 
-        if (data.totalDiscountPercentage !== undefined && data.totalDiscountPercentage > 0) {
-          discAmount = (subTotalFromLines * discPercentage) / 100;
-        } else if (data.totalDiscountAmount !== undefined) {
+        if (data.totalDiscountAmount !== undefined && data.totalDiscountAmount > 0) {
+          // الأولوية دائماً للمبلغ المباشر لتجنب أي فروقات ناتجة عن النسب المئوية
           discAmount = data.totalDiscountAmount;
+        } else if (data.totalDiscountPercentage !== undefined && data.totalDiscountPercentage > 0) {
+          discAmount = (subTotalFromLines * discPercentage) / 100;
+        } else if (existingSale.totalDiscountAmount && Number(existingSale.totalDiscountAmount) > 0) {
+          // إذا لم يرسل المستخدم خصم جديد، نستخدم المبلغ القديم
+          discAmount = Number(existingSale.totalDiscountAmount);
         } else if (existingSale.totalDiscountPercentage && Number(existingSale.totalDiscountPercentage) > 0) {
+          // وإذا كان القديم نسبة فقط
           discAmount = (subTotalFromLines * Number(existingSale.totalDiscountPercentage)) / 100;
         }
 
@@ -727,7 +753,8 @@ export class SalesService {
                   subTotal: (line.qty * line.unitPrice) - (line.discountAmount || 0),
                   isFromParentCompany: line.isFromParentCompany || false,
                   parentUnitPrice: line.parentUnitPrice || null,
-                  branchUnitPrice: line.branchUnitPrice || null
+                  branchUnitPrice: line.branchUnitPrice || null,
+                  profitMargin: line.profitMargin || null
                 }
               })
             }

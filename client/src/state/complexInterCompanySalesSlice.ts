@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { DEFAULT_PROFIT_MARGIN } from "@/constants/defaults";
 
 export interface ComplexInterCompanySalesState {
   selectedParentCompany: number | null;
@@ -11,7 +12,7 @@ export interface ComplexInterCompanySalesState {
 const initialState: ComplexInterCompanySalesState = {
   selectedParentCompany: null,
   selectedCustomer: null,
-  profitMargin: 20, // 20% هامش ربح افتراضي
+  profitMargin: DEFAULT_PROFIT_MARGIN, // هامش ربح من الإعدادات
   isCreating: false,
   error: null,
 };
@@ -38,7 +39,7 @@ const complexInterCompanySalesSlice = createSlice({
     resetComplexSale: (state) => {
       state.selectedParentCompany = null;
       state.selectedCustomer = null;
-      state.profitMargin = 20;
+      state.profitMargin = DEFAULT_PROFIT_MARGIN;
       state.isCreating = false;
       state.error = null;
     },

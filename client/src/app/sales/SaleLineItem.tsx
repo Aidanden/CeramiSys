@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { getProfitMargin } from '@/constants/defaults';
 
 interface SaleLineItemProps {
   line: any;
@@ -30,7 +31,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
   const [localQty, setLocalQty] = React.useState(line.qty > 0 ? line.qty : '');
   const [localDiscountAmount, setLocalDiscountAmount] = React.useState(Math.max(0, Number(line.discountAmount || 0)));
   const [isDiscountEnabled, setIsDiscountEnabled] = React.useState(line.discountPercentage > 0 || line.discountAmount > 0);
-  const [profitMargin, setProfitMargin] = React.useState(20);
+  const [profitMargin, setProfitMargin] = React.useState(getProfitMargin());
 
   React.useEffect(() => {
     const savedMargin = localStorage.getItem('profitMargin');
@@ -77,22 +78,36 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
     if (!p) return;
 
     const basePrice = Number(p.price?.sellPrice || 0);
-    // استخدام هامش الربح الخاص بالبند إذا كان موجوداً، وإلا استخدام الهامش الافتراضي
-    const currentMargin = line.isFromParentCompany ? (line.profitMargin ?? profitMargin) : 0;
+
+    // الأولوية القصوى لهامش الربح المحفوظ في السطر (line.profitMargin)
+    const hasSavedMargin = line.profitMargin !== undefined && line.profitMargin !== null;
+    const currentMargin = line.isFromParentCompany
+      ? (hasSavedMargin ? Number(line.profitMargin) : profitMargin)
+      : 0;
+
     const calculatedPrice = Math.round(basePrice * (1 + currentMargin / 100) * 100) / 100;
 
-    if (Math.abs((line.unitPrice || 0) - calculatedPrice) > 0.01) {
+    // متى نقوم بالتحديث التلقائي للسعر والهامش؟
+    // فقط إذا كان صنفاً جديداً (ليس له id) أو إذا قام المستخدم بتغيير الصنف يدوياً
+    const isNewItem = !line.id;
+    const productChanged = line.productId !== p.id;
+
+    if (isNewItem || productChanged) {
       updateSaleLine(index, 'unitPrice', calculatedPrice);
       if (line.isFromParentCompany) {
         updateSaleLine(index, 'parentUnitPrice', basePrice);
         updateSaleLine(index, 'branchUnitPrice', calculatedPrice);
-        // نحدث الهامش في السطر فقط إذا لم يكن موجوداً لضمان عدم حدوث حلقة
-        if (line.profitMargin === undefined) {
-          updateSaleLine(index, 'profitMargin', profitMargin);
+        if (!hasSavedMargin) {
+          updateSaleLine(index, 'profitMargin', currentMargin);
         }
       }
+    } else {
+      // للفواتير القديمة (تعديل): نكتفي بتحديث سعر التكلفة للعرض فقط
+      if (line.isFromParentCompany && !line.parentUnitPrice) {
+        updateSaleLine(index, 'parentUnitPrice', basePrice);
+      }
     }
-  }, [line.productId, line.isFromParentCompany, line.profitMargin, profitMargin, productsData, index, updateSaleLine, line.unitPrice]);
+  }, [line.productId, line.isFromParentCompany, line.profitMargin, profitMargin, productsData, index, updateSaleLine]);
 
   // حساب الخصم بناءً على السعر الحالي والكمية
   useEffect(() => {
@@ -159,20 +174,19 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
               </button>
               {line.isFromParentCompany && (
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 bg-orange-100 px-2 py-0.5 rounded-md border border-orange-300 shadow-sm">
-                    <span className="text-[10px] font-black text-orange-700 whitespace-nowrap">هامش الربح:</span>
-                    <input
-                      type="number"
-                      value={line.profitMargin ?? profitMargin}
-                      onChange={(e) => updateSaleLine(index, 'profitMargin', Number(e.target.value))}
-                      className="w-12 bg-white border border-orange-200 rounded px-1 text-xs font-black text-orange-800 outline-none focus:ring-2 focus:ring-orange-200"
-                    />
-                    <span className="text-[10px] font-black text-orange-700">%</span>
-                  </div>
-                  <div className="flex flex-col items-center bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200 shadow-sm min-w-[70px]">
-                    <span className="text-[8px] font-bold text-orange-400 leading-none">سعر التقازي</span>
-                    <span className="text-[10px] font-black text-orange-600">{formatArabicCurrency(line.parentUnitPrice || 0)}</span>
-                  </div>
+                  {/* إظهار هامش الربح فقط للأصناف الجديدة المضافة لإتاحة تعديلها */}
+                  {!line.id && (
+                    <div className="flex items-center gap-1.5 bg-orange-100 px-2 py-0.5 rounded-md border border-orange-300 shadow-sm">
+                      <span className="text-[10px] font-black text-orange-700 whitespace-nowrap">هامش الربح:</span>
+                      <input
+                        type="number"
+                        value={line.profitMargin ?? profitMargin}
+                        onChange={(e) => updateSaleLine(index, 'profitMargin', Number(e.target.value))}
+                        className="w-12 bg-white border border-orange-200 rounded px-1 text-xs font-black text-orange-800 outline-none focus:ring-2 focus:ring-orange-200"
+                      />
+                      <span className="text-[10px] font-black text-orange-700">%</span>
+                    </div>
+                  )}
                 </div>
               )}
               {selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox && (

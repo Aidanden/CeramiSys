@@ -280,6 +280,7 @@ exports.Prisma.SaleLineScalarFieldEnum = {
   isFromParentCompany: 'isFromParentCompany',
   parentUnitPrice: 'parentUnitPrice',
   branchUnitPrice: 'branchUnitPrice',
+  profitMargin: 'profitMargin',
   discountPercentage: 'discountPercentage',
   discountAmount: 'discountAmount'
 };

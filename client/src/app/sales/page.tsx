@@ -23,6 +23,7 @@ import { useGetCompaniesQuery } from '@/state/companyApi';
 import { useGetCurrentUserQuery } from '@/state/authApi';
 import { formatArabicNumber, formatArabicCurrency, formatArabicQuantity, formatArabicArea } from '@/utils/formatArabicNumbers';
 import { PrintModal } from '@/components/sales/PrintModal';
+import { getProfitMargin } from '@/constants/defaults';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/app/redux';
 import useNotifications from '@/hooks/useNotifications';
@@ -372,7 +373,7 @@ const SalesPage = () => {
         const originalPrice = Number(product.price.sellPrice);
 
         if (isFromParentCompany) {
-          const margin = Number(localStorage.getItem('profitMargin')) || 20;
+          const margin = Number(localStorage.getItem('profitMargin')) || getProfitMargin();
           const branchPrice = Math.round(originalPrice * (1 + margin / 100) * 100) / 100;
           updateSaleLine(newLineIndex, 'unitPrice', branchPrice);
           updateSaleLine(newLineIndex, 'parentUnitPrice', originalPrice);
@@ -431,7 +432,7 @@ const SalesPage = () => {
       notifications.custom.info('تحديث الكمية', `تم زيادة كمية ${product.name} ${source} إلى ${editLines[existingLineIndex].qty + 1}`);
     } else {
       // الصنف غير موجود: إضافة بند جديد
-      const margin = Number(localStorage.getItem('profitMargin')) || 20;
+      const margin = Number(localStorage.getItem('profitMargin')) || getProfitMargin();
       const branchPrice = isFromParentCompany ? Math.round(unitPrice * (1 + margin / 100) * 100) / 100 : unitPrice;
 
       setEditLines(prev => [...prev, {
@@ -682,7 +683,8 @@ const SalesPage = () => {
         qty: line.qty,
         unitPrice: line.unitPrice,
         discountPercentage: line.discountPercentage,
-        discountAmount: line.discountAmount
+        discountAmount: line.discountAmount,
+        profitMargin: line.profitMargin || 0
       };
 
       // للصناديق: ضرب السعر في عدد الأمتار
@@ -710,7 +712,7 @@ const SalesPage = () => {
   const handleComplexInterCompanySale = async (targetCompanyId: number) => {
     // تحميل هامش الربح من الإعدادات
     const savedMargin = localStorage.getItem('profitMargin');
-    const profitMargin = savedMargin ? parseFloat(savedMargin) : 20;
+    const profitMargin = savedMargin ? parseFloat(savedMargin) : getProfitMargin();
 
     // تحويل جميع البنود إلى تنسيق المبيعات المعقدة (أصناف الشركة الأم + الشركة التابعة)
     const complexLines: ComplexInterCompanySaleLine[] = saleForm.lines.map(line => {
@@ -747,6 +749,7 @@ const SalesPage = () => {
         branchUnitPrice,
         subTotal: line.qty * branchUnitPrice - (line.discountAmount || 0),
         isFromParentCompany: line.isFromParentCompany || false,
+        profitMargin: line.isFromParentCompany ? profitMargin : 0,
         discountPercentage: line.discountPercentage,
         discountAmount: line.discountAmount
       };
@@ -892,13 +895,20 @@ const SalesPage = () => {
   // Handle edit sale
   const handleEditSale = (sale: Sale) => {
     setSaleToEdit(sale);
+
+    // تحميل هامش الربح من الإعدادات (سيُستخدم فقط للأصناف الجديدة أو إذا لم يكن محفوظاً)
+    const savedMargin = localStorage.getItem('profitMargin');
+    const defaultProfitMargin = savedMargin ? parseFloat(savedMargin) : getProfitMargin();
+
     // تحميل الأسطر الحالية مع التأكد من عدم وجود قيم سالبة
     // ومع إضافة معلومة isFromParentCompany من بيانات المنتج
     // مهم: في قاعدة البيانات، السعر للصناديق مخزون مضروباً في unitsPerBox
     // لذلك يجب قسمته لنحصل على سعر الوحدة الواحدة (المتر/القطعة)
     setEditLines(sale.lines.map(line => {
       const product = productsData?.data?.products?.find(p => p.id === line.productId);
-      const isFromParentCompany = product?.createdByCompanyId === 1 && sale.companyId !== 1;
+
+      // الأولوية للبيانات المحفوظة في السطر، وإذا لم توجد نلجأ للتحقق من المنتج
+      const isFromParentCompany = line.isFromParentCompany ?? (product?.createdByCompanyId === 1 && sale.companyId !== 1);
 
       // تحديد السعر الصحيح: إذا كان صندوق، نقسم على unitsPerBox للحصول على سعر الوحدة
       let unitPrice = Math.max(0, Number(line.unitPrice));
@@ -906,15 +916,22 @@ const SalesPage = () => {
         unitPrice = unitPrice / Number(product.unitsPerBox);
       }
 
+      // استخدام هامش الربح المحفوظ في الفاتورة، أو الافتراضي إذا لم يكن موجوداً
+      const lineProfitMargin = (line.profitMargin !== undefined && line.profitMargin !== null)
+        ? Number(line.profitMargin)
+        : defaultProfitMargin;
+
       return {
+        id: line.id, // 👈 إضافة الـ id هنا لحماية السطر من التحديث التلقائي
         productId: line.productId,
         qty: Math.max(0, Number(line.qty)),
         unitPrice: unitPrice,
         discountPercentage: Math.max(0, Number(line.discountPercentage || 0)),
         discountAmount: Math.max(0, Number(line.discountAmount || 0)),
         isFromParentCompany: isFromParentCompany,
-        parentUnitPrice: isFromParentCompany ? (product?.price?.sellPrice || 0) : undefined,
-        branchUnitPrice: isFromParentCompany ? unitPrice : undefined
+        parentUnitPrice: line.parentUnitPrice ?? (isFromParentCompany ? (product?.price?.sellPrice || 0) : undefined),
+        branchUnitPrice: line.branchUnitPrice ?? (isFromParentCompany ? unitPrice : undefined),
+        profitMargin: isFromParentCompany ? lineProfitMargin : 0
       };
     }));
     // مسح حقول البحث

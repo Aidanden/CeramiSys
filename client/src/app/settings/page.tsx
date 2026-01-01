@@ -4,11 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/Toast';
 import Link from 'next/link';
 import { useGetExchangeRatesQuery, useUpdateSettingMutation } from '@/state/settingsApi';
+import { DEFAULT_PROFIT_MARGIN } from '@/constants/defaults';
 
 export default function SettingsPage() {
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [lowStockThreshold, setLowStockThreshold] = useState('10');
-  const [profitMargin, setProfitMargin] = useState('20');
+  const [profitMargin, setProfitMargin] = useState(DEFAULT_PROFIT_MARGIN.toString());
   const [enableLineDiscount, setEnableLineDiscount] = useState(true);
   const [enableInvoiceDiscount, setEnableInvoiceDiscount] = useState(true);
   const { success, error } = useToast();
@@ -102,7 +103,7 @@ export default function SettingsPage() {
     localStorage.removeItem('profitMargin');
     setWhatsappNumber('');
     setLowStockThreshold('10');
-    setProfitMargin('20');
+    setProfitMargin(DEFAULT_PROFIT_MARGIN.toString());
     success('تم مسح الإعدادات');
   };
 

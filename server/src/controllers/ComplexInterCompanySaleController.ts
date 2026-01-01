@@ -27,7 +27,9 @@ export class ComplexInterCompanySaleController {
         branchCompanyId,
         parentCompanyId,
         lines,
-        profitMargin
+        profitMargin,
+        totalDiscountPercentage,
+        totalDiscountAmount
       } = req.body;
 
       // التحقق من صحة البيانات
@@ -48,7 +50,9 @@ export class ComplexInterCompanySaleController {
         branchCompanyId: finalBranchCompanyId,
         parentCompanyId,
         lines,
-        profitMargin
+        profitMargin,
+        totalDiscountPercentage,
+        totalDiscountAmount
       }, userCompanyId, true);
 
       res.status(201).json({

@@ -129,8 +129,10 @@ export class ComplexInterCompanySaleService {
         // 3. إنشاء فاتورة بيع واحدة للعميل من الشركة التابعة (تحتوي على كل الأصناف)
         const subTotalLines = data.lines.reduce((sum, line) => sum + line.subTotal, 0);
 
-        let totalDiscountAmount = data.totalDiscountAmount || 0;
-        if (data.totalDiscountPercentage && data.totalDiscountPercentage > 0) {
+        let totalDiscountAmount = 0;
+        if (data.totalDiscountAmount && data.totalDiscountAmount > 0) {
+          totalDiscountAmount = data.totalDiscountAmount;
+        } else if (data.totalDiscountPercentage && data.totalDiscountPercentage > 0) {
           totalDiscountAmount = (subTotalLines * data.totalDiscountPercentage) / 100;
         }
 

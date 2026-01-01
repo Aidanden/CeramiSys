@@ -262,6 +262,7 @@ model SaleLine {
   isFromParentCompany Boolean? @default(false)
   parentUnitPrice     Decimal? @db.Decimal(18, 4)
   branchUnitPrice     Decimal? @db.Decimal(18, 4)
+  profitMargin        Decimal? @db.Decimal(5, 2)
   discountPercentage  Decimal? @default(0) @db.Decimal(5, 2)
   discountAmount      Decimal? @default(0) @db.Decimal(18, 4)
   product             Product  @relation(fields: [productId], references: [id])

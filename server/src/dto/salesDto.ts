@@ -39,6 +39,7 @@ export const CreateSaleLineDtoSchema = z.object({
   isFromParentCompany: z.boolean().optional(),
   parentUnitPrice: z.number().min(0).optional(),
   branchUnitPrice: z.number().min(0).optional(),
+  profitMargin: z.number().optional(),
   discountPercentage: z.number().min(0).max(100).optional(),
   discountAmount: z.number().min(0).optional()
 });

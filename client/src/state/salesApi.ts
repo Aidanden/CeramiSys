@@ -25,6 +25,7 @@ export interface SaleLine {
   isFromParentCompany?: boolean;
   parentUnitPrice?: number; // سعر التكلفة (من الشركة الأم)
   branchUnitPrice?: number; // سعر البيع (للزبون)
+  profitMargin?: number; // هامش الربح المحفوظ في الفاتورة
   discountPercentage?: number;
   discountAmount?: number;
 }
