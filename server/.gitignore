@@ -62,3 +62,4 @@ prisma/*.db-journal
 .Trashes
 ehthumbs.db
 Thumbs.db
+server/src/generated/client/
