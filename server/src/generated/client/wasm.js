@@ -549,7 +549,8 @@ exports.Prisma.PurchaseExpenseScalarFieldEnum = {
   createdAt: 'createdAt',
   amountForeign: 'amountForeign',
   currency: 'currency',
-  exchangeRate: 'exchangeRate'
+  exchangeRate: 'exchangeRate',
+  isActualExpense: 'isActualExpense'
 };
 
 exports.Prisma.ProductCostHistoryScalarFieldEnum = {

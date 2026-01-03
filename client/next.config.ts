@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-    allowedDevOrigins: ['https://tg-em.com'],
+  allowedDevOrigins: ['https://tg-em.com'],
 
 };
 
@@ -30,3 +30,6 @@ const nextConfig: NextConfig = {
 
 
 export default nextConfig;
+
+// Trigger rebuild to fix chunk load error
+

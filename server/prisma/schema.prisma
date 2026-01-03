@@ -641,19 +641,20 @@ model ExpenseCategorySupplier {
 }
 
 model PurchaseExpense {
-  id            Int                     @id @default(autoincrement())
-  purchaseId    Int
-  categoryId    Int
-  supplierId    Int?
-  amount        Decimal                 @db.Decimal(18, 4)
-  notes         String?
-  createdAt     DateTime                @default(now())
-  amountForeign Decimal?                @db.Decimal(18, 4)
-  currency      Currency                @default(LYD)
-  exchangeRate  Decimal                 @default(1.0) @db.Decimal(18, 4)
-  category      PurchaseExpenseCategory @relation(fields: [categoryId], references: [id])
-  purchase      Purchase                @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
-  supplier      Supplier?               @relation(fields: [supplierId], references: [id])
+  id              Int                     @id @default(autoincrement())
+  purchaseId      Int
+  categoryId      Int
+  supplierId      Int?
+  amount          Decimal                 @db.Decimal(18, 4)
+  notes           String?
+  createdAt       DateTime                @default(now())
+  amountForeign   Decimal?                @db.Decimal(18, 4)
+  currency        Currency                @default(LYD)
+  exchangeRate    Decimal                 @default(1.0) @db.Decimal(18, 4)
+  isActualExpense Boolean                 @default(true) // true = مصروف فعلي (يؤثر على حساب المورد), false = مصروف تقديري (لتوزيع التكلفة فقط)
+  category        PurchaseExpenseCategory @relation(fields: [categoryId], references: [id])
+  purchase        Purchase                @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  supplier        Supplier?               @relation(fields: [supplierId], references: [id])
 
   @@index([purchaseId])
   @@index([categoryId])

@@ -42,6 +42,7 @@ export interface PurchaseExpense {
   exchangeRate: string;
   amountForeign?: string;
   notes?: string;
+  isActualExpense: boolean; // true = مصروف فعلي (دين), false = مصروف تقديري (لتوزيع التكلفة فقط)
   createdAt: string;
   category?: PurchaseExpenseCategory;
   supplier?: {
@@ -58,6 +59,7 @@ export interface CreatePurchaseExpenseDto {
   exchangeRate?: number;
   amountForeign?: number;
   notes?: string;
+  isActualExpense?: boolean; // true = مصروف فعلي (دين), false = مصروف تقديري (لتوزيع التكلفة فقط)
 }
 
 export interface ApprovePurchaseDto {

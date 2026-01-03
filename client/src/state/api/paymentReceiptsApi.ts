@@ -1,5 +1,6 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithAuthInterceptor } from '../apiUtils';
+import { treasuryApi } from '../treasuryApi';
 
 // Types
 export interface PaymentReceipt {
@@ -129,6 +130,12 @@ export const paymentReceiptsApi = createApi({
         body: data,
       }),
       invalidatesTags: ['PaymentReceipts', 'SupplierAccounts'],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+        } catch { }
+      },
     }),
 
     // ==================== تحديث إيصال دفع ====================
@@ -143,6 +150,12 @@ export const paymentReceiptsApi = createApi({
         'PaymentReceipts',
         'SupplierAccounts',
       ],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+        } catch { }
+      },
     }),
 
     // ==================== حذف إيصال دفع ====================
@@ -152,6 +165,12 @@ export const paymentReceiptsApi = createApi({
         method: 'DELETE',
       }),
       invalidatesTags: ['PaymentReceipts', 'SupplierAccounts'],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+        } catch { }
+      },
     }),
 
     // ==================== تسديد إيصال دفع ====================
@@ -166,6 +185,12 @@ export const paymentReceiptsApi = createApi({
         'PaymentReceipts',
         'SupplierAccounts',
       ],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+        } catch { }
+      },
     }),
 
     // ==================== إلغاء إيصال دفع ====================
@@ -180,6 +205,12 @@ export const paymentReceiptsApi = createApi({
         'PaymentReceipts',
         'SupplierAccounts',
       ],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+        } catch { }
+      },
     }),
 
     // ==================== الدفعات الجزئية ====================
@@ -194,6 +225,12 @@ export const paymentReceiptsApi = createApi({
         'PaymentReceipts',
         'SupplierAccounts',
       ],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+        } catch { }
+      },
     }),
 
     getInstallmentsByReceiptId: builder.query<{ success: boolean; installments: PaymentInstallment[] }, number>({
@@ -209,6 +246,12 @@ export const paymentReceiptsApi = createApi({
         method: 'DELETE',
       }),
       invalidatesTags: ['PaymentReceipts', 'SupplierAccounts'],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+        } catch { }
+      },
     }),
 
     // ==================== إحصائيات إيصالات الدفع ====================

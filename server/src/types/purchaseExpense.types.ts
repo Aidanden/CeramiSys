@@ -31,6 +31,7 @@ export interface PurchaseExpense {
   supplierId?: number;
   amount: Decimal;
   notes?: string;
+  isActualExpense: boolean; // true = مصروف فعلي (دين), false = مصروف تقديري (لتوزيع التكلفة فقط)
   createdAt: Date;
 }
 
@@ -39,6 +40,7 @@ export interface CreatePurchaseExpenseDto {
   supplierId?: number;
   amount: number;
   notes?: string;
+  isActualExpense?: boolean; // true = مصروف فعلي (دين), false = مصروف تقديري (لتوزيع التكلفة فقط)
 }
 
 // اعتماد الفاتورة

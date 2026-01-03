@@ -6,6 +6,8 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuthInterceptor } from "./apiUtils";
 import { API_CACHE_CONFIG } from "@/lib/config";
+import { treasuryApi } from "./treasuryApi";
+
 
 // Types للمبيعات
 export interface SaleLine {
@@ -496,6 +498,12 @@ export const salesApi = createApi({
         "TreasuryTransaction",
         "TreasuryStats"
       ],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+        } catch { }
+      },
     }),
 
     // ============== العملاء ==============
@@ -607,6 +615,12 @@ export const salesApi = createApi({
         "TreasuryTransaction",
         "TreasuryStats" // تحديث إحصائيات الخزينة
       ],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+        } catch { }
+      },
     }),
   }),
 });

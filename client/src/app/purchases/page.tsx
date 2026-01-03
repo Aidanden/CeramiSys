@@ -65,7 +65,8 @@ const PurchasesPage = () => {
     amount: 0,
     currency: 'LYD',
     exchangeRate: 1,
-    notes: ''
+    notes: '',
+    isActualExpense: true // افتراضي: مصروف فعلي
   });
   const [newSupplierForm, setNewSupplierForm] = useState({
     name: '',
@@ -316,7 +317,8 @@ const PurchasesPage = () => {
       amount: 0,
       currency: 'LYD',
       exchangeRate: 1.0,
-      notes: ''
+      notes: '',
+      isActualExpense: true
     });
     setShowAddExpensesModal(true);
   };
@@ -330,9 +332,10 @@ const PurchasesPage = () => {
       return;
     }
 
-    // التحقق من أن المورد إجباري
-    if (!newExpense.supplierId) {
-      error('خطأ', 'يرجى اختيار المورد');
+    // المورد إجباري فقط للمصروفات الفعلية
+    const isActual = newExpense.isActualExpense !== false;
+    if (isActual && !newExpense.supplierId) {
+      error('خطأ', 'يرجى اختيار المورد للمصروف الفعلي');
       return;
     }
 
@@ -340,11 +343,12 @@ const PurchasesPage = () => {
       // تنظيف البيانات قبل الإضافة
       const cleanExpense = {
         categoryId: newExpense.categoryId,
-        supplierId: newExpense.supplierId,
+        supplierId: isActual ? newExpense.supplierId : undefined, // المورد فقط للمصروفات الفعلية
         amount: newExpense.amount,
         currency: newExpense.currency || 'LYD',
         exchangeRate: newExpense.exchangeRate || 1.0,
-        notes: newExpense.notes || undefined
+        notes: newExpense.notes || undefined,
+        isActualExpense: isActual
       };
 
       // console.log('✅ إضافة مصروف منظف:', cleanExpense);
@@ -355,7 +359,8 @@ const PurchasesPage = () => {
         categoryId: 0,
         supplierId: undefined,
         amount: 0,
-        notes: ''
+        notes: '',
+        isActualExpense: true
       });
 
       // console.log('🎉 تم إضافة المصروف بنجاح');
@@ -390,11 +395,12 @@ const PurchasesPage = () => {
       // تنظيف البيانات قبل الإرسال
       const cleanExpenses = expenseForm.map(expense => ({
         categoryId: expense.categoryId,
-        supplierId: expense.supplierId || undefined,
+        supplierId: expense.isActualExpense !== false ? expense.supplierId : undefined, // المورد فقط للمصروفات الفعلية
         amount: expense.amount,
         currency: expense.currency || 'LYD',
         exchangeRate: expense.exchangeRate || 1.0,
-        notes: expense.notes || undefined
+        notes: expense.notes || undefined,
+        isActualExpense: expense.isActualExpense !== false // افتراضي: فعلي
       }));
 
       // استخدام API مختلف حسب حالة الفاتورة
@@ -422,7 +428,8 @@ const PurchasesPage = () => {
         categoryId: 0,
         supplierId: undefined,
         amount: 0,
-        notes: ''
+        notes: '',
+        isActualExpense: true
       });
       refetchPurchases();
     } catch (err: any) {
@@ -2226,6 +2233,9 @@ const PurchasesPage = () => {
                         <thead className="bg-yellow-100">
                           <tr>
                             <th className="px-3 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
+                              نوع المصروف
+                            </th>
+                            <th className="px-3 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
                               فئة المصروف
                             </th>
                             <th className="px-3 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
@@ -2246,13 +2256,27 @@ const PurchasesPage = () => {
                           </tr>
                         </thead>
                         <tbody className="bg-yellow-50 divide-y divide-yellow-200">
-                          {existingExpenses.map((expense, index) => (
-                            <tr key={expense.id}>
+                          {existingExpenses.map((expense) => (
+                            <tr key={expense.id} className={(expense as any).isActualExpense === false ? 'bg-orange-100' : ''}>
+                              <td className="px-3 py-2 whitespace-nowrap text-sm">
+                                {(expense as any).isActualExpense !== false ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                    فعلي (دين)
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-200 text-orange-700">
+                                    تقديري
+                                  </span>
+                                )}
+                              </td>
                               <td className="px-3 py-2 whitespace-nowrap text-sm text-yellow-900">
                                 {expense.category?.name || 'غير محدد'}
                               </td>
                               <td className="px-3 py-2 whitespace-nowrap text-sm text-yellow-900">
-                                {expense.supplier?.name || 'غير محدد'}
+                                {(expense as any).isActualExpense !== false
+                                  ? (expense.supplier?.name || 'غير محدد')
+                                  : <span className="text-gray-400 italic">-</span>
+                                }
                               </td>
                               <td className="px-3 py-2 whitespace-nowrap text-sm font-mono">
                                 {expense.currency !== 'LYD' && expense.amountForeign ? (
@@ -2299,6 +2323,59 @@ const PurchasesPage = () => {
                 {/* نموذج إضافة مصروف جديد */}
                 <div className="bg-gray-50 p-4 rounded-lg mb-6">
                   <h4 className="font-semibold text-gray-900 mb-4">إضافة مصروف جديد</h4>
+                  
+                  {/* نوع المصروف - بارز في الأعلى */}
+                  <div className="mb-4 p-3 bg-white border border-gray-200 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">نوع المصروف *</label>
+                    <div className="flex gap-4">
+                      <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer transition-all ${
+                        newExpense.isActualExpense !== false 
+                          ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                          : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="expenseType"
+                          checked={newExpense.isActualExpense !== false}
+                          onChange={() => setNewExpense({ ...newExpense, isActualExpense: true })}
+                          className="sr-only"
+                        />
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <div>
+                          <span className="font-medium">مصروف فعلي (دين)</span>
+                          <p className="text-xs opacity-75">يسجل كدين على المورد</p>
+                        </div>
+                      </label>
+                      <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer transition-all ${
+                        newExpense.isActualExpense === false 
+                          ? 'border-orange-500 bg-orange-50 text-orange-700' 
+                          : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                      }`}>
+                        <input
+                          type="radio"
+                          name="expenseType"
+                          checked={newExpense.isActualExpense === false}
+                          onChange={() => setNewExpense({ ...newExpense, isActualExpense: false, supplierId: undefined })}
+                          className="sr-only"
+                        />
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        <div>
+                          <span className="font-medium">مصروف تقديري</span>
+                          <p className="text-xs opacity-75">لتوزيع التكلفة فقط</p>
+                        </div>
+                      </label>
+                    </div>
+                    {newExpense.isActualExpense === false && (
+                      <p className="mt-2 text-xs text-orange-600 bg-orange-100 p-2 rounded">
+                        💡 المصروف التقديري يزيد تكلفة المنتجات لكن لا يُنشئ دين على أي مورد (مثل: مصاريف شحن تقديرية، هامش أمان)
+                      </p>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">فئة المصروف *</label>
@@ -2318,18 +2395,21 @@ const PurchasesPage = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        المورد <span className="text-red-500">*</span>
+                        المورد {newExpense.isActualExpense !== false && <span className="text-red-500">*</span>}
                       </label>
                       <SupplierSelector
                         suppliers={getFilteredSuppliersForCategory(newExpense.categoryId)}
                         selectedSupplierId={newExpense.supplierId}
                         onSupplierSelect={(supplierId) => setNewExpense({ ...newExpense, supplierId })}
-                        placeholder={newExpense.categoryId === 0
-                          ? 'اختر فئة المصروف أولاً'
-                          : 'اختر المورد (مطلوب)'
+                        placeholder={
+                          newExpense.isActualExpense === false
+                            ? 'غير مطلوب (مصروف تقديري)'
+                            : newExpense.categoryId === 0
+                              ? 'اختر فئة المصروف أولاً'
+                              : 'اختر المورد (مطلوب)'
                         }
-                        className={newExpense.categoryId === 0 ? 'opacity-50 pointer-events-none' : ''}
-                        required={true}
+                        className={newExpense.isActualExpense === false || newExpense.categoryId === 0 ? 'opacity-50 pointer-events-none' : ''}
+                        required={newExpense.isActualExpense !== false}
                       />
                     </div>
                     <div>
@@ -2409,36 +2489,58 @@ const PurchasesPage = () => {
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                           <tr>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              نوع المصروف
+                            </th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                               فئة المصروف
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                               المورد
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                               المبلغ
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                               ملاحظات
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                               إجراءات
                             </th>
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {expenseForm.map((expense, index) => (
-                            <tr key={index}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <tr key={index} className={expense.isActualExpense === false ? 'bg-orange-50' : ''}>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm">
+                                {expense.isActualExpense !== false ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    فعلي (دين)
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                    تقديري
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                                 {expenseCategories.find(cat => cat.id === expense.categoryId)?.name || 'غير محدد'}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {expense.supplierId
-                                  ? getFilteredSuppliersForCategory(expense.categoryId).find(sup => sup.id === expense.supplierId)?.name || 'غير محدد'
-                                  : 'غير محدد'
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                {expense.isActualExpense !== false
+                                  ? (expense.supplierId
+                                    ? getFilteredSuppliersForCategory(expense.categoryId).find(sup => sup.id === expense.supplierId)?.name || 'غير محدد'
+                                    : 'غير محدد')
+                                  : <span className="text-gray-400 italic">-</span>
                                 }
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-green-600">
                                 {expense.amount} {expense.currency}
                                 {expense.currency !== 'LYD' && (
                                   <div className="text-[10px] text-blue-500">
@@ -2446,10 +2548,10 @@ const PurchasesPage = () => {
                                   </div>
                                 )}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                                 {expense.notes || '-'}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                                 <button
                                   onClick={() => handleRemoveExpenseFromList(index)}
                                   className="text-red-600 hover:text-red-900"

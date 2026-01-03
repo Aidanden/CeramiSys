@@ -10,6 +10,7 @@ export interface AddExpenseRequest {
   exchangeRate?: number;
   amountForeign?: number;
   notes?: string | null;
+  isActualExpense?: boolean; // true = مصروف فعلي (دين), false = مصروف تقديري (لتوزيع التكلفة فقط)
 }
 
 export interface AddExpensesToApprovedPurchaseRequest {
@@ -63,16 +64,18 @@ export class AddExpensesToApprovedPurchaseService {
         data: expenses.map((expense: AddExpenseRequest) => {
           const rate = expense.exchangeRate || 1.0;
           const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
+          const isActual = expense.isActualExpense !== false; // افتراضي: مصروف فعلي
 
           return {
             purchaseId,
             categoryId: expense.categoryId,
-            supplierId: expense.supplierId || null,
+            supplierId: isActual ? (expense.supplierId || null) : null, // المورد فقط للمصروفات الفعلية
             amount: new Prisma.Decimal(amountLYD),
             currency: (expense.currency as Currency) || Currency.LYD,
             exchangeRate: new Prisma.Decimal(rate),
             amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
             notes: expense.notes || null,
+            isActualExpense: isActual,
           };
         }),
       });
@@ -94,11 +97,14 @@ export class AddExpensesToApprovedPurchaseService {
 
 
 
-      // 3. إنشاء إيصالات دفع للمصروفات الجديدة
+      // 3. إنشاء إيصالات دفع للمصروفات الفعلية فقط (ليس التقديرية)
       const paymentReceipts = [];
 
       for (const expense of expenses) {
-        if (expense.supplierId && expense.amount > 0) {
+        const isActual = expense.isActualExpense !== false;
+        
+        // فقط المصروفات الفعلية تنشئ إيصالات دفع وقيود على الموردين
+        if (isActual && expense.supplierId && expense.amount > 0) {
           const supplier = await tx.supplier.findUnique({
             where: { id: expense.supplierId },
           });
@@ -128,8 +134,6 @@ export class AddExpensesToApprovedPurchaseService {
 
             // سيتم إنشاء قيد في حساب المورد بعد انتهاء transaction
 
-
-
             paymentReceipts.push({
               id: createdReceipt.id,
               supplierId: expense.supplierId,
@@ -141,6 +145,7 @@ export class AddExpensesToApprovedPurchaseService {
             });
           }
         }
+        // المصروفات التقديرية (Virtual) لا تنشئ إيصالات دفع ولكنها تدخل في حساب تكلفة المنتج
       }
 
       return {

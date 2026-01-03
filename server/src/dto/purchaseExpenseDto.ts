@@ -3,12 +3,13 @@ import { z } from 'zod';
 // DTO for creating a purchase expense
 export const CreatePurchaseExpenseDto = z.object({
   categoryId: z.number().int().positive(),
-  supplierId: z.number().int().positive(), // المورد إجباري
+  supplierId: z.number().int().positive().optional(), // المورد إجباري فقط للمصروفات الفعلية
   amount: z.number().positive(),
   currency: z.enum(['LYD', 'USD', 'EUR']).default('LYD'),
   exchangeRate: z.number().positive().default(1),
   amountForeign: z.number().positive().optional(),
   notes: z.string().optional().nullable(),
+  isActualExpense: z.boolean().default(true), // true = مصروف فعلي (دين على المورد), false = مصروف تقديري (لتوزيع التكلفة فقط)
 });
 
 // DTO for approving a purchase with expenses
@@ -86,6 +87,7 @@ export interface PurchaseExpense {
   exchangeRate: number;
   amountForeign: number | null;
   notes: string | null;
+  isActualExpense: boolean; // true = مصروف فعلي, false = مصروف تقديري
   createdAt: string;
 }
 

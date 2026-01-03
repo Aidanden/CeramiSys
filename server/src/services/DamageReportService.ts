@@ -158,7 +158,10 @@ export class DamageReportService {
         lines: damageReport.lines.map((line: any) => ({
           id: line.id,
           productId: line.productId,
-          product: line.product,
+          product: {
+            ...line.product,
+            unitsPerBox: line.product.unitsPerBox ? Number(line.product.unitsPerBox) : null
+          },
           quantity: Number(line.quantity),
           notes: line.notes,
           createdAt: line.createdAt,
@@ -288,7 +291,10 @@ export class DamageReportService {
         lines: report.lines.map((line: any) => ({
           id: line.id,
           productId: line.productId,
-          product: line.product,
+          product: {
+            ...line.product,
+            unitsPerBox: line.product.unitsPerBox ? Number(line.product.unitsPerBox) : null
+          },
           quantity: Number(line.quantity),
           notes: line.notes,
           createdAt: line.createdAt,
@@ -379,7 +385,10 @@ export class DamageReportService {
         lines: damageReport.lines.map((line: any) => ({
           id: line.id,
           productId: line.productId,
-          product: line.product,
+          product: {
+            ...line.product,
+            unitsPerBox: line.product.unitsPerBox ? Number(line.product.unitsPerBox) : null
+          },
           quantity: Number(line.quantity),
           notes: line.notes,
           createdAt: line.createdAt,

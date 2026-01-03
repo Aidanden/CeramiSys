@@ -169,7 +169,10 @@ export class SalesService {
         lines: sale.lines.map(line => ({
           id: line.id,
           productId: line.productId,
-          product: line.product,
+          product: {
+            ...line.product,
+            unitsPerBox: line.product.unitsPerBox ? Number(line.product.unitsPerBox) : null
+          },
           qty: Number(line.qty),
           unitPrice: Number(line.unitPrice),
           isFromParentCompany: (line as any).isFromParentCompany || false,
@@ -380,7 +383,10 @@ export class SalesService {
             lines: sale.lines.map(line => ({
               id: line.id,
               productId: line.productId,
-              product: line.product,
+              product: {
+                ...line.product,
+                unitsPerBox: line.product.unitsPerBox ? Number(line.product.unitsPerBox) : null
+              },
               qty: Number(line.qty),
               unitPrice: Number(line.unitPrice),
               isFromParentCompany: (line as any).isFromParentCompany || false,
@@ -460,7 +466,10 @@ export class SalesService {
         lines: sale.lines.map(line => ({
           id: line.id,
           productId: line.productId,
-          product: line.product,
+          product: {
+            ...line.product,
+            unitsPerBox: line.product.unitsPerBox ? Number(line.product.unitsPerBox) : null
+          },
           qty: Number(line.qty),
           unitPrice: Number(line.unitPrice),
           isFromParentCompany: (line as any).isFromParentCompany || false,
@@ -640,19 +649,16 @@ export class SalesService {
             : product.stocks[0];
 
           // حساب الصناديق المطلوبة:
+          // ملاحظة: line.qty دائماً يمثل عدد الصناديق (الواجهة الأمامية ترسل الكمية بالصناديق)
+          // السعر unitPrice يكون مضروباً في unitsPerBox للأصناف من نوع "صندوق"
           let requiredBoxes = line.qty;
-          let actualMetersToSell = line.qty;
+          let actualUnitsToSell = line.qty;
 
           if (product.unit === 'صندوق' && product.unitsPerBox && Number(product.unitsPerBox) > 0) {
-            // البيع بالمتر المربع: line.qty = عدد الأمتار المطلوبة
-            const requestedMeters = line.qty;
+            // line.qty = عدد الصناديق المطلوبة
             const unitsPerBox = Number(product.unitsPerBox);
-
-            // حساب عدد الصناديق (التقريب للأعلى)
-            requiredBoxes = Math.ceil(requestedMeters / unitsPerBox);
-
-            // حساب الأمتار الفعلية (الصناديق الكاملة × الوحدات في الصندوق)
-            actualMetersToSell = requiredBoxes * unitsPerBox;
+            // حساب إجمالي الوحدات (الأمتار) = عدد الصناديق × الوحدات في الصندوق
+            actualUnitsToSell = requiredBoxes * unitsPerBox;
           }
 
           if (!stock || Number(stock.boxes) < requiredBoxes) {
@@ -661,14 +667,14 @@ export class SalesService {
 
             if (product.unit === 'صندوق' && product.unitsPerBox) {
               const availableMeters = availableBoxes * Number(product.unitsPerBox);
-              availableUnits = `${availableMeters.toFixed(2)} ${product.unit || 'متر مربع'} (${availableBoxes} صندوق)`;
+              availableUnits = `${availableMeters.toFixed(2)} م² (${availableBoxes} صندوق)`;
             } else {
-              availableUnits = `${availableBoxes} صندوق`;
+              availableUnits = `${availableBoxes} ${product.unit || 'وحدة'}`;
             }
 
             const requestedUnits = product.unit === 'صندوق' && product.unitsPerBox
-              ? `${actualMetersToSell.toFixed(2)} ${product.unit || 'متر مربع'} (${requiredBoxes} صندوق)`
-              : `${requiredBoxes} صندوق`;
+              ? `${actualUnitsToSell.toFixed(2)} م² (${requiredBoxes} صندوق)`
+              : `${requiredBoxes} ${product.unit || 'وحدة'}`;
 
             throw new Error(`المخزون غير كافي للصنف: ${product.name}. المتوفر: ${availableUnits}، المطلوب: ${requestedUnits}`);
           }
@@ -982,7 +988,10 @@ export class SalesService {
         lines: updatedSale.lines.map(line => ({
           id: line.id,
           productId: line.productId,
-          product: line.product,
+          product: {
+            ...line.product,
+            unitsPerBox: line.product.unitsPerBox ? Number(line.product.unitsPerBox) : null
+          },
           qty: Number(line.qty),
           unitPrice: Number(line.unitPrice),
           discountPercentage: Number((line as any).discountPercentage || 0),
@@ -1261,7 +1270,10 @@ export class SalesService {
           lines: updatedSale.lines.map(line => ({
             id: line.id,
             productId: line.productId,
-            product: line.product,
+            product: {
+              ...line.product,
+              unitsPerBox: line.product.unitsPerBox ? Number(line.product.unitsPerBox) : null
+            },
             qty: Number(line.qty),
             unitPrice: Number(line.unitPrice),
             discountPercentage: Number((line as any).discountPercentage || 0),
@@ -1749,20 +1761,51 @@ export class SalesService {
 
       for (const line of existingSale.lines) {
         // تحديد من أي شركة سيتم خصم المخزون
-        const stockCompanyId = line.isFromParentCompany && parentCompanyId
+        let stockCompanyId = line.isFromParentCompany && parentCompanyId
           ? parentCompanyId  // خصم من الشركة الأم
           : existingSale.companyId;  // خصم من الشركة الحالية
 
-        const stockCompanyName = line.isFromParentCompany && parentCompanyName
+        let stockCompanyName = line.isFromParentCompany && parentCompanyName
           ? parentCompanyName
           : existingSale.company.name;
 
         // التحقق من المخزون باستخدام Map
-        const stockKey = `${stockCompanyId}-${line.productId}`;
+        let stockKey = `${stockCompanyId}-${line.productId}`;
         const availableBoxes = stocksMap.get(stockKey) || 0;
         const requiredBoxes = Number(line.qty);
 
         if (availableBoxes < requiredBoxes) {
+          // 💡 محاولة إصلاح تلقائي: إذا لم يكن المخزون المحلي كافياً، والمنتج تابع للشركة الأم، ولديها مخزون
+          if (!line.isFromParentCompany && parentCompanyId && (line.product as any).createdByCompanyId === parentCompanyId) {
+            // جلب مخزون الشركة الأم (قد لا يكون محملاً في Map إذا لم نطلبه)
+            // لكن بما أننا سنقوم بعملية مكلفة (Update DB)، لا بأس بطلب المخزون هنا
+            const parentStock = await this.prisma.stock.findUnique({
+              where: {
+                companyId_productId: {
+                  companyId: parentCompanyId,
+                  productId: line.productId
+                }
+              }
+            });
+
+            const availableInParent = parentStock ? Number(parentStock.boxes) : 0;
+            if (availableInParent >= requiredBoxes) {
+              // ✅ المخزون متوفر في الشركة الأم! لنقم بتصحيح الوضع
+              // 1. تحديث العلامة في قاعدة البيانات
+              await this.prisma.saleLine.update({
+                where: { id: line.id },
+                data: { isFromParentCompany: true }
+              });
+
+              // 2. تحديث الكائن في الذاكرة لتستمر العملية بشكل صحيح
+              (line as any).isFromParentCompany = true;
+              stockCompanyId = parentCompanyId; // تبديل المصدر
+
+              // والآن نتابع الحلقة بدون رمي خطأ
+              continue;
+            }
+          }
+
           throw new Error(`المخزون غير كافي للصنف: ${line.product.name}. المتوفر في ${stockCompanyName}: ${availableBoxes} صندوق، المطلوب: ${requiredBoxes} صندوق`);
         }
       }
@@ -1974,7 +2017,10 @@ export class SalesService {
         lines: approvedSale.lines.map(line => ({
           id: line.id,
           productId: line.productId,
-          product: line.product,
+          product: {
+            ...line.product,
+            unitsPerBox: line.product.unitsPerBox ? Number(line.product.unitsPerBox) : null
+          },
           qty: Number(line.qty),
           unitPrice: Number(line.unitPrice),
           discountPercentage: Number((line as any).discountPercentage || 0),

@@ -172,16 +172,18 @@ export class PurchaseExpenseService {
           data: expenses.map((expense: any) => {
             const rate = expense.exchangeRate || 1.0;
             const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
+            const isActual = expense.isActualExpense !== false; // افتراضي: مصروف فعلي
 
             return {
               purchaseId,
               categoryId: expense.categoryId,
-              supplierId: expense.supplierId,
+              supplierId: isActual ? expense.supplierId : null, // المورد فقط للمصروفات الفعلية
               amount: new Prisma.Decimal(amountLYD),
               currency: (expense.currency as Currency) || Currency.LYD,
               exchangeRate: new Prisma.Decimal(rate),
               amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
               notes: expense.notes,
+              isActualExpense: isActual,
             };
           }),
         });
@@ -205,9 +207,10 @@ export class PurchaseExpenseService {
 
 
         for (const expense of expenses) {
-
-
-          if (expense.supplierId && expense.amount > 0) {
+          // فقط المصروفات الفعلية تؤثر على حساب المورد
+          const isActual = expense.isActualExpense !== false;
+          
+          if (isActual && expense.supplierId && expense.amount > 0) {
             const supplier = await tx.supplier.findUnique({
               where: { id: expense.supplierId },
             });
@@ -215,8 +218,6 @@ export class PurchaseExpenseService {
             const category = await tx.purchaseExpenseCategory.findUnique({
               where: { id: expense.categoryId },
             });
-
-
 
             if (supplier) {
               const rate = expense.exchangeRate || 1.0;
@@ -242,8 +243,6 @@ export class PurchaseExpenseService {
               // إنشاء قيد في حساب المورد (خارج transaction)
               // سيتم إنشاؤه بعد انتهاء transaction
 
-
-
               paymentReceipts.push({
                 id: createdReceipt.id,
                 supplierId: expense.supplierId,
@@ -253,12 +252,10 @@ export class PurchaseExpenseService {
                 description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة #${purchase.id}`,
                 categoryName: category?.name,
               });
-            } else {
-
             }
-          } else {
-
           }
+          // المصروفات التقديرية (Virtual) لا تنشئ إيصالات دفع أو قيود على الموردين
+          // لكنها تدخل في حساب تكلفة المنتج
         }
 
 
@@ -334,16 +331,18 @@ export class PurchaseExpenseService {
         data: expenses.map((expense: any) => {
           const rate = expense.exchangeRate || 1.0;
           const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
+          const isActual = expense.isActualExpense !== false; // افتراضي: مصروف فعلي
 
           return {
             purchaseId,
             categoryId: expense.categoryId,
-            supplierId: expense.supplierId,
+            supplierId: isActual ? expense.supplierId : null, // المورد فقط للمصروفات الفعلية
             amount: new Prisma.Decimal(amountLYD),
             currency: (expense.currency as Currency) || Currency.LYD,
             exchangeRate: new Prisma.Decimal(rate),
             amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
             notes: expense.notes,
+            isActualExpense: isActual,
           };
         }),
       });
@@ -444,9 +443,12 @@ export class PurchaseExpenseService {
         });
       }
 
-      // إيصالات دفع لموردي المصروفات - إيصال منفصل لكل مصروف
+      // إيصالات دفع لموردي المصروفات - إيصال منفصل لكل مصروف فعلي فقط
       for (const expense of expenses) {
-        if (expense.supplierId && expense.amount > 0) {
+        const isActual = expense.isActualExpense !== false;
+        
+        // فقط المصروفات الفعلية تنشئ إيصالات دفع وقيود على الموردين
+        if (isActual && expense.supplierId && expense.amount > 0) {
           // الحصول على معلومات المورد والفئة
           const supplier = await tx.supplier.findUnique({
             where: { id: expense.supplierId },
@@ -460,7 +462,7 @@ export class PurchaseExpenseService {
             const rate = expense.exchangeRate || 1.0;
             const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
 
-            // إنشاء إيصال منفصل لكل مصروف
+            // إنشاء إيصال منفصل لكل مصروف فعلي
             const expenseReceipt = await tx.supplierPaymentReceipt.create({
               data: {
                 supplierId: expense.supplierId,
@@ -478,8 +480,6 @@ export class PurchaseExpenseService {
 
             // سيتم إنشاء قيد في حساب المورد بعد انتهاء transaction
 
-
-
             paymentReceipts.push({
               id: expenseReceipt.id,
               supplierId: expense.supplierId,
@@ -491,6 +491,7 @@ export class PurchaseExpenseService {
             });
           }
         }
+        // المصروفات التقديرية (Virtual) لا تنشئ إيصالات دفع ولكنها تدخل في حساب تكلفة المنتج
       }
 
 
