@@ -727,6 +727,9 @@ exports.Prisma.FinancialContactAccountScalarFieldEnum = {
 exports.Prisma.GeneralReceiptScalarFieldEnum = {
   id: 'id',
   contactId: 'contactId',
+  customerId: 'customerId',
+  supplierId: 'supplierId',
+  employeeId: 'employeeId',
   treasuryId: 'treasuryId',
   type: 'type',
   amount: 'amount',
@@ -845,7 +848,8 @@ exports.CustomerReferenceType = exports.$Enums.CustomerReferenceType = {
   SALE: 'SALE',
   PAYMENT: 'PAYMENT',
   ADJUSTMENT: 'ADJUSTMENT',
-  RETURN: 'RETURN'
+  RETURN: 'RETURN',
+  GENERAL_RECEIPT: 'GENERAL_RECEIPT'
 };
 
 exports.SaleType = exports.$Enums.SaleType = {
@@ -907,7 +911,8 @@ exports.SupplierReferenceType = exports.$Enums.SupplierReferenceType = {
   PURCHASE: 'PURCHASE',
   PAYMENT: 'PAYMENT',
   ADJUSTMENT: 'ADJUSTMENT',
-  RETURN: 'RETURN'
+  RETURN: 'RETURN',
+  GENERAL_RECEIPT: 'GENERAL_RECEIPT'
 };
 
 exports.DispatchOrderStatus = exports.$Enums.DispatchOrderStatus = {

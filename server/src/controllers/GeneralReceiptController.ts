@@ -5,9 +5,12 @@ import { TransactionType } from '@prisma/client';
 class GeneralReceiptController {
     async getAll(req: Request, res: Response) {
         try {
-            const { contactId, treasuryId, startDate, endDate, type } = req.query;
+            const { contactId, customerId, supplierId, employeeId, treasuryId, startDate, endDate, type } = req.query;
             const receipts = await generalReceiptService.getAllReceipts({
                 contactId: contactId ? parseInt(contactId as string) : undefined,
+                customerId: customerId ? parseInt(customerId as string) : undefined,
+                supplierId: supplierId ? parseInt(supplierId as string) : undefined,
+                employeeId: employeeId ? parseInt(employeeId as string) : undefined,
                 treasuryId: treasuryId ? parseInt(treasuryId as string) : undefined,
                 startDate: startDate ? new Date(startDate as string) : undefined,
                 endDate: endDate ? new Date(endDate as string) : undefined,

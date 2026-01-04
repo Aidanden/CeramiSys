@@ -50,4 +50,9 @@ router.post('/bonuses/pay', authMiddleware, PayrollController.payBonus.bind(Payr
 // إحصائيات المرتبات
 router.get('/stats', authMiddleware, PayrollController.getPayrollStats.bind(PayrollController));
 
+// ============== حساب الموظف ==============
+
+// جلب حساب موظف معين
+router.get('/employees/:id/account', authMiddleware, PayrollController.getEmployeeAccount.bind(PayrollController));
+
 export default router;

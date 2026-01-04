@@ -9,6 +9,9 @@ import {
     useGetContactStatementQuery,
 } from '@/state/generalReceiptApi';
 import { useGetTreasuriesQuery } from '@/state/treasuryApi';
+import { useGetCustomersQuery } from '@/state/salesApi';
+import { useGetSuppliersQuery } from '@/state/purchaseApi';
+import { useGetEmployeesQuery } from '@/state/payrollApi';
 import {
     Plus,
     X,
@@ -23,7 +26,12 @@ import {
     TrendingDown,
     TrendingUp,
     Building2,
-    ArrowRightLeft
+    ArrowRightLeft,
+    Filter,
+    Eye,
+    Printer,
+    ChevronLeft,
+    ChevronRight,
 } from 'lucide-react';
 
 // تنسيق العملة
@@ -51,6 +59,21 @@ export default function GeneralReceiptsPage() {
     const [receiptType, setReceiptType] = useState<'DEPOSIT' | 'WITHDRAWAL'>('DEPOSIT');
     const [selectedContactId, setSelectedContactId] = useState<number | null>(null);
     const [showStatementModal, setShowStatementModal] = useState(false);
+    const [showReceiptPreview, setShowReceiptPreview] = useState(false);
+    const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
+    
+    // Filters and Pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const [filters, setFilters] = useState({
+        type: '',
+        entityType: '',
+        startDate: '',
+        endDate: '',
+        minAmount: '',
+        maxAmount: '',
+        treasuryId: ''
+    });
+    const itemsPerPage = 10;
 
     // Queries & Mutations
     const { data: contacts, isLoading: contactsLoading, refetch: refetchContacts } = useGetFinancialContactsQuery();
@@ -63,13 +86,101 @@ export default function GeneralReceiptsPage() {
 
     // Form States
     const [contactForm, setContactForm] = useState({ name: '', phone: '', note: '' });
+    const [entityType, setEntityType] = useState<'contact' | 'customer' | 'supplier' | 'employee'>('contact');
     const [receiptForm, setReceiptForm] = useState({
         contactId: '',
+        customerId: '',
+        supplierId: '',
+        employeeId: '',
         treasuryId: '',
         amount: '',
         description: '',
         notes: ''
     });
+
+    // Search states
+    const [contactSearchTerm, setContactSearchTerm] = useState('');
+    const [customerSearchTerm, setCustomerSearchTerm] = useState('');
+    const [supplierSearchTerm, setSupplierSearchTerm] = useState('');
+    const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
+    const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState('');
+    const [debouncedSupplierSearch, setDebouncedSupplierSearch] = useState('');
+    const [debouncedEmployeeSearch, setDebouncedEmployeeSearch] = useState('');
+    const [showContactSuggestions, setShowContactSuggestions] = useState(false);
+    const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+    const [showSupplierSuggestions, setShowSupplierSuggestions] = useState(false);
+    const [showEmployeeSuggestions, setShowEmployeeSuggestions] = useState(false);
+    const [selectedContactName, setSelectedContactName] = useState('');
+    const [selectedCustomerName, setSelectedCustomerName] = useState('');
+    const [selectedSupplierName, setSelectedSupplierName] = useState('');
+    const [selectedEmployeeName, setSelectedEmployeeName] = useState('');
+
+    // Debouncing للبحث - تأخير 300ms قبل البحث
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedCustomerSearch(customerSearchTerm);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [customerSearchTerm]);
+
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSupplierSearch(supplierSearchTerm);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [supplierSearchTerm]);
+
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedEmployeeSearch(employeeSearchTerm);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [employeeSearchTerm]);
+
+    // Additional queries - البحث الديناميكي بدلاً من تحميل كل البيانات
+    const { data: customersData, isLoading: customersLoading } = useGetCustomersQuery(
+        { limit: 50, search: debouncedCustomerSearch || undefined },
+        { skip: !(entityType === 'customer' && showCustomerSuggestions) }
+    );
+    const { data: suppliersData, isLoading: suppliersLoading } = useGetSuppliersQuery(
+        { limit: 50, search: debouncedSupplierSearch || undefined },
+        { skip: !(entityType === 'supplier' && showSupplierSuggestions) }
+    );
+    const { data: employeesData, isLoading: employeesLoading } = useGetEmployeesQuery(
+        { isActive: true, search: debouncedEmployeeSearch || undefined },
+        { skip: !(entityType === 'employee' && showEmployeeSuggestions) }
+    );
+    
+    const customers = customersData?.data?.customers || [];
+    const suppliers = suppliersData?.data?.suppliers || [];
+    const employees = employeesData?.data || [];
+
+    // Refs for click outside
+    const contactSearchRef = React.useRef<HTMLDivElement>(null);
+    const customerSearchRef = React.useRef<HTMLDivElement>(null);
+    const supplierSearchRef = React.useRef<HTMLDivElement>(null);
+    const employeeSearchRef = React.useRef<HTMLDivElement>(null);
+
+    // Close dropdowns when clicking outside
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (contactSearchRef.current && !contactSearchRef.current.contains(event.target as Node)) {
+                setShowContactSuggestions(false);
+            }
+            if (customerSearchRef.current && !customerSearchRef.current.contains(event.target as Node)) {
+                setShowCustomerSuggestions(false);
+            }
+            if (supplierSearchRef.current && !supplierSearchRef.current.contains(event.target as Node)) {
+                setShowSupplierSuggestions(false);
+            }
+            if (employeeSearchRef.current && !employeeSearchRef.current.contains(event.target as Node)) {
+                setShowEmployeeSuggestions(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Handlers
     const handleCreateContact = async (e: React.FormEvent) => {
@@ -86,17 +197,38 @@ export default function GeneralReceiptsPage() {
     const handleCreateReceipt = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await createReceipt({
-                ...receiptForm,
-                contactId: Number(receiptForm.contactId),
+            const receiptData: any = {
                 treasuryId: Number(receiptForm.treasuryId),
                 amount: Number(receiptForm.amount),
-                type: receiptType
-            }).unwrap();
+                type: receiptType,
+                description: receiptForm.description,
+                notes: receiptForm.notes
+            };
+
+            // إضافة المعرف المناسب حسب نوع الجهة
+            if (entityType === 'contact' && receiptForm.contactId) {
+                receiptData.contactId = Number(receiptForm.contactId);
+            } else if (entityType === 'customer' && receiptForm.customerId) {
+                receiptData.customerId = Number(receiptForm.customerId);
+            } else if (entityType === 'supplier' && receiptForm.supplierId) {
+                receiptData.supplierId = Number(receiptForm.supplierId);
+            } else if (entityType === 'employee' && receiptForm.employeeId) {
+                receiptData.employeeId = Number(receiptForm.employeeId);
+            }
+
+            await createReceipt(receiptData).unwrap();
             setShowReceiptModal(false);
-            setReceiptForm({ contactId: '', treasuryId: '', amount: '', description: '', notes: '' });
-        } catch (err) {
-            alert('فشل في تنفيذ العملية');
+            setReceiptForm({ contactId: '', customerId: '', supplierId: '', employeeId: '', treasuryId: '', amount: '', description: '', notes: '' });
+            setContactSearchTerm('');
+            setCustomerSearchTerm('');
+            setSupplierSearchTerm('');
+            setEmployeeSearchTerm('');
+            setSelectedContactName('');
+            setSelectedCustomerName('');
+            setSelectedSupplierName('');
+            setSelectedEmployeeName('');
+        } catch (err: any) {
+            alert(err?.data?.error || 'فشل في تنفيذ العملية');
         }
     };
 
@@ -108,6 +240,71 @@ export default function GeneralReceiptsPage() {
     const handlePrint = () => {
         window.print();
     };
+
+    // Filtered and paginated receipts
+    const filteredReceipts = React.useMemo(() => {
+        if (!receipts) return [];
+        
+        return receipts.filter(r => {
+            // Filter by type
+            if (filters.type && r.type !== filters.type) return false;
+            
+            // Filter by entity type
+            if (filters.entityType) {
+                if (filters.entityType === 'contact' && !r.contactId) return false;
+                if (filters.entityType === 'customer' && !r.customerId) return false;
+                if (filters.entityType === 'supplier' && !r.supplierId) return false;
+                if (filters.entityType === 'employee' && !r.employeeId) return false;
+            }
+            
+            // Filter by date range
+            if (filters.startDate && new Date(r.paymentDate) < new Date(filters.startDate)) return false;
+            if (filters.endDate && new Date(r.paymentDate) > new Date(filters.endDate)) return false;
+            
+            // Filter by amount range
+            if (filters.minAmount && Number(r.amount) < Number(filters.minAmount)) return false;
+            if (filters.maxAmount && Number(r.amount) > Number(filters.maxAmount)) return false;
+            
+            // Filter by treasury
+            if (filters.treasuryId && r.treasuryId !== Number(filters.treasuryId)) return false;
+            
+            return true;
+        });
+    }, [receipts, filters]);
+
+    const paginatedReceipts = React.useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredReceipts.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredReceipts, currentPage]);
+
+    const totalPages = Math.ceil(filteredReceipts.length / itemsPerPage);
+
+    const handleFilterReset = () => {
+        setFilters({
+            type: '',
+            entityType: '',
+            startDate: '',
+            endDate: '',
+            minAmount: '',
+            maxAmount: '',
+            treasuryId: ''
+        });
+        setCurrentPage(1);
+    };
+
+    const handleReceiptPreview = (receipt: any) => {
+        setSelectedReceipt(receipt);
+        setShowReceiptPreview(true);
+    };
+
+    const handlePrintReceipt = () => {
+        window.print();
+    };
+
+    // Reset to page 1 when filters change
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [filters]);
 
     return (
         <div className="p-6 space-y-6 bg-background-secondary min-h-screen font-tajawal text-text-primary" dir="rtl">
@@ -163,11 +360,110 @@ export default function GeneralReceiptsPage() {
 
             {activeTab === 'receipts' ? (
                 <div className="grid grid-cols-1 gap-6">
+                    {/* Filters Section */}
+                    <div className="bg-surface-primary rounded-2xl shadow-sm border border-border-primary p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-bold text-text-primary flex items-center gap-2">
+                                <Filter className="w-5 h-5 text-primary-500" />
+                                تصفية الإيصالات
+                            </h3>
+                            <button
+                                onClick={handleFilterReset}
+                                className="text-sm text-text-muted hover:text-primary-600 underline"
+                            >
+                                إعادة تعيين
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <label className="text-xs font-bold text-text-secondary mb-1 block">نوع الإيصال</label>
+                                <select
+                                    value={filters.type}
+                                    onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white border border-border-primary rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                >
+                                    <option value="">الكل</option>
+                                    <option value="DEPOSIT">قبض (وارد +)</option>
+                                    <option value="WITHDRAWAL">صرف (صادر -)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-text-secondary mb-1 block">نوع الجهة</label>
+                                <select
+                                    value={filters.entityType}
+                                    onChange={(e) => setFilters({ ...filters, entityType: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white border border-border-primary rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                >
+                                    <option value="">الكل</option>
+                                    <option value="contact">جهة اتصال</option>
+                                    <option value="customer">عميل</option>
+                                    <option value="supplier">مورد</option>
+                                    <option value="employee">موظف</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-text-secondary mb-1 block">الخزينة</label>
+                                <select
+                                    value={filters.treasuryId}
+                                    onChange={(e) => setFilters({ ...filters, treasuryId: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white border border-border-primary rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                >
+                                    <option value="">الكل</option>
+                                    {treasuries?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-text-secondary mb-1 block">من تاريخ</label>
+                                <input
+                                    type="date"
+                                    value={filters.startDate}
+                                    onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white border border-border-primary rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-text-secondary mb-1 block">إلى تاريخ</label>
+                                <input
+                                    type="date"
+                                    value={filters.endDate}
+                                    onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white border border-border-primary rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-text-secondary mb-1 block">من مبلغ</label>
+                                <input
+                                    type="number"
+                                    value={filters.minAmount}
+                                    onChange={(e) => setFilters({ ...filters, minAmount: e.target.value })}
+                                    placeholder="0"
+                                    className="w-full px-3 py-2 bg-white border border-border-primary rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-text-secondary mb-1 block">إلى مبلغ</label>
+                                <input
+                                    type="number"
+                                    value={filters.maxAmount}
+                                    onChange={(e) => setFilters({ ...filters, maxAmount: e.target.value })}
+                                    placeholder="999999"
+                                    className="w-full px-3 py-2 bg-white border border-border-primary rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                />
+                            </div>
+                        </div>
+                        <div className="mt-4 flex items-center gap-4 text-sm text-text-secondary">
+                            <span className="font-bold">النتائج: {filteredReceipts.length} إيصال</span>
+                            {Object.values(filters).some(v => v) && (
+                                <span className="text-primary-600 font-bold">• فلاتر نشطة</span>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="bg-surface-primary rounded-3xl shadow-sm border border-border-primary overflow-hidden">
                         <div className="p-6 border-b border-border-primary flex items-center justify-between">
                             <h2 className="font-bold text-text-primary flex items-center gap-2">
                                 <FileText className="w-5 h-5 text-primary-500" />
-                                آخر العمليات المسجلة
+                                سجل الإيصالات ({filteredReceipts.length})
                             </h2>
                             <button onClick={() => refetchReceipts()} className="p-2 text-text-muted hover:text-primary-600 transition-colors">
                                 <RefreshCw className="w-5 h-5" />
@@ -186,7 +482,7 @@ export default function GeneralReceiptsPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border-primary">
-                                    {receipts?.map((r) => (
+                                    {paginatedReceipts?.map((r) => (
                                         <tr key={r.id} className="hover:bg-slate-50 transition-colors group">
                                             <td className="p-4 text-sm text-text-secondary">
                                                 <div className="flex items-center gap-2">
@@ -194,7 +490,17 @@ export default function GeneralReceiptsPage() {
                                                     {formatDate(r.paymentDate)}
                                                 </div>
                                             </td>
-                                            <td className="p-4 font-bold text-text-primary">{r.contact?.name}</td>
+                                            <td className="p-4 font-bold text-text-primary">
+                                                <div className="flex flex-col">
+                                                    <span>{r.contact?.name || r.customer?.name || r.supplier?.name || r.employee?.name}</span>
+                                                    <span className="text-xs text-text-muted font-normal">
+                                                        {r.contact && '(جهة اتصال)'}
+                                                        {r.customer && '(عميل)'}
+                                                        {r.supplier && '(مورد)'}
+                                                        {r.employee && '(موظف)'}
+                                                    </span>
+                                                </div>
+                                            </td>
                                             <td className="p-4 font-black text-base text-success-600">
                                                 {r.type === 'DEPOSIT' ? formatCurrency(Number(r.amount)) : '-'}
                                             </td>
@@ -203,16 +509,36 @@ export default function GeneralReceiptsPage() {
                                             </td>
                                             <td className="p-4 text-sm text-text-tertiary">{r.description || '-'}</td>
                                             <td className="p-4">
-                                                <button className="text-primary-600 hover:text-primary-800 underline text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity">تفاصيل</button>
+                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={() => handleReceiptPreview(r)}
+                                                        className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                                                        title="معاينة"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedReceipt(r);
+                                                            setTimeout(() => window.print(), 100);
+                                                        }}
+                                                        className="p-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
+                                                        title="طباعة"
+                                                    >
+                                                        <Printer className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
-                                    {(!receipts || receipts.length === 0) && (
+                                    {paginatedReceipts.length === 0 && (
                                         <tr>
                                             <td colSpan={6} className="p-20 text-center text-text-disabled">
                                                 <div className="flex flex-col items-center gap-4">
-                                                    <RefreshCw className="w-16 h-16 opacity-10 animate-spin-slow" />
-                                                    <span className="font-bold text-lg italic">لا توجد عمليات مسجلة حالياً</span>
+                                                    <FileText className="w-16 h-16 opacity-10" />
+                                                    <span className="font-bold text-lg italic">
+                                                        {filteredReceipts.length === 0 ? 'لا توجد نتائج مطابقة للفلاتر' : 'لا توجد عمليات مسجلة'}
+                                                    </span>
                                                 </div>
                                             </td>
                                         </tr>
@@ -220,6 +546,48 @@ export default function GeneralReceiptsPage() {
                                 </tbody>
                             </table>
                         </div>
+                        
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <div className="p-6 border-t border-border-primary flex items-center justify-between">
+                                <div className="text-sm text-text-secondary">
+                                    عرض {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredReceipts.length)} من {filteredReceipts.length}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                        className="p-2 rounded-lg border border-border-primary hover:bg-background-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <ChevronRight className="w-5 h-5" />
+                                    </button>
+                                    
+                                    <div className="flex items-center gap-1">
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                            <button
+                                                key={page}
+                                                onClick={() => setCurrentPage(page)}
+                                                className={`px-3 py-1 rounded-lg text-sm font-bold transition-colors ${
+                                                    currentPage === page
+                                                        ? 'bg-primary-600 text-white'
+                                                        : 'text-text-secondary hover:bg-background-secondary'
+                                                }`}
+                                            >
+                                                {page}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className="p-2 rounded-lg border border-border-primary hover:bg-background-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <ChevronLeft className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             ) : (
@@ -380,18 +748,351 @@ export default function GeneralReceiptsPage() {
                             </button>
                         </div>
                         <form onSubmit={handleCreateReceipt} className="p-6 space-y-4">
+                            {/* نوع الجهة */}
+                            <div className="space-y-1">
+                                <label className="text-sm font-bold text-text-secondary italic">نوع الجهة</label>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setEntityType('contact');
+                                            setReceiptForm({ ...receiptForm, contactId: '', customerId: '', supplierId: '', employeeId: '' });
+                                            setContactSearchTerm('');
+                                            setCustomerSearchTerm('');
+                                            setSupplierSearchTerm('');
+                                            setEmployeeSearchTerm('');
+                                            setSelectedContactName('');
+                                            setSelectedCustomerName('');
+                                            setSelectedSupplierName('');
+                                            setSelectedEmployeeName('');
+                                        }}
+                                        className={`py-2 px-3 rounded-lg font-bold transition-all ${
+                                            entityType === 'contact' 
+                                                ? 'bg-primary-600 text-white' 
+                                                : 'bg-background-secondary text-text-secondary hover:bg-primary-100'
+                                        }`}
+                                    >
+                                        جهة اتصال
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setEntityType('customer');
+                                            setReceiptForm({ ...receiptForm, contactId: '', customerId: '', supplierId: '', employeeId: '' });
+                                            setContactSearchTerm('');
+                                            setCustomerSearchTerm('');
+                                            setSupplierSearchTerm('');
+                                            setEmployeeSearchTerm('');
+                                            setSelectedContactName('');
+                                            setSelectedCustomerName('');
+                                            setSelectedSupplierName('');
+                                            setSelectedEmployeeName('');
+                                        }}
+                                        className={`py-2 px-3 rounded-lg font-bold transition-all ${
+                                            entityType === 'customer' 
+                                                ? 'bg-success-600 text-white' 
+                                                : 'bg-background-secondary text-text-secondary hover:bg-success-100'
+                                        }`}
+                                    >
+                                        عميل
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setEntityType('supplier');
+                                            setReceiptForm({ ...receiptForm, contactId: '', customerId: '', supplierId: '', employeeId: '' });
+                                            setContactSearchTerm('');
+                                            setCustomerSearchTerm('');
+                                            setSupplierSearchTerm('');
+                                            setEmployeeSearchTerm('');
+                                            setSelectedContactName('');
+                                            setSelectedCustomerName('');
+                                            setSelectedSupplierName('');
+                                            setSelectedEmployeeName('');
+                                        }}
+                                        className={`py-2 px-3 rounded-lg font-bold transition-all ${
+                                            entityType === 'supplier' 
+                                                ? 'bg-warning-600 text-white' 
+                                                : 'bg-background-secondary text-text-secondary hover:bg-warning-100'
+                                        }`}
+                                    >
+                                        مورد
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setEntityType('employee');
+                                            setReceiptForm({ ...receiptForm, contactId: '', customerId: '', supplierId: '', employeeId: '' });
+                                            setContactSearchTerm('');
+                                            setCustomerSearchTerm('');
+                                            setSupplierSearchTerm('');
+                                            setEmployeeSearchTerm('');
+                                            setSelectedContactName('');
+                                            setSelectedCustomerName('');
+                                            setSelectedSupplierName('');
+                                            setSelectedEmployeeName('');
+                                        }}
+                                        className={`py-2 px-3 rounded-lg font-bold transition-all ${
+                                            entityType === 'employee' 
+                                                ? 'bg-purple-600 text-white' 
+                                                : 'bg-background-secondary text-text-secondary hover:bg-purple-100'
+                                        }`}
+                                    >
+                                        موظف
+                                    </button>
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-sm font-bold text-text-secondary italic">جهة الاتصال / التاجر</label>
-                                    <select
-                                        required
-                                        value={receiptForm.contactId}
-                                        onChange={(e) => setReceiptForm({ ...receiptForm, contactId: e.target.value })}
-                                        className="w-full px-4 py-2 bg-white border border-border-primary rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium outline-none text-text-primary"
-                                    >
-                                        <option value="">اختر الاسم...</option>
-                                        {contacts?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </select>
+                                    <label className="text-sm font-bold text-text-secondary italic">
+                                        {entityType === 'contact' && 'جهة الاتصال'}
+                                        {entityType === 'customer' && 'العميل'}
+                                        {entityType === 'supplier' && 'المورد'}
+                                        {entityType === 'employee' && 'الموظف'}
+                                    </label>
+                                    
+                                    {/* جهة الاتصال - بحث */}
+                                    {entityType === 'contact' && (
+                                        <div className="relative" ref={contactSearchRef}>
+                                            <input
+                                                type="text"
+                                                value={selectedContactName || contactSearchTerm}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    setContactSearchTerm(value);
+                                                    setSelectedContactName('');
+                                                    setReceiptForm({ ...receiptForm, contactId: '' });
+                                                    setShowContactSuggestions(true);
+                                                }}
+                                                onFocus={() => setShowContactSuggestions(true)}
+                                                placeholder="ابحث عن جهة الاتصال بالاسم أو الهاتف..."
+                                                className="w-full px-4 py-2 bg-white border border-border-primary rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium outline-none text-text-primary"
+                                                required={!receiptForm.contactId}
+                                            />
+                                            {contactsLoading && (
+                                                <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+                                                </div>
+                                            )}
+                                            {showContactSuggestions && !contactsLoading && (
+                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                                    {contacts
+                                                        ?.filter((c: any) =>
+                                                            c.name.toLowerCase().includes(contactSearchTerm.toLowerCase()) ||
+                                                            c.phone?.includes(contactSearchTerm)
+                                                        )
+                                                        ?.map((c: any) => (
+                                                            <div
+                                                                key={c.id}
+                                                                onClick={() => {
+                                                                    setReceiptForm({ ...receiptForm, contactId: String(c.id) });
+                                                                    setSelectedContactName(c.name);
+                                                                    setContactSearchTerm('');
+                                                                    setShowContactSuggestions(false);
+                                                                }}
+                                                                className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                                            >
+                                                                <div className="font-medium text-gray-900">{c.name}</div>
+                                                                {c.phone && <div className="text-xs text-gray-500">📱 {c.phone}</div>}
+                                                            </div>
+                                                        ))}
+                                                    {contacts?.filter((c: any) =>
+                                                        c.name.toLowerCase().includes(contactSearchTerm.toLowerCase()) ||
+                                                        c.phone?.includes(contactSearchTerm)
+                                                    )?.length === 0 && (
+                                                        <div className="px-3 py-2 text-gray-500 text-sm">لا توجد نتائج</div>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {receiptForm.contactId && selectedContactName && (
+                                                <p className="text-xs text-green-600 mt-1 font-medium">
+                                                    ✓ تم اختيار: {selectedContactName}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                    
+                                    {/* العميل - بحث */}
+                                    {entityType === 'customer' && (
+                                        <div className="relative" ref={customerSearchRef}>
+                                            <input
+                                                type="text"
+                                                value={selectedCustomerName || customerSearchTerm}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    setCustomerSearchTerm(value);
+                                                    setSelectedCustomerName('');
+                                                    setReceiptForm({ ...receiptForm, customerId: '' });
+                                                    setShowCustomerSuggestions(true);
+                                                }}
+                                                onFocus={() => setShowCustomerSuggestions(true)}
+                                                placeholder="ابحث عن العميل بالاسم أو الهاتف..."
+                                                className="w-full px-4 py-2 bg-white border border-border-primary rounded-xl focus:ring-2 focus:ring-success-500 focus:border-success-500 transition-all font-medium outline-none text-text-primary"
+                                                required={!receiptForm.customerId}
+                                            />
+                                            {customersLoading && (
+                                                <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-success-600"></div>
+                                                </div>
+                                            )}
+                                            {showCustomerSuggestions && (
+                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                                    {customersLoading ? (
+                                                        <div className="px-3 py-2 text-gray-500 text-sm text-center">
+                                                            جاري البحث...
+                                                        </div>
+                                                    ) : customers.length > 0 ? (
+                                                        customers.map((c: any) => (
+                                                            <div
+                                                                key={c.id}
+                                                                onClick={() => {
+                                                                    setReceiptForm({ ...receiptForm, customerId: String(c.id) });
+                                                                    setSelectedCustomerName(c.name);
+                                                                    setCustomerSearchTerm('');
+                                                                    setShowCustomerSuggestions(false);
+                                                                }}
+                                                                className="px-3 py-2 hover:bg-green-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                                            >
+                                                                <div className="font-medium text-gray-900">{c.name}</div>
+                                                                {c.phone && <div className="text-xs text-gray-500">📱 {c.phone}</div>}
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <div className="px-3 py-2 text-gray-500 text-sm">
+                                                            {customerSearchTerm ? 'لا توجد نتائج للبحث' : 'اكتب للبحث عن العميل...'}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {receiptForm.customerId && selectedCustomerName && (
+                                                <p className="text-xs text-green-600 mt-1 font-medium">
+                                                    ✓ تم اختيار: {selectedCustomerName}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                    
+                                    {/* المورد - بحث */}
+                                    {entityType === 'supplier' && (
+                                        <div className="relative" ref={supplierSearchRef}>
+                                            <input
+                                                type="text"
+                                                value={selectedSupplierName || supplierSearchTerm}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    setSupplierSearchTerm(value);
+                                                    setSelectedSupplierName('');
+                                                    setReceiptForm({ ...receiptForm, supplierId: '' });
+                                                    setShowSupplierSuggestions(true);
+                                                }}
+                                                onFocus={() => setShowSupplierSuggestions(true)}
+                                                placeholder="ابحث عن المورد بالاسم أو الهاتف..."
+                                                className="w-full px-4 py-2 bg-white border border-border-primary rounded-xl focus:ring-2 focus:ring-warning-500 focus:border-warning-500 transition-all font-medium outline-none text-text-primary"
+                                                required={!receiptForm.supplierId}
+                                            />
+                                            {suppliersLoading && (
+                                                <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-warning-600"></div>
+                                                </div>
+                                            )}
+                                            {showSupplierSuggestions && (
+                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                                    {suppliersLoading ? (
+                                                        <div className="px-3 py-2 text-gray-500 text-sm text-center">
+                                                            جاري البحث...
+                                                        </div>
+                                                    ) : suppliers.length > 0 ? (
+                                                        suppliers.map((s: any) => (
+                                                            <div
+                                                                key={s.id}
+                                                                onClick={() => {
+                                                                    setReceiptForm({ ...receiptForm, supplierId: String(s.id) });
+                                                                    setSelectedSupplierName(s.name);
+                                                                    setSupplierSearchTerm('');
+                                                                    setShowSupplierSuggestions(false);
+                                                                }}
+                                                                className="px-3 py-2 hover:bg-orange-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                                            >
+                                                                <div className="font-medium text-gray-900">{s.name}</div>
+                                                                {s.phone && <div className="text-xs text-gray-500">📱 {s.phone}</div>}
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <div className="px-3 py-2 text-gray-500 text-sm">
+                                                            {supplierSearchTerm ? 'لا توجد نتائج للبحث' : 'اكتب للبحث عن المورد...'}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {receiptForm.supplierId && selectedSupplierName && (
+                                                <p className="text-xs text-green-600 mt-1 font-medium">
+                                                    ✓ تم اختيار: {selectedSupplierName}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                    
+                                    {/* الموظف - بحث */}
+                                    {entityType === 'employee' && (
+                                        <div className="relative" ref={employeeSearchRef}>
+                                            <input
+                                                type="text"
+                                                value={selectedEmployeeName || employeeSearchTerm}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    setEmployeeSearchTerm(value);
+                                                    setSelectedEmployeeName('');
+                                                    setReceiptForm({ ...receiptForm, employeeId: '' });
+                                                    setShowEmployeeSuggestions(true);
+                                                }}
+                                                onFocus={() => setShowEmployeeSuggestions(true)}
+                                                placeholder="ابحث عن الموظف بالاسم أو الهاتف..."
+                                                className="w-full px-4 py-2 bg-white border border-border-primary rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium outline-none text-text-primary"
+                                                required={!receiptForm.employeeId}
+                                            />
+                                            {employeesLoading && (
+                                                <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                                                </div>
+                                            )}
+                                            {showEmployeeSuggestions && (
+                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                                    {employeesLoading ? (
+                                                        <div className="px-3 py-2 text-gray-500 text-sm text-center">
+                                                            جاري البحث...
+                                                        </div>
+                                                    ) : employees.length > 0 ? (
+                                                        employees.map((e: any) => (
+                                                            <div
+                                                                key={e.id}
+                                                                onClick={() => {
+                                                                    setReceiptForm({ ...receiptForm, employeeId: String(e.id) });
+                                                                    setSelectedEmployeeName(e.name);
+                                                                    setEmployeeSearchTerm('');
+                                                                    setShowEmployeeSuggestions(false);
+                                                                }}
+                                                                className="px-3 py-2 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                                            >
+                                                                <div className="font-medium text-gray-900">{e.name}</div>
+                                                                {e.phone && <div className="text-xs text-gray-500">📱 {e.phone}</div>}
+                                                                {e.jobTitle && <div className="text-xs text-gray-400">💼 {e.jobTitle}</div>}
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <div className="px-3 py-2 text-gray-500 text-sm">
+                                                            {employeeSearchTerm ? 'لا توجد نتائج للبحث' : 'اكتب للبحث عن الموظف...'}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {receiptForm.employeeId && selectedEmployeeName && (
+                                                <p className="text-xs text-green-600 mt-1 font-medium">
+                                                    ✓ تم اختيار: {selectedEmployeeName}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="space-y-1">
                                     <label className="text-sm font-bold text-text-secondary italic">الخزينة</label>
@@ -459,7 +1160,7 @@ export default function GeneralReceiptsPage() {
             {showStatementModal && (
                 <div id="printable-modal-root" className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
-                        <div className="px-8 py-6 border-b border-border-primary flex items-center justify-between bg-white relative">
+                        <div className="px-8 py-6 border-b border-border-primary flex items-center justify-between bg-white relative print-hide">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-primary-600/20">
                                     {contacts?.find(c => c.id === selectedContactId)?.name.charAt(0)}
@@ -488,26 +1189,27 @@ export default function GeneralReceiptsPage() {
                             </div>
                         </div>
 
-                        {/* Print Only Styles (Refined to prevent blank pages) */}
+                        {/* Print Only Styles */}
                         <style jsx global>{`
                             @media print {
-                                /* 1. Default: Hide everything */
+                                /* إخفاء كل شيء ما عدا الكشف */
                                 html, body {
                                     height: auto !important;
                                     overflow: visible !important;
                                     background: white !important;
+                                    margin: 0 !important;
+                                    padding: 0 !important;
                                 }
                                 body * {
                                     visibility: hidden !important;
                                 }
                                 
-                                /* 2. Show only our target and its descendants */
+                                /* إظهار منطقة الطباعة فقط */
                                 #printable-modal-root, 
                                 #printable-modal-root * {
                                     visibility: visible !important;
                                 }
                                 
-                                /* 3. Force-position the target at the top of the print page */
                                 #printable-modal-root {
                                     position: absolute !important;
                                     top: 0 !important;
@@ -520,7 +1222,6 @@ export default function GeneralReceiptsPage() {
                                     z-index: 999999 !important;
                                 }
 
-                                /* 4. Strip modal-specific constraints (scrollbars/shadows) */
                                 #printable-modal-root > div {
                                     position: relative !important;
                                     max-height: none !important;
@@ -529,28 +1230,153 @@ export default function GeneralReceiptsPage() {
                                     width: 100% !important;
                                     box-shadow: none !important;
                                     border: none !important;
+                                    border-radius: 0 !important;
                                     margin: 0 !important;
                                     transform: none !important;
+                                    background: white !important;
                                 }
 
-                                #printable-statement {
-                                    height: auto !important;
-                                    overflow: visible !important;
-                                    padding: 40px !important;
-                                }
-
-                                .no-print {
+                                /* إخفاء الهيدر والأزرار عند الطباعة */
+                                .print-hide {
                                     display: none !important;
                                 }
 
+                                /* تنسيق منطقة الطباعة */
+                                #printable-statement {
+                                    height: auto !important;
+                                    overflow: visible !important;
+                                    padding: 0 !important;
+                                    background: white !important;
+                                }
+
+                                /* تنسيق العنوان */
+                                .print-header {
+                                    border-bottom: 3px solid #000 !important;
+                                    padding-bottom: 20px !important;
+                                    margin-bottom: 30px !important;
+                                }
+
+                                .print-title {
+                                    font-size: 24pt !important;
+                                    font-weight: bold !important;
+                                    text-align: center !important;
+                                    color: #000 !important;
+                                    margin-bottom: 10px !important;
+                                }
+
+                                .print-info {
+                                    font-size: 12pt !important;
+                                    color: #333 !important;
+                                    line-height: 1.8 !important;
+                                }
+
+                                /* تنسيق الجدول للطباعة */
+                                .print-table {
+                                    width: 100% !important;
+                                    border-collapse: collapse !important;
+                                    margin: 20px 0 !important;
+                                    page-break-inside: auto !important;
+                                }
+
+                                .print-table thead {
+                                    background: #f5f5f5 !important;
+                                    -webkit-print-color-adjust: exact !important;
+                                    print-color-adjust: exact !important;
+                                }
+
+                                .print-table th {
+                                    border: 2px solid #000 !important;
+                                    padding: 12px 8px !important;
+                                    font-size: 11pt !important;
+                                    font-weight: bold !important;
+                                    color: #000 !important;
+                                    text-align: center !important;
+                                }
+
+                                .print-table td {
+                                    border: 1px solid #666 !important;
+                                    padding: 10px 8px !important;
+                                    font-size: 10pt !important;
+                                    color: #000 !important;
+                                    text-align: center !important;
+                                }
+
+                                .print-table tbody tr {
+                                    page-break-inside: avoid !important;
+                                }
+
+                                .print-table tbody tr:nth-child(even) {
+                                    background: #fafafa !important;
+                                    -webkit-print-color-adjust: exact !important;
+                                    print-color-adjust: exact !important;
+                                }
+
+                                /* تنسيق الإجماليات */
+                                .print-summary {
+                                    margin-top: 30px !important;
+                                    border: 2px solid #000 !important;
+                                    padding: 20px !important;
+                                    background: #f9f9f9 !important;
+                                    -webkit-print-color-adjust: exact !important;
+                                    print-color-adjust: exact !important;
+                                }
+
+                                .print-summary-row {
+                                    display: flex !important;
+                                    justify-content: space-between !important;
+                                    padding: 8px 0 !important;
+                                    font-size: 12pt !important;
+                                    border-bottom: 1px solid #ddd !important;
+                                }
+
+                                .print-summary-row:last-child {
+                                    border-bottom: none !important;
+                                    font-size: 14pt !important;
+                                    font-weight: bold !important;
+                                    border-top: 2px solid #000 !important;
+                                    padding-top: 12px !important;
+                                    margin-top: 8px !important;
+                                }
+
+                                /* تنسيق التذييل */
+                                .print-footer {
+                                    margin-top: 40px !important;
+                                    padding-top: 20px !important;
+                                    border-top: 2px solid #000 !important;
+                                    font-size: 9pt !important;
+                                    color: #666 !important;
+                                    text-align: center !important;
+                                }
+
                                 @page {
-                                    margin: 2cm;
+                                    size: A4;
+                                    margin: 1.5cm;
+                                }
+                            }
+
+                            /* Receipt Print Styles */
+                            @media print {
+                                #receipt-print {
+                                    display: block !important;
                                 }
                             }
                         `}</style>
 
                         <div id="printable-statement" className="flex-1 overflow-y-auto p-8 bg-background-secondary/30 space-y-8 print:bg-white">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {/* رأس الكشف للطباعة */}
+                            <div className="hidden print:block print-header">
+                                <div className="print-title">كشف حساب مالي</div>
+                                <div className="print-info" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '15px' }}>
+                                    <div><strong>اسم الجهة:</strong> {contacts?.find(c => c.id === selectedContactId)?.name}</div>
+                                    <div><strong>تاريخ الطباعة:</strong> {new Date().toLocaleDateString('ar-LY')}</div>
+                                    {contacts?.find(c => c.id === selectedContactId)?.phone && (
+                                        <div><strong>رقم الهاتف:</strong> {contacts?.find(c => c.id === selectedContactId)?.phone}</div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* ملخص الحساب - للشاشة فقط */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 print:hidden">
                                 <div className="bg-white rounded-xl p-6 border border-border-primary shadow-sm hover:shadow-md transition-shadow">
                                     <p className="text-xs text-text-tertiary font-bold mb-2">إجمالي المقبوضات (+)</p>
                                     <div className="flex items-center gap-2">
@@ -577,7 +1403,8 @@ export default function GeneralReceiptsPage() {
                                 </div>
                             </div>
 
-                            <div className="bg-white border border-border-primary rounded-2xl shadow-sm overflow-hidden">
+                            {/* جدول الحركات - للشاشة */}
+                            <div className="bg-white border border-border-primary rounded-2xl shadow-sm overflow-hidden print:hidden">
                                 <table className="w-full text-right border-collapse">
                                     <thead>
                                         <tr className="bg-background-secondary text-text-tertiary text-xs font-bold border-b border-border-primary">
@@ -604,6 +1431,154 @@ export default function GeneralReceiptsPage() {
                                         ))}
                                     </tbody>
                                 </table>
+                            </div>
+
+                            {/* جدول الحركات - للطباعة فقط */}
+                            <table className="hidden print:table print-table">
+                                <thead>
+                                    <tr>
+                                        <th style={{ width: '10%' }}>#</th>
+                                        <th style={{ width: '15%' }}>التاريخ</th>
+                                        <th style={{ width: '35%' }}>البيان</th>
+                                        <th style={{ width: '15%' }}>مدين</th>
+                                        <th style={{ width: '15%' }}>دائن</th>
+                                        <th style={{ width: '10%' }}>الرصيد</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {statement?.map((s, idx) => (
+                                        <tr key={idx}>
+                                            <td>{idx + 1}</td>
+                                            <td>{new Date(s.transactionDate).toLocaleDateString('ar-LY')}</td>
+                                            <td style={{ textAlign: 'right' }}>{s.description}</td>
+                                            <td>{s.transactionType === 'DEPOSIT' ? formatCurrency(Number(s.amount)) : '-'}</td>
+                                            <td>{s.transactionType === 'WITHDRAWAL' ? formatCurrency(Number(s.amount)) : '-'}</td>
+                                            <td style={{ fontWeight: 'bold' }}>{formatCurrency(Math.abs(Number(s.balance)))}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {/* الإجماليات - للطباعة فقط */}
+                            <div className="hidden print:block print-summary">
+                                <div className="print-summary-row">
+                                    <span>إجمالي المدين (الوارد):</span>
+                                    <span style={{ fontWeight: 'bold' }}>
+                                        {formatCurrency(statement?.filter(s => s.transactionType === 'DEPOSIT').reduce((sum, s) => sum + Number(s.amount), 0) || 0)}
+                                    </span>
+                                </div>
+                                <div className="print-summary-row">
+                                    <span>إجمالي الدائن (المنصرف):</span>
+                                    <span style={{ fontWeight: 'bold' }}>
+                                        {formatCurrency(statement?.filter(s => s.transactionType === 'WITHDRAWAL').reduce((sum, s) => sum + Number(s.amount), 0) || 0)}
+                                    </span>
+                                </div>
+                                <div className="print-summary-row">
+                                    <span>الرصيد النهائي:</span>
+                                    <span style={{ fontWeight: 'bold', fontSize: '14pt' }}>
+                                        {formatCurrency(Math.abs(Number(contacts?.find(c => c.id === selectedContactId)?.currentBalance || 0)))}
+                                        {Number(contacts?.find(c => c.id === selectedContactId)?.currentBalance) >= 0 ? ' (لصالحه)' : ' (عليه)'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* التذييل - للطباعة فقط */}
+                            <div className="hidden print:block print-footer">
+                                <p>هذا الكشف صادر إلكترونياً ولا يحتاج إلى ختم أو توقيع</p>
+                                <p style={{ marginTop: '5px' }}>تاريخ ووقت الطباعة: {new Date().toLocaleString('ar-LY')}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Receipt Preview Modal */}
+            {showReceiptPreview && selectedReceipt && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+                        <div className="px-6 py-4 border-b border-border-primary flex items-center justify-between print-hide">
+                            <h2 className="text-lg font-bold">معاينة الإيصال</h2>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handlePrintReceipt}
+                                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200"
+                                >
+                                    <Printer className="w-4 h-4" />
+                                    طباعة
+                                </button>
+                                <button
+                                    onClick={() => setShowReceiptPreview(false)}
+                                    className="p-2 hover:bg-slate-100 rounded-lg"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Receipt Print Template */}
+                        <div id="receipt-print" className="flex-1 overflow-y-auto p-8">
+                            <div className="max-w-xl mx-auto">
+                                {/* Header */}
+                                <div className="text-center border-b-2 border-gray-800 pb-4 mb-6">
+                                    <h1 className="text-2xl font-bold mb-2">إيصال {selectedReceipt.type === 'DEPOSIT' ? 'قبض' : 'صرف'}</h1>
+                                    <div className="text-sm text-gray-600">
+                                        <p>رقم الإيصال: #{selectedReceipt.id}</p>
+                                        <p>التاريخ: {new Date(selectedReceipt.paymentDate).toLocaleDateString('ar-LY')}</p>
+                                    </div>
+                                </div>
+
+                                {/* Details */}
+                                <div className="space-y-4 mb-6">
+                                    <div className="flex justify-between py-2 border-b border-gray-200">
+                                        <span className="font-bold text-gray-700">الجهة:</span>
+                                        <span className="font-bold">
+                                            {selectedReceipt.contact?.name || selectedReceipt.customer?.name || selectedReceipt.supplier?.name || selectedReceipt.employee?.name}
+                                        </span>
+                                    </div>
+                                    
+                                    <div className="flex justify-between py-2 border-b border-gray-200">
+                                        <span className="font-bold text-gray-700">نوع الجهة:</span>
+                                        <span>
+                                            {selectedReceipt.contact && 'جهة اتصال'}
+                                            {selectedReceipt.customer && 'عميل'}
+                                            {selectedReceipt.supplier && 'مورد'}
+                                            {selectedReceipt.employee && 'موظف'}
+                                        </span>
+                                    </div>
+
+                                    {(selectedReceipt.contact?.phone || selectedReceipt.customer?.phone || selectedReceipt.supplier?.phone || selectedReceipt.employee?.phone) && (
+                                        <div className="flex justify-between py-2 border-b border-gray-200">
+                                            <span className="font-bold text-gray-700">الهاتف:</span>
+                                            <span>{selectedReceipt.contact?.phone || selectedReceipt.customer?.phone || selectedReceipt.supplier?.phone || selectedReceipt.employee?.phone}</span>
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-between py-2 border-b border-gray-200">
+                                        <span className="font-bold text-gray-700">نوع العملية:</span>
+                                        <span className={`font-bold ${selectedReceipt.type === 'DEPOSIT' ? 'text-success-600' : 'text-error-600'}`}>
+                                            {selectedReceipt.type === 'DEPOSIT' ? 'قبض (وارد)' : 'صرف (صادر)'}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex justify-between py-2 border-b border-gray-200">
+                                        <span className="font-bold text-gray-700">البيان:</span>
+                                        <span>{selectedReceipt.description || '-'}</span>
+                                    </div>
+                                </div>
+
+                                {/* Amount */}
+                                <div className="bg-gray-50 p-6 rounded-xl border-2 border-gray-800 mb-6">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-lg font-bold">المبلغ:</span>
+                                        <span className="text-3xl font-bold">{formatCurrency(Number(selectedReceipt.amount))}</span>
+                                    </div>
+                                </div>
+
+                                {/* Footer */}
+                                <div className="text-center text-sm text-gray-500 pt-6 border-t border-gray-300">
+                                    <p>هذا الإيصال صادر إلكترونياً</p>
+                                    <p className="mt-1">تاريخ الطباعة: {new Date().toLocaleString('ar-LY')}</p>
+                                </div>
                             </div>
                         </div>
                     </div>

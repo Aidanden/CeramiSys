@@ -187,6 +187,7 @@ model Customer {
   provisionalSales ProvisionalSale[]
   sales            Sale[]
   saleReturns      SaleReturn[]
+  generalReceipts  GeneralReceipt[]
 }
 
 model CustomerAccount {
@@ -462,6 +463,7 @@ model Supplier {
   purchaseExpenses  PurchaseExpense[]
   accountEntries    SupplierAccount[]
   paymentReceipts   SupplierPaymentReceipt[]
+  generalReceipts   GeneralReceipt[]
 }
 
 model SupplierAccount {
@@ -956,6 +958,7 @@ enum CustomerReferenceType {
   PAYMENT
   ADJUSTMENT
   RETURN
+  GENERAL_RECEIPT
 }
 
 enum SupplierTransactionType {
@@ -968,6 +971,7 @@ enum SupplierReferenceType {
   PAYMENT
   ADJUSTMENT
   RETURN
+  GENERAL_RECEIPT
 }
 
 enum SupplierPaymentType {
@@ -1049,21 +1053,30 @@ model FinancialContactAccount {
 
 // الإيصالات العامة (قبض / صرف)
 model GeneralReceipt {
-  id            Int              @id @default(autoincrement())
-  contactId     Int
+  id            Int               @id @default(autoincrement())
+  contactId     Int?
+  customerId    Int?
+  supplierId    Int?
+  employeeId    Int?
   treasuryId    Int
   type          TransactionType // DEPOSIT (قبض) / WITHDRAWAL (صرف)
-  amount        Decimal          @db.Decimal(18, 4)
+  amount        Decimal           @db.Decimal(18, 4)
   description   String?
   notes         String?
   receiptNumber String?
-  paymentDate   DateTime         @default(now())
+  paymentDate   DateTime          @default(now())
   createdBy     String?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  contact       FinancialContact @relation(fields: [contactId], references: [id])
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  contact       FinancialContact? @relation(fields: [contactId], references: [id])
+  customer      Customer?         @relation(fields: [customerId], references: [id])
+  supplier      Supplier?         @relation(fields: [supplierId], references: [id])
+  employee      Employee?         @relation(fields: [employeeId], references: [id])
 
   @@index([contactId])
+  @@index([customerId])
+  @@index([supplierId])
+  @@index([employeeId])
   @@index([treasuryId])
   @@index([paymentDate])
 }
@@ -1072,21 +1085,22 @@ model GeneralReceipt {
 
 // الموظف
 model Employee {
-  id             Int             @id @default(autoincrement())
-  name           String
-  jobTitle       String? // المسمى الوظيفي
-  phone          String?
-  email          String?
-  baseSalary     Decimal         @db.Decimal(18, 4) // الراتب الأساسي
-  companyId      Int
-  isActive       Boolean         @default(true)
-  hireDate       DateTime? // تاريخ التعيين
-  notes          String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  company        Company         @relation(fields: [companyId], references: [id])
-  salaryPayments SalaryPayment[]
-  bonuses        EmployeeBonus[]
+  id              Int              @id @default(autoincrement())
+  name            String
+  jobTitle        String? // المسمى الوظيفي
+  phone           String?
+  email           String?
+  baseSalary      Decimal          @db.Decimal(18, 4) // الراتب الأساسي
+  companyId       Int
+  isActive        Boolean          @default(true)
+  hireDate        DateTime? // تاريخ التعيين
+  notes           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  company         Company          @relation(fields: [companyId], references: [id])
+  salaryPayments  SalaryPayment[]
+  bonuses         EmployeeBonus[]
+  generalReceipts GeneralReceipt[]
 
   @@index([companyId])
   @@index([isActive])
@@ -1184,4 +1198,16 @@ enum BonusType {
 enum SalaryPaymentType {
   PARTIAL // دفعة جزئية (سلفة)
   FINAL // تسوية نهائية
+}
+
+enum EmployeeTransactionType {
+  DEBIT  // مدين (يزيد رصيد الموظف - سلفة)
+  CREDIT // دائن (يخفض رصيد الموظف - دفع راتب)
+}
+
+enum EmployeeReferenceType {
+  SALARY_PAYMENT // صرف راتب
+  BONUS_PAYMENT // صرف مكافأة
+  GENERAL_RECEIPT // إيصال عام
+  ADJUSTMENT // تسوية
 }

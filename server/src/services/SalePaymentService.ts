@@ -262,10 +262,10 @@ export class SalePaymentService {
         let treasuryName = '';
 
         if (data.paymentMethod === 'CASH') {
-          // نقدي كاش - خزينة الشركة
+          // نقدي كاش - خزينة الشركة التي أصدرت الفاتورة
           const companyTreasury = await this.prisma.treasury.findFirst({
             where: {
-              companyId: userCompanyId,
+              companyId: sale.companyId,
               type: 'COMPANY',
               isActive: true
             }

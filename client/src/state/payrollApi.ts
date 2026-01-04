@@ -260,6 +260,13 @@ export const payrollApi = createApi({
             },
             providesTags: ["PayrollStats"],
         }),
+
+        // ============== حساب الموظف ==============
+
+        getEmployeeAccount: builder.query<{ success: boolean; data: any }, number>({
+            query: (id) => `payroll/employees/${id}/account`,
+            providesTags: (result, error, id) => [{ type: "Employee", id }],
+        }),
     }),
 });
 
@@ -275,4 +282,5 @@ export const {
     useGetSalaryStatementQuery,
     usePayBonusMutation,
     useGetPayrollStatsQuery,
+    useGetEmployeeAccountQuery,
 } = payrollApi;

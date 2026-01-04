@@ -45,7 +45,6 @@ class PayrollController {
                 data: employee
             });
         } catch (error: any) {
-            console.error('خطأ في إنشاء الموظف:', error);
             res.status(500).json({
                 success: false,
                 message: error.message || 'حدث خطأ أثناء إنشاء الموظف'
@@ -72,7 +71,6 @@ class PayrollController {
                 data: employees
             });
         } catch (error: any) {
-            console.error('خطأ في جلب الموظفين:', error);
             res.status(500).json({
                 success: false,
                 message: error.message || 'حدث خطأ أثناء جلب الموظفين'
@@ -98,7 +96,6 @@ class PayrollController {
                 data: employee
             });
         } catch (error: any) {
-            console.error('خطأ في جلب الموظف:', error);
             res.status(404).json({
                 success: false,
                 message: error.message || 'الموظف غير موجود'
@@ -135,7 +132,6 @@ class PayrollController {
                 data: employee
             });
         } catch (error: any) {
-            console.error('خطأ في تحديث الموظف:', error);
             res.status(500).json({
                 success: false,
                 message: error.message || 'حدث خطأ أثناء تحديث الموظف'
@@ -160,7 +156,6 @@ class PayrollController {
                 ...result
             });
         } catch (error: any) {
-            console.error('خطأ في حذف الموظف:', error);
             res.status(500).json({
                 success: false,
                 message: error.message || 'حدث خطأ أثناء حذف الموظف'
@@ -202,7 +197,6 @@ class PayrollController {
                 data: payment
             });
         } catch (error: any) {
-            console.error('خطأ في صرف المرتب:', error);
             res.status(400).json({
                 success: false,
                 message: error.message || 'حدث خطأ أثناء صرف المرتب'
@@ -247,7 +241,6 @@ class PayrollController {
                 data: result
             });
         } catch (error: any) {
-            console.error('خطأ في صرف المرتبات:', error);
             res.status(400).json({
                 success: false,
                 message: error.message || 'حدث خطأ أثناء صرف المرتبات'
@@ -283,7 +276,6 @@ class PayrollController {
                 data: statement
             });
         } catch (error: any) {
-            console.error('خطأ في جلب كشف حركة المرتب:', error);
             res.status(500).json({
                 success: false,
                 message: error.message || 'حدث خطأ أثناء جلب كشف حركة المرتب'
@@ -318,7 +310,6 @@ class PayrollController {
                 data: payments
             });
         } catch (error: any) {
-            console.error('خطأ في جلب سجل المرتبات:', error);
             res.status(500).json({
                 success: false,
                 message: error.message || 'حدث خطأ أثناء جلب سجل المرتبات'
@@ -360,7 +351,6 @@ class PayrollController {
                 data: bonus
             });
         } catch (error: any) {
-            console.error('خطأ في صرف المكافأة:', error);
             res.status(400).json({
                 success: false,
                 message: error.message || 'حدث خطأ أثناء صرف المكافأة'
@@ -388,10 +378,38 @@ class PayrollController {
                 data: stats
             });
         } catch (error: any) {
-            console.error('خطأ في جلب الإحصائيات:', error);
             res.status(500).json({
                 success: false,
                 message: error.message || 'حدث خطأ أثناء جلب الإحصائيات'
+            });
+        }
+    }
+
+    // ============== حساب الموظف ==============
+
+    /**
+     * جلب حساب موظف معين
+     */
+    async getEmployeeAccount(req: AuthRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            if (!id) {
+                res.status(400).json({ success: false, message: 'معرف الموظف مطلوب' });
+                return;
+            }
+
+            const EmployeeAccountService = require('../services/EmployeeAccountService').default;
+            const account = await EmployeeAccountService.getEmployeeAccount(parseInt(id));
+
+            res.json({
+                success: true,
+                message: 'تم جلب حساب الموظف بنجاح',
+                data: account
+            });
+        } catch (error: any) {
+            res.status(404).json({
+                success: false,
+                message: error.message || 'حدث خطأ أثناء جلب حساب الموظف'
             });
         }
     }

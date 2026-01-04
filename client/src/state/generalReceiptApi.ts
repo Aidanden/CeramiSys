@@ -14,7 +14,10 @@ export interface FinancialContact {
 
 export interface GeneralReceipt {
     id: number;
-    contactId: number;
+    contactId?: number;
+    customerId?: number;
+    supplierId?: number;
+    employeeId?: number;
     treasuryId: number;
     type: 'DEPOSIT' | 'WITHDRAWAL';
     amount: number;
@@ -22,12 +25,27 @@ export interface GeneralReceipt {
     notes?: string;
     paymentDate: string;
     contact?: FinancialContact;
+    customer?: {
+        id: number;
+        name: string;
+        phone?: string;
+    };
+    supplier?: {
+        id: number;
+        name: string;
+        phone?: string;
+    };
+    employee?: {
+        id: number;
+        name: string;
+        phone?: string;
+    };
 }
 
 export const generalReceiptApi = createApi({
     reducerPath: "generalReceiptApi",
     baseQuery: baseQueryWithAuthInterceptor,
-    tagTypes: ["FinancialContacts", "GeneralReceipts", "Treasury", "FinancialContactStatement"],
+    tagTypes: ["FinancialContacts", "GeneralReceipts", "Treasury", "FinancialContactStatement", "Customers", "Suppliers", "Employees"],
     endpoints: (build) => ({
         getFinancialContacts: build.query<FinancialContact[], void>({
             query: () => "/general/contacts",
@@ -53,7 +71,7 @@ export const generalReceiptApi = createApi({
             }),
             invalidatesTags: ["FinancialContacts"],
         }),
-        getGeneralReceipts: build.query<GeneralReceipt[], { contactId?: number; type?: string }>({
+        getGeneralReceipts: build.query<GeneralReceipt[], { contactId?: number; customerId?: number; supplierId?: number; employeeId?: number; type?: string }>({
             query: (params) => ({
                 url: "/general/receipts",
                 params,
@@ -72,16 +90,30 @@ export const generalReceiptApi = createApi({
                     // تحديث الخزائن والحركات في الذاكرة المؤقتة التابعة لـ treasuryApi
                     dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryStats', 'TreasuryTransaction']));
                 } catch (err) {
-                    console.error("Error updating treasury cache:", err);
+                    // Error updating treasury cache
                 }
             },
-            invalidatesTags: (result, error, { contactId }) => [
-                "GeneralReceipts",
-                "FinancialContacts",
-                { type: "FinancialContacts" as const, id: contactId },
-                "Treasury",
-                { type: "FinancialContactStatement" as const, id: contactId },
-            ],
+            invalidatesTags: (result, error, { contactId, customerId, supplierId, employeeId }) => {
+                const tags: any[] = [
+                    "GeneralReceipts",
+                    "FinancialContacts",
+                    "Treasury",
+                ];
+                if (contactId) {
+                    tags.push({ type: "FinancialContacts" as const, id: contactId });
+                    tags.push({ type: "FinancialContactStatement" as const, id: contactId });
+                }
+                if (customerId) {
+                    tags.push("Customers");
+                }
+                if (supplierId) {
+                    tags.push("Suppliers");
+                }
+                if (employeeId) {
+                    tags.push("Employees");
+                }
+                return tags;
+            },
         }),
         getContactStatement: build.query<any[], number>({
             query: (id) => `/general/contacts/${id}/statement`,
