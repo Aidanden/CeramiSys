@@ -1,0 +1,25 @@
+[
+  { "name": "ربيع", "jobTitle": null, "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "عبد الرحمن", "jobTitle": null, "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "ابراهيم", "jobTitle": null, "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "محمد السائح", "jobTitle": null, "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "ليسني المخزن", "jobTitle": "عامل مخزن", "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "مبارك المخزن", "jobTitle": "عامل مخزن", "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "ادريس عامل المخزن", "jobTitle": "عامل مخزن", "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "صالح عامل المخزن", "jobTitle": "عامل مخزن", "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "وائل", "jobTitle": null, "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "عامل السائح", "jobTitle": null, "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "صالح الصالة", "jobTitle": "عامل صالة", "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "احمد صقر", "jobTitle": null, "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "م هشام ابوقرين", "jobTitle": null, "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "عبد الله عامل المخزن", "jobTitle": "عامل مخزن", "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "المبروك (كيا)", "jobTitle": null, "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "فضل الله المخزن", "jobTitle": "عامل مخزن", "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "ابراهيم عامل الصالة", "jobTitle": "عامل صالة", "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "المهندسة ابتهاج", "jobTitle": "مهندسة", "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "مبارك", "jobTitle": null, "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "اسحاق عامل الصالة", "jobTitle": "عامل صالة", "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "حبيب عامل الصالة", "jobTitle": "عامل صالة", "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null },
+  { "name": "ابراهيم الراجحي", "jobTitle": null, "phone": null, "email": null, "baseSalary": 0, "companyId": 1, "isActive": true, "hireDate": null, "notes": null }
+]
+

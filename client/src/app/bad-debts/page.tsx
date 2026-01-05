@@ -5,7 +5,7 @@
  * Bad Debts / Write-offs Management Page
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
     useGetCategoriesQuery,
     useGetCategoryQuery,
@@ -21,7 +21,39 @@ import {
 } from '@/state/badDebtApi';
 import { useGetTreasuriesQuery } from '@/state/treasuryApi';
 import { useGetCompaniesQuery } from '@/state/companyApi';
-import { Folder, Calendar, BarChart3, TrendingUp } from 'lucide-react';
+import { useGetCurrentUserQuery } from '@/state/authApi';
+import { BadDebtMonthlyReport } from '@/components/bad-debts/BadDebtMonthlyReport';
+import {
+    Folder,
+    Calendar,
+    BarChart3,
+    TrendingUp,
+    Printer,
+    FileText,
+    Search,
+    X,
+    Eye,
+    Filter,
+    Layout,
+    PieChart as PieChartIcon,
+    CircleDollarSign,
+    Edit,
+    Trash2,
+    Plus
+} from 'lucide-react';
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+    Legend
+} from 'recharts';
 
 interface MainStatCardProps {
     title: string;
@@ -33,7 +65,7 @@ interface MainStatCardProps {
 
 const MainStatCard = ({ title, value, subtitle, icon: Icon, iconBgColor }: MainStatCardProps) => {
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-6 hover:shadow-md hover:border-blue-200 transition-all duration-300">
+        <div className="bg-white rounded-2xl shadow-sm border border-red-100 p-6 hover:shadow-md hover:border-red-200 transition-all duration-300">
             <div className="flex items-start justify-between">
                 <div className="flex-1">
                     <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
@@ -63,6 +95,9 @@ const arabicMonths = [
     'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
 ];
 
+// ألوان للرسم البياني الدائري
+const CHART_COLORS = ['#dc2626', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4'];
+
 export default function BadDebtsPage() {
     // State
     const [activeTab, setActiveTab] = useState<'categories' | 'expenses' | 'stats'>('categories');
@@ -72,11 +107,20 @@ export default function BadDebtsPage() {
     const [showPayModal, setShowPayModal] = useState(false);
     const [editingCategory, setEditingCategory] = useState<BadDebtCategory | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<BadDebtCategory | null>(null);
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
 
-    // Expenses filter
+    // Print ref
+    const printRef = useRef<HTMLDivElement>(null);
+
+    // Expenses filter state
     const [expensesCategoryId, setExpensesCategoryId] = useState<number | undefined>();
     const [expensesPage, setExpensesPage] = useState(1);
-    const currentYear = new Date().getFullYear();
+    const [expensesStartDate, setExpensesStartDate] = useState<string>('');
+    const [expensesEndDate, setExpensesEndDate] = useState<string>('');
+
+    // Stats filter state
+    const currentDate = new Date();
+    const [statsYear, setStatsYear] = useState(currentDate.getFullYear());
 
     // Form state
     const [categoryForm, setCategoryForm] = useState({
@@ -98,24 +142,27 @@ export default function BadDebtsPage() {
         search: searchTerm || undefined
     });
 
-    const { data: expensesData, isLoading: expensesLoading } = useGetExpensesQuery({
+    const { data: expensesData, isLoading: expensesLoading, refetch: refetchExpenses } = useGetExpensesQuery({
         categoryId: expensesCategoryId,
+        startDate: expensesStartDate || undefined,
+        endDate: expensesEndDate || undefined,
         page: expensesPage,
         limit: 20
     });
 
-    const { data: statsData } = useGetBadDebtStatsQuery({
+    const { data: statsData, refetch: refetchStats } = useGetBadDebtStatsQuery({
         companyId: selectedCompanyId,
-        year: currentYear
+        year: statsYear
     });
 
-    const { data: monthlyReportData } = useGetMonthlyReportQuery({
-        year: currentYear,
+    const { data: monthlyReportData, isLoading: monthlyReportLoading, isFetching: monthlyReportFetching, error: monthlyReportError } = useGetMonthlyReportQuery({
+        year: statsYear,
         companyId: selectedCompanyId
     });
 
     const { data: treasuriesData } = useGetTreasuriesQuery({});
     const { data: companiesData } = useGetCompaniesQuery({});
+    const { data: userData } = useGetCurrentUserQuery();
 
     // Mutations
     const [createCategory, { isLoading: creating }] = useCreateCategoryMutation();
@@ -130,6 +177,94 @@ export default function BadDebtsPage() {
     const companies = companiesData?.data?.companies || [];
     const stats = statsData?.data;
     const monthlyReport = monthlyReportData?.data || [];
+    const user = userData?.data;
+
+    // حساب إجمالي المصروفات المعروضة
+    const totalDisplayedExpenses = useMemo(() => {
+        return expenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
+    }, [expenses]);
+
+    // تحديد اسم الشركة/الشركات واسم المستخدم للطباعة
+    const getCompanyInfo = () => {
+        if (user?.isSystemUser && companiesData?.data?.companies) {
+            const allCompanies = companiesData.data.companies.map((c: any) => c.name).join(' - ');
+            return {
+                name: allCompanies || 'نظام إدارة السيراميك',
+                userName: user.fullName || user.username || 'المدير'
+            };
+        } else if (user?.company) {
+            return {
+                name: user.company.name,
+                userName: user.fullName || user.username || '-'
+            };
+        }
+        return {
+            name: 'الشركة',
+            userName: '-'
+        };
+    };
+
+    // الحصول على اسم البند المحدد للتصفية
+    const getSelectedCategoryName = () => {
+        if (!expensesCategoryId) return undefined;
+        const cat = categories.find(c => c.id === expensesCategoryId);
+        return cat?.name;
+    };
+
+    // طباعة التقرير
+    const handlePrintReport = () => {
+        if (expenses.length === 0) {
+            alert('لا توجد بيانات للطباعة!');
+            return;
+        }
+
+        setTimeout(() => {
+            if (printRef.current) {
+                const printWindow = window.open('', '_blank', 'width=1200,height=800');
+                if (!printWindow) {
+                    alert('تم حظر النافذة المنبثقة. الرجاء السماح بالنوافذ المنبثقة.');
+                    return;
+                }
+
+                const htmlContent = `
+                    <!DOCTYPE html>
+                    <html lang="ar" dir="rtl">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>تقرير المصروفات المعدومة</title>
+                    </head>
+                    <body>
+                        ${printRef.current.innerHTML}
+                        <script>
+                            window.onload = function() {
+                                setTimeout(() => {
+                                    window.print();
+                                }, 500);
+                            };
+                            window.onafterprint = function() {
+                                setTimeout(() => {
+                                    window.close();
+                                }, 100);
+                            };
+                        </script>
+                    </body>
+                    </html>
+                `;
+
+                printWindow.document.write(htmlContent);
+                printWindow.document.close();
+            }
+        }, 200);
+    };
+
+    // إعادة تعيين فلاتر المصروفات
+    const resetExpensesFilters = () => {
+        setExpensesCategoryId(undefined);
+        setExpensesStartDate('');
+        setExpensesEndDate('');
+        setExpensesPage(1);
+    };
 
     // Handlers
     const handleCreateCategory = async () => {
@@ -200,6 +335,8 @@ export default function BadDebtsPage() {
             setSelectedCategory(null);
             resetPayForm();
             refetchCategories();
+            refetchExpenses();
+            refetchStats();
             alert('تم صرف المصروف بنجاح');
         } catch (error: any) {
             alert(error.data?.message || 'حدث خطأ أثناء صرف المصروف');
@@ -236,6 +373,15 @@ export default function BadDebtsPage() {
         setShowPayModal(true);
     };
 
+    // بيانات الرسم البياني الدائري للبنود
+    const pieChartData = useMemo(() => {
+        if (!stats?.topCategories) return [];
+        return stats.topCategories.map(cat => ({
+            name: cat.categoryName,
+            value: cat.totalAmount
+        }));
+    }, [stats?.topCategories]);
+
     return (
         <div className="p-6 bg-gray-50 min-h-screen" dir="rtl">
             {/* Header */}
@@ -251,7 +397,7 @@ export default function BadDebtsPage() {
                     <select
                         value={selectedCompanyId || ''}
                         onChange={(e) => setSelectedCompanyId(e.target.value ? parseInt(e.target.value) : undefined)}
-                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                     >
                         <option value="">جميع الشركات</option>
                         {companies.map(company => (
@@ -307,7 +453,7 @@ export default function BadDebtsPage() {
                                 key={tab.key}
                                 onClick={() => setActiveTab(tab.key as any)}
                                 className={`px-6 py-4 font-medium transition-colors ${activeTab === tab.key
-                                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                                    ? 'text-red-600 border-b-2 border-red-600 bg-red-50'
                                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                                     }`}
                             >
@@ -339,9 +485,10 @@ export default function BadDebtsPage() {
                                         setEditingCategory(null);
                                         setShowCategoryModal(true);
                                     }}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                                    className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 flex items-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md"
                                 >
-                                    ➕ إضافة بند
+                                    <Plus className="w-5 h-5" />
+                                    إضافة بند
                                 </button>
                             </div>
 
@@ -377,24 +524,24 @@ export default function BadDebtsPage() {
                                                         <div className="flex gap-2">
                                                             <button
                                                                 onClick={() => openPayModal(category)}
-                                                                className="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm"
+                                                                className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
                                                                 title="صرف مصروف"
                                                             >
-                                                                💸
+                                                                <CircleDollarSign className="w-5 h-5" />
                                                             </button>
                                                             <button
                                                                 onClick={() => openEditModal(category)}
-                                                                className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-sm"
+                                                                className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
                                                                 title="تعديل"
                                                             >
-                                                                ✏️
+                                                                <Edit className="w-5 h-5" />
                                                             </button>
                                                             <button
                                                                 onClick={() => handleDeleteCategory(category)}
-                                                                className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm"
+                                                                className="p-2 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-600 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
                                                                 title="حذف"
                                                             >
-                                                                🗑️
+                                                                <Trash2 className="w-5 h-5" />
                                                             </button>
                                                         </div>
                                                     </td>
@@ -411,13 +558,16 @@ export default function BadDebtsPage() {
                     {activeTab === 'expenses' && (
                         <div>
                             {/* Filters */}
-                            <div className="flex gap-4 mb-6">
+                            <div className="flex flex-wrap gap-4 mb-6 items-end">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">البند</label>
                                     <select
                                         value={expensesCategoryId || ''}
-                                        onChange={(e) => setExpensesCategoryId(e.target.value ? parseInt(e.target.value) : undefined)}
-                                        className="px-4 py-2 border border-gray-300 rounded-lg"
+                                        onChange={(e) => {
+                                            setExpensesCategoryId(e.target.value ? parseInt(e.target.value) : undefined);
+                                            setExpensesPage(1);
+                                        }}
+                                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
                                     >
                                         <option value="">جميع البنود</option>
                                         {categories.map(cat => (
@@ -425,7 +575,79 @@ export default function BadDebtsPage() {
                                         ))}
                                     </select>
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">من تاريخ</label>
+                                    <input
+                                        type="date"
+                                        value={expensesStartDate}
+                                        onChange={(e) => {
+                                            setExpensesStartDate(e.target.value);
+                                            setExpensesPage(1);
+                                        }}
+                                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">إلى تاريخ</label>
+                                    <input
+                                        type="date"
+                                        value={expensesEndDate}
+                                        onChange={(e) => {
+                                            setExpensesEndDate(e.target.value);
+                                            setExpensesPage(1);
+                                        }}
+                                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                                    />
+                                </div>
+                                {(expensesCategoryId || expensesStartDate || expensesEndDate) && (
+                                    <button
+                                        onClick={resetExpensesFilters}
+                                        className="px-4 py-2 text-gray-600 hover:text-gray-800 flex items-center gap-1"
+                                    >
+                                        <X className="w-4 h-4" />
+                                        إزالة الفلاتر
+                                    </button>
+                                )}
+                                <div className="flex-1"></div>
+                                {/* Print and Preview Buttons */}
+                                <button
+                                    onClick={() => setShowPreviewModal(true)}
+                                    disabled={expenses.length === 0}
+                                    className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white flex items-center gap-2 disabled:opacity-50 transition-all duration-200 shadow-sm hover:shadow-md"
+                                >
+                                    <Eye className="w-5 h-5" />
+                                    معاينة
+                                </button>
+                                <button
+                                    onClick={handlePrintReport}
+                                    disabled={expenses.length === 0}
+                                    className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 flex items-center gap-2 disabled:opacity-50 transition-all duration-200 shadow-sm hover:shadow-md"
+                                >
+                                    <Printer className="w-5 h-5" />
+                                    طباعة التقرير
+                                </button>
                             </div>
+
+                            {/* Summary Bar */}
+                            {expenses.length > 0 && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 flex justify-between items-center">
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-sm text-red-700">
+                                            <strong>{pagination?.total || expenses.length}</strong> عملية
+                                        </span>
+                                        {(expensesStartDate || expensesEndDate) && (
+                                            <span className="text-xs text-red-600 bg-red-100 px-2 py-1 rounded">
+                                                {expensesStartDate && `من: ${expensesStartDate}`}
+                                                {expensesStartDate && expensesEndDate && ' - '}
+                                                {expensesEndDate && `إلى: ${expensesEndDate}`}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="text-lg font-bold text-red-700">
+                                        إجمالي الصفحة: {formatCurrency(totalDisplayedExpenses)}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Expenses Table */}
                             {expensesLoading ? (
@@ -491,37 +713,219 @@ export default function BadDebtsPage() {
                     {/* Stats Tab */}
                     {activeTab === 'stats' && (
                         <div>
-                            {/* Top Categories */}
-                            {stats && stats.topCategories.length > 0 && (
-                                <div className="mb-8">
-                                    <h3 className="text-lg font-bold text-gray-800 mb-4">🔝 أعلى البنود استخداماً</h3>
+                            {/* Year Filter */}
+                            <div className="flex flex-wrap gap-4 items-center mb-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">السنة</label>
+                                    <select
+                                        value={statsYear}
+                                        onChange={(e) => setStatsYear(parseInt(e.target.value))}
+                                        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
+                                    >
+                                        {[2024, 2025, 2026, 2027].map(year => (
+                                            <option key={year} value={year}>{year}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {selectedCompanyId && (
+                                    <button
+                                        onClick={() => setSelectedCompanyId(undefined)}
+                                        className="text-sm text-red-600 hover:text-red-800 underline"
+                                    >
+                                        عرض جميع الشركات
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Summary Stats Grid - like Payroll */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                {/* Main Stat Card */}
+                                <div className="bg-gradient-to-br from-red-600 to-red-800 rounded-2xl p-6 text-white shadow-lg">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <TrendingUp className="w-8 h-8 opacity-50" />
+                                        <span className="bg-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">سنوي</span>
+                                    </div>
+                                    <p className="text-red-100 text-sm font-medium mb-1">إجمالي المصروفات المعدومة</p>
+                                    <p className="text-3xl font-bold">{formatCurrency(stats?.thisYear.totalAmount || 0)}</p>
+                                    <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center text-xs">
+                                        <span>عدد العمليات: {stats?.thisYear.count || 0}</span>
+                                        <span>البنود النشطة: {stats?.totalActiveCategories || 0}</span>
+                                    </div>
+                                </div>
+
+                                {/* Distribution by Category */}
+                                <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="bg-red-100 p-2 rounded-lg">
+                                            <PieChartIcon className="w-5 h-5 text-red-600" />
+                                        </div>
+                                        <h4 className="font-bold text-slate-800">توزيع المصروفات</h4>
+                                    </div>
                                     <div className="space-y-3">
-                                        {stats.topCategories.map((cat, index) => (
-                                            <div key={cat.categoryId} className="flex items-center bg-gray-50 rounded-lg p-4">
-                                                <span className="text-2xl font-bold text-gray-400 w-10">{index + 1}</span>
-                                                <div className="flex-1">
-                                                    <p className="font-medium text-gray-800">{cat.categoryName}</p>
-                                                    <p className="text-sm text-gray-500">{cat.count} عملية</p>
+                                        {stats?.topCategories.slice(0, 4).map((cat, idx) => (
+                                            <div key={cat.categoryId}>
+                                                <div className="flex justify-between text-sm mb-1">
+                                                    <span className="text-slate-500">{cat.categoryName}</span>
+                                                    <span className="font-bold text-slate-700">
+                                                        {Math.round((cat.totalAmount / (stats?.thisYear.totalAmount || 1)) * 100)}%
+                                                    </span>
                                                 </div>
-                                                <p className="text-lg font-bold text-red-600">{formatCurrency(cat.totalAmount)}</p>
+                                                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                    <div 
+                                                        className="h-full rounded-full" 
+                                                        style={{ 
+                                                            width: `${(cat.totalAmount / (stats?.thisYear.totalAmount || 1)) * 100}%`,
+                                                            backgroundColor: CHART_COLORS[idx % CHART_COLORS.length]
+                                                        }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {(!stats?.topCategories || stats.topCategories.length === 0) && (
+                                            <p className="text-slate-400 text-xs text-center py-4 italic">لا توجد بيانات</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Top Categories List */}
+                                <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="bg-orange-100 p-2 rounded-lg">
+                                            <Layout className="w-5 h-5 text-orange-600" />
+                                        </div>
+                                        <h4 className="font-bold text-slate-800">أعلى البنود</h4>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {stats?.topCategories.map((cat, idx) => (
+                                            <div key={cat.categoryId} className="flex justify-between items-center text-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-lg font-bold text-gray-400">{idx + 1}</span>
+                                                    <span className="text-slate-600">{cat.categoryName}</span>
+                                                </div>
+                                                <span className="font-bold text-red-600">{formatCurrency(cat.totalAmount)}</span>
+                                            </div>
+                                        ))}
+                                        {(!stats?.topCategories || stats.topCategories.length === 0) && (
+                                            <p className="text-slate-400 text-xs text-center py-4 italic">لا توجد بيانات</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Charts Section */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* Monthly Bar Chart */}
+                                <div className="bg-white border border-slate-100 rounded-2xl p-8 shadow-sm">
+                                    <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+                                        <div>
+                                            <h4 className="text-xl font-bold text-slate-800">التحليل الشهري</h4>
+                                            <p className="text-sm text-slate-500">المصروفات المعدومة لكل شهر</p>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+                                            <span className="w-3 h-3 bg-red-500 rounded-full"></span>
+                                            المصروفات
+                                        </div>
+                                    </div>
+                                    <div className="h-[300px] w-full" dir="ltr">
+                                        {(monthlyReportLoading || monthlyReportFetching) ? (
+                                            <div className="h-full flex items-center justify-center text-gray-400">
+                                                جاري التحميل...
+                                            </div>
+                                        ) : monthlyReportError ? (
+                                            <div className="h-full flex items-center justify-center text-red-400">
+                                                حدث خطأ في جلب البيانات
+                                            </div>
+                                        ) : monthlyReport && monthlyReport.length > 0 ? (
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={monthlyReport} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                                    <XAxis
+                                                        dataKey="monthName"
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        tick={{ fill: '#64748b', fontSize: 10, fontWeight: 600 }}
+                                                        dy={10}
+                                                    />
+                                                    <YAxis
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        tick={{ fill: '#64748b', fontSize: 10, fontWeight: 600 }}
+                                                        tickFormatter={(value) => `${value}`}
+                                                    />
+                                                    <Tooltip
+                                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px' }}
+                                                        cursor={{ fill: '#fef2f2' }}
+                                                        formatter={(value: number) => [formatCurrency(value), 'المبلغ']}
+                                                    />
+                                                    <Bar dataKey="totalAmount" fill="#dc2626" radius={[6, 6, 0, 0]} barSize={30} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        ) : (
+                                            <div className="h-full flex items-center justify-center text-gray-400">
+                                                لا توجد بيانات للعرض
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Pie Chart */}
+                                <div className="bg-white border border-slate-100 rounded-2xl p-8 shadow-sm">
+                                    <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+                                        <div>
+                                            <h4 className="text-xl font-bold text-slate-800">توزيع البنود</h4>
+                                            <p className="text-sm text-slate-500">نسبة كل بند من إجمالي المصروفات</p>
+                                        </div>
+                                    </div>
+                                    <div className="h-[300px] w-full" dir="ltr">
+                                        {pieChartData.length > 0 ? (
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <PieChart>
+                                                    <Pie
+                                                        data={pieChartData}
+                                                        cx="50%"
+                                                        cy="50%"
+                                                        labelLine={false}
+                                                        outerRadius={100}
+                                                        fill="#8884d8"
+                                                        dataKey="value"
+                                                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                                    >
+                                                        {pieChartData.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                        ) : (
+                                            <div className="h-full flex items-center justify-center text-gray-400">
+                                                لا توجد بيانات للعرض
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Monthly Grid - like Payroll */}
+                            <div className="mt-8">
+                                <h3 className="text-lg font-bold text-gray-800 mb-4">📊 المصروفات الشهرية لعام {statsYear}</h3>
+                                {(monthlyReportLoading || monthlyReportFetching) ? (
+                                    <div className="text-center py-10 text-gray-400">جاري التحميل...</div>
+                                ) : monthlyReportError ? (
+                                    <div className="text-center py-10 text-red-400">حدث خطأ في جلب البيانات</div>
+                                ) : monthlyReport && monthlyReport.length > 0 ? (
+                                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                        {monthlyReport.map(month => (
+                                            <div key={month.month} className="bg-gray-50 rounded-xl p-4 text-center hover:bg-red-50 transition-all duration-200 shadow-sm hover:shadow-md">
+                                                <p className="text-sm text-gray-500 mb-1">{month.monthName}</p>
+                                                <p className="text-lg font-bold text-red-600">{formatCurrency(month.totalAmount)}</p>
+                                                <p className="text-xs text-gray-400">{month.count} عملية</p>
                                             </div>
                                         ))}
                                     </div>
-                                </div>
-                            )}
-
-                            {/* Monthly Chart */}
-                            <div>
-                                <h3 className="text-lg font-bold text-gray-800 mb-4">📊 المصروفات الشهرية لعام {currentYear}</h3>
-                                <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-                                    {monthlyReport.map(month => (
-                                        <div key={month.month} className="bg-gray-50 rounded-lg p-4 text-center">
-                                            <p className="text-sm text-gray-500 mb-1">{month.monthName}</p>
-                                            <p className="text-lg font-bold text-red-600">{formatCurrency(month.totalAmount)}</p>
-                                            <p className="text-xs text-gray-400">{month.count} عملية</p>
-                                        </div>
-                                    ))}
-                                </div>
+                                ) : (
+                                    <div className="text-center py-10 text-gray-400">لا توجد بيانات لعام {statsYear}</div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -532,7 +936,7 @@ export default function BadDebtsPage() {
             {showCategoryModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-                        <div className="bg-blue-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
+                        <div className="bg-red-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h3 className="text-lg font-bold">{editingCategory ? 'تعديل بند' : 'إضافة بند جديد'}</h3>
                             <button onClick={() => { setShowCategoryModal(false); setEditingCategory(null); }} className="text-white hover:text-gray-200">✕</button>
                         </div>
@@ -569,7 +973,7 @@ export default function BadDebtsPage() {
                             <button
                                 onClick={editingCategory ? handleUpdateCategory : handleCreateCategory}
                                 disabled={creating || updating || !categoryForm.name}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                                className="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 transition-all duration-200 shadow-sm hover:shadow-md"
                             >
                                 {editingCategory ? 'تحديث' : 'إضافة'}
                             </button>
@@ -644,7 +1048,7 @@ export default function BadDebtsPage() {
                             <button
                                 onClick={handlePayBadDebt}
                                 disabled={paying || !payForm.amount || !payForm.treasuryId}
-                                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                                className="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 transition-all duration-200 shadow-sm hover:shadow-md"
                             >
                                 صرف المصروف
                             </button>
@@ -652,6 +1056,58 @@ export default function BadDebtsPage() {
                     </div>
                 </div>
             )}
+
+            {/* Preview Modal */}
+            {showPreviewModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                        <div className="bg-red-600 text-white px-6 py-4 flex justify-between items-center">
+                            <h3 className="text-lg font-bold flex items-center gap-2">
+                                <FileText className="w-5 h-5" />
+                                معاينة التقرير
+                            </h3>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={handlePrintReport}
+                                    className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl flex items-center gap-2 transition-all duration-200 font-medium border border-white/30 shadow-sm hover:shadow-md"
+                                >
+                                    <Printer className="w-5 h-5" />
+                                    طباعة
+                                </button>
+                                <button onClick={() => setShowPreviewModal(false)} className="text-white hover:text-gray-200">
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+                        </div>
+                        <div className="overflow-auto flex-1 p-4 bg-gray-100">
+                            <div className="transform scale-75 origin-top">
+                                <BadDebtMonthlyReport
+                                    expenses={expenses}
+                                    startDate={expensesStartDate || undefined}
+                                    endDate={expensesEndDate || undefined}
+                                    categoryName={getSelectedCategoryName()}
+                                    companyName={getCompanyInfo().name}
+                                    userName={getCompanyInfo().userName}
+                                    totalAmount={totalDisplayedExpenses}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Hidden div for printing */}
+            <div ref={printRef} style={{ display: 'none' }}>
+                <BadDebtMonthlyReport
+                    expenses={expenses}
+                    startDate={expensesStartDate || undefined}
+                    endDate={expensesEndDate || undefined}
+                    categoryName={getSelectedCategoryName()}
+                    companyName={getCompanyInfo().name}
+                    userName={getCompanyInfo().userName}
+                    totalAmount={totalDisplayedExpenses}
+                />
+            </div>
         </div>
     );
 }

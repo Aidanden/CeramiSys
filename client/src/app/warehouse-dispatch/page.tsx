@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   useGetDispatchOrdersQuery,
   useUpdateDispatchOrderStatusMutation,
@@ -10,8 +10,18 @@ import {
   ReturnOrder,
 } from '@/state/warehouseApi';
 import { useGetCurrentUserQuery } from '@/state/authApi';
+import {
+  useGetNotificationsQuery,
+  useGetNotificationStatsQuery,
+  useMarkAsReadMutation,
+  useMarkAllAsReadMutation,
+  useDeleteNotificationMutation,
+  type Notification,
+  type NotificationType
+} from '@/state/notificationsApi';
 import { useToast } from '@/components/ui/Toast';
 import { formatArabicNumber } from '@/utils/formatArabicNumbers';
+import { Bell, Check, Trash2, CheckCheck, X, Package, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 
 export default function WarehouseDispatchPage() {
   const [activeTab, setActiveTab] = useState<'dispatch' | 'returns'>('dispatch');
@@ -33,11 +43,109 @@ export default function WarehouseDispatchPage() {
 
   const [notes, setNotes] = useState('');
 
+  // Notification state
+  const [showNotificationPanel, setShowNotificationPanel] = useState(false);
+  const [notificationTab, setNotificationTab] = useState<'all' | 'unread'>('unread');
+
   const { data: userData } = useGetCurrentUserQuery();
   const user = userData?.data;
   const { success, error: showError } = useToast();
 
-  // Query for Dispatch Orders
+  // Notification queries with fast polling for real-time updates
+  const { data: notificationStatsData, refetch: refetchNotificationStats } = useGetNotificationStatsQuery(undefined, {
+    pollingInterval: 5000, // تحديث كل 5 ثواني
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+  });
+  const { data: notificationsData, isLoading: isLoadingNotifications, refetch: refetchNotifications } = useGetNotificationsQuery({
+    page: 1,
+    limit: 20,
+    type: 'STOCK',
+    isRead: notificationTab === 'unread' ? false : undefined
+  }, {
+    pollingInterval: 5000, // تحديث كل 5 ثواني
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+  });
+
+  const [markAsRead] = useMarkAsReadMutation();
+  const [markAllAsRead] = useMarkAllAsReadMutation();
+  const [deleteNotification] = useDeleteNotificationMutation();
+
+  const notificationStats = notificationStatsData?.data;
+  const notifications = notificationsData?.data?.notifications || [];
+  const stockNotificationsCount = notificationStats?.byType?.STOCK || 0;
+
+  // Helper function to get notification icon
+  const getNotificationIcon = (type: NotificationType) => {
+    switch (type) {
+      case 'STOCK':
+        return <Package className="w-5 h-5 text-purple-600" />;
+      default:
+        return <Bell className="w-5 h-5 text-gray-600" />;
+    }
+  };
+
+  // Helper function to format time
+  const formatNotificationTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'الآن';
+    if (diffInMinutes < 60) return `منذ ${diffInMinutes} دقيقة`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `منذ ${diffInHours} ساعة`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `منذ ${diffInDays} يوم`;
+    
+    return date.toLocaleDateString('ar-LY');
+  };
+
+  // Handle mark as read
+  const handleMarkAsRead = async (notificationId: number) => {
+    try {
+      await markAsRead({ notificationIds: [notificationId] }).unwrap();
+      refetchNotifications();
+      refetchNotificationStats();
+    } catch (error) {
+      console.error('خطأ في تمييز الإشعار كمقروء:', error);
+    }
+  };
+
+  // Handle mark all as read
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead({}).unwrap();
+      refetchNotifications();
+      refetchNotificationStats();
+      success('تم تمييز جميع الإشعارات كمقروءة');
+    } catch (error) {
+      console.error('خطأ في تمييز جميع الإشعارات كمقروءة:', error);
+    }
+  };
+
+  // Handle delete notification
+  const handleDeleteNotification = async (notificationId: number) => {
+    try {
+      await deleteNotification(notificationId).unwrap();
+      refetchNotifications();
+      refetchNotificationStats();
+    } catch (error) {
+      console.error('خطأ في حذف الإشعار:', error);
+    }
+  };
+
+  // Handle notification click
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.isRead) {
+      handleMarkAsRead(notification.id);
+    }
+  };
+
+  // Query for Dispatch Orders with fast polling
   const {
     data: ordersData,
     isLoading: isLoadingOrders,
@@ -53,11 +161,13 @@ export default function WarehouseDispatchPage() {
     },
     {
       refetchOnMountOrArgChange: true,
+      pollingInterval: 10000, // تحديث كل 10 ثواني
+      refetchOnFocus: true,
       skip: activeTab !== 'dispatch'
     }
   );
 
-  // Query for Return Orders
+  // Query for Return Orders with fast polling
   const {
     data: returnsData,
     isLoading: isLoadingReturns,
@@ -73,6 +183,8 @@ export default function WarehouseDispatchPage() {
     },
     {
       refetchOnMountOrArgChange: true,
+      pollingInterval: 10000, // تحديث كل 10 ثواني
+      refetchOnFocus: true,
       skip: activeTab !== 'returns'
     }
   );
@@ -209,6 +321,174 @@ export default function WarehouseDispatchPage() {
               <p className="text-text-secondary">إدارة أوامر الصرف والاستلام من المخزن</p>
             </div>
           </div>
+
+          {/* Notification Button */}
+          <div className="relative">
+            <button
+              onClick={() => setShowNotificationPanel(!showNotificationPanel)}
+              className="relative p-3 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-300 transition-all duration-200"
+              aria-label="الإشعارات"
+            >
+              <Bell className="w-6 h-6 text-orange-600" />
+              {stockNotificationsCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
+                  {stockNotificationsCount > 99 ? '99+' : stockNotificationsCount}
+                </span>
+              )}
+            </button>
+
+            {/* Notification Panel */}
+            {showNotificationPanel && (
+              <div className="absolute left-0 top-14 w-96 bg-white rounded-2xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+                {/* Panel Header */}
+                <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-4 text-white">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Bell className="w-5 h-5" />
+                      <h3 className="text-lg font-bold">إشعارات المخزن</h3>
+                    </div>
+                    <button
+                      onClick={() => setShowNotificationPanel(false)}
+                      className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  
+                  {/* Tabs */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setNotificationTab('unread')}
+                      className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+                        notificationTab === 'unread'
+                          ? 'bg-white text-orange-600 font-bold'
+                          : 'bg-white/20 hover:bg-white/30'
+                      }`}
+                    >
+                      غير مقروءة ({stockNotificationsCount})
+                    </button>
+                    <button
+                      onClick={() => setNotificationTab('all')}
+                      className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+                        notificationTab === 'all'
+                          ? 'bg-white text-orange-600 font-bold'
+                          : 'bg-white/20 hover:bg-white/30'
+                      }`}
+                    >
+                      الكل
+                    </button>
+                  </div>
+                </div>
+
+                {/* Mark All As Read */}
+                {stockNotificationsCount > 0 && (
+                  <div className="p-2 border-b border-gray-100 bg-gray-50">
+                    <button
+                      onClick={handleMarkAllAsRead}
+                      className="w-full px-3 py-2 text-sm text-orange-600 hover:bg-orange-50 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <CheckCheck className="w-4 h-4" />
+                      تمييز الكل كمقروء
+                    </button>
+                  </div>
+                )}
+
+                {/* Notifications List */}
+                <div className="max-h-80 overflow-y-auto">
+                  {isLoadingNotifications ? (
+                    <div className="p-6 text-center text-gray-500">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+                      <p className="mt-3">جاري التحميل...</p>
+                    </div>
+                  ) : notifications.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500">
+                      <Package className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                      <p className="font-medium">لا توجد إشعارات</p>
+                      <p className="text-sm text-gray-400 mt-1">ستظهر هنا إشعارات المخزن الجديدة</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-100">
+                      {notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
+                            !notification.isRead ? 'bg-orange-50 border-r-4 border-orange-500' : ''
+                          }`}
+                          onClick={() => handleNotificationClick(notification)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`p-2 rounded-xl ${
+                              !notification.isRead ? 'bg-orange-100' : 'bg-gray-100'
+                            }`}>
+                              {getNotificationIcon(notification.type)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className={`text-sm font-medium truncate ${
+                                  !notification.isRead ? 'text-gray-900' : 'text-gray-700'
+                                }`}>
+                                  {notification.title}
+                                </h4>
+                                {!notification.isRead && (
+                                  <div className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0"></div>
+                                )}
+                              </div>
+                              
+                              {notification.message && (
+                                <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                                  {notification.message}
+                                </p>
+                              )}
+                              
+                              <span className="text-xs text-gray-400">
+                                {formatNotificationTime(notification.createdAt)}
+                              </span>
+                            </div>
+                            
+                            {/* Action Buttons */}
+                            <div className="flex flex-col gap-1">
+                              {!notification.isRead && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkAsRead(notification.id);
+                                  }}
+                                  className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                                  title="تمييز كمقروء"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </button>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteNotification(notification.id);
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="حذف"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="p-3 border-t border-gray-200 bg-gray-50 text-center">
+                  <a
+                    href="/notifications"
+                    className="text-sm text-orange-600 hover:text-orange-800 font-medium"
+                  >
+                    عرض جميع الإشعارات
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -260,7 +540,16 @@ export default function WarehouseDispatchPage() {
           </div>
         </div>
 
-        <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200">
+        <div className="bg-surface-primary p-6 rounded-lg shadow-sm border border-border-primary hover:shadow-md transition-all duration-200 relative">
+          {/* Pulse animation for pending items */}
+          {((activeTab === 'dispatch' ? (ordersData?.data?.dispatchOrders?.filter((o) => o.status === 'PENDING').length || 0) : (returnsData?.data?.returnOrders?.filter((o) => o.status === 'PENDING').length || 0)) > 0) && (
+            <div className="absolute top-2 left-2">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
+              </span>
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-text-secondary text-sm">معلقة</p>
@@ -272,9 +561,11 @@ export default function WarehouseDispatchPage() {
                 )}
               </p>
             </div>
-            <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <div className="relative">
+              <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
           </div>
         </div>
 

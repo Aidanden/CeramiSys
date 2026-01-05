@@ -5,6 +5,7 @@
 
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuthInterceptor } from "./apiUtils";
+import { treasuryApi } from "./treasuryApi";
 
 // Types
 export interface BadDebtCategory {
@@ -131,6 +132,16 @@ export const badDebtApi = createApi({
                 body: data,
             }),
             invalidatesTags: ["BadDebtExpenses", "BadDebtStats", "BadDebtCategories"],
+            // تحديث الخزينة وحركاتها بعد صرف المصروف
+            async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+                try {
+                    await queryFulfilled;
+                    // تحديث كاش الخزينة بعد نجاح العملية
+                    dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats']));
+                } catch {
+                    // لا شيء في حالة الفشل
+                }
+            },
         }),
 
         getExpenses: builder.query<{
@@ -179,6 +190,7 @@ export const badDebtApi = createApi({
                 if (params.companyId) searchParams.append('companyId', params.companyId.toString());
                 return `bad-debts/reports/monthly?${searchParams.toString()}`;
             },
+            providesTags: ["BadDebtStats"],
         }),
     }),
 });

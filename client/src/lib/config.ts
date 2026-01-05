@@ -61,11 +61,11 @@ export const API_CACHE_CONFIG = {
     refetchOnFocus: false, // لا نجلب عند التركيز
     refetchOnReconnect: true, // جلب عند إعادة الاتصال
   },
-  // إعدادات الإشعارات - كاش قصير
+  // إعدادات الإشعارات - تحديث فوري
   notifications: {
-    keepUnusedDataFor: 60, // دقيقة واحدة كاش
-    refetchOnMountOrArgChange: 15, // جلب كل 15 ثانية
-    refetchOnFocus: false, // لا نجلب عند التركيز
+    keepUnusedDataFor: 10, // 10 ثواني فقط كاش
+    refetchOnMountOrArgChange: true, // جلب فوري عند أي تغيير
+    refetchOnFocus: true, // جلب عند التركيز على النافذة
     refetchOnReconnect: true, // جلب عند إعادة الاتصال
   },
   // إعدادات المبيعات - كاش قصير مع تحديث عند الحاجة

@@ -28,6 +28,8 @@ import { usePathname } from "next/navigation";
 import React from "react";
 import Link from "next/link";
 import { useGetSalesQuery } from "@/state/salesApi";
+import { useGetDispatchOrdersQuery, useGetReturnOrdersQuery } from "@/state/warehouseApi";
+
 interface SidebarLinkProps {
   href: string;
   icon: LucideIcon;
@@ -101,11 +103,37 @@ const Sidebar = () => {
     // فلتر حسب الشركة الحالية إذا لم يكن System User
     companyId: user?.isSystemUser ? undefined : user?.companyId
   }, {
-    // تحديث البيانات كل 30 ثانية
-    pollingInterval: 30000,
+    // تحديث البيانات كل 10 ثواني للاستجابة السريعة
+    pollingInterval: 10000,
+    refetchOnFocus: true,
     skip: !user
   });
   const pendingCount = pendingSalesData?.data?.pagination?.total || 0;
+
+  // جلب عدد أوامر الصرف المعلقة
+  const { data: pendingDispatchData } = useGetDispatchOrdersQuery({
+    status: 'PENDING',
+    limit: 1,
+  }, {
+    pollingInterval: 10000,
+    refetchOnFocus: true,
+    skip: !user
+  });
+  const pendingDispatchCount = pendingDispatchData?.data?.pagination?.total || 0;
+
+  // جلب عدد أوامر الاستلام المعلقة
+  const { data: pendingReturnData } = useGetReturnOrdersQuery({
+    status: 'PENDING',
+    limit: 1,
+  }, {
+    pollingInterval: 10000,
+    refetchOnFocus: true,
+    skip: !user
+  });
+  const pendingReturnCount = pendingReturnData?.data?.pagination?.total || 0;
+
+  // إجمالي الأوامر المعلقة للمخزن
+  const totalPendingWarehouseOrders = pendingDispatchCount + pendingReturnCount;
 
   // جلب الشاشات المصرح بها للمستخدم
   const { data: userScreensData, isLoading: isLoadingScreens, error: screensError } = useGetUserScreensQuery();
@@ -295,6 +323,7 @@ const Sidebar = () => {
               icon={Layout}
               label="أوامر صرف المخزن"
               isCollapsed={isSidebarCollapsed}
+              badgeCount={totalPendingWarehouseOrders}
             />
           )}
           {canAccessScreen('/warehouse-returns') && (

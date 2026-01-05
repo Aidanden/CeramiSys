@@ -82,12 +82,20 @@ const NotificationDropdown: React.FC = () => {
   
   const currentUser = useAppSelector((state) => state.auth.user);
   
-  // API calls
-  const { data: statsData } = useGetNotificationStatsQuery();
+  // API calls with fast polling for real-time updates
+  const { data: statsData } = useGetNotificationStatsQuery(undefined, {
+    pollingInterval: 5000, // تحديث كل 5 ثواني
+    refetchOnFocus: true,
+    refetchOnMountOrArgChange: true,
+  });
   const { data: notificationsData, isLoading, refetch } = useGetNotificationsQuery({
     page: 1,
     limit: 20,
     isRead: selectedTab === 'unread' ? false : undefined
+  }, {
+    pollingInterval: 5000, // تحديث كل 5 ثواني
+    refetchOnFocus: true,
+    refetchOnMountOrArgChange: true,
   });
   
   const [markAsRead] = useMarkAsReadMutation();

@@ -3,12 +3,14 @@ import CustomerAccountService from '../services/CustomerAccountService';
 
 class CustomerAccountController {
   /**
-   * جلب حساب عميل معين
+   * جلب حساب عميل معين مع دعم الفلترة بالتاريخ
    * GET /api/customer-accounts/:customerId
+   * Query params: startDate, endDate
    */
   async getCustomerAccount(req: Request, res: Response) {
     try {
       const customerId = Number(req.params.customerId);
+      const { startDate, endDate } = req.query;
       
       if (isNaN(customerId)) {
         return res.status(400).json({
@@ -17,7 +19,11 @@ class CustomerAccountController {
         });
       }
 
-      const account = await CustomerAccountService.getCustomerAccount(customerId);
+      const account = await CustomerAccountService.getCustomerAccount(
+        customerId,
+        startDate as string | undefined,
+        endDate as string | undefined
+      );
 
       return res.status(200).json({
         success: true,
@@ -84,12 +90,14 @@ class CustomerAccountController {
   }
 
   /**
-   * جلب الفواتير المفتوحة لعميل معين
+   * جلب الفواتير المفتوحة لعميل معين مع دعم الفلترة بالتاريخ
    * GET /api/customer-accounts/:customerId/open-invoices
+   * Query params: startDate, endDate
    */
   async getCustomerOpenInvoices(req: Request, res: Response) {
     try {
       const customerId = Number(req.params.customerId);
+      const { startDate, endDate } = req.query;
       
       if (isNaN(customerId)) {
         return res.status(400).json({
@@ -98,7 +106,11 @@ class CustomerAccountController {
         });
       }
 
-      const invoices = await CustomerAccountService.getCustomerOpenInvoices(customerId);
+      const invoices = await CustomerAccountService.getCustomerOpenInvoices(
+        customerId,
+        startDate as string | undefined,
+        endDate as string | undefined
+      );
 
       return res.status(200).json({
         success: true,

@@ -1,15 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { 
   useGetAllCustomersAccountSummaryQuery, 
   useGetCustomerAccountQuery,
   useGetCustomerOpenInvoicesQuery 
 } from "@/state/customerAccountApi";
-import { User, Search, TrendingUp, TrendingDown, FileText, X, DollarSign, Calendar, Phone } from "lucide-react";
+import { User, Search, TrendingUp, TrendingDown, FileText, X, DollarSign, Calendar, Phone, Printer, Eye, Filter, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { formatLibyanCurrency, formatArabicNumber, formatArabicDate } from "@/utils/formatLibyanNumbers";
+import { useAppSelector } from "@/app/redux";
 
 type ViewMode = 'summary' | 'account' | 'invoices';
 
@@ -20,13 +21,35 @@ const CustomerAccountsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   
+  // فلاتر كشف الحساب
+  const [accountStartDate, setAccountStartDate] = useState("");
+  const [accountEndDate, setAccountEndDate] = useState("");
+  
+  // فلاتر الفواتير المفتوحة
+  const [invoicesStartDate, setInvoicesStartDate] = useState("");
+  const [invoicesEndDate, setInvoicesEndDate] = useState("");
+  
+  // Reference للطباعة
+  const printRef = useRef<HTMLDivElement>(null);
+  
+  // Current user for print header
+  const currentUser = useAppSelector((state) => state.auth.user);
+  
   const { data: summaryData, isLoading, error } = useGetAllCustomersAccountSummaryQuery();
   const { data: accountData, isLoading: isLoadingAccount } = useGetCustomerAccountQuery(
-    selectedCustomerId!, 
+    { 
+      customerId: selectedCustomerId!, 
+      startDate: accountStartDate || undefined,
+      endDate: accountEndDate || undefined
+    }, 
     { skip: !selectedCustomerId || viewMode !== 'account' }
   );
   const { data: invoicesData, isLoading: isLoadingInvoices } = useGetCustomerOpenInvoicesQuery(
-    selectedCustomerId!, 
+    { 
+      customerId: selectedCustomerId!,
+      startDate: invoicesStartDate || undefined,
+      endDate: invoicesEndDate || undefined
+    }, 
     { skip: !selectedCustomerId || viewMode !== 'invoices' }
   );
 
@@ -77,16 +100,432 @@ const CustomerAccountsPage = () => {
   const handleShowAccount = (customerId: number) => {
     setSelectedCustomerId(customerId);
     setViewMode('account');
+    // Reset filters
+    setAccountStartDate("");
+    setAccountEndDate("");
   };
 
   const handleShowInvoices = (customerId: number) => {
     setSelectedCustomerId(customerId);
     setViewMode('invoices');
+    // Reset filters
+    setInvoicesStartDate("");
+    setInvoicesEndDate("");
   };
 
   const handleBackToSummary = () => {
     setSelectedCustomerId(null);
     setViewMode('summary');
+    // Reset all filters
+    setAccountStartDate("");
+    setAccountEndDate("");
+    setInvoicesStartDate("");
+    setInvoicesEndDate("");
+  };
+  
+  // مسح فلاتر كشف الحساب
+  const clearAccountFilters = () => {
+    setAccountStartDate("");
+    setAccountEndDate("");
+  };
+  
+  // مسح فلاتر الفواتير
+  const clearInvoicesFilters = () => {
+    setInvoicesStartDate("");
+    setInvoicesEndDate("");
+  };
+
+  // طباعة كشف الحساب
+  const handlePrintAccount = () => {
+    if (!account || !selectedCustomer) return;
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    
+    const filterInfo = (accountStartDate || accountEndDate) 
+      ? `<p style="text-align: center; color: #666; margin-bottom: 20px;">
+          الفترة: ${accountStartDate ? formatArabicDate(accountStartDate) : 'البداية'} - ${accountEndDate ? formatArabicDate(accountEndDate) : 'النهاية'}
+        </p>` 
+      : '';
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="UTF-8">
+        <title>كشف حساب - ${selectedCustomer.name}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif; 
+            padding: 20px; 
+            background: white;
+            color: #333;
+          }
+          .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 20px;
+          }
+          .header h1 { 
+            color: #1e40af; 
+            font-size: 24px; 
+            margin-bottom: 10px;
+          }
+          .header h2 { 
+            color: #374151; 
+            font-size: 18px;
+          }
+          .customer-info {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+          }
+          .customer-info div { flex: 1; min-width: 200px; }
+          .customer-info label { 
+            font-size: 12px; 
+            color: #6b7280;
+            display: block;
+            margin-bottom: 4px;
+          }
+          .customer-info span { 
+            font-weight: 600; 
+            font-size: 14px;
+          }
+          .summary {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 25px;
+          }
+          .summary-card {
+            flex: 1;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+          }
+          .summary-card.debit { background: #fee2e2; border: 1px solid #fecaca; }
+          .summary-card.credit { background: #dcfce7; border: 1px solid #bbf7d0; }
+          .summary-card.balance { background: #f3f4f6; border: 1px solid #e5e7eb; }
+          .summary-card label { 
+            font-size: 12px; 
+            color: #6b7280;
+            display: block;
+            margin-bottom: 4px;
+          }
+          .summary-card .value { 
+            font-size: 20px; 
+            font-weight: 700;
+          }
+          .summary-card.debit .value { color: #dc2626; }
+          .summary-card.credit .value { color: #16a34a; }
+          .summary-card.balance .value { color: #374151; }
+          table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px;
+            font-size: 13px;
+          }
+          th { 
+            background: #1e40af; 
+            color: white; 
+            padding: 12px 8px; 
+            text-align: right;
+            font-weight: 600;
+          }
+          td { 
+            padding: 10px 8px; 
+            border-bottom: 1px solid #e5e7eb;
+          }
+          tr:nth-child(even) { background: #f9fafb; }
+          tr:hover { background: #f3f4f6; }
+          .debit { color: #dc2626; font-weight: 600; }
+          .credit { color: #16a34a; font-weight: 600; }
+          .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+          }
+          .badge-debit { background: #fee2e2; color: #dc2626; }
+          .badge-credit { background: #dcfce7; color: #16a34a; }
+          .footer { 
+            margin-top: 30px; 
+            text-align: center; 
+            color: #9ca3af;
+            font-size: 12px;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 15px;
+          }
+          .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #9ca3af;
+          }
+          @media print {
+            body { padding: 0; }
+            @page { margin: 1cm; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>كشف حساب عميل</h1>
+          <h2>${selectedCustomer.name}</h2>
+        </div>
+        ${filterInfo}
+        <div class="customer-info">
+          <div>
+            <label>اسم العميل</label>
+            <span>${account.customer.name}</span>
+          </div>
+          <div>
+            <label>رقم الهاتف</label>
+            <span>${account.customer.phone || '-'}</span>
+          </div>
+          <div>
+            <label>تاريخ التسجيل</label>
+            <span>${formatArabicDate(account.customer.createdAt)}</span>
+          </div>
+          <div>
+            <label>تاريخ الطباعة</label>
+            <span>${formatArabicDate(new Date().toISOString())}</span>
+          </div>
+        </div>
+        
+        <div class="summary">
+          <div class="summary-card debit">
+            <label>إجمالي عليه (مدين)</label>
+            <div class="value">${account.totalDebit.toFixed(2)} د.ل</div>
+          </div>
+          <div class="summary-card credit">
+            <label>إجمالي له (مدفوع)</label>
+            <div class="value">${account.totalCredit.toFixed(2)} د.ل</div>
+          </div>
+          <div class="summary-card balance">
+            <label>الرصيد الحالي</label>
+            <div class="value" style="color: ${account.currentBalance > 0 ? '#dc2626' : account.currentBalance < 0 ? '#16a34a' : '#374151'}">
+              ${account.currentBalance.toFixed(2)} د.ل
+              <small style="font-size: 11px; font-weight: normal; display: block;">
+                ${account.currentBalance > 0 ? '(عليه)' : account.currentBalance < 0 ? '(له)' : '(متوازن)'}
+              </small>
+            </div>
+          </div>
+        </div>
+        
+        ${account.entries.length > 0 ? `
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>التاريخ</th>
+                <th>البيان</th>
+                <th>النوع</th>
+                <th>المبلغ</th>
+                <th>الرصيد</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${account.entries.map((entry, index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>${formatArabicDate(entry.transactionDate)}</td>
+                  <td>${entry.description || '-'}</td>
+                  <td>
+                    <span class="badge ${entry.transactionType === 'DEBIT' ? 'badge-debit' : 'badge-credit'}">
+                      ${entry.transactionType === 'DEBIT' ? 'عليه' : 'له'}
+                    </span>
+                  </td>
+                  <td class="${entry.transactionType === 'DEBIT' ? 'debit' : 'credit'}">
+                    ${entry.transactionType === 'DEBIT' ? '+' : '-'} ${entry.amount.toFixed(2)} د.ل
+                  </td>
+                  <td class="${entry.balance > 0 ? 'debit' : entry.balance < 0 ? 'credit' : ''}">
+                    ${entry.balance.toFixed(2)} د.ل
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : '<div class="no-data">لا توجد معاملات</div>'}
+        
+        <div class="footer">
+          <p>تمت الطباعة بواسطة: ${currentUser?.FullName || currentUser?.UserName || 'النظام'}</p>
+          <p>التاريخ: ${new Date().toLocaleString('ar-LY')}</p>
+        </div>
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
+  };
+  
+  // طباعة الفواتير المفتوحة
+  const handlePrintInvoices = () => {
+    if (!openInvoices || !selectedCustomer) return;
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    
+    const filterInfo = (invoicesStartDate || invoicesEndDate) 
+      ? `<p style="text-align: center; color: #666; margin-bottom: 20px;">
+          الفترة: ${invoicesStartDate ? formatArabicDate(invoicesStartDate) : 'البداية'} - ${invoicesEndDate ? formatArabicDate(invoicesEndDate) : 'النهاية'}
+        </p>` 
+      : '';
+    
+    const totalRemaining = openInvoices.reduce((sum, inv) => sum + inv.remainingAmount, 0);
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="UTF-8">
+        <title>الفواتير المفتوحة - ${selectedCustomer.name}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif; 
+            padding: 20px; 
+            background: white;
+            color: #333;
+          }
+          .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            border-bottom: 2px solid #ea580c;
+            padding-bottom: 20px;
+          }
+          .header h1 { 
+            color: #c2410c; 
+            font-size: 24px; 
+            margin-bottom: 10px;
+          }
+          .header h2 { 
+            color: #374151; 
+            font-size: 18px;
+          }
+          .summary-total {
+            background: #fff7ed;
+            border: 2px solid #fed7aa;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 25px;
+          }
+          .summary-total label {
+            font-size: 14px;
+            color: #9a3412;
+            display: block;
+            margin-bottom: 8px;
+          }
+          .summary-total .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #c2410c;
+          }
+          table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px;
+            font-size: 13px;
+          }
+          th { 
+            background: #c2410c; 
+            color: white; 
+            padding: 12px 8px; 
+            text-align: right;
+            font-weight: 600;
+          }
+          td { 
+            padding: 10px 8px; 
+            border-bottom: 1px solid #e5e7eb;
+          }
+          tr:nth-child(even) { background: #fff7ed; }
+          .remaining { color: #dc2626; font-weight: 600; }
+          .paid { color: #16a34a; }
+          .footer { 
+            margin-top: 30px; 
+            text-align: center; 
+            color: #9ca3af;
+            font-size: 12px;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 15px;
+          }
+          .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #9ca3af;
+          }
+          @media print {
+            body { padding: 0; }
+            @page { margin: 1cm; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>الفواتير المفتوحة</h1>
+          <h2>${selectedCustomer.name}</h2>
+        </div>
+        ${filterInfo}
+        
+        <div class="summary-total">
+          <label>إجمالي المبالغ المستحقة</label>
+          <div class="value">${totalRemaining.toFixed(2)} د.ل</div>
+        </div>
+        
+        ${openInvoices.length > 0 ? `
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>رقم الفاتورة</th>
+                <th>الشركة</th>
+                <th>التاريخ</th>
+                <th>إجمالي الفاتورة</th>
+                <th>المدفوع</th>
+                <th>المتبقي</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${openInvoices.map((invoice, index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>${invoice.invoiceNumber || '#' + invoice.id}</td>
+                  <td>${invoice.company.name}</td>
+                  <td>${formatArabicDate(invoice.createdAt)}</td>
+                  <td>${invoice.total.toFixed(2)} د.ل</td>
+                  <td class="paid">${invoice.paidAmount.toFixed(2)} د.ل</td>
+                  <td class="remaining">${invoice.remainingAmount.toFixed(2)} د.ل</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : '<div class="no-data">لا توجد فواتير مفتوحة</div>'}
+        
+        <div class="footer">
+          <p>تمت الطباعة بواسطة: ${currentUser?.FullName || currentUser?.UserName || 'النظام'}</p>
+          <p>التاريخ: ${new Date().toLocaleString('ar-LY')}</p>
+        </div>
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
   };
 
   const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
@@ -427,6 +866,57 @@ const CustomerAccountsPage = () => {
         {/* عرض كشف الحساب التفصيلي */}
         {viewMode === 'account' && account && (
           <div className="space-y-6">
+            {/* شريط الفلاتر والطباعة */}
+            <div className="bg-white rounded-xl shadow-lg p-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                {/* فلاتر التاريخ */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
+                    <Filter className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm text-gray-600 font-medium">فلترة:</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-600">من:</label>
+                    <input
+                      type="date"
+                      value={accountStartDate}
+                      onChange={(e) => setAccountStartDate(e.target.value)}
+                      className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-600">إلى:</label>
+                    <input
+                      type="date"
+                      value={accountEndDate}
+                      onChange={(e) => setAccountEndDate(e.target.value)}
+                      className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  {(accountStartDate || accountEndDate) && (
+                    <button
+                      onClick={clearAccountFilters}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      مسح
+                    </button>
+                  )}
+                </div>
+                
+                {/* أزرار الطباعة */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handlePrintAccount}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-md hover:shadow-lg"
+                  >
+                    <Printer className="w-4 h-4" />
+                    طباعة التقرير
+                  </button>
+                </div>
+              </div>
+            </div>
+          
             {/* معلومات العميل */}
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">معلومات العميل</h2>
@@ -578,6 +1068,57 @@ const CustomerAccountsPage = () => {
         {/* عرض الفواتير المفتوحة */}
         {viewMode === 'invoices' && (
           <div className="space-y-4">
+            {/* شريط الفلاتر والطباعة */}
+            <div className="bg-white rounded-xl shadow-lg p-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                {/* فلاتر التاريخ */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2 bg-orange-50 px-3 py-2 rounded-lg">
+                    <Filter className="w-4 h-4 text-orange-500" />
+                    <span className="text-sm text-orange-700 font-medium">فلترة:</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-600">من:</label>
+                    <input
+                      type="date"
+                      value={invoicesStartDate}
+                      onChange={(e) => setInvoicesStartDate(e.target.value)}
+                      className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-600">إلى:</label>
+                    <input
+                      type="date"
+                      value={invoicesEndDate}
+                      onChange={(e) => setInvoicesEndDate(e.target.value)}
+                      className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+                  {(invoicesStartDate || invoicesEndDate) && (
+                    <button
+                      onClick={clearInvoicesFilters}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      مسح
+                    </button>
+                  )}
+                </div>
+                
+                {/* أزرار الطباعة */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handlePrintInvoices}
+                    className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-all shadow-md hover:shadow-lg"
+                  >
+                    <Printer className="w-4 h-4" />
+                    طباعة التقرير
+                  </button>
+                </div>
+              </div>
+            </div>
+            
             {isLoadingInvoices ? (
               <div className="text-center py-8">
                 <div className="text-gray-600">جاري تحميل الفواتير...</div>

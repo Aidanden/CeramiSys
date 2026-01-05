@@ -61,10 +61,10 @@ class CustomerAccountService {
   }
 
   /**
-   * جلب حساب عميل معين مع كل المعاملات
-   * Get customer account with all transactions
+   * جلب حساب عميل معين مع كل المعاملات مع دعم الفلترة بالتاريخ
+   * Get customer account with all transactions with date filtering support
    */
-  async getCustomerAccount(customerId: number) {
+  async getCustomerAccount(customerId: number, startDate?: string, endDate?: string) {
     const customer = await prisma.customer.findUnique({
       where: { id: customerId }
     });
@@ -73,19 +73,41 @@ class CustomerAccountService {
       throw new Error('العميل غير موجود');
     }
 
+    // بناء فلتر التاريخ
+    const dateFilter: any = {};
+    if (startDate) {
+      dateFilter.gte = new Date(startDate);
+    }
+    if (endDate) {
+      // إضافة يوم واحد لتضمين نهاية اليوم
+      const endDateObj = new Date(endDate);
+      endDateObj.setDate(endDateObj.getDate() + 1);
+      dateFilter.lt = endDateObj;
+    }
+
+    const whereClause: any = { customerId };
+    if (Object.keys(dateFilter).length > 0) {
+      whereClause.transactionDate = dateFilter;
+    }
+
     const entries = await prisma.customerAccount.findMany({
-      where: { customerId },
+      where: whereClause,
       orderBy: { transactionDate: 'desc' },
       include: {
         customer: true
       }
     });
 
-    // الرصيد الحالي = آخر رصيد مسجل
-    // Current balance = last recorded balance
-    const currentBalance = entries.length > 0 && entries[0] ? Number(entries[0].balance) : 0;
+    // جلب آخر رصيد كلي للعميل (بدون فلترة)
+    const lastEntry = await prisma.customerAccount.findFirst({
+      where: { customerId },
+      orderBy: { createdAt: 'desc' }
+    });
 
-    // إحصائيات
+    // الرصيد الحالي الكلي = آخر رصيد مسجل
+    const currentBalance = lastEntry ? Number(lastEntry.balance) : 0;
+
+    // إحصائيات للفترة المحددة فقط
     const totalDebit = entries
       .filter(e => e.transactionType === 'DEBIT')
       .reduce((sum, e) => sum + Number(e.amount), 0);
@@ -121,17 +143,35 @@ class CustomerAccountService {
   }
 
   /**
-   * جلب الفواتير المفتوحة (غير المسددة بالكامل) لعميل معين
-   * Get open (unpaid) invoices for a customer
+   * جلب الفواتير المفتوحة (غير المسددة بالكامل) لعميل معين مع دعم الفلترة بالتاريخ
+   * Get open (unpaid) invoices for a customer with date filtering support
    */
-  async getCustomerOpenInvoices(customerId: number) {
+  async getCustomerOpenInvoices(customerId: number, startDate?: string, endDate?: string) {
+    // بناء فلتر التاريخ
+    const dateFilter: any = {};
+    if (startDate) {
+      dateFilter.gte = new Date(startDate);
+    }
+    if (endDate) {
+      // إضافة يوم واحد لتضمين نهاية اليوم
+      const endDateObj = new Date(endDate);
+      endDateObj.setDate(endDateObj.getDate() + 1);
+      dateFilter.lt = endDateObj;
+    }
+
+    const whereClause: any = {
+      customerId: customerId,
+      status: 'APPROVED',
+      isFullyPaid: false,
+      saleType: 'CREDIT'
+    };
+
+    if (Object.keys(dateFilter).length > 0) {
+      whereClause.createdAt = dateFilter;
+    }
+
     const openInvoices = await prisma.sale.findMany({
-      where: {
-        customerId: customerId,
-        status: 'APPROVED',
-        isFullyPaid: false,
-        saleType: 'CREDIT'
-      },
+      where: whereClause,
       include: {
         company: {
           select: { id: true, name: true, code: true }

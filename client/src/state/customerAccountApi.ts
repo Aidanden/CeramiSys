@@ -70,18 +70,38 @@ export interface OpenInvoice {
   }[];
 }
 
+// معلمات جلب كشف الحساب مع الفلترة
+export interface GetCustomerAccountParams {
+  customerId: number;
+  startDate?: string;
+  endDate?: string;
+}
+
+// معلمات جلب الفواتير المفتوحة مع الفلترة
+export interface GetOpenInvoicesParams {
+  customerId: number;
+  startDate?: string;
+  endDate?: string;
+}
+
 export const customerAccountApi = createApi({
   reducerPath: "customerAccountApi",
   baseQuery: baseQueryWithAuthInterceptor,
   tagTypes: ['CustomerAccount', 'CustomerAccountSummary'],
   endpoints: (build) => ({
-    // جلب حساب عميل معين
-    getCustomerAccount: build.query<{ data: CustomerAccount }, number>({
-      query: (customerId) => ({
-        url: `/customer-accounts/${customerId}`,
-        method: "GET"
-      }),
-      providesTags: (_result, _error, customerId) => [{ type: 'CustomerAccount', id: customerId }]
+    // جلب حساب عميل معين مع دعم الفلترة بالتاريخ
+    getCustomerAccount: build.query<{ data: CustomerAccount }, GetCustomerAccountParams>({
+      query: ({ customerId, startDate, endDate }) => {
+        const params = new URLSearchParams();
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+        const queryString = params.toString();
+        return {
+          url: `/customer-accounts/${customerId}${queryString ? `?${queryString}` : ''}`,
+          method: "GET"
+        };
+      },
+      providesTags: (_result, _error, { customerId }) => [{ type: 'CustomerAccount', id: customerId }]
     }),
 
     // جلب ملخص حسابات جميع العملاء
@@ -102,13 +122,19 @@ export const customerAccountApi = createApi({
       providesTags: (_result, _error, customerId) => [{ type: 'CustomerAccount', id: customerId }]
     }),
 
-    // جلب الفواتير المفتوحة لعميل معين
-    getCustomerOpenInvoices: build.query<{ data: OpenInvoice[] }, number>({
-      query: (customerId) => ({
-        url: `/customer-accounts/${customerId}/open-invoices`,
-        method: "GET"
-      }),
-      providesTags: (_result, _error, customerId) => [{ type: 'CustomerAccount', id: customerId }]
+    // جلب الفواتير المفتوحة لعميل معين مع دعم الفلترة بالتاريخ
+    getCustomerOpenInvoices: build.query<{ data: OpenInvoice[] }, GetOpenInvoicesParams>({
+      query: ({ customerId, startDate, endDate }) => {
+        const params = new URLSearchParams();
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+        const queryString = params.toString();
+        return {
+          url: `/customer-accounts/${customerId}/open-invoices${queryString ? `?${queryString}` : ''}`,
+          method: "GET"
+        };
+      },
+      providesTags: (_result, _error, { customerId }) => [{ type: 'CustomerAccount', id: customerId }]
     })
   })
 });

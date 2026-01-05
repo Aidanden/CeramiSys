@@ -49,6 +49,11 @@ async function deleteAllData() {
     "notification",                  // Notification model
     "treasuryTransaction",           // TreasuryTransaction model
     "treasury",                      // Treasury model
+    "salaryPayment",                 // SalaryPayment model (صرف المرتبات)
+    "employeeBonus",                 // EmployeeBonus model (المكافآت)
+    "employee",                      // Employee model (الموظفين)
+    "badDebtExpense",                // BadDebtExpense model (صرف المصروفات المعدومة)
+    "badDebtCategory",               // BadDebtCategory model (بنود المصروفات المعدومة)
     "returnOrder",                   // ReturnOrder model
     "dispatchOrder",                 // DispatchOrder model
     "purchaseFromParentReceipt",     // PurchaseFromParentReceipt model
@@ -117,7 +122,9 @@ async function main() {
     "Supplier.json",
     "PurchaseExpenseCategory.json",
     "ExpenseCategorySupplier.json",
-    "Treasury.json"
+    "Treasury.json",
+    "BadDebtCategory.json",
+    "Employee.json"
   ];
 
   await deleteAllData();
@@ -159,6 +166,15 @@ async function main() {
         break;
       case 'ExpenseCategorySupplier':
         modelName = 'expenseCategorySupplier';
+        break;
+      case 'Treasury':
+        modelName = 'treasury';
+        break;
+      case 'BadDebtCategory':
+        modelName = 'badDebtCategory';
+        break;
+      case 'Employee':
+        modelName = 'employee';
         break;
       default:
         modelName = baseModelName.toLowerCase();
