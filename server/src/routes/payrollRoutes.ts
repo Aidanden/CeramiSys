@@ -42,6 +42,9 @@ router.get('/salaries/statement/:employeeId', authMiddleware, PayrollController.
 
 // ============== المكافآت والزيادات ==============
 
+// الحصول على المكافآت
+router.get('/bonuses', authMiddleware, PayrollController.getBonuses.bind(PayrollController));
+
 // صرف مكافأة أو زيادة
 router.post('/bonuses/pay', authMiddleware, PayrollController.payBonus.bind(PayrollController));
 

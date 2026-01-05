@@ -23,6 +23,7 @@ export interface GeneralReceipt {
     amount: number;
     description?: string;
     notes?: string;
+    receiptNumber?: string;
     paymentDate: string;
     contact?: FinancialContact;
     customer?: {

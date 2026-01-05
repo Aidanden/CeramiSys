@@ -5,7 +5,7 @@
  * Payroll & Employees Management Page
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     useGetEmployeesQuery,
     useGetEmployeeQuery,
@@ -16,6 +16,7 @@ import {
     usePayMultipleSalariesMutation,
     useGetSalaryPaymentsQuery,
     useGetSalaryStatementQuery,
+    useGetBonusesQuery,
     usePayBonusMutation,
     useGetPayrollStatsQuery,
     Employee,
@@ -24,6 +25,9 @@ import {
 } from '@/state/payrollApi';
 import { useGetTreasuriesQuery } from '@/state/treasuryApi';
 import { useGetCompaniesQuery } from '@/state/companyApi';
+import { useGetCurrentUserQuery } from '@/state/authApi';
+import { PayrollMonthlyReport } from '@/components/payroll/PayrollMonthlyReport';
+import BonusesReport from '@/components/payroll/BonusesReport';
 // Lucide icons aligned with project identity (Sidebar & Other screens)
 // Lucide icons aligned with project identity
 import {
@@ -43,6 +47,7 @@ import {
     CircleDollarSign,
     CreditCard,
     TrendingUp,
+    Printer,
     BarChart3 as LucideBarChart // Renamed to avoid confusion with BarChart from recharts
 } from 'lucide-react';
 import {
@@ -120,11 +125,21 @@ export default function PayrollPage() {
     const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
     const [selectedEmployees, setSelectedEmployees] = useState<number[]>([]);
+    
+    // Print state
+    const printRef = useRef<HTMLDivElement>(null);
+    const bonusesPrintRef = useRef<HTMLDivElement>(null);
 
-    // Salary filter
+    // Filters
     const currentDate = new Date();
     const [salaryMonth, setSalaryMonth] = useState(currentDate.getMonth() + 1);
     const [salaryYear, setSalaryYear] = useState(currentDate.getFullYear());
+    const [bonusMonth, setBonusMonth] = useState(currentDate.getMonth() + 1);
+    const [bonusYear, setBonusYear] = useState(currentDate.getFullYear());
+    const [bonusTypeFilter, setBonusTypeFilter] = useState<string>('');
+    const [bonusEmployeeFilter, setBonusEmployeeFilter] = useState<number | undefined>();
+    const [statementEmployeeFilter, setStatementEmployeeFilter] = useState<number | undefined>();
+    const [statsYear, setStatsYear] = useState(currentDate.getFullYear());
 
     // Form state
     const [employeeForm, setEmployeeForm] = useState({
@@ -169,13 +184,22 @@ export default function PayrollPage() {
         companyId: selectedCompanyId
     });
 
+    const { data: bonusesData, isLoading: bonusesLoading } = useGetBonusesQuery({
+        month: bonusMonth,
+        year: bonusYear,
+        type: bonusTypeFilter || undefined,
+        employeeId: bonusEmployeeFilter,
+        companyId: selectedCompanyId
+    });
+
     const { data: statsData } = useGetPayrollStatsQuery({
         companyId: selectedCompanyId,
-        year: currentDate.getFullYear()
+        year: statsYear
     });
 
     const { data: treasuriesData } = useGetTreasuriesQuery({});
     const { data: companiesData } = useGetCompaniesQuery({});
+    const { data: userData } = useGetCurrentUserQuery();
 
     // Mutations
     const [createEmployee, { isLoading: creating }] = useCreateEmployeeMutation();
@@ -186,10 +210,132 @@ export default function PayrollPage() {
     const [payBonus, { isLoading: payingBonus }] = usePayBonusMutation();
 
     const employees = employeesData?.data || [];
-    const salaryPayments = salaryData?.data || [];
+    const allSalaryPayments = salaryData?.data || [];
+    const bonuses = bonusesData?.data || [];
     const treasuries = treasuriesData || [];
     const companies = companiesData?.data?.companies || [];
     const stats = statsData?.data;
+    const user = userData?.data;
+
+    // فلترة المدفوعات حسب الموظف المحدد
+    const salaryPayments = React.useMemo(() => {
+        if (!statementEmployeeFilter) return allSalaryPayments;
+        return allSalaryPayments.filter(payment => payment.employeeId === statementEmployeeFilter);
+    }, [allSalaryPayments, statementEmployeeFilter]);
+
+    // تحديد اسم الشركة/الشركات واسم المستخدم للطباعة
+    const getCompanyInfo = () => {
+        if (user?.isSystemUser && companiesData?.data?.companies) {
+            const allCompanies = companiesData.data.companies.map((c: any) => c.name).join(' - ');
+            return {
+                name: allCompanies || 'نظام إدارة السيراميك',
+                userName: user.fullName || user.username || 'المدير'
+            };
+        } else if (user?.company) {
+            return {
+                name: user.company.name,
+                userName: user.fullName || user.username || '-'
+            };
+        }
+        return {
+            name: 'الشركة',
+            userName: '-'
+        };
+    };
+
+    // طباعة التقرير الشهري
+    const handlePrintMonthlyReport = () => {
+        if (salaryPayments.length === 0) {
+            alert('لا توجد بيانات للطباعة في هذا الشهر!');
+            return;
+        }
+
+        setTimeout(() => {
+            if (printRef.current) {
+                const printWindow = window.open('', '_blank', 'width=1200,height=800');
+                if (!printWindow) {
+                    alert('تم حظر النافذة المنبثقة. الرجاء السماح بالنوافذ المنبثقة.');
+                    return;
+                }
+
+                const htmlContent = `
+                    <!DOCTYPE html>
+                    <html lang="ar" dir="rtl">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>تقرير المرتبات الشهري - ${salaryMonth}/${salaryYear}</title>
+                    </head>
+                    <body>
+                        ${printRef.current.innerHTML}
+                        <script>
+                            window.onload = function() {
+                                setTimeout(() => {
+                                    window.print();
+                                }, 500);
+                            };
+                            window.onafterprint = function() {
+                                setTimeout(() => {
+                                    window.close();
+                                }, 100);
+                            };
+                        </script>
+                    </body>
+                    </html>
+                `;
+
+                printWindow.document.write(htmlContent);
+                printWindow.document.close();
+            }
+        }, 200);
+    };
+
+    // طباعة تقرير المكافآت
+    const handlePrintBonusesReport = () => {
+        if (bonuses.length === 0) {
+            alert('لا توجد مكافآت للطباعة!');
+            return;
+        }
+
+        setTimeout(() => {
+            if (bonusesPrintRef.current) {
+                const printWindow = window.open('', '_blank', 'width=1200,height=800');
+                if (!printWindow) {
+                    alert('تم حظر النافذة المنبثقة. الرجاء السماح بالنوافذ المنبثقة.');
+                    return;
+                }
+
+                const htmlContent = `
+                    <!DOCTYPE html>
+                    <html lang="ar" dir="rtl">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>تقرير المكافآت - ${bonusMonth}/${bonusYear}</title>
+                    </head>
+                    <body>
+                        ${bonusesPrintRef.current.innerHTML}
+                        <script>
+                            window.onload = function() {
+                                setTimeout(() => {
+                                    window.print();
+                                }, 500);
+                            };
+                            window.onafterprint = function() {
+                                setTimeout(() => {
+                                    window.close();
+                                }, 100);
+                            };
+                        </script>
+                    </body>
+                    </html>
+                `;
+
+                printWindow.document.write(htmlContent);
+                printWindow.document.close();
+            }
+        }, 200);
+    };
 
     // Handlers
     const handleCreateEmployee = async () => {
@@ -657,31 +803,55 @@ export default function PayrollPage() {
                     {/* Salaries Tab */}
                     {activeTab === 'salaries' && (
                         <div>
-                            {/* Filters */}
-                            <div className="flex gap-4 mb-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">الشهر</label>
-                                    <select
-                                        value={salaryMonth}
-                                        onChange={(e) => setSalaryMonth(parseInt(e.target.value))}
-                                        className="px-4 py-2 border border-gray-300 rounded-lg"
+                            {/* Filters and Print Button */}
+                            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
+                                <div className="flex flex-wrap gap-4 items-end">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">الشهر</label>
+                                        <select
+                                            value={salaryMonth}
+                                            onChange={(e) => setSalaryMonth(parseInt(e.target.value))}
+                                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            {arabicMonths.slice(1).map((month, idx) => (
+                                                <option key={idx + 1} value={idx + 1}>{month}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">السنة</label>
+                                        <select
+                                            value={salaryYear}
+                                            onChange={(e) => setSalaryYear(parseInt(e.target.value))}
+                                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            {[2022, 2023, 2024, 2025, 2026, 2027].map(year => (
+                                                <option key={year} value={year}>{year}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="flex-1 min-w-[200px]">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">الموظف</label>
+                                        <select
+                                            value={statementEmployeeFilter || ''}
+                                            onChange={(e) => setStatementEmployeeFilter(e.target.value ? parseInt(e.target.value) : undefined)}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="">جميع الموظفين</option>
+                                            {employees.map(emp => (
+                                                <option key={emp.id} value={emp.id}>{emp.name} - {emp.jobTitle || 'موظف'}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <button
+                                        onClick={handlePrintMonthlyReport}
+                                        disabled={salaryPayments.length === 0}
+                                        className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="طباعة التقرير الشهري"
                                     >
-                                        {arabicMonths.slice(1).map((month, idx) => (
-                                            <option key={idx + 1} value={idx + 1}>{month}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">السنة</label>
-                                    <select
-                                        value={salaryYear}
-                                        onChange={(e) => setSalaryYear(parseInt(e.target.value))}
-                                        className="px-4 py-2 border border-gray-300 rounded-lg"
-                                    >
-                                        {[2024, 2025, 2026].map(year => (
-                                            <option key={year} value={year}>{year}</option>
-                                        ))}
-                                    </select>
+                                        <Printer className="w-4 h-4" />
+                                        طباعة التقرير
+                                    </button>
                                 </div>
                             </div>
 
@@ -730,14 +900,165 @@ export default function PayrollPage() {
 
                     {/* Bonuses Tab - Placeholder */}
                     {activeTab === 'bonuses' && (
-                        <div className="text-center py-10 text-gray-500">
-                            سجل المكافآت والزيادات - قيد التطوير
+                        <div>
+                            {/* Filters for Bonuses */}
+                            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
+                                <div className="flex flex-wrap gap-4 items-end">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">الشهر</label>
+                                        <select
+                                            value={bonusMonth}
+                                            onChange={(e) => setBonusMonth(parseInt(e.target.value))}
+                                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            {arabicMonths.slice(1).map((month, idx) => (
+                                                <option key={idx + 1} value={idx + 1}>{month}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">السنة</label>
+                                        <select
+                                            value={bonusYear}
+                                            onChange={(e) => setBonusYear(parseInt(e.target.value))}
+                                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            {[2022, 2023, 2024, 2025, 2026, 2027].map(year => (
+                                                <option key={year} value={year}>{year}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">نوع المكافأة</label>
+                                        <select
+                                            value={bonusTypeFilter}
+                                            onChange={(e) => setBonusTypeFilter(e.target.value)}
+                                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="">جميع الأنواع</option>
+                                            {bonusTypes.map(type => (
+                                                <option key={type.value} value={type.value}>{type.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="flex-1 min-w-[200px]">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">الموظف</label>
+                                        <select
+                                            value={bonusEmployeeFilter || ''}
+                                            onChange={(e) => setBonusEmployeeFilter(e.target.value ? parseInt(e.target.value) : undefined)}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="">جميع الموظفين</option>
+                                            {employees.map(emp => (
+                                                <option key={emp.id} value={emp.id}>{emp.name} - {emp.jobTitle || 'موظف'}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <button
+                                        onClick={handlePrintBonusesReport}
+                                        disabled={bonuses.length === 0}
+                                        className="flex items-center gap-2 px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="طباعة تقرير المكافآت"
+                                    >
+                                        <Printer className="w-4 h-4" />
+                                        طباعة التقرير
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            {/* Bonuses Table */}
+                            {bonusesLoading ? (
+                                <div className="text-center py-10 bg-white rounded-lg shadow-sm border border-gray-200">جاري التحميل...</div>
+                            ) : bonuses.length === 0 ? (
+                                <div className="text-center py-10 text-gray-500 bg-white rounded-lg shadow-sm border border-gray-200">
+                                    <p className="text-lg font-medium mb-2">لا توجد مكافآت مسجلة</p>
+                                    <p className="text-sm">اختر الفترة والفلاتر المطلوبة لعرض البيانات</p>
+                                </div>
+                            ) : (
+                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead className="bg-orange-50">
+                                                <tr>
+                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">رقم الإيصال</th>
+                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">الموظف</th>
+                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">النوع</th>
+                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">المبلغ</th>
+                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">التاريخ</th>
+                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">السبب</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200">
+                                                {bonuses.map(bonus => (
+                                                    <tr key={bonus.id} className="hover:bg-orange-50/30">
+                                                        <td className="px-4 py-3 font-mono text-sm text-gray-600">{bonus.receiptNumber}</td>
+                                                        <td className="px-4 py-3">
+                                                            <div>
+                                                                <p className="font-medium text-gray-900">{bonus.employee?.name}</p>
+                                                                {bonus.employee?.jobTitle && (
+                                                                    <p className="text-xs text-gray-500">{bonus.employee.jobTitle}</p>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                                                                bonus.type === 'BONUS' ? 'bg-green-100 text-green-800' :
+                                                                bonus.type === 'RAISE' ? 'bg-blue-100 text-blue-800' :
+                                                                bonus.type === 'INCENTIVE' ? 'bg-purple-100 text-purple-800' :
+                                                                'bg-amber-100 text-amber-800'
+                                                            }`}>
+                                                                {bonus.typeName}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3 font-semibold text-orange-600">{formatCurrency(bonus.amount)}</td>
+                                                        <td className="px-4 py-3 text-gray-600">
+                                                            {new Date(bonus.paymentDate).toLocaleDateString('ar-LY')}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-gray-500 text-sm">{bonus.reason || '-'}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {/* Summary */}
+                                    <div className="bg-orange-50 px-6 py-4 border-t border-gray-200">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm font-medium text-gray-700">الإجمالي الكلي:</span>
+                                            <span className="text-lg font-bold text-orange-600">
+                                                {formatCurrency(bonuses.reduce((sum, b) => sum + Number(b.amount), 0))}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
                     {/* Stats Tab */}
                     {activeTab === 'stats' && (
                         <div className="space-y-8 animate-fadeIn">
+                            {/* Filters for Stats */}
+                            <div className="flex gap-4 items-center bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                                <label className="text-sm font-medium text-gray-700">السنة:</label>
+                                <select
+                                    value={statsYear}
+                                    onChange={(e) => setStatsYear(parseInt(e.target.value))}
+                                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                >
+                                    {[2022, 2023, 2024, 2025, 2026, 2027].map(year => (
+                                        <option key={year} value={year}>{year}</option>
+                                    ))}
+                                </select>
+                                {selectedCompanyId && (
+                                    <button
+                                        onClick={() => setSelectedCompanyId(undefined)}
+                                        className="text-sm text-blue-600 hover:text-blue-800 underline"
+                                    >
+                                        عرض جميع الشركات
+                                    </button>
+                                )}
+                            </div>
+                            
                             {/* Summary Stats Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg">
@@ -1248,31 +1569,154 @@ export default function PayrollPage() {
                 />
             )}
 
-            <style jsx global>{`
-                @media print {
-                    body * { visibility: hidden !important; }
-                    #print-section, #print-section * { visibility: visible !important; }
-                    #print-section { 
-                        position: absolute !important; 
-                        left: 0 !important; 
-                        top: 0 !important; 
-                        width: 100% !important; 
-                        padding: 20px !important;
-                    }
-                    .no-print { display: none !important; }
-                }
-            `}</style>
+
+            {/* Hidden div for printing - للطباعة فقط (مخفي) */}
+            <div ref={printRef} style={{ display: 'none' }}>
+                <PayrollMonthlyReport 
+                    month={salaryMonth}
+                    year={salaryYear}
+                    payments={salaryPayments}
+                    bonuses={[]}
+                    companyName={getCompanyInfo().name}
+                    userName={getCompanyInfo().userName}
+                />
+            </div>
+
+            {/* Hidden div for bonuses printing - للطباعة المكافآت (مخفي) */}
+            <div ref={bonusesPrintRef} style={{ display: 'none' }}>
+                <BonusesReport 
+                    bonuses={bonuses}
+                    month={bonusMonth}
+                    year={bonusYear}
+                    type={bonusTypeFilter}
+                    companyName={getCompanyInfo().name}
+                    userName={getCompanyInfo().userName}
+                />
+            </div>
         </div>
     );
 }
 
 // ========== Salary Statement Modal Component ==========
-function SalaryStatementModal({ employeeId, month, year, onClose }: { employeeId: number; month: number; year: number; onClose: () => void }) {
-    const { data, isLoading } = useGetSalaryStatementQuery({ employeeId, month, year });
+function SalaryStatementModal({ employeeId, month: initialMonth, year: initialYear, onClose }: { employeeId: number; month: number; year: number; onClose: () => void }) {
+    const [filterMonth, setFilterMonth] = React.useState(initialMonth);
+    const [filterYear, setFilterYear] = React.useState(initialYear);
+    
+    const { data, isLoading } = useGetSalaryStatementQuery({ employeeId, month: filterMonth, year: filterYear });
     const statement = data?.data;
+    const printRef = React.useRef<HTMLDivElement>(null);
 
     const handlePrint = () => {
-        window.print();
+        if (!printRef.current) return;
+        
+        const printWindow = window.open('', '_blank', 'width=1000,height=800');
+        if (!printWindow) {
+            alert('تم حظر النافذة المنبثقة. الرجاء السماح بالنوافذ المنبثقة.');
+            return;
+        }
+
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html lang="ar" dir="rtl">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>كشف حركة المرتب - ${statement?.employee.name}</title>
+                <style>
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    
+                    body {
+                        font-family: 'Arial', 'Segoe UI', sans-serif;
+                        direction: rtl;
+                        background: white;
+                        padding: 20px;
+                    }
+                    
+                    @media print {
+                        body {
+                            padding: 0;
+                        }
+                        
+                        @page {
+                            size: A4;
+                            margin: 15mm;
+                        }
+                    }
+                    
+                    .print-content {
+                        max-width: 210mm;
+                        margin: 0 auto;
+                        background: white;
+                    }
+                    
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                    }
+                    
+                    th, td {
+                        border: 1px solid #e2e8f0;
+                        padding: 12px 8px;
+                        text-align: right;
+                    }
+                    
+                    th {
+                        background-color: #f8fafc;
+                        font-weight: bold;
+                        color: #475569;
+                        font-size: 12px;
+                    }
+                    
+                    .badge {
+                        display: inline-block;
+                        padding: 4px 8px;
+                        border-radius: 12px;
+                        font-size: 11px;
+                        font-weight: bold;
+                    }
+                    
+                    .badge-green {
+                        background-color: #dcfce7;
+                        color: #166534;
+                        border: 1px solid #86efac;
+                    }
+                    
+                    .badge-amber {
+                        background-color: #fef3c7;
+                        color: #92400e;
+                        border: 1px solid #fbbf24;
+                    }
+                    
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                </style>
+            </head>
+            <body>
+                <div class="print-content">
+                    ${printRef.current.innerHTML}
+                </div>
+                <script>
+                    window.onload = function() {
+                        setTimeout(() => {
+                            window.print();
+                        }, 500);
+                    };
+                    window.onafterprint = function() {
+                        setTimeout(() => {
+                            window.close();
+                        }, 100);
+                    };
+                </script>
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
     };
 
     if (isLoading) return (
@@ -1288,8 +1732,8 @@ function SalaryStatementModal({ employeeId, month, year, onClose }: { employeeId
     );
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 no-print">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col print-root">
                 <div className="bg-purple-600 text-white px-8 py-5 flex justify-between items-center no-print">
                     <h3 className="text-xl font-bold flex items-center gap-2 font-cairo">
                         <FileText className="w-6 h-6" />
@@ -1306,13 +1750,49 @@ function SalaryStatementModal({ employeeId, month, year, onClose }: { employeeId
                     </div>
                 </div>
 
-                <div className="p-8 overflow-y-auto flex-1" id="print-section" dir="rtl">
+                {/* Filters Section - داخل المودال */}
+                <div className="px-8 pt-4 pb-0 no-print bg-gray-50 border-b border-gray-200">
+                    <div className="flex gap-4 items-end">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">الشهر</label>
+                            <select
+                                value={filterMonth}
+                                onChange={(e) => setFilterMonth(parseInt(e.target.value))}
+                                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                            >
+                                {arabicMonths.slice(1).map((month, idx) => (
+                                    <option key={idx + 1} value={idx + 1}>{month}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">السنة</label>
+                            <select
+                                value={filterYear}
+                                onChange={(e) => setFilterYear(parseInt(e.target.value))}
+                                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                            >
+                                {[2022, 2023, 2024, 2025, 2026, 2027].map(year => (
+                                    <option key={year} value={year}>{year}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="text-sm text-gray-600 px-4 py-2">
+                            يتم تحديث الكشف تلقائياً عند تغيير الفلاتر
+                        </div>
+                    </div>
+                </div>
+
+                <div className="p-8 overflow-y-auto flex-1 print:overflow-visible print:max-h-none" id="print-section" dir="rtl">
                     {/* Header for Print */}
-                    <div className="text-center mb-8 border-b-2 border-purple-100 pb-6">
+                    <div className="text-center mb-8 border-b-2 border-purple-100 pb-6 print:border-slate-300">
                         <h2 className="text-2xl font-bold text-slate-800 mb-2">كشف حركة المرتب الشهرية</h2>
-                        <div className="flex justify-center gap-8 text-slate-600 font-medium">
+                        <div className="flex justify-center gap-8 text-slate-600 font-medium mb-2">
                             <p>الشهر: <span className="text-purple-700">{statement.monthName}</span></p>
                             <p>السنة: <span className="text-purple-700">{statement.year}</span></p>
+                        </div>
+                        <div className="hidden print:block text-xs text-slate-500 mt-3">
+                            <p>تاريخ الطباعة: {new Date().toLocaleDateString('ar-LY')} - {new Date().toLocaleTimeString('ar-LY')}</p>
                         </div>
                     </div>
 
@@ -1346,8 +1826,8 @@ function SalaryStatementModal({ employeeId, month, year, onClose }: { employeeId
                         <h4 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
                             📊 سجل الحركات المالية
                         </h4>
-                        <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                            <table className="w-full text-right border-collapse">
+                        <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm print:border-0 print:shadow-none">
+                            <table className="w-full text-right border-collapse print:border print:border-slate-300">
                                 <thead className="bg-slate-50">
                                     <tr>
                                         <th className="px-4 py-4 text-xs font-bold text-slate-500 border-b">تاريخ الحركة</th>
@@ -1417,6 +1897,122 @@ function SalaryStatementModal({ employeeId, month, year, onClose }: { employeeId
                     <button onClick={onClose} className="px-6 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-medium">
                         إغلاق الكشف
                     </button>
+                </div>
+            </div>
+            
+            {/* Hidden div for printing */}
+            <div ref={printRef} style={{ display: 'none' }}>
+                <div style={{ padding: '20px', textAlign: 'center' }}>
+                    {/* Header */}
+                    <div style={{ marginBottom: '30px', borderBottom: '2px solid #cbd5e1', paddingBottom: '20px' }}>
+                        <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b', marginBottom: '10px' }}>
+                            كشف حركة المرتب الشهرية
+                        </h2>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', fontSize: '14px', color: '#64748b' }}>
+                            <p>الشهر: <strong style={{ color: '#7c3aed' }}>{statement.monthName}</strong></p>
+                            <p>السنة: <strong style={{ color: '#7c3aed' }}>{statement.year}</strong></p>
+                        </div>
+                        <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '10px' }}>
+                            تاريخ الطباعة: {new Date().toLocaleDateString('ar-LY')} - {new Date().toLocaleTimeString('ar-LY')}
+                        </p>
+                    </div>
+
+                    {/* Employee Info */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px', textAlign: 'right' }}>
+                        <div style={{ padding: '15px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                            <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#94a3b8', marginBottom: '10px' }}>بيانات الموظف</h4>
+                            <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b', marginBottom: '5px' }}>{statement.employee.name}</p>
+                            <p style={{ fontSize: '14px', color: '#64748b' }}>{statement.employee.jobTitle || 'موظف'}</p>
+                        </div>
+                        <div style={{ padding: '15px', backgroundColor: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '8px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', textAlign: 'center' }}>
+                                <div>
+                                    <p style={{ fontSize: '11px', color: '#7c3aed', marginBottom: '5px' }}>الراتب الأساسي</p>
+                                    <p style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e293b' }}>{new Intl.NumberFormat('ar-LY').format(statement.summary.baseSalary)}</p>
+                                </div>
+                                <div style={{ borderLeft: '1px solid #e9d5ff', borderRight: '1px solid #e9d5ff' }}>
+                                    <p style={{ fontSize: '11px', color: '#7c3aed', marginBottom: '5px' }}>إجمالي المنصرف</p>
+                                    <p style={{ fontSize: '16px', fontWeight: 'bold', color: '#16a34a' }}>{new Intl.NumberFormat('ar-LY').format(statement.summary.totalPaid)}</p>
+                                </div>
+                                <div>
+                                    <p style={{ fontSize: '11px', color: '#7c3aed', marginBottom: '5px' }}>المتبقي</p>
+                                    <p style={{ fontSize: '16px', fontWeight: 'bold', color: statement.summary.remaining > 0 ? '#f59e0b' : '#1e293b' }}>
+                                        {new Intl.NumberFormat('ar-LY').format(statement.summary.remaining)}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Movements Table */}
+                    <div style={{ marginBottom: '20px' }}>
+                        <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: '#334155', marginBottom: '15px', textAlign: 'right' }}>
+                            📊 سجل الحركات المالية
+                        </h4>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #cbd5e1' }}>
+                            <thead>
+                                <tr style={{ backgroundColor: '#f8fafc' }}>
+                                    <th style={{ padding: '12px 8px', fontSize: '12px', fontWeight: 'bold', color: '#64748b', border: '1px solid #e2e8f0', textAlign: 'right' }}>تاريخ الحركة</th>
+                                    <th style={{ padding: '12px 8px', fontSize: '12px', fontWeight: 'bold', color: '#64748b', border: '1px solid #e2e8f0', textAlign: 'right' }}>نوع الحركة</th>
+                                    <th style={{ padding: '12px 8px', fontSize: '12px', fontWeight: 'bold', color: '#64748b', border: '1px solid #e2e8f0', textAlign: 'right' }}>المبلغ</th>
+                                    <th style={{ padding: '12px 8px', fontSize: '12px', fontWeight: 'bold', color: '#64748b', border: '1px solid #e2e8f0', textAlign: 'right' }}>الخزينة</th>
+                                    <th style={{ padding: '12px 8px', fontSize: '12px', fontWeight: 'bold', color: '#64748b', border: '1px solid #e2e8f0', textAlign: 'right' }}>الإيصال</th>
+                                    <th style={{ padding: '12px 8px', fontSize: '12px', fontWeight: 'bold', color: '#64748b', border: '1px solid #e2e8f0', textAlign: 'right' }}>ملاحظات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {statement.movements.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8', fontSize: '14px', border: '1px solid #e2e8f0' }}>
+                                            لا توجد حركات مسجلة لهذا الشهر
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    statement.movements.map((move, idx) => (
+                                        <tr key={move.id} style={{ backgroundColor: idx % 2 === 0 ? 'white' : '#f8fafc' }}>
+                                            <td style={{ padding: '12px 8px', fontSize: '13px', color: '#475569', border: '1px solid #e2e8f0', textAlign: 'right' }}>
+                                                {new Date(move.date).toLocaleDateString('ar-LY')}
+                                            </td>
+                                            <td style={{ padding: '12px 8px', border: '1px solid #e2e8f0', textAlign: 'right' }}>
+                                                <span className={move.type === 'تسوية نهائية' ? 'badge badge-green' : 'badge badge-amber'}>
+                                                    {move.type}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '12px 8px', fontSize: '13px', fontWeight: 'bold', color: '#1e293b', border: '1px solid #e2e8f0', textAlign: 'right' }}>
+                                                {new Intl.NumberFormat('ar-LY').format(move.amount)} د.ل
+                                            </td>
+                                            <td style={{ padding: '12px 8px', fontSize: '13px', color: '#475569', border: '1px solid #e2e8f0', textAlign: 'right' }}>{move.treasury}</td>
+                                            <td style={{ padding: '12px 8px', fontSize: '11px', color: '#64748b', border: '1px solid #e2e8f0', textAlign: 'right' }}>{move.receiptNumber || '-'}</td>
+                                            <td style={{ padding: '12px 8px', fontSize: '11px', color: '#64748b', border: '1px solid #e2e8f0', textAlign: 'right' }}>{move.notes || '-'}</td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                            <tfoot>
+                                <tr style={{ backgroundColor: '#f1f5f9', fontWeight: 'bold', borderTop: '2px solid #cbd5e1' }}>
+                                    <td colSpan={2} style={{ padding: '12px 8px', color: '#334155', border: '1px solid #e2e8f0', textAlign: 'right' }}>إجمالي مدفوعات الشهر</td>
+                                    <td style={{ padding: '12px 8px', fontSize: '16px', color: '#16a34a', border: '1px solid #e2e8f0', textAlign: 'right' }}>
+                                        {new Intl.NumberFormat('ar-LY').format(statement.summary.totalPaid)} د.ل
+                                    </td>
+                                    <td colSpan={3} style={{ border: '1px solid #e2e8f0' }}></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    {/* Signatures */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '60px', marginTop: '60px', textAlign: 'center' }}>
+                        <div>
+                            <div style={{ borderTop: '2px solid #cbd5e1', paddingTop: '10px', marginTop: '40px' }}>
+                                <p style={{ fontWeight: 'bold', fontSize: '14px' }}>توقيع الموظف</p>
+                            </div>
+                        </div>
+                        <div>
+                            <div style={{ borderTop: '2px solid #cbd5e1', paddingTop: '10px', marginTop: '40px' }}>
+                                <p style={{ fontWeight: 'bold', fontSize: '14px' }}>ختم وتوقيع الإدارة المالية</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

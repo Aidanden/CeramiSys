@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     useGetFinancialContactsQuery,
     useGetGeneralReceiptsQuery,
@@ -12,6 +12,8 @@ import { useGetTreasuriesQuery } from '@/state/treasuryApi';
 import { useGetCustomersQuery } from '@/state/salesApi';
 import { useGetSuppliersQuery } from '@/state/purchaseApi';
 import { useGetEmployeesQuery } from '@/state/payrollApi';
+import { useGetCurrentUserQuery } from '@/state/authApi';
+import { useGetCompaniesQuery } from '@/state/companyApi';
 import {
     Plus,
     X,
@@ -33,6 +35,8 @@ import {
     ChevronLeft,
     ChevronRight,
 } from 'lucide-react';
+import { GeneralReceiptPrint } from '@/components/general-receipts/GeneralReceiptPrint';
+import { ReceiptsReport } from '@/components/general-receipts/ReceiptsReport';
 
 // تنسيق العملة
 const formatCurrency = (amount: number) => {
@@ -61,6 +65,9 @@ export default function GeneralReceiptsPage() {
     const [showStatementModal, setShowStatementModal] = useState(false);
     const [showReceiptPreview, setShowReceiptPreview] = useState(false);
     const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
+    const [receiptToPrint, setReceiptToPrint] = useState<any>(null);
+    const [receiptsToPrint, setReceiptsToPrint] = useState<any[]>([]);
+    const printRef = useRef<HTMLDivElement>(null);
     
     // Filters and Pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -83,6 +90,11 @@ export default function GeneralReceiptsPage() {
 
     const [createContact, { isLoading: isCreatingContact }] = useCreateFinancialContactMutation();
     const [createReceipt, { isLoading: isCreatingReceipt }] = useCreateGeneralReceiptMutation();
+
+    // Get current user and companies
+    const { data: userData } = useGetCurrentUserQuery();
+    const user = userData?.data;
+    const { data: companiesData } = useGetCompaniesQuery({ limit: 100 });
 
     // Form States
     const [contactForm, setContactForm] = useState({ name: '', phone: '', note: '' });
@@ -216,7 +228,7 @@ export default function GeneralReceiptsPage() {
                 receiptData.employeeId = Number(receiptForm.employeeId);
             }
 
-            await createReceipt(receiptData).unwrap();
+            const createdReceipt = await createReceipt(receiptData).unwrap();
             setShowReceiptModal(false);
             setReceiptForm({ contactId: '', customerId: '', supplierId: '', employeeId: '', treasuryId: '', amount: '', description: '', notes: '' });
             setContactSearchTerm('');
@@ -227,6 +239,13 @@ export default function GeneralReceiptsPage() {
             setSelectedCustomerName('');
             setSelectedSupplierName('');
             setSelectedEmployeeName('');
+            
+            // طباعة الإيصال تلقائياً بعد الإنشاء
+            setTimeout(() => {
+                if (createdReceipt) {
+                    printReceiptToWindow(createdReceipt);
+                }
+            }, 500);
         } catch (err: any) {
             alert(err?.data?.error || 'فشل في تنفيذ العملية');
         }
@@ -299,6 +318,138 @@ export default function GeneralReceiptsPage() {
 
     const handlePrintReceipt = () => {
         window.print();
+    };
+
+    // تحديد اسم الشركة/الشركات واسم المستخدم للطباعة
+    const getCompanyInfo = () => {
+        if (user?.isSystemUser && companiesData?.data?.companies) {
+            // مدير النظام - عرض أسماء جميع الشركات
+            const allCompanies = companiesData.data.companies.map((c: any) => c.name).join(' - ');
+            return {
+                name: allCompanies || 'نظام إدارة السيراميك',
+                userName: user.fullName || user.username || 'المدير'
+            };
+        } else if (user?.company) {
+            // مستخدم عادي - عرض شركته فقط
+            return {
+                name: user.company.name,
+                userName: user.fullName || user.username || '-'
+            };
+        }
+        return {
+            name: 'الشركة',
+            userName: '-'
+        };
+    };
+
+    const handleDirectPrint = (receipt: any) => {
+        // طباعة الإيصال بنفس تصميم شاشة المحاسب
+        printReceiptToWindow(receipt);
+    };
+
+    // طباعة إيصال واحد في نافذة جديدة
+    const printReceiptToWindow = (receipt: any) => {
+        setReceiptToPrint(receipt);
+        setReceiptsToPrint([]);
+        
+        setTimeout(() => {
+            if (printRef.current) {
+                const printWindow = window.open('', '_blank', 'width=800,height=600');
+                if (!printWindow) {
+                    alert('تم حظر النافذة المنبثقة. الرجاء السماح بالنوافذ المنبثقة.');
+                    return;
+                }
+
+                const htmlContent = `
+                    <!DOCTYPE html>
+                    <html lang="ar" dir="rtl">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>إيصال ${receipt.type === 'DEPOSIT' ? 'قبض' : 'صرف'} - ${receipt.receiptNumber || receipt.id}</title>
+                    </head>
+                    <body>
+                        ${printRef.current.innerHTML}
+                        <script>
+                            window.onload = function() {
+                                setTimeout(() => {
+                                    window.print();
+                                }, 300);
+                            };
+                            window.onafterprint = function() {
+                                setTimeout(() => {
+                                    window.close();
+                                }, 100);
+                            };
+                        </script>
+                    </body>
+                    </html>
+                `;
+
+                printWindow.document.write(htmlContent);
+                printWindow.document.close();
+                
+                // تنظيف
+                setTimeout(() => {
+                    setReceiptToPrint(null);
+                }, 1000);
+            }
+        }, 200);
+    };
+
+    // طباعة جميع السجلات المفلترة
+    const printAllFilteredReceipts = () => {
+        if (filteredReceipts.length === 0) {
+            alert('لا توجد سجلات للطباعة!');
+            return;
+        }
+
+        setReceiptsToPrint(filteredReceipts);
+        setReceiptToPrint(null);
+
+        setTimeout(() => {
+            if (printRef.current) {
+                const printWindow = window.open('', '_blank', 'width=800,height=600');
+                if (!printWindow) {
+                    alert('تم حظر النافذة المنبثقة. الرجاء السماح بالنوافذ المنبثقة.');
+                    return;
+                }
+
+                const htmlContent = `
+                    <!DOCTYPE html>
+                    <html lang="ar" dir="rtl">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>طباعة الإيصالات (${filteredReceipts.length} إيصال)</title>
+                    </head>
+                    <body>
+                        ${printRef.current.innerHTML}
+                        <script>
+                            window.onload = function() {
+                                setTimeout(() => {
+                                    window.print();
+                                }, 500);
+                            };
+                            window.onafterprint = function() {
+                                setTimeout(() => {
+                                    window.close();
+                                }, 100);
+                            };
+                        </script>
+                    </body>
+                    </html>
+                `;
+
+                printWindow.document.write(htmlContent);
+                printWindow.document.close();
+                
+                // تنظيف
+                setTimeout(() => {
+                    setReceiptsToPrint([]);
+                }, 1000);
+            }
+        }, 300);
     };
 
     // Reset to page 1 when filters change
@@ -465,9 +616,20 @@ export default function GeneralReceiptsPage() {
                                 <FileText className="w-5 h-5 text-primary-500" />
                                 سجل الإيصالات ({filteredReceipts.length})
                             </h2>
-                            <button onClick={() => refetchReceipts()} className="p-2 text-text-muted hover:text-primary-600 transition-colors">
-                                <RefreshCw className="w-5 h-5" />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={printAllFilteredReceipts}
+                                    disabled={filteredReceipts.length === 0}
+                                    className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="طباعة جميع الإيصالات المعروضة"
+                                >
+                                    <Printer className="w-4 h-4" />
+                                    طباعة الكل ({filteredReceipts.length})
+                                </button>
+                                <button onClick={() => refetchReceipts()} className="p-2 text-text-muted hover:text-primary-600 transition-colors">
+                                    <RefreshCw className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-right border-collapse">
@@ -509,21 +671,18 @@ export default function GeneralReceiptsPage() {
                                             </td>
                                             <td className="p-4 text-sm text-text-tertiary">{r.description || '-'}</td>
                                             <td className="p-4">
-                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={() => handleReceiptPreview(r)}
-                                                        className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                                                        title="معاينة"
+                                                        className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors group/btn"
+                                                        title="معاينة الإيصال"
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                     </button>
                                                     <button
-                                                        onClick={() => {
-                                                            setSelectedReceipt(r);
-                                                            setTimeout(() => window.print(), 100);
-                                                        }}
-                                                        className="p-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
-                                                        title="طباعة"
+                                                        onClick={() => handleDirectPrint(r)}
+                                                        className="p-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors group/btn"
+                                                        title="طباعة الإيصال مباشرة"
                                                     >
                                                         <Printer className="w-4 h-4" />
                                                     </button>
@@ -1354,10 +1513,33 @@ export default function GeneralReceiptsPage() {
                                 }
                             }
 
-                            /* Receipt Print Styles */
+                            /* Receipt Print Styles - Print only the receipt when preview is open */
                             @media print {
+                                /* إخفاء كل شيء */
+                                body * {
+                                    visibility: hidden !important;
+                                }
+                                
+                                /* إظهار الإيصال وعناصره فقط */
+                                #receipt-print,
+                                #receipt-print * {
+                                    visibility: visible !important;
+                                }
+                                
                                 #receipt-print {
-                                    display: block !important;
+                                    position: absolute !important;
+                                    left: 0 !important;
+                                    top: 0 !important;
+                                    width: 100% !important;
+                                    background: white !important;
+                                    box-shadow: none !important;
+                                }
+
+                                /* إخفاء الأزرار والهيدر في المعاينة */
+                                .print-hide,
+                                button {
+                                    display: none !important;
+                                    visibility: hidden !important;
                                 }
                             }
                         `}</style>
@@ -1584,6 +1766,24 @@ export default function GeneralReceiptsPage() {
                     </div>
                 </div>
             )}
+
+            {/* Hidden div for printing - للطباعة فقط (مخفي) */}
+            <div ref={printRef} style={{ display: 'none' }}>
+                {receiptToPrint && (
+                    <GeneralReceiptPrint 
+                        receipt={receiptToPrint} 
+                        companyName={getCompanyInfo().name}
+                        userName={getCompanyInfo().userName}
+                    />
+                )}
+                {receiptsToPrint.length > 0 && (
+                    <ReceiptsReport 
+                        receipts={receiptsToPrint}
+                        companyName={getCompanyInfo().name}
+                        userName={getCompanyInfo().userName}
+                    />
+                )}
+            </div>
         </div>
     );
 }

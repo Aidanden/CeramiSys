@@ -320,6 +320,33 @@ class PayrollController {
     // ============== المكافآت والزيادات ==============
 
     /**
+     * الحصول على المكافآت حسب الفلاتر
+     */
+    async getBonuses(req: AuthRequest, res: Response) {
+        try {
+            const { month, year, type, employeeId, companyId } = req.query;
+
+            const bonuses = await PayrollService.getBonuses({
+                month: month ? parseInt(month as string) : undefined,
+                year: year ? parseInt(year as string) : undefined,
+                type: type as any,
+                employeeId: employeeId ? parseInt(employeeId as string) : undefined,
+                companyId: companyId ? parseInt(companyId as string) : undefined
+            });
+
+            res.json({
+                success: true,
+                data: bonuses
+            });
+        } catch (error: any) {
+            res.status(500).json({
+                success: false,
+                message: error.message || 'حدث خطأ أثناء جلب المكافآت'
+            });
+        }
+    }
+
+    /**
      * صرف مكافأة أو زيادة
      */
     async payBonus(req: AuthRequest, res: Response) {

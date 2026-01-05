@@ -148,3 +148,4 @@ getEmployeeAccount: builder.query<{ success: boolean; data: any }, number>({
 - لا حاجة لتعديلات في قاعدة البيانات الموجودة
 - التحسينات تعمل تلقائياً بدون تدخل المستخدم
 
+

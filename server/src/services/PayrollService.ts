@@ -379,6 +379,80 @@ export class PayrollService {
     // ============== المكافآت والزيادات ==============
 
     /**
+     * الحصول على المكافآت حسب الفلاتر
+     */
+    async getBonuses(filters: { 
+        month?: number; 
+        year?: number; 
+        type?: BonusType; 
+        employeeId?: number;
+        companyId?: number;
+    }) {
+        const where: any = {};
+
+        // فلترة حسب التاريخ
+        if (filters.month && filters.year) {
+            const startDate = new Date(filters.year, filters.month - 1, 1);
+            const endDate = new Date(filters.year, filters.month, 0, 23, 59, 59, 999);
+            where.paymentDate = {
+                gte: startDate,
+                lte: endDate
+            };
+        } else if (filters.year) {
+            const startDate = new Date(filters.year, 0, 1);
+            const endDate = new Date(filters.year, 11, 31, 23, 59, 59, 999);
+            where.paymentDate = {
+                gte: startDate,
+                lte: endDate
+            };
+        }
+
+        // فلترة حسب نوع المكافأة
+        if (filters.type) {
+            where.type = filters.type;
+        }
+
+        // فلترة حسب الموظف
+        if (filters.employeeId) {
+            where.employeeId = filters.employeeId;
+        }
+
+        // فلترة حسب الشركة
+        if (filters.companyId) {
+            where.employee = {
+                companyId: filters.companyId
+            };
+        }
+
+        const bonuses = await prisma.employeeBonus.findMany({
+            where,
+            include: {
+                employee: {
+                    select: {
+                        id: true,
+                        name: true,
+                        jobTitle: true,
+                        companyId: true,
+                        company: {
+                            select: {
+                                id: true,
+                                name: true,
+                                code: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: { paymentDate: 'desc' }
+        });
+
+        return bonuses.map(bonus => ({
+            ...bonus,
+            typeName: this.getBonusTypeName(bonus.type)
+        }));
+    }
+
+    /**
      * صرف مكافأة أو زيادة
      */
     async payBonus(data: PayBonusDto) {

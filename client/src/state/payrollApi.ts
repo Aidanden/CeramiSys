@@ -232,6 +232,25 @@ export const payrollApi = createApi({
 
         // ============== المكافآت ==============
 
+        getBonuses: builder.query<{ success: boolean; data: EmployeeBonus[] }, { 
+            month?: number; 
+            year?: number; 
+            type?: string;
+            employeeId?: number;
+            companyId?: number;
+        }>({
+            query: (params) => {
+                const searchParams = new URLSearchParams();
+                if (params.month) searchParams.append('month', params.month.toString());
+                if (params.year) searchParams.append('year', params.year.toString());
+                if (params.type) searchParams.append('type', params.type);
+                if (params.employeeId) searchParams.append('employeeId', params.employeeId.toString());
+                if (params.companyId) searchParams.append('companyId', params.companyId.toString());
+                return `payroll/bonuses?${searchParams.toString()}`;
+            },
+            providesTags: ["Bonuses"],
+        }),
+
         payBonus: builder.mutation<{ success: boolean; data: EmployeeBonus }, {
             employeeId: number;
             type: 'BONUS' | 'RAISE' | 'INCENTIVE' | 'OVERTIME';
@@ -280,6 +299,7 @@ export const {
     usePayMultipleSalariesMutation,
     useGetSalaryPaymentsQuery,
     useGetSalaryStatementQuery,
+    useGetBonusesQuery,
     usePayBonusMutation,
     useGetPayrollStatsQuery,
     useGetEmployeeAccountQuery,
