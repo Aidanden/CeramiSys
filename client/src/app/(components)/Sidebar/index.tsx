@@ -141,7 +141,7 @@ const Sidebar = () => {
     status: 'PENDING',
     limit: 1,
   }, {
-    pollingInterval: 10000,
+    pollingInterval: 2000,
     refetchOnFocus: true,
     skip: !user
   });

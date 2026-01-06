@@ -11,6 +11,7 @@ export interface PurchaseLine {
     sku: string;
     name: string;
     unit: string | null;
+    unitsPerBox: number | null;
   };
   qty: number;
   unitPrice: number;

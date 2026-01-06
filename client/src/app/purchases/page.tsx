@@ -27,7 +27,7 @@ import {
 import { useGetExchangeRatesQuery } from '@/state/settingsApi';
 import { useAppSelector } from '@/app/redux';
 import { useToast } from '@/components/ui/Toast';
-import { formatArabicCurrency } from '@/utils/formatArabicNumbers';
+import { formatArabicCurrency, formatArabicArea } from '@/utils/formatArabicNumbers';
 import ExpenseCategorySelector from '@/components/purchases/ExpenseCategorySelector';
 import SupplierSelector from '@/components/purchases/SupplierSelector';
 import UnifiedSupplierModal from '@/components/shared/UnifiedSupplierModal';
@@ -198,13 +198,13 @@ const PurchasesPage = () => {
     return purchaseForm.lines.reduce((sum, line) => {
       const product = filteredProducts.find((p: any) => p.id === line.productId);
       let lineTotal = line.qty * line.unitPrice;
-      
+
       // إذا كانت الوحدة صندوق، يجب ضرب الكمية في unitsPerBox
       if (product && product.unit === 'صندوق' && product.unitsPerBox) {
         const totalMeters = line.qty * Number(product.unitsPerBox);
         lineTotal = totalMeters * line.unitPrice;
       }
-      
+
       return sum + lineTotal;
     }, 0);
   };
@@ -795,12 +795,12 @@ const PurchasesPage = () => {
             </thead>
             <tbody>
               ${purchase.lines?.map((line: any) => {
-                const isBox = line.product?.unit === 'صندوق';
-                const unitsPerBox = line.product?.unitsPerBox || 1;
-                const totalMeters = isBox ? line.qty * unitsPerBox : 0;
-                const lineTotal = Number(line.subTotal || (line.qty * line.unitPrice));
-                
-                return `
+      const isBox = line.product?.unit === 'صندوق';
+      const unitsPerBox = line.product?.unitsPerBox || 1;
+      const totalMeters = isBox ? line.qty * unitsPerBox : 0;
+      const lineTotal = Number(line.subTotal || (line.qty * line.unitPrice));
+
+      return `
                   <tr>
                     <td>
                       ${line.product?.name || 'صنف محذوف'}
@@ -814,7 +814,7 @@ const PurchasesPage = () => {
                     <td>${lineTotal.toFixed(2)} ${purchase.currency}</td>
                   </tr>
                 `;
-              }).join('') || '<tr><td colspan="4">لا توجد أصناف</td></tr>'}
+    }).join('') || '<tr><td colspan="4">لا توجد أصناف</td></tr>'}
             </tbody>
           </table>
         </div>
@@ -1958,7 +1958,7 @@ const PurchasesPage = () => {
                         const unitsPerBox = line.product?.unitsPerBox || 1;
                         const totalMeters = isBox ? line.qty * unitsPerBox : 0;
                         const lineTotal = Number(line.subTotal || (line.qty * line.unitPrice));
-                        
+
                         return (
                           <div key={index} className="bg-gray-50 p-3 rounded border">
                             <div className="flex justify-between items-start">
@@ -1975,19 +1975,16 @@ const PurchasesPage = () => {
                                 <div className="font-semibold">{line.qty} {line.product?.unit || 'وحدة'}</div>
                                 {isBox && (
                                   <div className="text-blue-600 text-xs">
-                                    = {totalMeters} م²
+                                    = {formatArabicArea(totalMeters)} م²
                                   </div>
                                 )}
-                                <div className="text-sm text-gray-600 mt-1">
-                                  {isBox ? (
-                                    <span>
-                                      {totalMeters} م² × {Number(line.unitPrice).toFixed(2)} = {lineTotal.toFixed(2)} {selectedPurchase.currency}
-                                    </span>
-                                  ) : (
-                                    <span>
-                                      {line.qty} × {Number(line.unitPrice).toFixed(2)} = {lineTotal.toFixed(2)} {selectedPurchase.currency}
-                                    </span>
-                                  )}
+                                <div className="text-sm text-gray-600 mt-1 flex flex-col items-end">
+                                  <span className="font-bold">
+                                    {lineTotal.toFixed(2)} {selectedPurchase.currency}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {(isBox ? line.unitPrice / unitsPerBox : line.unitPrice).toFixed(2)} {selectedPurchase.currency} / {isBox ? 'م²' : (line.product?.unit || 'وحدة')}
+                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -2377,16 +2374,15 @@ const PurchasesPage = () => {
                 {/* نموذج إضافة مصروف جديد */}
                 <div className="bg-gray-50 p-4 rounded-lg mb-6">
                   <h4 className="font-semibold text-gray-900 mb-4">إضافة مصروف جديد</h4>
-                  
+
                   {/* نوع المصروف - بارز في الأعلى */}
                   <div className="mb-4 p-3 bg-white border border-gray-200 rounded-lg">
                     <label className="block text-sm font-medium text-gray-700 mb-2">نوع المصروف *</label>
                     <div className="flex gap-4">
-                      <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer transition-all ${
-                        newExpense.isActualExpense !== false 
-                          ? 'border-blue-500 bg-blue-50 text-blue-700' 
-                          : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
-                      }`}>
+                      <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer transition-all ${newExpense.isActualExpense !== false
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                        }`}>
                         <input
                           type="radio"
                           name="expenseType"
@@ -2402,11 +2398,10 @@ const PurchasesPage = () => {
                           <p className="text-xs opacity-75">يسجل كدين على المورد</p>
                         </div>
                       </label>
-                      <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer transition-all ${
-                        newExpense.isActualExpense === false 
-                          ? 'border-orange-500 bg-orange-50 text-orange-700' 
-                          : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
-                      }`}>
+                      <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer transition-all ${newExpense.isActualExpense === false
+                        ? 'border-orange-500 bg-orange-50 text-orange-700'
+                        : 'border-gray-300 bg-white text-gray-600 hover:border-gray-400'
+                        }`}>
                         <input
                           type="radio"
                           name="expenseType"

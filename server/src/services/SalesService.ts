@@ -2051,17 +2051,17 @@ export class SalesService {
       select: { id: true, unit: true, unitsPerBox: true }
     });
 
-    // حساب إجمالي الأصناف من الشركة الأم (مع الأخذ في الاعتبار الصناديق)
+    // حساب إجمالي الأصناف من الشركة الأم
+    // ملاحظة: نحسب المجموع من subTotal المحسوب في البنود لتجنب الحساب المزدوج
     const parentSaleTotal = linesFromParent.reduce((sum, line) => {
       const product = products.find(p => p.id === line.productId);
-      let lineTotal = Number(line.qty) * Number(line.parentUnitPrice || 0);
-      
-      // إذا كانت الوحدة صندوق، يجب ضرب الكمية في unitsPerBox
-      if (product && product.unit === 'صندوق' && product.unitsPerBox) {
-        const totalMeters = Number(line.qty) * Number(product.unitsPerBox);
-        lineTotal = totalMeters * Number(line.parentUnitPrice || 0);
-      }
-      
+      const qty = Number(line.qty);
+      const parentUnitPrice = Number(line.parentUnitPrice || 0);
+
+      // حساب المجموع الفرعي بشكل صحيح
+      // qty × parentUnitPrice (السعر يجب أن يكون بالفعل لكل صندوق أو لكل وحدة حسب نوع المنتج)
+      const lineTotal = qty * parentUnitPrice;
+
       return sum + lineTotal;
     }, 0);
 
@@ -2103,15 +2103,9 @@ export class SalesService {
         approvedBy: 'SYSTEM',
         lines: {
           create: linesFromParent.map(line => {
-            const product = products.find(p => p.id === line.productId);
-            let subTotal = Number(line.qty) * Number(line.parentUnitPrice || 0);
-            
-            // إذا كانت الوحدة صندوق، يجب ضرب الكمية في unitsPerBox
-            if (product && product.unit === 'صندوق' && product.unitsPerBox) {
-              const totalMeters = Number(line.qty) * Number(product.unitsPerBox);
-              subTotal = totalMeters * Number(line.parentUnitPrice || 0);
-            }
-            
+            const qty = Number(line.qty);
+            const parentUnitPrice = Number(line.parentUnitPrice || 0);
+            const subTotal = qty * parentUnitPrice;
             return {
               productId: line.productId,
               qty: line.qty,
@@ -2165,6 +2159,9 @@ export class SalesService {
         invoiceNumber: `PUR-AUTO-${branchSale.companyId}-${Date.now()}`,
         total: parentSaleTotal,
         status: 'APPROVED', // معتمدة مباشرة
+        isApproved: true,
+        approvedAt: new Date(),
+        approvedBy: 'SYSTEM',
         purchaseType: 'CREDIT', // آجلة دائماً
         paymentMethod: null,
         paidAmount: 0,
@@ -2173,15 +2170,9 @@ export class SalesService {
         affectsInventory: false, // مهم! لا تؤثر على المخزون (تم الخصم بالفعل)
         lines: {
           create: linesFromParent.map(line => {
-            const product = products.find(p => p.id === line.productId);
-            let subTotal = Number(line.qty) * Number(line.parentUnitPrice || 0);
-            
-            // إذا كانت الوحدة صندوق، يجب ضرب الكمية في unitsPerBox
-            if (product && product.unit === 'صندوق' && product.unitsPerBox) {
-              const totalMeters = Number(line.qty) * Number(product.unitsPerBox);
-              subTotal = totalMeters * Number(line.parentUnitPrice || 0);
-            }
-            
+            const qty = Number(line.qty);
+            const parentUnitPrice = Number(line.parentUnitPrice || 0);
+            const subTotal = qty * parentUnitPrice;
             return {
               productId: line.productId,
               qty: line.qty,
@@ -2195,7 +2186,34 @@ export class SalesService {
 
 
 
-    // 6️⃣ ربط الفواتير مع بعضها
+    // 6️⃣ تسجيل قيد محاسبي في حساب المورد (التقازي كمورد للإمارات)
+    const SupplierAccountService = (await import('./SupplierAccountService')).default;
+    await SupplierAccountService.createAccountEntry({
+      supplierId: parentAsSupplier.id,
+      transactionType: 'CREDIT', // له - دين على الإمارات للتقازي
+      amount: parentSaleTotal,
+      referenceType: 'PURCHASE',
+      referenceId: branchPurchase.id,
+      description: `فاتورة مشتريات تلقائية من ${parentCompanyName} - ${branchPurchase.invoiceNumber}`,
+      transactionDate: new Date()
+    });
+
+    // 7️⃣ إنشاء إيصال دفع معلق (للسداد لاحقاً)
+    await this.prisma.supplierPaymentReceipt.create({
+      data: {
+        supplierId: parentAsSupplier.id,
+        purchaseId: branchPurchase.id,
+        amount: parentSaleTotal,
+        type: 'MAIN_PURCHASE',
+        status: 'PENDING',
+        description: `استحقاق تلقائي لفاتورة المشتريات رقم ${branchPurchase.invoiceNumber} من ${parentCompanyName}`,
+        createdAt: new Date(),
+        currency: 'LYD',
+        exchangeRate: 1
+      }
+    });
+
+    // 8️⃣ ربط الفواتير مع بعضها
     await this.prisma.sale.update({
       where: { id: branchSale.id },
       data: {
