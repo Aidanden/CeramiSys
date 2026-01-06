@@ -6,10 +6,10 @@ import {
   useGetCustomerAccountQuery,
   useGetCustomerOpenInvoicesQuery 
 } from "@/state/customerAccountApi";
-import { User, Search, TrendingUp, TrendingDown, FileText, X, DollarSign, Calendar, Phone, Printer, Eye, Filter, RotateCcw } from "lucide-react";
+import { User, Search, TrendingUp, TrendingDown, FileText, X, DollarSign, Calendar, Phone, Printer, Eye, Filter, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import { formatLibyanCurrency, formatArabicNumber, formatArabicDate } from "@/utils/formatLibyanNumbers";
+import { formatLibyanCurrency, formatArabicNumber, formatArabicDate, formatEnglishDate } from "@/utils/formatLibyanNumbers";
 import { useAppSelector } from "@/app/redux";
 
 type ViewMode = 'summary' | 'account' | 'invoices';
@@ -144,7 +144,7 @@ const CustomerAccountsPage = () => {
     
     const filterInfo = (accountStartDate || accountEndDate) 
       ? `<p style="text-align: center; color: #666; margin-bottom: 20px;">
-          الفترة: ${accountStartDate ? formatArabicDate(accountStartDate) : 'البداية'} - ${accountEndDate ? formatArabicDate(accountEndDate) : 'النهاية'}
+          الفترة: ${accountStartDate ? formatEnglishDate(accountStartDate) : 'البداية'} - ${accountEndDate ? formatEnglishDate(accountEndDate) : 'النهاية'}
         </p>` 
       : '';
     
@@ -292,11 +292,11 @@ const CustomerAccountsPage = () => {
           </div>
           <div>
             <label>تاريخ التسجيل</label>
-            <span>${formatArabicDate(account.customer.createdAt)}</span>
+            <span>${formatEnglishDate(account.customer.createdAt)}</span>
           </div>
           <div>
             <label>تاريخ الطباعة</label>
-            <span>${formatArabicDate(new Date().toISOString())}</span>
+            <span>${formatEnglishDate(new Date().toISOString())}</span>
           </div>
         </div>
         
@@ -336,7 +336,7 @@ const CustomerAccountsPage = () => {
               ${account.entries.map((entry, index) => `
                 <tr>
                   <td>${index + 1}</td>
-                  <td>${formatArabicDate(entry.transactionDate)}</td>
+                  <td>${formatEnglishDate(entry.transactionDate)}</td>
                   <td>${entry.description || '-'}</td>
                   <td>
                     <span class="badge ${entry.transactionType === 'DEBIT' ? 'badge-debit' : 'badge-credit'}">
@@ -356,7 +356,7 @@ const CustomerAccountsPage = () => {
         ` : '<div class="no-data">لا توجد معاملات</div>'}
         
         <div class="footer">
-          <p>تمت الطباعة بواسطة: ${currentUser?.FullName || currentUser?.UserName || 'النظام'}</p>
+          <p>تمت الطباعة بواسطة: ${currentUser?.fullName || currentUser?.username || 'النظام'}</p>
           <p>التاريخ: ${new Date().toLocaleString('ar-LY')}</p>
         </div>
       </body>
@@ -379,7 +379,7 @@ const CustomerAccountsPage = () => {
     
     const filterInfo = (invoicesStartDate || invoicesEndDate) 
       ? `<p style="text-align: center; color: #666; margin-bottom: 20px;">
-          الفترة: ${invoicesStartDate ? formatArabicDate(invoicesStartDate) : 'البداية'} - ${invoicesEndDate ? formatArabicDate(invoicesEndDate) : 'النهاية'}
+          الفترة: ${invoicesStartDate ? formatEnglishDate(invoicesStartDate) : 'البداية'} - ${invoicesEndDate ? formatEnglishDate(invoicesEndDate) : 'النهاية'}
         </p>` 
       : '';
     
@@ -503,7 +503,7 @@ const CustomerAccountsPage = () => {
                   <td>${index + 1}</td>
                   <td>${invoice.invoiceNumber || '#' + invoice.id}</td>
                   <td>${invoice.company.name}</td>
-                  <td>${formatArabicDate(invoice.createdAt)}</td>
+                  <td>${formatEnglishDate(invoice.createdAt)}</td>
                   <td>${invoice.total.toFixed(2)} د.ل</td>
                   <td class="paid">${invoice.paidAmount.toFixed(2)} د.ل</td>
                   <td class="remaining">${invoice.remainingAmount.toFixed(2)} د.ل</td>
@@ -514,7 +514,7 @@ const CustomerAccountsPage = () => {
         ` : '<div class="no-data">لا توجد فواتير مفتوحة</div>'}
         
         <div class="footer">
-          <p>تمت الطباعة بواسطة: ${currentUser?.FullName || currentUser?.UserName || 'النظام'}</p>
+          <p>تمت الطباعة بواسطة: ${currentUser?.fullName || currentUser?.username || 'النظام'}</p>
           <p>التاريخ: ${new Date().toLocaleString('ar-LY')}</p>
         </div>
       </body>
@@ -898,7 +898,7 @@ const CustomerAccountsPage = () => {
                       onClick={clearAccountFilters}
                       className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     >
-                      <RotateCcw className="w-4 h-4" />
+                      <RefreshCw className="w-4 h-4" />
                       مسح
                     </button>
                   )}
@@ -940,7 +940,7 @@ const CustomerAccountsPage = () => {
                   <div>
                     <p className="text-sm text-gray-600">تاريخ التسجيل</p>
                     <p className="text-base font-semibold text-gray-800">
-                      {formatArabicDate(account.customer.createdAt)}
+                      {formatEnglishDate(account.customer.createdAt)}
                     </p>
                   </div>
                 </div>
@@ -1026,7 +1026,7 @@ const CustomerAccountsPage = () => {
                       account.entries.map((entry) => (
                         <tr key={entry.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatArabicDate(entry.transactionDate)}
+                            {formatEnglishDate(entry.transactionDate)}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-900">{entry.description}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -1100,7 +1100,7 @@ const CustomerAccountsPage = () => {
                       onClick={clearInvoicesFilters}
                       className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     >
-                      <RotateCcw className="w-4 h-4" />
+                      <RefreshCw className="w-4 h-4" />
                       مسح
                     </button>
                   )}
@@ -1152,7 +1152,7 @@ const CustomerAccountsPage = () => {
                       <div>
                         <p className="text-xs text-gray-600">التاريخ</p>
                         <p className="text-sm font-semibold text-gray-900">
-                          {formatArabicDate(invoice.createdAt)}
+                          {formatEnglishDate(invoice.createdAt)}
                         </p>
                       </div>
                       <div>
@@ -1185,7 +1185,7 @@ const CustomerAccountsPage = () => {
                           {invoice.payments.map((payment) => (
                             <div key={payment.id} className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
                               <span className="text-gray-600">
-                                {formatArabicDate(payment.paymentDate)}
+                                {formatEnglishDate(payment.paymentDate)}
                                 {payment.receiptNumber && ` - ${payment.receiptNumber}`}
                               </span>
                               <span className="font-semibold text-green-600">{payment.amount.toFixed(2)} د.ل</span>

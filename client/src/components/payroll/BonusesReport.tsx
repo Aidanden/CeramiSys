@@ -259,3 +259,5 @@ const BonusesReport: React.FC<BonusesReportProps> = ({ bonuses, month, year, typ
 
 export default BonusesReport;
 
+
+
