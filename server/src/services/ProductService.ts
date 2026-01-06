@@ -129,6 +129,13 @@ export class ProductService {
           updatedAt: product.prices[0].updatedAt
         } : undefined;
 
+        // إرجاع جميع أسعار الشركات (للاستخدام في المبيعات بين الشركات)
+        const allPrices = product.prices.map(price => ({
+          companyId: price.companyId,
+          sellPrice: Number(price.sellPrice),
+          updatedAt: price.updatedAt
+        }));
+
         return {
           id: product.id,
           sku: product.sku,
@@ -143,6 +150,7 @@ export class ProductService {
           updatedAt: product.updatedAt,
           stock: stockData,
           price: priceData,
+          prices: allPrices, // جميع أسعار الشركات
           groupId: product.groupId ?? undefined
         };
       });

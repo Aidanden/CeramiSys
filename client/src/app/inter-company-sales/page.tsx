@@ -9,6 +9,7 @@ import {
 } from '@/state/interCompanySalesApi';
 import { useGetProductsQuery } from '@/state/productsApi';
 import { useGetCustomersQuery } from '@/state/salesApi';
+import { useGetCurrentUserQuery } from '@/state/authApi';
 import { useToast } from '@/components/ui/Toast';
 import { formatArabicNumber, formatArabicCurrency, formatArabicArea } from '@/utils/formatArabicNumbers';
 
@@ -38,6 +39,10 @@ const InterCompanySalesPage = () => {
   const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   
   // API calls
+  const { data: userData } = useGetCurrentUserQuery();
+  const user = userData?.data;
+  const parentCompanyId = user?.company?.parentId; // معرف الشركة الأم
+  
   const { data: salesData, isLoading: salesLoading, refetch } = useGetInterCompanySalesQuery({
     page: currentPage,
     limit: 10,
@@ -153,10 +158,15 @@ const InterCompanySalesPage = () => {
     // Auto-fill parent price when product is selected
     if (field === 'productId') {
       const product = productsData?.data?.products?.find((p: any) => p.id === value);
-      if (product?.price?.sellPrice) {
-        // السعر يُحفظ كما هو (سعر المتر المربع)
-        newLines[index].parentUnitPrice = product.price.sellPrice;
-        newLines[index].branchUnitPrice = product.price.sellPrice * 1.2; // 20% markup by default
+      if (product) {
+        // الحصول على سعر الشركة الأم من قائمة الأسعار
+        const parentPrice = product.prices?.find((p: any) => p.companyId === parentCompanyId);
+        const parentSellPrice = parentPrice?.sellPrice || product.price?.sellPrice || 0;
+        
+        // سعر الشركة الأم (السعر الأصلي من التقازي)
+        newLines[index].parentUnitPrice = parentSellPrice;
+        // سعر الفرع (مع هامش الربح 20% افتراضياً)
+        newLines[index].branchUnitPrice = parentSellPrice * 1.2;
         
         // حساب المجموع بناءً على نوع الوحدة
         if (product.unit === 'صندوق' && product.unitsPerBox) {

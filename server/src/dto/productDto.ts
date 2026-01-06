@@ -182,6 +182,12 @@ export interface ProductResponseDto {
     sellPrice: number;
     updatedAt: Date;
   };
+  // جميع أسعار الشركات (للاستخدام في المبيعات بين الشركات)
+  prices?: Array<{
+    companyId: number;
+    sellPrice: number;
+    updatedAt: Date;
+  }>;
   groupId?: number;
   group?: {
     id: number;

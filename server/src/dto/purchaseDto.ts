@@ -99,11 +99,12 @@ export type GetSuppliersQuery = z.infer<typeof GetSuppliersQueryDto>;
 export interface PurchaseLine {
   id: number;
   productId: number;
-  product: {
+  product?: {
     id: number;
     sku: string;
     name: string;
     unit: string | null;
+    unitsPerBox: number | null;
   };
   qty: number;
   unitPrice: number;

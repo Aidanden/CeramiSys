@@ -794,14 +794,27 @@ const PurchasesPage = () => {
               </tr>
             </thead>
             <tbody>
-              ${purchase.lines?.map((line: any) => `
-                <tr>
-                  <td>${line.product?.name || 'صنف محذوف'}</td>
-                  <td>${line.qty}</td>
-                  <td>${Number(line.unitPrice).toFixed(2)} ${purchase.currency}</td>
-                  <td>${(Number(line.qty) * Number(line.unitPrice)).toFixed(2)} ${purchase.currency}</td>
-                </tr>
-              `).join('') || '<tr><td colspan="4">لا توجد أصناف</td></tr>'}
+              ${purchase.lines?.map((line: any) => {
+                const isBox = line.product?.unit === 'صندوق';
+                const unitsPerBox = line.product?.unitsPerBox || 1;
+                const totalMeters = isBox ? line.qty * unitsPerBox : 0;
+                const lineTotal = Number(line.subTotal || (line.qty * line.unitPrice));
+                
+                return `
+                  <tr>
+                    <td>
+                      ${line.product?.name || 'صنف محذوف'}
+                      ${isBox ? `<br><small style="color: #0066cc;">الصندوق = ${unitsPerBox} م²</small>` : ''}
+                    </td>
+                    <td>
+                      ${line.qty} ${line.product?.unit || 'وحدة'}
+                      ${isBox ? `<br><small style="color: #0066cc;">= ${totalMeters} م²</small>` : ''}
+                    </td>
+                    <td>${Number(line.unitPrice).toFixed(2)} ${purchase.currency}${isBox ? '/م²' : ''}</td>
+                    <td>${lineTotal.toFixed(2)} ${purchase.currency}</td>
+                  </tr>
+                `;
+              }).join('') || '<tr><td colspan="4">لا توجد أصناف</td></tr>'}
             </tbody>
           </table>
         </div>
@@ -1940,22 +1953,47 @@ const PurchasesPage = () => {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">بنود الفاتورة</h3>
                     <div className="space-y-2">
-                      {selectedPurchase.lines.map((line, index) => (
-                        <div key={index} className="bg-gray-50 p-3 rounded border">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <div className="font-medium">{line.product?.name || 'غير محدد'}</div>
-                              <div className="text-gray-500 text-xs">{line.product?.sku || ''}</div>
-                            </div>
-                            <div className="text-left">
-                              <div>{line.qty} {line.product?.unit || 'وحدة'}</div>
-                              <div className="text-sm text-gray-600">
-                                {Number(line.unitPrice).toFixed(2)} {selectedPurchase.currency} × {line.qty} = {(line.qty * line.unitPrice).toFixed(2)} {selectedPurchase.currency}
+                      {selectedPurchase.lines.map((line, index) => {
+                        const isBox = line.product?.unit === 'صندوق';
+                        const unitsPerBox = line.product?.unitsPerBox || 1;
+                        const totalMeters = isBox ? line.qty * unitsPerBox : 0;
+                        const lineTotal = Number(line.subTotal || (line.qty * line.unitPrice));
+                        
+                        return (
+                          <div key={index} className="bg-gray-50 p-3 rounded border">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="font-medium">{line.product?.name || 'غير محدد'}</div>
+                                <div className="text-gray-500 text-xs">{line.product?.sku || ''}</div>
+                                {isBox && (
+                                  <div className="text-blue-600 text-xs mt-1">
+                                    الصندوق = {unitsPerBox} م²
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-left">
+                                <div className="font-semibold">{line.qty} {line.product?.unit || 'وحدة'}</div>
+                                {isBox && (
+                                  <div className="text-blue-600 text-xs">
+                                    = {totalMeters} م²
+                                  </div>
+                                )}
+                                <div className="text-sm text-gray-600 mt-1">
+                                  {isBox ? (
+                                    <span>
+                                      {totalMeters} م² × {Number(line.unitPrice).toFixed(2)} = {lineTotal.toFixed(2)} {selectedPurchase.currency}
+                                    </span>
+                                  ) : (
+                                    <span>
+                                      {line.qty} × {Number(line.unitPrice).toFixed(2)} = {lineTotal.toFixed(2)} {selectedPurchase.currency}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}

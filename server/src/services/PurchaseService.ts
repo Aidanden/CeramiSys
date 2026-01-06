@@ -140,6 +140,7 @@ export class PurchaseService {
                 sku: true,
                 name: true,
                 unit: true,
+                unitsPerBox: true,
               },
             },
           },
@@ -178,12 +179,21 @@ export class PurchaseService {
       paidAmount: Number(purchase.paidAmount),
       remainingAmount: Number(purchase.remainingAmount),
       createdAt: purchase.createdAt.toISOString(),
-      lines: purchase.lines.map(line => ({
-        ...line,
-        qty: Number(line.qty),
-        unitPrice: Number(line.unitPrice),
-        subTotal: Number(line.subTotal),
-      })),
+      lines: purchase.lines.map(line => {
+        const mappedLine: any = {
+          ...line,
+          qty: Number(line.qty),
+          unitPrice: Number(line.unitPrice),
+          subTotal: Number(line.subTotal)
+        };
+        if (line.product) {
+          mappedLine.product = {
+            ...line.product,
+            unitsPerBox: line.product.unitsPerBox ? Number(line.product.unitsPerBox) : null
+          };
+        }
+        return mappedLine;
+      }),
       payments: purchase.payments.map(payment => ({
         ...payment,
         amount: Number(payment.amount),
@@ -316,6 +326,7 @@ export class PurchaseService {
                   sku: true,
                   name: true,
                   unit: true,
+                  unitsPerBox: true,
                 },
               },
             },
@@ -352,12 +363,21 @@ export class PurchaseService {
         paidAmount: Number(purchase.paidAmount),
         remainingAmount: Number(purchase.remainingAmount),
         createdAt: purchase.createdAt.toISOString(),
-        lines: purchase.lines.map(line => ({
-          ...line,
-          qty: Number(line.qty),
-          unitPrice: Number(line.unitPrice),
-          subTotal: Number(line.subTotal),
-        })),
+        lines: purchase.lines.map(line => {
+          const mappedLine: any = {
+            ...line,
+            qty: Number(line.qty),
+            unitPrice: Number(line.unitPrice),
+            subTotal: Number(line.subTotal)
+          };
+          if (line.product) {
+            mappedLine.product = {
+              ...line.product,
+              unitsPerBox: line.product.unitsPerBox ? Number(line.product.unitsPerBox) : null
+            };
+          }
+          return mappedLine;
+        }),
         payments: purchase.payments.map(payment => ({
           ...payment,
           amount: Number(payment.amount),
@@ -410,6 +430,7 @@ export class PurchaseService {
                 sku: true,
                 name: true,
                 unit: true,
+                unitsPerBox: true,
               },
             },
           },
@@ -443,12 +464,21 @@ export class PurchaseService {
       paidAmount: Number(purchase.paidAmount),
       remainingAmount: Number(purchase.remainingAmount),
       createdAt: purchase.createdAt.toISOString(),
-      lines: purchase.lines.map(line => ({
-        ...line,
-        qty: Number(line.qty),
-        unitPrice: Number(line.unitPrice),
-        subTotal: Number(line.subTotal),
-      })),
+      lines: purchase.lines.map(line => {
+        const mappedLine: any = {
+          ...line,
+          qty: Number(line.qty),
+          unitPrice: Number(line.unitPrice),
+          subTotal: Number(line.subTotal)
+        };
+        if (line.product) {
+          mappedLine.product = {
+            ...line.product,
+            unitsPerBox: line.product.unitsPerBox ? Number(line.product.unitsPerBox) : null
+          };
+        }
+        return mappedLine;
+      }),
       payments: purchase.payments.map(payment => ({
         ...payment,
         amount: Number(payment.amount),
@@ -562,6 +592,7 @@ export class PurchaseService {
                   sku: true,
                   name: true,
                   unit: true,
+                  unitsPerBox: true,
                 },
               },
             },
@@ -605,12 +636,21 @@ export class PurchaseService {
         paidAmount: Number(purchase.paidAmount),
         remainingAmount: Number(purchase.remainingAmount),
         createdAt: purchase.createdAt.toISOString(),
-        lines: purchase.lines.map(line => ({
-          ...line,
-          qty: Number(line.qty),
-          unitPrice: Number(line.unitPrice),
-          subTotal: Number(line.subTotal),
-        })),
+        lines: purchase.lines.map(line => {
+          const mappedLine: any = {
+            ...line,
+            qty: Number(line.qty),
+            unitPrice: Number(line.unitPrice),
+            subTotal: Number(line.subTotal)
+          };
+          if (line.product) {
+            mappedLine.product = {
+              ...line.product,
+              unitsPerBox: line.product.unitsPerBox ? Number(line.product.unitsPerBox) : null
+            };
+          }
+          return mappedLine;
+        }),
         payments: purchase.payments.map(payment => ({
           ...payment,
           amount: Number(payment.amount),
@@ -651,6 +691,7 @@ export class PurchaseService {
                   sku: true,
                   name: true,
                   unit: true,
+                  unitsPerBox: true,
                 },
               },
             },
@@ -668,12 +709,21 @@ export class PurchaseService {
         paidAmount: Number(purchase.paidAmount),
         remainingAmount: Number(purchase.remainingAmount),
         createdAt: purchase.createdAt.toISOString(),
-        lines: purchase.lines.map(line => ({
-          ...line,
-          qty: Number(line.qty),
-          unitPrice: Number(line.unitPrice),
-          subTotal: Number(line.subTotal),
-        })),
+        lines: purchase.lines.map(line => {
+          const mappedLine: any = {
+            ...line,
+            qty: Number(line.qty),
+            unitPrice: Number(line.unitPrice),
+            subTotal: Number(line.subTotal)
+          };
+          if (line.product) {
+            mappedLine.product = {
+              ...line.product,
+              unitsPerBox: line.product.unitsPerBox ? Number(line.product.unitsPerBox) : null
+            };
+          }
+          return mappedLine;
+        }),
         payments: purchase.payments.map(payment => ({
           ...payment,
           amount: Number(payment.amount),

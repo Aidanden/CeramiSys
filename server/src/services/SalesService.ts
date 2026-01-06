@@ -2044,11 +2044,26 @@ export class SalesService {
     parentCompanyName: string
   ) {
 
+    // جلب معلومات المنتجات لحساب الإجمالي بشكل صحيح
+    const productIds = linesFromParent.map(line => line.productId);
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, unit: true, unitsPerBox: true }
+    });
 
-    // حساب إجمالي الأصناف من الشركة الأم
-    const parentSaleTotal = linesFromParent.reduce((sum, line) =>
-      sum + (Number(line.qty) * Number(line.parentUnitPrice || 0)), 0
-    );
+    // حساب إجمالي الأصناف من الشركة الأم (مع الأخذ في الاعتبار الصناديق)
+    const parentSaleTotal = linesFromParent.reduce((sum, line) => {
+      const product = products.find(p => p.id === line.productId);
+      let lineTotal = Number(line.qty) * Number(line.parentUnitPrice || 0);
+      
+      // إذا كانت الوحدة صندوق، يجب ضرب الكمية في unitsPerBox
+      if (product && product.unit === 'صندوق' && product.unitsPerBox) {
+        const totalMeters = Number(line.qty) * Number(product.unitsPerBox);
+        lineTotal = totalMeters * Number(line.parentUnitPrice || 0);
+      }
+      
+      return sum + lineTotal;
+    }, 0);
 
 
 
@@ -2087,12 +2102,23 @@ export class SalesService {
         approvedAt: new Date(),
         approvedBy: 'SYSTEM',
         lines: {
-          create: linesFromParent.map(line => ({
-            productId: line.productId,
-            qty: line.qty,
-            unitPrice: line.parentUnitPrice || 0,
-            subTotal: Number(line.qty) * Number(line.parentUnitPrice || 0)
-          }))
+          create: linesFromParent.map(line => {
+            const product = products.find(p => p.id === line.productId);
+            let subTotal = Number(line.qty) * Number(line.parentUnitPrice || 0);
+            
+            // إذا كانت الوحدة صندوق، يجب ضرب الكمية في unitsPerBox
+            if (product && product.unit === 'صندوق' && product.unitsPerBox) {
+              const totalMeters = Number(line.qty) * Number(product.unitsPerBox);
+              subTotal = totalMeters * Number(line.parentUnitPrice || 0);
+            }
+            
+            return {
+              productId: line.productId,
+              qty: line.qty,
+              unitPrice: line.parentUnitPrice || 0,
+              subTotal: subTotal
+            };
+          })
         }
       }
     });
@@ -2146,12 +2172,23 @@ export class SalesService {
         isFullyPaid: false,
         affectsInventory: false, // مهم! لا تؤثر على المخزون (تم الخصم بالفعل)
         lines: {
-          create: linesFromParent.map(line => ({
-            productId: line.productId,
-            qty: line.qty,
-            unitPrice: line.parentUnitPrice || 0,
-            subTotal: Number(line.qty) * Number(line.parentUnitPrice || 0)
-          }))
+          create: linesFromParent.map(line => {
+            const product = products.find(p => p.id === line.productId);
+            let subTotal = Number(line.qty) * Number(line.parentUnitPrice || 0);
+            
+            // إذا كانت الوحدة صندوق، يجب ضرب الكمية في unitsPerBox
+            if (product && product.unit === 'صندوق' && product.unitsPerBox) {
+              const totalMeters = Number(line.qty) * Number(product.unitsPerBox);
+              subTotal = totalMeters * Number(line.parentUnitPrice || 0);
+            }
+            
+            return {
+              productId: line.productId,
+              qty: line.qty,
+              unitPrice: line.parentUnitPrice || 0,
+              subTotal: subTotal
+            };
+          })
         }
       }
     });
