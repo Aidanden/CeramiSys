@@ -193,6 +193,22 @@ const PurchasesPage = () => {
     return product.createdByCompanyId === selectedCompanyId;
   }) || [];
 
+  // حساب المجموع الإجمالي بشكل صحيح (مع الأخذ في الاعتبار الصناديق)
+  const calculateGrandTotal = () => {
+    return purchaseForm.lines.reduce((sum, line) => {
+      const product = filteredProducts.find((p: any) => p.id === line.productId);
+      let lineTotal = line.qty * line.unitPrice;
+      
+      // إذا كانت الوحدة صندوق، يجب ضرب الكمية في unitsPerBox
+      if (product && product.unit === 'صندوق' && product.unitsPerBox) {
+        const totalMeters = line.qty * Number(product.unitsPerBox);
+        lineTotal = totalMeters * line.unitPrice;
+      }
+      
+      return sum + lineTotal;
+    }, 0);
+  };
+
   // Filter products by search term (name: starts with, code: exact match =)
   const searchFilteredProducts = (() => {
     // إذا لم يكن هناك بحث، لا تعرض شيء
@@ -1813,11 +1829,11 @@ const PurchasesPage = () => {
                             <span className="text-lg font-bold text-gray-700">المجموع الإجمالي ({purchaseForm.currency}):</span>
                             <div className="text-right">
                               <span className="text-2xl font-bold text-green-600">
-                                {Number(purchaseForm.lines.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0)).toFixed(2)} {purchaseForm.currency}
+                                {Number(calculateGrandTotal()).toFixed(2)} {purchaseForm.currency}
                               </span>
                               {purchaseForm.currency !== 'LYD' && (
                                 <div className="text-sm font-medium text-blue-600 mt-1">
-                                  ما يعادل: {formatArabicCurrency(purchaseForm.lines.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0) * (purchaseForm.exchangeRate || 1))}
+                                  ما يعادل: {formatArabicCurrency(calculateGrandTotal() * (purchaseForm.exchangeRate || 1))}
                                 </div>
                               )}
                             </div>

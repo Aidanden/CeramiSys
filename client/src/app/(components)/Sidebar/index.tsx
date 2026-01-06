@@ -29,6 +29,7 @@ import React from "react";
 import Link from "next/link";
 import { useGetSalesQuery } from "@/state/salesApi";
 import { useGetDispatchOrdersQuery, useGetReturnOrdersQuery } from "@/state/warehouseApi";
+import { useGetPaymentReceiptsQuery } from "@/state/api/paymentReceiptsApi";
 
 interface SidebarLinkProps {
   href: string;
@@ -134,6 +135,17 @@ const Sidebar = () => {
 
   // إجمالي الأوامر المعلقة للمخزن
   const totalPendingWarehouseOrders = pendingDispatchCount + pendingReturnCount;
+
+  // جلب عدد إيصالات الدفع المعلقة
+  const { data: pendingPaymentReceiptsData } = useGetPaymentReceiptsQuery({
+    status: 'PENDING',
+    limit: 1,
+  }, {
+    pollingInterval: 10000,
+    refetchOnFocus: true,
+    skip: !user
+  });
+  const pendingPaymentReceiptsCount = pendingPaymentReceiptsData?.pagination?.total || 0;
 
   // جلب الشاشات المصرح بها للمستخدم
   const { data: userScreensData, isLoading: isLoadingScreens, error: screensError } = useGetUserScreensQuery();
@@ -366,6 +378,7 @@ const Sidebar = () => {
               icon={Receipt}
               label="إيصالات الدفع"
               isCollapsed={isSidebarCollapsed}
+              badgeCount={pendingPaymentReceiptsCount}
             />
           )}
 

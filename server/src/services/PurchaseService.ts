@@ -50,12 +50,30 @@ export class PurchaseService {
       invoiceNumber = await this.generateInvoiceNumber();
     }
 
+    // جلب معلومات المنتجات لحساب الـ subTotal بشكل صحيح
+    const productIds = lines.map(line => line.productId);
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, unit: true, unitsPerBox: true }
+    });
+
     // Calculate total (Assume unit prices in the lines are in the selected currency)
     const currency = data.currency || 'LYD';
     const exchangeRate = data.exchangeRate || 1.0;
 
-    // Total in the original currency
-    const totalForeign = lines.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0);
+    // حساب الإجمالي مع الأخذ في الاعتبار وحدة المنتج
+    const totalForeign = lines.reduce((sum, line) => {
+      const product = products.find(p => p.id === line.productId);
+      let lineTotal = line.qty * line.unitPrice;
+      
+      // إذا كانت الوحدة صندوق، يجب ضرب الكمية في unitsPerBox
+      if (product && product.unit === 'صندوق' && product.unitsPerBox) {
+        const totalMeters = line.qty * Number(product.unitsPerBox);
+        lineTotal = totalMeters * line.unitPrice;
+      }
+      
+      return sum + lineTotal;
+    }, 0);
 
     // Convert to LYD for the main total field
     const total = currency === 'LYD' ? totalForeign : totalForeign * exchangeRate;
@@ -80,12 +98,23 @@ export class PurchaseService {
         paymentMethod: purchaseType === 'CASH' ? paymentMethod : null,
         isFullyPaid,
         lines: {
-          create: lines.map(line => ({
-            productId: line.productId,
-            qty: line.qty,
-            unitPrice: line.unitPrice, // This price is in the selected currency
-            subTotal: line.qty * line.unitPrice,
-          })),
+          create: lines.map(line => {
+            const product = products.find(p => p.id === line.productId);
+            let subTotal = line.qty * line.unitPrice;
+            
+            // إذا كانت الوحدة صندوق، يجب ضرب الكمية في unitsPerBox
+            if (product && product.unit === 'صندوق' && product.unitsPerBox) {
+              const totalMeters = line.qty * Number(product.unitsPerBox);
+              subTotal = totalMeters * line.unitPrice;
+            }
+            
+            return {
+              productId: line.productId,
+              qty: line.qty,
+              unitPrice: line.unitPrice, // This price is in the selected currency
+              subTotal: subTotal,
+            };
+          }),
         },
       },
       include: {
@@ -477,8 +506,26 @@ export class PurchaseService {
         await prisma.$transaction(revertStockUpdates);
       }
 
-      // Calculate new total
-      const total = data.lines.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0);
+      // جلب معلومات المنتجات لحساب الإجمالي بشكل صحيح
+      const productIds = data.lines.map(line => line.productId);
+      const products = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, unit: true, unitsPerBox: true }
+      });
+
+      // Calculate new total مع الأخذ في الاعتبار وحدة المنتج
+      const total = data.lines.reduce((sum, line) => {
+        const product = products.find(p => p.id === line.productId);
+        let lineTotal = line.qty * line.unitPrice;
+        
+        // إذا كانت الوحدة صندوق، يجب ضرب الكمية في unitsPerBox
+        if (product && product.unit === 'صندوق' && product.unitsPerBox) {
+          const totalMeters = line.qty * Number(product.unitsPerBox);
+          lineTotal = totalMeters * line.unitPrice;
+        }
+        
+        return sum + lineTotal;
+      }, 0);
 
       // Update purchase with new lines
       const purchase = await prisma.purchase.update({

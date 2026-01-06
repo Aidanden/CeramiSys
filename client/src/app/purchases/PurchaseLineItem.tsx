@@ -57,8 +57,7 @@ const PurchaseLineItem: React.FC<PurchaseLineItemProps> = ({
   }, [localPrice]);
 
   const selectedProduct = products.find(p => p.id === line.productId);
-  const total = line.qty * line.unitPrice;
-
+  
   // حساب عدد الصناديق والأمتار المربعة
   const getBoxesAndMeters = () => {
     if (!selectedProduct || selectedProduct.unit !== 'صندوق') {
@@ -66,13 +65,19 @@ const PurchaseLineItem: React.FC<PurchaseLineItemProps> = ({
     }
 
     const metersPerBox = selectedProduct.unitsPerBox || 1;
-    const boxes = Math.ceil(line.qty / metersPerBox); // تقريب للأعلى
-    const totalMeters = boxes * metersPerBox;
+    const boxes = line.qty; // الكمية المدخلة هي عدد الصناديق
+    const totalMeters = boxes * metersPerBox; // إجمالي الأمتار = عدد الصناديق × أمتار الصندوق
 
     return { boxes, totalMeters, metersPerBox };
   };
 
   const boxInfo = getBoxesAndMeters();
+  
+  // حساب المجموع: إذا كانت الوحدة صندوق، نضرب إجمالي الأمتار × السعر
+  // وإلا نضرب الكمية × السعر مباشرة
+  const total = boxInfo 
+    ? boxInfo.totalMeters * line.unitPrice 
+    : line.qty * line.unitPrice;
 
   return (
     <div
@@ -103,6 +108,20 @@ const PurchaseLineItem: React.FC<PurchaseLineItemProps> = ({
           </svg>
         </button>
       </div>
+
+      {/* تفاصيل المنتج */}
+      {selectedProduct && (
+        <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+          <div className="flex items-center gap-4 text-xs text-blue-800">
+            <span className="font-semibold">نوع العبوة: {selectedProduct.unit}</span>
+            {selectedProduct.unit === 'صندوق' && selectedProduct.unitsPerBox && (
+              <span className="font-semibold">
+                • الصندوق = {formatArabicNumber(selectedProduct.unitsPerBox)} م²
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Main Content - Responsive Grid */}
       <div
@@ -148,7 +167,7 @@ const PurchaseLineItem: React.FC<PurchaseLineItemProps> = ({
         {/* الكمية */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            {selectedProduct?.unit === 'صندوق' ? 'الكمية (م²)' : 'الكمية'}
+            {selectedProduct?.unit === 'صندوق' ? 'الكمية (صندوق)' : 'الكمية'}
           </label>
           <input
             type="number"
@@ -157,7 +176,7 @@ const PurchaseLineItem: React.FC<PurchaseLineItemProps> = ({
             className="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-200 focus:border-blue-400 focus:outline-none transition-colors bg-white"
             placeholder="0"
             min="0"
-            step="0.01"
+            step="1"
             required
           />
         </div>
@@ -200,12 +219,23 @@ const PurchaseLineItem: React.FC<PurchaseLineItemProps> = ({
               ? 'bg-gradient-to-r from-green-50 to-green-100 border-green-200'
               : 'bg-gray-50 border-gray-200'
             }`}>
-            <span className={`text-sm font-bold block text-center ${total > 0 ? 'text-green-700' : 'text-gray-500'
-              }`}>
-              {total > 0
-                ? (currency === 'LYD' ? formatArabicCurrency(total) : `${total.toFixed(2)} ${currency}`)
-                : '---'}
-            </span>
+            {total > 0 && selectedProduct?.unit === 'صندوق' && boxInfo ? (
+              <>
+                <span className="text-[10px] text-green-600 block text-center">
+                  {formatArabicNumber(boxInfo.totalMeters)} م² × {formatArabicNumber(line.unitPrice)} د.ل
+                </span>
+                <span className="text-sm font-bold text-green-700 block text-center">
+                  {currency === 'LYD' ? formatArabicCurrency(total) : `${total.toFixed(2)} ${currency}`}
+                </span>
+              </>
+            ) : (
+              <span className={`text-sm font-bold block text-center ${total > 0 ? 'text-green-700' : 'text-gray-500'
+                }`}>
+                {total > 0
+                  ? (currency === 'LYD' ? formatArabicCurrency(total) : `${total.toFixed(2)} ${currency}`)
+                  : '---'}
+              </span>
+            )}
           </div>
         </div>
       </div>
