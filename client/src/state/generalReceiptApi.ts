@@ -41,6 +41,16 @@ export interface GeneralReceipt {
         name: string;
         phone?: string;
     };
+    treasury?: {
+        id: number;
+        name: string;
+        companyId: number;
+        company: {
+            id: number;
+            name: string;
+            code: string;
+        };
+    };
 }
 
 export const generalReceiptApi = createApi({
@@ -72,7 +82,7 @@ export const generalReceiptApi = createApi({
             }),
             invalidatesTags: ["FinancialContacts"],
         }),
-        getGeneralReceipts: build.query<GeneralReceipt[], { contactId?: number; customerId?: number; supplierId?: number; employeeId?: number; type?: string }>({
+        getGeneralReceipts: build.query<GeneralReceipt[], { contactId?: number; customerId?: number; supplierId?: number; employeeId?: number; companyId?: number; type?: string }>({
             query: (params) => ({
                 url: "/general/receipts",
                 params,

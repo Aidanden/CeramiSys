@@ -2,6 +2,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '@/app/redux';
 import { baseQueryWithAuthInterceptor } from './apiUtils';
 import { API_CACHE_CONFIG } from '@/lib/config';
+import { paymentReceiptsApi } from './api/paymentReceiptsApi';
 
 export interface PurchaseLine {
   id?: number;
@@ -155,6 +156,7 @@ export interface GetPurchasesQuery {
   supplierId?: number;
   purchaseType?: 'CASH' | 'CREDIT';
   isFullyPaid?: boolean;
+  isApproved?: boolean;
   search?: string;
   startDate?: string;
   endDate?: string;
@@ -209,6 +211,13 @@ export const purchaseApi = createApi({
       }),
       transformResponse: (response: any) => response.data,
       invalidatesTags: ['Purchase', 'PurchaseStats', 'PaymentReceipts', 'SupplierAccounts'],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // تحديث cache إيصالات الدفع بشكل فوري
+          dispatch(paymentReceiptsApi.util.invalidateTags(['PaymentReceipts']));
+        } catch {}
+      },
     }),
 
     updatePurchase: builder.mutation<Purchase, { id: number; data: UpdatePurchaseRequest }>({
@@ -225,6 +234,13 @@ export const purchaseApi = createApi({
         'PaymentReceipts',
         'SupplierAccounts',
       ],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // تحديث cache إيصالات الدفع بشكل فوري
+          dispatch(paymentReceiptsApi.util.invalidateTags(['PaymentReceipts']));
+        } catch {}
+      },
     }),
 
     deletePurchase: builder.mutation<void, number>({
@@ -233,6 +249,13 @@ export const purchaseApi = createApi({
         method: 'DELETE',
       }),
       invalidatesTags: ['Purchase', 'PurchaseStats', 'PaymentReceipts', 'SupplierAccounts'],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // تحديث cache إيصالات الدفع بشكل فوري
+          dispatch(paymentReceiptsApi.util.invalidateTags(['PaymentReceipts']));
+        } catch {}
+      },
     }),
 
     // Purchase payment endpoints
@@ -247,6 +270,13 @@ export const purchaseApi = createApi({
       }),
       transformResponse: (response: any) => response.data,
       invalidatesTags: ['Purchase', 'PurchaseStats', 'PaymentReceipts'],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // تحديث cache إيصالات الدفع بشكل فوري
+          dispatch(paymentReceiptsApi.util.invalidateTags(['PaymentReceipts']));
+        } catch {}
+      },
     }),
 
     // Purchase statistics

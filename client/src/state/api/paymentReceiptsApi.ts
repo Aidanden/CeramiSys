@@ -18,6 +18,12 @@ export interface PaymentReceipt {
     currency?: string;
     exchangeRate?: number;
     totalForeign?: number;
+    companyId?: number;
+    company?: {
+      id: number;
+      name: string;
+      code: string;
+    };
   };
   amount: number;
   amountForeign?: number; // المبلغ بالعملة الأجنبية
@@ -71,6 +77,7 @@ export interface PaymentReceiptsQuery {
   status?: 'PENDING' | 'PAID' | 'CANCELLED';
   type?: 'MAIN_PURCHASE' | 'EXPENSE' | 'RETURN';
   search?: string;
+  companyId?: number;
 }
 
 export interface PaymentInstallment {
@@ -174,11 +181,11 @@ export const paymentReceiptsApi = createApi({
     }),
 
     // ==================== تسديد إيصال دفع ====================
-    payReceipt: builder.mutation<PaymentReceipt, { id: number; notes?: string }>({
-      query: ({ id, notes }) => ({
+    payReceipt: builder.mutation<PaymentReceipt, { id: number; notes?: string; treasuryId?: number; exchangeRate?: number }>({
+      query: ({ id, notes, treasuryId, exchangeRate }) => ({
         url: `/${id}/pay`,
         method: 'POST',
-        body: { notes },
+        body: { notes, treasuryId, exchangeRate },
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: 'PaymentReceipts', id },

@@ -1,5 +1,6 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithAuthInterceptor } from '../apiUtils';
+import { paymentReceiptsApi } from './paymentReceiptsApi';
 
 // Types
 export interface PurchaseExpenseCategory {
@@ -178,6 +179,13 @@ export const purchaseExpenseApi = createApi({
         'PaymentReceipts', // تحديث إيصالات الدفع
         'SupplierAccounts', // تحديث حسابات الموردين
       ],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // تحديث cache إيصالات الدفع بشكل فوري
+          dispatch(paymentReceiptsApi.util.invalidateTags(['PaymentReceipts']));
+        } catch {}
+      },
     }),
 
     addExpensesToApprovedPurchase: builder.mutation<ApprovePurchaseResponse, ApprovePurchaseDto>({
@@ -191,6 +199,13 @@ export const purchaseExpenseApi = createApi({
         'PaymentReceipts', // تحديث إيصالات الدفع
         'SupplierAccounts', // تحديث حسابات الموردين
       ],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // تحديث cache إيصالات الدفع بشكل فوري
+          dispatch(paymentReceiptsApi.util.invalidateTags(['PaymentReceipts']));
+        } catch {}
+      },
     }),
 
     getPurchaseExpenses: builder.query<PurchaseExpense[], number>({

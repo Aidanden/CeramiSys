@@ -11,6 +11,7 @@ import {
   PaymentInstallment,
 } from '@/state/api/paymentReceiptsApi';
 import { useGetTreasuriesQuery } from '@/state/treasuryApi';
+import { useGetCompaniesQuery } from '@/state/companyApi';
 import { useToast } from '@/components/ui/Toast';
 import { printReceipt } from '@/utils/printUtils';
 import { formatLibyanCurrencyEnglish, formatEnglishNumber, formatEnglishDate, formatLibyanCurrencyArabic } from '@/utils/formatLibyanNumbers';
@@ -24,15 +25,18 @@ export default function PaymentReceiptsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'PAID' | 'CANCELLED'>('ALL');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'MAIN_PURCHASE' | 'EXPENSE'>('ALL');
+  const [companyFilter, setCompanyFilter] = useState<number | ''>('');
   const [selectedReceipt, setSelectedReceipt] = useState<PaymentReceipt | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showInstallmentsModal, setShowInstallmentsModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [installmentAmount, setInstallmentAmount] = useState('');
   const [installmentNotes, setInstallmentNotes] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [referenceNumber, setReferenceNumber] = useState('');
   const [selectedTreasuryId, setSelectedTreasuryId] = useState<number | undefined>(undefined);
+  const [newExchangeRate, setNewExchangeRate] = useState('');
 
   // API calls - تحديد الفلاتر حسب التبويب النشط
   const getQueryParams = () => {
@@ -41,6 +45,7 @@ export default function PaymentReceiptsPage() {
       limit: 10,
       search: searchTerm,
       status: statusFilter === 'ALL' ? undefined : statusFilter,
+      companyId: companyFilter || undefined,
     };
 
     if (activeTab === 'purchases') {
@@ -73,6 +78,9 @@ export default function PaymentReceiptsPage() {
 
   // جلب الخزائن والحسابات المصرفية
   const { data: treasuries = [] } = useGetTreasuriesQuery({ isActive: true });
+  
+  // جلب الشركات
+  const { data: companiesData } = useGetCompaniesQuery({ limit: 100 });
 
   // فلترة الخزائن حسب النوع
   const cashTreasuries = treasuries.filter(t => t.type === 'COMPANY' || t.type === 'GENERAL');
@@ -91,6 +99,7 @@ export default function PaymentReceiptsPage() {
     setSearchTerm('');
     setStatusFilter('ALL');
     setTypeFilter('ALL');
+    setCompanyFilter('');
   };
 
   // Handlers
@@ -149,24 +158,57 @@ export default function PaymentReceiptsPage() {
   };
 
   const handlePayReceipt = async (receipt: PaymentReceipt) => {
-    const confirmed = await confirm(
-      'تأكيد التسديد',
-      `هل أنت متأكد من تسديد إيصال الدفع للمورد "${receipt.supplier.name}" بمبلغ ${formatLibyanCurrencyArabic(receipt.amount)}؟`
-    );
+    // إذا كان الإيصال بعملة أجنبية، إظهار modal لإدخال سعر الصرف
+    if (receipt.currency && receipt.currency !== 'LYD') {
+      setSelectedReceipt(receipt);
+      setNewExchangeRate(receipt.exchangeRate?.toString() || '');
+      setShowPaymentModal(true);
+    } else {
+      // إذا كان بالدينار، الدفع مباشرة
+      const confirmed = await confirm(
+        'تأكيد التسديد',
+        `هل أنت متأكد من تسديد إيصال الدفع للمورد "${receipt.supplier.name}" بمبلغ ${formatLibyanCurrencyArabic(receipt.amount)}؟`
+      );
 
-    if (confirmed) {
-      try {
-        const result = await payReceipt({ id: receipt.id }).unwrap();
-        success('تم التسديد', 'تم تسديد إيصال الدفع بنجاح');
-        refetch();
+      if (confirmed) {
+        try {
+          const result = await payReceipt({ id: receipt.id }).unwrap();
+          success('تم التسديد', 'تم تسديد إيصال الدفع بنجاح');
+          refetch();
 
-        // طباعة الإيصال تلقائياً بعد التسديد
-        setTimeout(() => {
-          printReceipt(receipt, null, true);
-        }, 1000);
-      } catch (err: any) {
-        showError('خطأ', err.message || 'حدث خطأ أثناء التسديد');
+          // طباعة الإيصال تلقائياً بعد التسديد
+          setTimeout(() => {
+            printReceipt(receipt, null, true);
+          }, 1000);
+        } catch (err: any) {
+          showError('خطأ', err.message || 'حدث خطأ أثناء التسديد');
+        }
       }
+    }
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!selectedReceipt) return;
+
+    try {
+      const exchangeRate = newExchangeRate ? parseFloat(newExchangeRate) : undefined;
+      const result = await payReceipt({ 
+        id: selectedReceipt.id,
+        exchangeRate 
+      }).unwrap();
+      
+      success('تم التسديد', 'تم تسديد إيصال الدفع بنجاح');
+      setShowPaymentModal(false);
+      setSelectedReceipt(null);
+      setNewExchangeRate('');
+      refetch();
+
+      // طباعة الإيصال تلقائياً بعد التسديد
+      setTimeout(() => {
+        printReceipt(selectedReceipt, null, true);
+      }, 1000);
+    } catch (err: any) {
+      showError('خطأ', err.message || 'حدث خطأ أثناء التسديد');
     }
   };
 
@@ -370,7 +412,7 @@ export default function PaymentReceiptsPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {/* Search */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">البحث</label>
@@ -412,6 +454,23 @@ export default function PaymentReceiptsPage() {
             </select>
           </div>
 
+          {/* Company Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">الشركة</label>
+            <select
+              value={companyFilter}
+              onChange={(e) => setCompanyFilter(e.target.value ? parseInt(e.target.value) : '')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">جميع الشركات</option>
+              {companiesData?.data?.companies?.map((company: any) => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Reset Filters */}
           <div className="flex items-end">
             <button
@@ -419,6 +478,7 @@ export default function PaymentReceiptsPage() {
                 setSearchTerm('');
                 setStatusFilter('ALL');
                 setTypeFilter('ALL');
+                setCompanyFilter('');
                 setCurrentPage(1);
               }}
               className="w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
@@ -527,10 +587,10 @@ export default function PaymentReceiptsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
-                    {formatLibyanCurrencyArabic(receipt.paidAmount || 0)}
+                    {formatLibyanCurrencyArabic(receipt.paidAmount ?? 0)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-red-600">
-                    {formatLibyanCurrencyArabic(receipt.remainingAmount || receipt.amount)}
+                    {formatLibyanCurrencyArabic(receipt.remainingAmount ?? 0)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(receipt.status)}`}>
@@ -708,7 +768,7 @@ export default function PaymentReceiptsPage() {
               )}
 
               {/* Payment History - Installments */}
-              {(selectedReceipt.status === 'PAID' || (selectedReceipt.paidAmount || 0) > 0) && (
+              {(selectedReceipt.status === 'PAID' || (selectedReceipt.paidAmount ?? 0) > 0) && (
                 <div className="mt-6">
                   <label className="block text-sm font-medium text-gray-700 mb-3">تاريخ الدفعات</label>
                   <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -836,7 +896,7 @@ export default function PaymentReceiptsPage() {
                         </h3>
                         <p className="text-sm text-gray-600">
                           المبلغ الإجمالي: {formatLibyanCurrencyArabic(receipt.amount)} |
-                          المبلغ المدفوع: {formatLibyanCurrencyArabic(receipt.paidAmount || 0)}
+                          المبلغ المدفوع: {formatLibyanCurrencyArabic(receipt.paidAmount ?? 0)}
                         </p>
                       </div>
                       {receipt.status === 'PAID' && (
@@ -1119,6 +1179,73 @@ export default function PaymentReceiptsPage() {
               >
                 إغلاق
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Modal - Exchange Rate */}
+      {showPaymentModal && selectedReceipt && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">تسديد إيصال دفع</h2>
+              
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">المورد: <span className="font-bold">{selectedReceipt.supplier.name}</span></p>
+                <p className="text-sm text-gray-600 mt-2">
+                  المبلغ بالعملة الأجنبية: <span className="font-bold">
+                    {formatLibyanCurrencyEnglish(selectedReceipt.amountForeign || selectedReceipt.amount)} {selectedReceipt.currency}
+                  </span>
+                </p>
+                <p className="text-sm text-gray-600 mt-2">
+                  سعر الصرف الحالي: <span className="font-bold">{formatEnglishNumber(selectedReceipt.exchangeRate || 1)}</span>
+                </p>
+                <p className="text-sm text-gray-600 mt-2">
+                  المبلغ بالدينار الليبي: <span className="font-bold">{formatLibyanCurrencyArabic(selectedReceipt.amount)}</span>
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  سعر الصرف الجديد (اختياري)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={newExchangeRate}
+                  onChange={(e) => setNewExchangeRate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={`السعر الحالي: ${selectedReceipt.exchangeRate || 1}`}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  اترك الحقل كما هو لاستخدام سعر الصرف الحالي، أو قم بتعديله إذا تغير السعر
+                </p>
+                {newExchangeRate && parseFloat(newExchangeRate) > 0 && (
+                  <p className="text-sm font-medium text-blue-600 mt-2">
+                    المبلغ الجديد بالدينار: {formatLibyanCurrencyArabic((selectedReceipt.amountForeign || selectedReceipt.amount) * parseFloat(newExchangeRate))}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  onClick={handleConfirmPayment}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  تأكيد التسديد
+                </button>
+                <button
+                  onClick={() => {
+                    setShowPaymentModal(false);
+                    setSelectedReceipt(null);
+                    setNewExchangeRate('');
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                >
+                  إلغاء
+                </button>
+              </div>
             </div>
           </div>
         </div>

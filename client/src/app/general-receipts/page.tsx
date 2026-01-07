@@ -78,7 +78,8 @@ export default function GeneralReceiptsPage() {
         endDate: '',
         minAmount: '',
         maxAmount: '',
-        treasuryId: ''
+        treasuryId: '',
+        companyId: ''
     });
     const itemsPerPage = 10;
 
@@ -286,6 +287,9 @@ export default function GeneralReceiptsPage() {
             
             // Filter by treasury
             if (filters.treasuryId && r.treasuryId !== Number(filters.treasuryId)) return false;
+            
+            // Filter by company
+            if (filters.companyId && r.treasury?.companyId !== Number(filters.companyId)) return false;
             
             return true;
         });
@@ -550,6 +554,17 @@ export default function GeneralReceiptsPage() {
                                     <option value="customer">عميل</option>
                                     <option value="supplier">مورد</option>
                                     <option value="employee">موظف</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-text-secondary mb-1 block">الشركة</label>
+                                <select
+                                    value={filters.companyId}
+                                    onChange={(e) => setFilters({ ...filters, companyId: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white border border-border-primary rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                >
+                                    <option value="">الكل</option>
+                                    {companiesData?.data?.companies?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
                             <div>

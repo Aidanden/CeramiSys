@@ -388,6 +388,12 @@ const Sidebar = () => {
             label="تكلفة الأصناف"
             isCollapsed={isSidebarCollapsed}
           />
+          <SidebarLink
+            href="/invoice-cost"
+            icon={FileText}
+            label="تكلفة الفاتورة"
+            isCollapsed={isSidebarCollapsed}
+          />
           {canAccessScreen('/damage-reports') && (
             <SidebarLink
               href="/damage-reports"
