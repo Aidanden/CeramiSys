@@ -24,6 +24,13 @@ router.get('/', TreasuryController.getAllTreasuries.bind(TreasuryController));
 router.get('/stats', TreasuryController.getTreasuryStats.bind(TreasuryController));
 
 /**
+ * @route   GET /api/treasury/monthly-stats
+ * @desc    إحصائيات الخزائن للشهر الحالي (المدفوعات والإيرادات)
+ * @access  Private
+ */
+router.get('/monthly-stats', TreasuryController.getMonthlyTreasuryStats.bind(TreasuryController));
+
+/**
  * @route   GET /api/treasury/transactions
  * @desc    الحصول على جميع الحركات
  * @access  Private

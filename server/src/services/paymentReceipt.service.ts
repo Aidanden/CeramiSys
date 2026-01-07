@@ -14,6 +14,7 @@ export class PaymentReceiptService {
       status,
       type,
       search,
+      companyId,
     } = query;
 
     // تحويل القيم إلى أرقام
@@ -24,14 +25,15 @@ export class PaymentReceiptService {
     const where: any = {};
 
     // فلاتر البحث
-    if (supplierId) where.supplierId = supplierId;
+    if (supplierId) where.supplierId = parseInt(supplierId);
     if (purchaseId === 'exists') {
       where.purchaseId = { not: null };
     } else if (purchaseId) {
-      where.purchaseId = purchaseId;
+      where.purchaseId = parseInt(purchaseId);
     }
     if (status) where.status = status;
     if (type) where.type = type;
+    if (companyId) where.companyId = parseInt(companyId);
     if (search) {
       where.OR = [
         { supplier: { name: { contains: search, mode: 'insensitive' } } },

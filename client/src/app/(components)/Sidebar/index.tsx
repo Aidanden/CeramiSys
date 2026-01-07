@@ -30,6 +30,7 @@ import Link from "next/link";
 import { useGetSalesQuery } from "@/state/salesApi";
 import { useGetDispatchOrdersQuery, useGetReturnOrdersQuery } from "@/state/warehouseApi";
 import { useGetPaymentReceiptsQuery } from "@/state/api/paymentReceiptsApi";
+import { useGetInvoiceStatsQuery } from "@/state/externalStoreInvoicesApi";
 
 interface SidebarLinkProps {
   href: string;
@@ -96,6 +97,14 @@ const Sidebar = () => {
   const { data: userData } = useGetCurrentUserQuery();
   const user = userData?.data;
   const isParentCompany = user?.company?.parentId === null; // الشركة الأم ليس لها parentId
+  
+  // جلب طريقة حساب التكلفة من localStorage
+  const [costCalculationMethod, setCostCalculationMethod] = React.useState<'manual' | 'invoice'>('manual');
+  
+  React.useEffect(() => {
+    const savedMethod = localStorage.getItem('costCalculationMethod');
+    setCostCalculationMethod((savedMethod as 'manual' | 'invoice') || 'manual');
+  }, []);
 
   // جلب عدد الفواتير المعلقة (DRAFT)
   const { data: pendingSalesData } = useGetSalesQuery({
@@ -146,6 +155,14 @@ const Sidebar = () => {
     skip: !user
   });
   const pendingPaymentReceiptsCount = pendingPaymentReceiptsData?.pagination?.total || 0;
+
+  // جلب إحصائيات فواتير المحلات الخارجية
+  const { data: externalStoreInvoicesStats } = useGetInvoiceStatsQuery(undefined, {
+    pollingInterval: 10000,
+    refetchOnFocus: true,
+    skip: !user
+  });
+  const pendingExternalInvoicesCount = externalStoreInvoicesStats?.pendingInvoices || 0;
 
   // جلب الشاشات المصرح بها للمستخدم
   const { data: userScreensData, isLoading: isLoadingScreens, error: screensError } = useGetUserScreensQuery();
@@ -382,18 +399,22 @@ const Sidebar = () => {
             />
           )}
 
-          <SidebarLink
-            href="/product-cost"
-            icon={BarChart3}
-            label="تكلفة الأصناف"
-            isCollapsed={isSidebarCollapsed}
-          />
-          <SidebarLink
-            href="/invoice-cost"
-            icon={FileText}
-            label="تكلفة الفاتورة"
-            isCollapsed={isSidebarCollapsed}
-          />
+          {costCalculationMethod === 'manual' && (
+            <SidebarLink
+              href="/product-cost"
+              icon={BarChart3}
+              label="تكلفة الأصناف"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
+          {costCalculationMethod === 'invoice' && (
+            <SidebarLink
+              href="/invoice-cost"
+              icon={FileText}
+              label="تكلفة الفاتورة"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
           {canAccessScreen('/damage-reports') && (
             <SidebarLink
               href="/damage-reports"
@@ -416,6 +437,7 @@ const Sidebar = () => {
               icon={FileText}
               label="فواتير المحلات"
               isCollapsed={isSidebarCollapsed}
+              badgeCount={pendingExternalInvoicesCount}
             />
           )}
           {canAccessScreen('/reports') && (

@@ -177,6 +177,7 @@ export class SaleReturnService {
           await tx.supplierPaymentReceipt.create({
             data: {
               supplierId: parentSupplier.id,
+              companyId: companyId,
               amount: new Prisma.Decimal(parentCompanyReturnValue),
               type: SupplierPaymentType.RETURN,
               description: `مردود مبيعات: ${newReturn.customer?.name || 'عميل'} - عودة فاتورة #${newReturn.id}`,
@@ -199,6 +200,7 @@ export class SaleReturnService {
           await tx.supplierPaymentReceipt.create({
             data: {
               supplierId: branchSupplier.id,
+              companyId: companyId,
               amount: new Prisma.Decimal(branchCompanyReturnValue),
               type: SupplierPaymentType.RETURN,
               description: `مردود مبيعات: ${newReturn.customer?.name || 'عميل'} - عودة فاتورة #${newReturn.id}`,

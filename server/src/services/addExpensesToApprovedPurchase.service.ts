@@ -121,6 +121,7 @@ export class AddExpensesToApprovedPurchaseService {
               data: {
                 supplierId: expense.supplierId,
                 purchaseId: purchaseId,
+                companyId: purchase.companyId,
                 amount: new Prisma.Decimal(amountLYD),
                 amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
                 currency: (expense.currency as Currency) || Currency.LYD,

@@ -226,6 +226,7 @@ export class PurchaseExpenseService {
               const receiptData = {
                 supplierId: expense.supplierId,
                 purchaseId: purchaseId,
+                companyId: purchase.companyId,
                 amount: new Prisma.Decimal(amountLYD),
                 amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
                 currency: expense.currency || 'LYD',
@@ -419,6 +420,7 @@ export class PurchaseExpenseService {
           data: {
             supplierId: purchase.supplier.id,
             purchaseId: purchaseId,
+            companyId: purchase.companyId,
             amount: purchase.total,
             amountForeign: purchase.currency === 'LYD' ? null : purchase.totalForeign,
             currency: purchase.currency || Currency.LYD,
@@ -467,6 +469,7 @@ export class PurchaseExpenseService {
               data: {
                 supplierId: expense.supplierId,
                 purchaseId: purchaseId,
+                companyId: purchase.companyId,
                 amount: new Prisma.Decimal(amountLYD),
                 amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
                 currency: expense.currency || 'LYD',

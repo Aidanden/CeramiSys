@@ -658,7 +658,115 @@ class TreasuryController {
 
         return transaction;
     }
+
+    /**
+     * إحصائيات الخزائن للشهر الحالي - المدفوعات والإيرادات
+     */
+    async getMonthlyTreasuryStats(req: AuthRequest, res: Response) {
+        try {
+            const today = new Date();
+            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
+
+            // جلب جميع الخزائن والحسابات المصرفية
+            const treasuries = await prisma.treasury.findMany({
+                where: { isActive: true },
+                select: {
+                    id: true,
+                    name: true,
+                    type: true,
+                    bankName: true,
+                },
+                orderBy: [
+                    { type: 'asc' },
+                    { name: 'asc' },
+                ],
+            });
+
+            // حساب المدفوعات (المسحوبات) لكل خزينة
+            const paymentsData = await Promise.all(
+                treasuries.map(async (treasury) => {
+                    const withdrawals = await prisma.treasuryTransaction.aggregate({
+                        where: {
+                            treasuryId: treasury.id,
+                            type: TransactionType.WITHDRAWAL,
+                            createdAt: {
+                                gte: startOfMonth,
+                                lte: endOfMonth,
+                            },
+                        },
+                        _sum: {
+                            amount: true,
+                        },
+                    });
+
+                    return {
+                        treasuryId: treasury.id,
+                        name: treasury.type === 'BANK' 
+                            ? `${treasury.name} - ${treasury.bankName || ''}`
+                            : treasury.name,
+                        type: treasury.type,
+                        amount: Number(withdrawals._sum.amount || 0),
+                    };
+                })
+            );
+
+            // حساب الإيرادات (الإيداعات) لكل خزينة
+            const revenuesData = await Promise.all(
+                treasuries.map(async (treasury) => {
+                    const deposits = await prisma.treasuryTransaction.aggregate({
+                        where: {
+                            treasuryId: treasury.id,
+                            type: TransactionType.DEPOSIT,
+                            createdAt: {
+                                gte: startOfMonth,
+                                lte: endOfMonth,
+                            },
+                        },
+                        _sum: {
+                            amount: true,
+                        },
+                    });
+
+                    return {
+                        treasuryId: treasury.id,
+                        name: treasury.type === 'BANK' 
+                            ? `${treasury.name} - ${treasury.bankName || ''}`
+                            : treasury.name,
+                        type: treasury.type,
+                        amount: Number(deposits._sum.amount || 0),
+                    };
+                })
+            );
+
+            // حساب الإجماليات
+            const totalPayments = paymentsData.reduce((sum, item) => sum + item.amount, 0);
+            const totalRevenues = revenuesData.reduce((sum, item) => sum + item.amount, 0);
+
+            return res.json({
+                success: true,
+                data: {
+                    payments: {
+                        total: totalPayments,
+                        breakdown: paymentsData.filter(item => item.amount > 0),
+                    },
+                    revenues: {
+                        total: totalRevenues,
+                        breakdown: revenuesData.filter(item => item.amount > 0),
+                    },
+                },
+            });
+        } catch (error: any) {
+            console.error('Error fetching monthly treasury stats:', error);
+            return res.status(500).json({ 
+                success: false,
+                error: 'فشل في جلب إحصائيات الخزائن', 
+                details: error.message 
+            });
+        }
+    }
 }
 
 export default new TreasuryController();
 export { TreasuryController };
+

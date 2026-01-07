@@ -8,7 +8,9 @@ import {
     useGetInvoiceStatsQuery,
     InvoiceStatus,
 } from '@/state/externalStoreInvoicesApi';
-import { X, Eye, TrendingUp, FileText } from 'lucide-react';
+import { X, Eye, TrendingUp, FileText, Bell } from 'lucide-react';
+import NotificationDropdown from '@/components/NotificationDropdown';
+import { useGetNotificationStatsQuery } from '@/state/notificationsApi';
 
 const CheckCircle = ({ size = 24, className = "" }: { size?: number, className?: string }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -42,10 +44,21 @@ export default function ExternalStoreInvoicesPage() {
         page,
         limit: 10,
         status: statusFilter || undefined,
+    }, {
+        pollingInterval: 5000, // تحديث كل 5 ثواني
+        refetchOnFocus: true
     });
-    const { data: stats } = useGetInvoiceStatsQuery();
+    const { data: stats } = useGetInvoiceStatsQuery(undefined, {
+        pollingInterval: 5000,
+        refetchOnFocus: true
+    });
     const [approveInvoice] = useApproveInvoiceMutation();
     const [rejectInvoice] = useRejectInvoiceMutation();
+    
+    // جلب إحصائيات الإشعارات
+    const { data: notificationStats } = useGetNotificationStatsQuery(undefined, {
+        pollingInterval: 5000
+    });
 
     const handleApprove = async (id: number) => {
         if (confirm('هل أنت متأكد من الموافقة على هذه الفاتورة؟')) {
@@ -208,13 +221,19 @@ export default function ExternalStoreInvoicesPage() {
     return (
         <div className="p-6" dir="rtl">
             {/* Header */}
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                    إدارة فواتير المحلات الخارجية
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400">
-                    مراجعة والموافقة على فواتير المحلات
-                </p>
+            <div className="mb-6 flex items-start justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                        إدارة فواتير المحلات الخارجية
+                    </h1>
+                    <p className="text-gray-600 dark:text-gray-400">
+                        مراجعة والموافقة على فواتير المحلات
+                    </p>
+                </div>
+                {/* Notifications Dropdown */}
+                <div className="flex items-center gap-3">
+                    <NotificationDropdown />
+                </div>
             </div>
 
             {/* Stats Cards */}
@@ -230,7 +249,7 @@ export default function ExternalStoreInvoicesPage() {
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                    <div className={`bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 transition-all ${stats.pendingInvoices > 0 ? 'ring-2 ring-yellow-400 animate-pulse' : ''}`}>
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">في الانتظار</p>

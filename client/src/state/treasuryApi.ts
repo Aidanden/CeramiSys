@@ -47,6 +47,27 @@ export interface TreasuryStats {
     bankAccounts: Treasury[];
 }
 
+export interface TreasuryBreakdownItem {
+    treasuryId: number;
+    name: string;
+    type: string;
+    amount: number;
+}
+
+export interface MonthlyTreasuryStats {
+    success: boolean;
+    data: {
+        payments: {
+            total: number;
+            breakdown: TreasuryBreakdownItem[];
+        };
+        revenues: {
+            total: number;
+            breakdown: TreasuryBreakdownItem[];
+        };
+    };
+}
+
 export interface CreateTreasuryRequest {
     name: string;
     type: 'COMPANY' | 'GENERAL' | 'BANK';
@@ -121,6 +142,12 @@ export const treasuryApi = createApi({
         // إحصائيات الخزائن
         getTreasuryStats: builder.query<TreasuryStats, void>({
             query: () => '/treasury/stats',
+            providesTags: ['TreasuryStats'],
+        }),
+
+        // إحصائيات الخزائن للشهر الحالي (المدفوعات والإيرادات)
+        getMonthlyTreasuryStats: builder.query<MonthlyTreasuryStats, void>({
+            query: () => '/treasury/monthly-stats',
             providesTags: ['TreasuryStats'],
         }),
 
@@ -199,6 +226,7 @@ export const {
     useGetTreasuriesQuery,
     useGetTreasuryByIdQuery,
     useGetTreasuryStatsQuery,
+    useGetMonthlyTreasuryStatsQuery,
     useGetAllTransactionsQuery,
     useGetTreasuryTransactionsQuery,
     useCreateTreasuryMutation,

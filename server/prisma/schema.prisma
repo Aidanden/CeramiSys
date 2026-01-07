@@ -38,6 +38,7 @@ model Company {
   notifications       Notification[]
   employees           Employee[]
   badDebtCategories   BadDebtCategory[]
+  paymentReceipts     SupplierPaymentReceipt[]
 }
 
 model Product {
@@ -598,6 +599,7 @@ model SupplierPaymentReceipt {
   id            Int                         @id @default(autoincrement())
   supplierId    Int
   purchaseId    Int?
+  companyId     Int
   amount        Decimal                     @db.Decimal(18, 4)
   type          SupplierPaymentType
   description   String?
@@ -610,11 +612,13 @@ model SupplierPaymentReceipt {
   currency      String                      @default("LYD")
   exchangeRate  Decimal                     @default(1) @db.Decimal(18, 6)
   installments  PaymentReceiptInstallment[]
+  company       Company                     @relation(fields: [companyId], references: [id])
   purchase      Purchase?                   @relation(fields: [purchaseId], references: [id])
   supplier      Supplier                    @relation(fields: [supplierId], references: [id])
 
   @@index([supplierId])
   @@index([purchaseId])
+  @@index([companyId])
   @@index([status])
   @@index([type])
 }

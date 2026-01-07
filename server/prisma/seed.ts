@@ -86,9 +86,14 @@ async function deleteAllData() {
     "damageReport",                  // DamageReport model (محاضر الإتلاف)
     "externalStoreInvoiceLine",      // ExternalStoreInvoiceLine model (أسطر فواتير المخازن الخارجية)
     "externalStoreInvoice",          // ExternalStoreInvoice model (فواتير المخازن الخارجية)
+    "externalStoreProduct",          // ExternalStoreProduct model (منتجات المخازن الخارجية)
+    "externalStore",                 // ExternalStore model (المخازن الخارجية)
+    "productCostLog",                // ProductCostLog model (سجل تكاليف المنتجات)
     "product",                       // Product model
+    "productGroup",                  // ProductGroup model (مجموعات المنتجات)
     "users",                         // Users model
     "userRoles",                     // UserRoles model
+    "globalSettings",                // GlobalSettings model (الإعدادات العامة)
     "company"                        // Company model
   ];
 

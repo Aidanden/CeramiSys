@@ -2203,6 +2203,7 @@ export class SalesService {
       data: {
         supplierId: parentAsSupplier.id,
         purchaseId: branchPurchase.id,
+        companyId: branchSale.companyId,
         amount: parentSaleTotal,
         type: 'MAIN_PURCHASE',
         status: 'PENDING',

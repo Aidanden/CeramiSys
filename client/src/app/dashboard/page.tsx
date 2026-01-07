@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useAppSelector } from "@/app/redux";
 import {
   TrendingUp,
@@ -15,6 +15,10 @@ import {
   Wallet,
   Receipt,
   CircleDollarSign,
+  Users,
+  TrendingDown,
+  FileText,
+  Archive,
 } from "lucide-react";
 import {
   useGetSalesStatsQuery
@@ -29,7 +33,15 @@ import {
   useGetTopSellingProductsQuery,
   useGetLowStockProductsQuery
 } from "@/state/productsApi";
+import {
+  useGetUsersSalesStatsQuery,
+  useGetComprehensiveChartDataQuery
+} from "@/state/dashboardApi";
+import {
+  useGetMonthlyTreasuryStatsQuery
+} from "@/state/treasuryApi";
 import { formatArabicNumber, formatArabicCurrency } from "@/utils/formatArabicNumbers";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // ==========================================
 // مكون البطاقات الإحصائية الرئيسية
@@ -319,6 +331,245 @@ const LowStockProducts = () => {
 };
 
 // ==========================================
+// مكون مبيعات المستخدمين
+// ==========================================
+const UsersSalesCard = () => {
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+  
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  
+  const { data: usersData, isLoading } = useGetUsersSalesStatsQuery({ 
+    year: selectedYear, 
+    month: selectedMonth 
+  });
+
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+  const months = [
+    { value: 1, label: 'يناير' },
+    { value: 2, label: 'فبراير' },
+    { value: 3, label: 'مارس' },
+    { value: 4, label: 'أبريل' },
+    { value: 5, label: 'مايو' },
+    { value: 6, label: 'يونيو' },
+    { value: 7, label: 'يوليو' },
+    { value: 8, label: 'أغسطس' },
+    { value: 9, label: 'سبتمبر' },
+    { value: 10, label: 'أكتوبر' },
+    { value: 11, label: 'نوفمبر' },
+    { value: 12, label: 'ديسمبر' },
+  ];
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-6 hover:shadow-md transition-all duration-300">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+            <Users className="w-4 h-4 text-purple-600" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-800">مبيعات المستخدمين</h3>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-3 mb-4">
+        <select
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(Number(e.target.value))}
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+        >
+          {years.map((year) => (
+            <option key={year} value={year}>
+              {formatArabicNumber(year)}
+            </option>
+          ))}
+        </select>
+        <select
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(Number(e.target.value))}
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+        >
+          {months.map((month) => (
+            <option key={month.value} value={month.value}>
+              {month.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Summary */}
+      {usersData?.data && (
+        <div className="grid grid-cols-3 gap-3 mb-4 p-3 bg-purple-50 rounded-lg">
+          <div className="text-center">
+            <p className="text-xs text-purple-600 mb-1">إجمالي المبيعات</p>
+            <p className="text-sm font-bold text-purple-900">{formatArabicCurrency(usersData.data.summary.totalRevenue)}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-purple-600 mb-1">عدد الفواتير</p>
+            <p className="text-sm font-bold text-purple-900">{formatArabicNumber(usersData.data.summary.totalInvoices)}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-purple-600 mb-1">مستخدمين نشطين</p>
+            <p className="text-sm font-bold text-purple-900">{formatArabicNumber(usersData.data.summary.activeUsers)}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Users List */}
+      {isLoading ? (
+        <div className="space-y-3">
+          {[...Array(5)].map((_, i) => (
+            <div key={`skeleton-${i}`} className="animate-pulse flex items-center gap-3 p-3 rounded-xl bg-slate-50">
+              <div className="w-10 h-10 bg-slate-200 rounded-full"></div>
+              <div className="flex-1">
+                <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : usersData?.data?.users && usersData.data.users.length > 0 ? (
+        <div className="space-y-2 max-h-96 overflow-y-auto">
+          {usersData.data.users.map((user, index) => (
+            <div
+              key={`user-${user.userId}-${index}`}
+              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-purple-50 hover:border-purple-100 transition-all duration-200"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                  {index + 1}
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-800 text-sm">{user.fullName}</p>
+                  <p className="text-xs text-slate-500">{user.companyName}</p>
+                </div>
+              </div>
+              <div className="text-left">
+                <p className="font-bold text-purple-600 text-sm">{formatArabicCurrency(user.totalSales)}</p>
+                <p className="text-xs text-green-600">{formatArabicNumber(user.salesCount)} فاتورة</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-10">
+          <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <p className="text-slate-500">لا توجد بيانات مبيعات</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==========================================
+// مكون الرسم البياني الشامل
+// ==========================================
+const ComprehensiveChart = () => {
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  
+  const { data: chartData, isLoading } = useGetComprehensiveChartDataQuery({ year: selectedYear });
+
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-6 hover:shadow-md transition-all duration-300">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+            <BarChart3 className="w-4 h-4 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-800">نظرة شاملة على العمليات</h3>
+        </div>
+        <select
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(Number(e.target.value))}
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+        >
+          {years.map((year) => (
+            <option key={year} value={year}>
+              {formatArabicNumber(year)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Summary Cards */}
+      {chartData?.data && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+          <div className="bg-green-50 rounded-lg p-3 border border-green-100">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp className="w-3 h-3 text-green-600" />
+              <p className="text-xs text-green-700 font-medium">المبيعات</p>
+            </div>
+            <p className="text-sm font-bold text-green-900">{formatArabicCurrency(chartData.data.yearTotals.sales)}</p>
+          </div>
+          <div className="bg-purple-50 rounded-lg p-3 border border-purple-100">
+            <div className="flex items-center gap-2 mb-1">
+              <ShoppingCart className="w-3 h-3 text-purple-600" />
+              <p className="text-xs text-purple-700 font-medium">المشتريات</p>
+            </div>
+            <p className="text-sm font-bold text-purple-900">{formatArabicCurrency(chartData.data.yearTotals.purchases)}</p>
+          </div>
+          <div className="bg-orange-50 rounded-lg p-3 border border-orange-100">
+            <div className="flex items-center gap-2 mb-1">
+              <CircleDollarSign className="w-3 h-3 text-orange-600" />
+              <p className="text-xs text-orange-700 font-medium">المصروفات</p>
+            </div>
+            <p className="text-sm font-bold text-orange-900">{formatArabicCurrency(chartData.data.yearTotals.badDebts)}</p>
+          </div>
+          <div className="bg-red-50 rounded-lg p-3 border border-red-100">
+            <div className="flex items-center gap-2 mb-1">
+              <Archive className="w-3 h-3 text-red-600" />
+              <p className="text-xs text-red-700 font-medium">التالف</p>
+            </div>
+            <p className="text-sm font-bold text-red-900">{formatArabicCurrency(chartData.data.yearTotals.damages)}</p>
+          </div>
+          <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingDown className="w-3 h-3 text-amber-600" />
+              <p className="text-xs text-amber-700 font-medium">المردودات</p>
+            </div>
+            <p className="text-sm font-bold text-amber-900">{formatArabicCurrency(chartData.data.yearTotals.returns)}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Chart */}
+      {isLoading ? (
+        <div className="h-80 bg-slate-50 animate-pulse rounded-lg"></div>
+      ) : chartData?.data ? (
+        <ResponsiveContainer width="100%" height={320}>
+          <BarChart data={chartData.data.monthlyData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="monthName" style={{ fontSize: '12px' }} />
+            <YAxis style={{ fontSize: '12px' }} />
+            <Tooltip 
+              formatter={(value: any) => formatArabicCurrency(value)}
+              labelStyle={{ fontSize: '12px' }}
+            />
+            <Legend wrapperStyle={{ fontSize: '12px' }} />
+            <Bar dataKey="sales" fill="#10b981" name="المبيعات" />
+            <Bar dataKey="purchases" fill="#8b5cf6" name="المشتريات" />
+            <Bar dataKey="badDebts" fill="#f97316" name="المصروفات المعدومة" />
+            <Bar dataKey="damages" fill="#ef4444" name="التالف" />
+            <Bar dataKey="returns" fill="#f59e0b" name="المردودات" />
+          </BarChart>
+        </ResponsiveContainer>
+      ) : (
+        <div className="text-center py-10">
+          <BarChart3 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <p className="text-slate-500">لا توجد بيانات</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ==========================================
 // الصفحة الرئيسية
 // ==========================================
 const Dashboard = () => {
@@ -328,6 +579,7 @@ const Dashboard = () => {
   const { data: salesStats, isLoading: salesLoading } = useGetSalesStatsQuery();
   const { data: purchaseStats, isLoading: purchaseLoading } = useGetPurchaseStatsQuery({});
   const { data: creditStats, isLoading: creditLoading } = useGetCreditSalesStatsQuery();
+  const { data: treasuryMonthlyStats, isLoading: treasuryLoading } = useGetMonthlyTreasuryStatsQuery();
 
   // تحضير بيانات عمليات اليوم
   const dailyOperationsStats = [
@@ -360,14 +612,14 @@ const Dashboard = () => {
       color: "text-indigo-600"
     },
     {
-      label: "إجمالي المشتريات",
-      value: formatArabicCurrency(purchaseStats?.totalAmount || 0),
-      icon: Package,
-      color: "text-purple-600"
+      label: "المدفوعات (مسحوبات)",
+      value: formatArabicCurrency(treasuryMonthlyStats?.data?.payments?.total || 0),
+      icon: TrendingDown,
+      color: "text-red-600"
     },
     {
-      label: "المدفوعات",
-      value: formatArabicCurrency(purchaseStats?.totalPaid || 0),
+      label: "الإيرادات (إيداعات)",
+      value: formatArabicCurrency(treasuryMonthlyStats?.data?.revenues?.total || 0),
       icon: Wallet,
       color: "text-emerald-600"
     },
@@ -460,7 +712,7 @@ const Dashboard = () => {
           period="شهر"
           stats={monthlyOperationsStats}
           headerColor="bg-gradient-to-l from-indigo-500 to-indigo-600"
-          isLoading={salesLoading || purchaseLoading}
+          isLoading={salesLoading || treasuryLoading}
         />
       </div>
 
@@ -469,6 +721,12 @@ const Dashboard = () => {
         <TopSellingProducts />
         <LowStockProducts />
       </div>
+
+      {/* مبيعات المستخدمين */}
+      <UsersSalesCard />
+
+      {/* الرسم البياني الشامل */}
+      <ComprehensiveChart />
     </div>
   );
 };

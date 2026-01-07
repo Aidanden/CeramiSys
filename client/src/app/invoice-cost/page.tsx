@@ -388,11 +388,11 @@ export default function InvoiceCostPage() {
 
                             {/* Cost Distribution Table */}
                             <div className="p-6">
-                                <div className="flex items-center justify-between mb-4">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
                                     {customExchangeRate && (
-                                        <div className="flex-1 bg-yellow-100 border border-yellow-300 rounded-lg p-3 flex items-center gap-2 ml-4">
-                                            <DollarSign className="w-5 h-5 text-yellow-700" />
-                                            <p className="text-sm text-yellow-800 font-medium">
+                                        <div className="flex-1 bg-yellow-100 border border-yellow-300 rounded-lg p-2 flex items-center gap-2">
+                                            <DollarSign className="w-4 h-4 text-yellow-700" />
+                                            <p className="text-xs text-yellow-800 font-medium">
                                                 يتم استخدام سعر صرف مخصص: {formatArabicNumber(customExchangeRate)} بدلاً من {formatArabicNumber(Number(selectedPurchase.exchangeRate))}
                                             </p>
                                         </div>
@@ -400,80 +400,86 @@ export default function InvoiceCostPage() {
                                     <button
                                         onClick={handleUpdateAllProductsCost}
                                         disabled={isUpdatingCost}
-                                        className="inline-flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-lg font-bold shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="inline-flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-2 rounded-lg font-bold shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm whitespace-nowrap"
                                     >
                                         {isUpdatingCost && updatingProductId === -1 ? (
                                             <>
-                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                                جاري تحديث جميع المنتجات...
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                جاري تحديث الكل...
                                             </>
                                         ) : (
                                             <>
-                                                <Save className="w-5 h-5" />
-                                                تحديث تكلفة جميع المنتجات
+                                                <Save className="w-4 h-4" />
+                                                تحديث تكلفة الكل
                                             </>
                                         )}
                                     </button>
                                 </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
+                                <div>
+                                    <table className="w-full table-fixed">
                                         <thead>
                                             <tr className="border-b-2 border-gray-300">
-                                                <th className="text-right py-3 px-4 font-bold text-gray-700">المنتج</th>
-                                                <th className="text-right py-3 px-4 font-bold text-gray-700">الكمية</th>
-                                                <th className="text-right py-3 px-4 font-bold text-gray-700">القيمة ({selectedPurchase?.currency})</th>
-                                                <th className="text-right py-3 px-4 font-bold text-gray-700">القيمة (د.ل)</th>
-                                                <th className="text-right py-3 px-4 font-bold text-gray-700">النسبة %</th>
-                                                <th className="text-right py-3 px-4 font-bold text-gray-700">نصيب المصروفات</th>
-                                                <th className="text-right py-3 px-4 font-bold text-gray-700">الإجمالي النهائي</th>
-                                                <th className="text-right py-3 px-4 font-bold text-gray-700 bg-blue-50">التكلفة/وحدة</th>
-                                                <th className="text-center py-3 px-4 font-bold text-gray-700 bg-green-50">تحديث التكلفة</th>
+                                                <th className="text-right py-3 px-3 font-bold text-gray-700 w-[25%]">المنتج</th>
+                                                <th className="text-right py-3 px-2 font-bold text-gray-700 w-[7%]">الكمية</th>
+                                                <th className="text-right py-3 px-2 font-bold text-gray-700 w-[8%]">
+                                                    <span className="block">القيمة</span>
+                                                    <span className="block text-xs font-normal text-gray-600">({selectedPurchase?.currency})</span>
+                                                </th>
+                                                <th className="text-right py-3 px-2 font-bold text-gray-700 w-[8%]">
+                                                    <span className="block">القيمة</span>
+                                                    <span className="block text-xs font-normal text-gray-600">(د.ل)</span>
+                                                </th>
+                                                <th className="text-right py-3 px-2 font-bold text-gray-700 w-[6%]">النسبة</th>
+                                                <th className="text-right py-3 px-2 font-bold text-gray-700 w-[9%]">المصروفات</th>
+                                                <th className="text-right py-3 px-2 font-bold text-gray-700 w-[9%]">الإجمالي</th>
+                                                <th className="text-right py-3 px-2 font-bold text-gray-700 bg-blue-50 w-[10%]">التكلفة/وحدة</th>
+                                                <th className="text-center py-3 px-2 font-bold text-gray-700 bg-green-50 w-[13%]">تحديث</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {costDistribution.map((line, index) => (
                                                 <tr key={line.productId} className={`border-b border-gray-200 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
-                                                    <td className="py-3 px-4">
+                                                    <td className="py-3 px-3">
                                                         <div>
-                                                            <p className="font-medium text-gray-900">{line.productName}</p>
-                                                            <p className="text-xs text-gray-500">{line.productSku}</p>
+                                                            <p className="font-medium text-gray-900 leading-tight" title={line.productName}>{line.productName}</p>
+                                                            <p className="text-sm text-gray-500 mt-0.5" title={line.productSku}>{line.productSku}</p>
                                                         </div>
                                                     </td>
-                                                    <td className="py-3 px-4 text-gray-700">
+                                                    <td className="py-3 px-2 text-gray-700 text-center">
                                                         {formatArabicNumber(line.qty)}
                                                     </td>
-                                                    <td className="py-3 px-4 text-purple-700 font-medium">
-                                                        {formatArabicNumber(line.subTotal.toFixed(2))}
+                                                    <td className="py-3 px-2 text-purple-700 font-medium">
+                                                        {formatArabicNumber(line.subTotal.toFixed(0))}
                                                     </td>
-                                                    <td className="py-3 px-4 text-gray-700 font-medium">
-                                                        {formatArabicCurrency(line.totalWithExpense)}
+                                                    <td className="py-3 px-2 text-gray-700 font-medium">
+                                                        {formatArabicNumber(line.totalWithExpense.toFixed(0))}
                                                     </td>
-                                                    <td className="py-3 px-4">
-                                                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-medium">
+                                                    <td className="py-3 px-2 text-center">
+                                                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-medium inline-block">
                                                             {formatArabicNumber(line.valuePercentage.toFixed(1))}%
                                                         </span>
                                                     </td>
-                                                    <td className="py-3 px-4 text-orange-600 font-medium">
-                                                        {formatArabicCurrency(line.expenseShare)}
+                                                    <td className="py-3 px-2 text-orange-600 font-medium">
+                                                        {formatArabicNumber(line.expenseShare.toFixed(0))}
                                                     </td>
-                                                    <td className="py-3 px-4 text-green-600 font-bold">
-                                                        {formatArabicCurrency(line.totalInLYD)}
+                                                    <td className="py-3 px-2 text-green-600 font-bold">
+                                                        {formatArabicNumber(line.totalInLYD.toFixed(0))}
                                                     </td>
-                                                    <td className="py-3 px-4 bg-blue-50">
-                                                        <span className="font-bold text-blue-900">
-                                                            {formatArabicCurrency(line.costPerUnit)}
+                                                    <td className="py-3 px-2 bg-blue-50">
+                                                        <span className="font-bold text-blue-900 block">
+                                                            {formatArabicNumber(line.costPerUnit.toFixed(2))}
                                                         </span>
                                                     </td>
-                                                    <td className="py-3 px-4 bg-green-50 text-center">
+                                                    <td className="py-3 px-2 bg-green-50 text-center">
                                                         <button
                                                             onClick={() => handleUpdateProductCost(line.productId, line.costPerUnit)}
                                                             disabled={isUpdatingCost && updatingProductId === line.productId}
-                                                            className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            className="inline-flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                         >
                                                             {isUpdatingCost && updatingProductId === line.productId ? (
                                                                 <>
                                                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                                                    جاري التحديث...
+                                                                    جاري...
                                                                 </>
                                                             ) : (
                                                                 <>
@@ -487,68 +493,68 @@ export default function InvoiceCostPage() {
                                             ))}
                                             {/* Totals Row */}
                                             <tr className="bg-gray-800 text-white font-bold">
-                                                <td className="py-3 px-4" colSpan={2}>الإجمالي</td>
-                                                <td className="py-3 px-4">
-                                                    {formatArabicNumber(totals.subTotalForeign.toFixed(2))}
+                                                <td className="py-3 px-3" colSpan={2}>الإجمالي</td>
+                                                <td className="py-3 px-2">
+                                                    {formatArabicNumber(totals.subTotalForeign.toFixed(0))}
                                                 </td>
-                                                <td className="py-3 px-4">
-                                                    {formatArabicCurrency(totals.subTotalLYD)}
+                                                <td className="py-3 px-2">
+                                                    {formatArabicNumber(totals.subTotalLYD.toFixed(0))}
                                                 </td>
-                                                <td className="py-3 px-4">100%</td>
-                                                <td className="py-3 px-4">
-                                                    {formatArabicCurrency(totals.expenseShare)}
+                                                <td className="py-3 px-2 text-center">100%</td>
+                                                <td className="py-3 px-2">
+                                                    {formatArabicNumber(totals.expenseShare.toFixed(0))}
                                                 </td>
-                                                <td className="py-3 px-4">
-                                                    {formatArabicCurrency(totals.totalInLYD)}
+                                                <td className="py-3 px-2">
+                                                    {formatArabicNumber(totals.totalInLYD.toFixed(0))}
                                                 </td>
-                                                <td className="py-3 px-4">-</td>
-                                                <td className="py-3 px-4">-</td>
+                                                <td className="py-3 px-2">-</td>
+                                                <td className="py-3 px-2">-</td>
                                             </tr>
                                         </tbody>
                                     </table>
                                 </div>
 
                                 {/* Summary Cards */}
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-                                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
-                                        <p className="text-sm text-purple-700 mb-1">إجمالي الفاتورة ({selectedPurchase?.currency})</p>
-                                        <p className="text-2xl font-bold text-purple-900">
-                                            {formatArabicNumber(totals.subTotalForeign.toFixed(2))}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200">
+                                        <p className="text-xs text-purple-700 mb-1">إجمالي ({selectedPurchase?.currency})</p>
+                                        <p className="text-lg font-bold text-purple-900">
+                                            {formatArabicNumber(totals.subTotalForeign.toFixed(0))}
                                         </p>
                                     </div>
-                                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
-                                        <p className="text-sm text-blue-700 mb-1">إجمالي الفاتورة (د.ل)</p>
-                                        <p className="text-2xl font-bold text-blue-900">
-                                            {formatArabicCurrency(totals.subTotalLYD)}
+                                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200">
+                                        <p className="text-xs text-blue-700 mb-1">إجمالي (د.ل)</p>
+                                        <p className="text-lg font-bold text-blue-900">
+                                            {formatArabicNumber(totals.subTotalLYD.toFixed(0))}
                                         </p>
                                     </div>
-                                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200">
-                                        <p className="text-sm text-orange-700 mb-1">إجمالي المصروفات</p>
-                                        <p className="text-2xl font-bold text-orange-900">
-                                            {formatArabicCurrency(totals.expenseShare)}
+                                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3 border border-orange-200">
+                                        <p className="text-xs text-orange-700 mb-1">المصروفات</p>
+                                        <p className="text-lg font-bold text-orange-900">
+                                            {formatArabicNumber(totals.expenseShare.toFixed(0))}
                                         </p>
                                     </div>
-                                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
-                                        <p className="text-sm text-green-700 mb-1">الإجمالي النهائي</p>
-                                        <p className="text-2xl font-bold text-green-900">
-                                            {formatArabicCurrency(totals.totalInLYD)}
+                                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 border border-green-200">
+                                        <p className="text-xs text-green-700 mb-1">الإجمالي النهائي</p>
+                                        <p className="text-lg font-bold text-green-900">
+                                            {formatArabicNumber(totals.totalInLYD.toFixed(0))}
                                         </p>
                                     </div>
                                 </div>
 
                                 {/* Formula Explanation */}
-                                <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                    <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
-                                        <TrendingUp className="w-5 h-5" />
+                                <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                    <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2 text-sm">
+                                        <TrendingUp className="w-4 h-4" />
                                         طريقة الحساب
                                     </h3>
-                                    <div className="text-sm text-blue-800 space-y-1">
+                                    <div className="text-xs text-blue-800 space-y-0.5">
                                         <p>١. تحويل قيمة المنتج إلى دينار = قيمة المنتج ({selectedPurchase?.currency}) × سعر الصرف</p>
                                         <p>٢. حساب نسبة المنتج = (قيمة المنتج بالدينار ÷ إجمالي الفاتورة بالدينار) × ١٠٠</p>
                                         <p>٣. نصيب المنتج من المصروفات = (النسبة ÷ ١٠٠) × إجمالي المصروفات</p>
                                         <p>٤. الإجمالي النهائي = قيمة المنتج بالدينار + نصيب المصروفات</p>
                                         <p>٥. التكلفة للوحدة = الإجمالي النهائي ÷ الكمية</p>
-                                        <p className="text-orange-700 font-medium mt-2">⚠️ ملاحظة: المنتج الأعلى قيمة يأخذ نسبة أكبر من المصروفات</p>
+                                        <p className="text-orange-700 font-medium mt-1">⚠️ ملاحظة: المنتج الأعلى قيمة يأخذ نسبة أكبر من المصروفات</p>
                                     </div>
                                 </div>
                             </div>

@@ -12,6 +12,7 @@ export default function SettingsPage() {
   const [profitMargin, setProfitMargin] = useState(DEFAULT_PROFIT_MARGIN.toString());
   const [enableLineDiscount, setEnableLineDiscount] = useState(true);
   const [enableInvoiceDiscount, setEnableInvoiceDiscount] = useState(true);
+  const [costCalculationMethod, setCostCalculationMethod] = useState<'manual' | 'invoice'>('manual');
   const { success, error } = useToast();
 
   // أسعار الصرف من قاعدة البيانات
@@ -23,6 +24,7 @@ export default function SettingsPage() {
   const [isSavingRates, setIsSavingRates] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingDiscounts, setIsSavingDiscounts] = useState(false);
+  const [isSavingCostMethod, setIsSavingCostMethod] = useState(false);
 
   // تحديث الحقول عند تحميل البيانات
   useEffect(() => {
@@ -51,6 +53,9 @@ export default function SettingsPage() {
 
     const savedInvDisc = localStorage.getItem('enableInvoiceDiscount');
     setEnableInvoiceDiscount(savedInvDisc === null ? true : savedInvDisc === 'true');
+
+    const savedCostMethod = localStorage.getItem('costCalculationMethod');
+    setCostCalculationMethod((savedCostMethod as 'manual' | 'invoice') || 'manual');
   }, [exchangeRates]);
 
   // حفظ إعدادات الواتساب والمخزون
@@ -141,6 +146,24 @@ export default function SettingsPage() {
       error('حدث خطأ أثناء حفظ إعدادات الخصومات');
     } finally {
       setIsSavingDiscounts(false);
+    }
+  };
+
+  // حفظ طريقة حساب التكلفة
+  const handleSaveCostMethod = () => {
+    setIsSavingCostMethod(true);
+
+    try {
+      localStorage.setItem('costCalculationMethod', costCalculationMethod);
+      success('تم حفظ إعدادات حساب التكلفة بنجاح');
+      // Reload to apply changes
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (err) {
+      error('حدث خطأ أثناء حفظ إعدادات حساب التكلفة');
+    } finally {
+      setIsSavingCostMethod(false);
     }
   };
 
@@ -272,6 +295,128 @@ export default function SettingsPage() {
               📊 مثال: إذا كان سعر الشركة الأم 100 د.ل وهامش الربح 20%، سيكون سعر البيع 120 د.ل
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Cost Calculation Method Card */}
+      <div className="bg-white rounded-lg shadow-sm border border-border-primary p-6 mb-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+            <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-text-primary">آلية حساب تكلفة الأصناف</h2>
+            <p className="text-sm text-text-secondary">اختر الطريقة المفضلة لحساب وتحديث تكلفة المنتجات</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div 
+            className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
+              costCalculationMethod === 'manual' 
+                ? 'border-teal-500 bg-teal-50' 
+                : 'border-gray-200 bg-white hover:border-gray-300'
+            }`}
+            onClick={() => setCostCalculationMethod('manual')}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="radio"
+                    checked={costCalculationMethod === 'manual'}
+                    onChange={() => setCostCalculationMethod('manual')}
+                    className="w-4 h-4 text-teal-600"
+                  />
+                  <h3 className="text-base font-bold text-gray-800">إدارة تكلفة الأصناف (يدوي)</h3>
+                </div>
+                <p className="text-sm text-gray-600 mr-6">
+                  • تحديث التكلفة بشكل يدوي لكل منتج على حدة
+                </p>
+                <p className="text-sm text-gray-600 mr-6">
+                  • مناسب للتحكم الكامل في تكلفة كل منتج
+                </p>
+                <p className="text-sm text-gray-600 mr-6">
+                  • سيظهر في القائمة الجانبية: "تكلفة الأصناف"
+                </p>
+              </div>
+              {costCalculationMethod === 'manual' && (
+                <div className="flex-shrink-0">
+                  <svg className="w-6 h-6 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div 
+            className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
+              costCalculationMethod === 'invoice' 
+                ? 'border-teal-500 bg-teal-50' 
+                : 'border-gray-200 bg-white hover:border-gray-300'
+            }`}
+            onClick={() => setCostCalculationMethod('invoice')}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="radio"
+                    checked={costCalculationMethod === 'invoice'}
+                    onChange={() => setCostCalculationMethod('invoice')}
+                    className="w-4 h-4 text-teal-600"
+                  />
+                  <h3 className="text-base font-bold text-gray-800">تكلفة الفاتورة (تلقائي)</h3>
+                </div>
+                <p className="text-sm text-gray-600 mr-6">
+                  • حساب التكلفة تلقائياً من فواتير المشتريات
+                </p>
+                <p className="text-sm text-gray-600 mr-6">
+                  • توزيع المصروفات على المنتجات بشكل نسبي
+                </p>
+                <p className="text-sm text-gray-600 mr-6">
+                  • سيظهر في القائمة الجانبية: "تكلفة الفاتورة"
+                </p>
+              </div>
+              {costCalculationMethod === 'invoice' && (
+                <div className="flex-shrink-0">
+                  <svg className="w-6 h-6 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-teal-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-teal-800 mb-2">ملاحظة هامة</p>
+                <ul className="text-sm text-teal-700 space-y-1">
+                  <li>• يمكنك التبديل بين الطريقتين في أي وقت</li>
+                  <li>• بعد الحفظ، ستحتاج لإعادة تحميل الصفحة لتطبيق التغييرات</li>
+                  <li>• سيظهر في القائمة الجانبية الشاشة المختارة فقط</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSaveCostMethod}
+            disabled={isSavingCostMethod}
+            className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 transition-colors"
+          >
+            <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            {isSavingCostMethod ? 'جاري الحفظ...' : 'حفظ إعدادات حساب التكلفة'}
+          </button>
         </div>
       </div>
 

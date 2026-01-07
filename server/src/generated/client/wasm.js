@@ -511,6 +511,7 @@ exports.Prisma.SupplierPaymentReceiptScalarFieldEnum = {
   id: 'id',
   supplierId: 'supplierId',
   purchaseId: 'purchaseId',
+  companyId: 'companyId',
   amount: 'amount',
   type: 'type',
   description: 'description',
