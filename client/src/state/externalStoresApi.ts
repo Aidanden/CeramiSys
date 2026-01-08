@@ -21,6 +21,7 @@ export interface ExternalStore {
     address?: string;
     googleMapsUrl?: string;
     isActive: boolean;
+    showPrices: boolean;
     createdAt: string;
     updatedAt: string;
     users?: ExternalStoreUser[];
@@ -51,6 +52,7 @@ export interface CreateStoreRequest {
 
 export type UpdateStoreRequest = Partial<CreateStoreRequest> & {
     isActive?: boolean;
+    showPrices?: boolean;
 };
 
 export interface CreateStoreUserRequest {

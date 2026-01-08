@@ -21,7 +21,8 @@ import {
   Archive,
 } from "lucide-react";
 import {
-  useGetSalesStatsQuery
+  useGetSalesStatsQuery,
+  useGetSalesByCompanyQuery
 } from "@/state/salesApi";
 import {
   useGetPurchaseStatsQuery
@@ -81,6 +82,206 @@ const MainStatCard = ({
         </div>
         <div className={`w-14 h-14 ${iconBgColor} rounded-xl flex items-center justify-center shadow-sm`}>
           <Icon className="w-7 h-7 text-white" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// مكون مبيعات الشركات
+// ==========================================
+const CompanySalesCards = () => {
+  const { data: salesByCompanyData, isLoading } = useGetSalesByCompanyQuery();
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[...Array(3)].map((_, i) => (
+          <div key={`skeleton-${i}`} className="bg-white rounded-2xl shadow-sm border border-blue-100 p-6 animate-pulse">
+            <div className="h-6 bg-slate-200 rounded w-3/4 mb-4"></div>
+            <div className="h-8 bg-slate-200 rounded w-full mb-2"></div>
+            <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const companySales = salesByCompanyData?.data || [];
+
+  return (
+    <div>
+      <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+        <TrendingUp className="w-6 h-6 text-blue-600" />
+        إجمالي المبيعات لكل شركة
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {companySales.map((company, index) => {
+          const colors = [
+            { bg: 'bg-gradient-to-br from-blue-500 to-blue-600', border: 'border-blue-200', text: 'text-blue-600' },
+            { bg: 'bg-gradient-to-br from-emerald-500 to-green-600', border: 'border-emerald-200', text: 'text-emerald-600' },
+            { bg: 'bg-gradient-to-br from-purple-500 to-purple-600', border: 'border-purple-200', text: 'text-purple-600' },
+            { bg: 'bg-gradient-to-br from-orange-500 to-orange-600', border: 'border-orange-200', text: 'text-orange-600' },
+          ];
+          const color = colors[index % colors.length];
+          
+          return (
+            <div
+              key={company.companyId}
+              className={`bg-white rounded-2xl shadow-sm border ${color.border} p-6 hover:shadow-md transition-all duration-300`}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <p className="text-sm font-medium text-slate-500 mb-1">الشركة</p>
+                  <p className="text-lg font-bold text-slate-800">{company.companyName}</p>
+                  <p className="text-xs text-slate-400">{company.companyCode}</p>
+                </div>
+                <div className={`w-12 h-12 ${color.bg} rounded-xl flex items-center justify-center shadow-sm`}>
+                  <ShoppingCart className="w-6 h-6 text-white" />
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <p className="text-xs text-slate-500 mb-1">إجمالي المبيعات</p>
+                  <p className={`text-xl font-bold ${color.text}`}>
+                    {formatArabicCurrency(company.totalRevenue)}
+                  </p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <p className="text-xs text-slate-500 mb-1">مبيعات الشهر الحالي</p>
+                  <p className="text-lg font-semibold text-slate-700">
+                    {formatArabicCurrency(company.monthRevenue)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// مكون الخزائن (المدفوعات والإيداعات)
+// ==========================================
+const TreasuryCards = () => {
+  const { data: treasuryMonthlyStats, isLoading } = useGetMonthlyTreasuryStatsQuery();
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {[...Array(2)].map((_, i) => (
+          <div key={`skeleton-${i}`} className="bg-white rounded-2xl shadow-sm border border-blue-100 p-6 animate-pulse">
+            <div className="h-6 bg-slate-200 rounded w-1/2 mb-4"></div>
+            <div className="space-y-3">
+              {[...Array(3)].map((_, j) => (
+                <div key={`item-${j}`} className="h-16 bg-slate-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const payments = treasuryMonthlyStats?.data?.payments || { total: 0, breakdown: [] };
+  const revenues = treasuryMonthlyStats?.data?.revenues || { total: 0, breakdown: [] };
+
+  return (
+    <div>
+      <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+        <Wallet className="w-6 h-6 text-blue-600" />
+        الخزائن والحسابات المصرفية (هذا الشهر)
+      </h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* المدفوعات (مسحوبات) */}
+        <div className="bg-white rounded-2xl shadow-sm border border-red-100 overflow-hidden hover:shadow-md transition-all duration-300">
+          <div className="bg-gradient-to-l from-red-500 to-red-600 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white">إجمالي المدفوعات (مسحوبات)</h3>
+              <div className="flex items-center gap-2 bg-white/20 rounded-full px-3 py-1">
+                <TrendingDown className="w-4 h-4 text-white" />
+                <span className="text-sm font-medium text-white">{formatArabicCurrency(payments.total)}</span>
+              </div>
+            </div>
+          </div>
+          <div className="p-5">
+            {payments.breakdown.length > 0 ? (
+              <div className="space-y-2">
+                {payments.breakdown.map((item, index) => (
+                  <div
+                    key={`payment-${item.treasuryId}-${index}`}
+                    className="flex items-center justify-between p-3 rounded-xl bg-red-50 border border-red-100"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                        {item.type === 'BANK' ? (
+                          <CircleDollarSign className="w-4 h-4 text-red-600" />
+                        ) : (
+                          <Wallet className="w-4 h-4 text-red-600" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-800 text-sm">{item.name}</p>
+                        <p className="text-xs text-slate-500">{item.type === 'BANK' ? 'حساب مصرفي' : 'خزينة'}</p>
+                      </div>
+                    </div>
+                    <p className="font-bold text-red-600 text-sm">{formatArabicCurrency(item.amount)}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <p className="text-slate-500">لا توجد مدفوعات</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* الإيرادات (إيداعات) */}
+        <div className="bg-white rounded-2xl shadow-sm border border-emerald-100 overflow-hidden hover:shadow-md transition-all duration-300">
+          <div className="bg-gradient-to-l from-emerald-500 to-green-600 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white">إجمالي الإيرادات (إيداعات)</h3>
+              <div className="flex items-center gap-2 bg-white/20 rounded-full px-3 py-1">
+                <TrendingUp className="w-4 h-4 text-white" />
+                <span className="text-sm font-medium text-white">{formatArabicCurrency(revenues.total)}</span>
+              </div>
+            </div>
+          </div>
+          <div className="p-5">
+            {revenues.breakdown.length > 0 ? (
+              <div className="space-y-2">
+                {revenues.breakdown.map((item, index) => (
+                  <div
+                    key={`revenue-${item.treasuryId}-${index}`}
+                    className="flex items-center justify-between p-3 rounded-xl bg-emerald-50 border border-emerald-100"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                        {item.type === 'BANK' ? (
+                          <CircleDollarSign className="w-4 h-4 text-emerald-600" />
+                        ) : (
+                          <Wallet className="w-4 h-4 text-emerald-600" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-800 text-sm">{item.name}</p>
+                        <p className="text-xs text-slate-500">{item.type === 'BANK' ? 'حساب مصرفي' : 'خزينة'}</p>
+                      </div>
+                    </div>
+                    <p className="font-bold text-emerald-600 text-sm">{formatArabicCurrency(item.amount)}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <p className="text-slate-500">لا توجد إيرادات</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -663,40 +864,11 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* الإحصائيات الرئيسية - Main Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MainStatCard
-          title="إجمالي المبيعات (سنوياً)"
-          value={formatArabicCurrency(salesStats?.data?.yearRevenue || 0)}
-          subtitle={`${formatArabicNumber(salesStats?.data?.yearSales || 0)} فاتورة`}
-          icon={TrendingUp}
-          iconBgColor="bg-gradient-to-br from-blue-500 to-blue-600"
-          isLoading={salesLoading}
-        />
-        <MainStatCard
-          title="إجمالي المشتريات"
-          value={formatArabicCurrency(purchaseStats?.totalAmount || 0)}
-          subtitle={`${formatArabicNumber(purchaseStats?.totalPurchases || 0)} عملية شراء`}
-          icon={ShoppingCart}
-          iconBgColor="bg-gradient-to-br from-indigo-500 to-indigo-600"
-          isLoading={purchaseLoading}
-        />
-        <MainStatCard
-          title="المبيعات الآجلة المتبقية"
-          value={formatArabicCurrency(creditStats?.data?.totalRemaining || 0)}
-          icon={CreditCard}
-          iconBgColor="bg-gradient-to-br from-amber-500 to-orange-500"
-          isLoading={creditLoading}
-        />
-        <MainStatCard
-          title="المبلغ المدفوع للموردين"
-          value={formatArabicCurrency(purchaseStats?.totalPaid || 0)}
-          subtitle={`المتبقي: ${formatArabicCurrency(purchaseStats?.totalRemaining || 0)}`}
-          icon={CircleDollarSign}
-          iconBgColor="bg-gradient-to-br from-emerald-500 to-green-600"
-          isLoading={purchaseLoading}
-        />
-      </div>
+      {/* مبيعات الشركات */}
+      <CompanySalesCards />
+
+      {/* الخزائن (المدفوعات والإيداعات) */}
+      <TreasuryCards />
 
       {/* كروت العمليات اليومية والشهرية */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

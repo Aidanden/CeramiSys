@@ -34,10 +34,24 @@ interface InvoiceLine {
 export default function StoreInvoicesPage() {
     const { data: invoicesData, isLoading: invoicesLoading, refetch: refetchInvoices } = useGetInvoicesQuery();
     const { data: productsData, isLoading: productsLoading, refetch: refetchProducts } = useGetAvailableProductsQuery();
-    const { data: currentUser } = useGetCurrentUserQuery();
+    const { data: currentUser, refetch: refetchCurrentUser } = useGetCurrentUserQuery(undefined, {
+        refetchOnMountOrArgChange: true,
+    });
     const [createInvoice, { isLoading: isCreating }] = useCreateInvoiceMutation();
 
-    // إعادة جلب البيانات عند تغيير المستخدم
+    // إعداد إظهار الأسعار
+    const showPrices = currentUser?.store?.showPrices === true;
+    
+    // Debug: طباعة القيمة للتأكد
+    console.log('🔍 Store Portal - Current User:', currentUser);
+    console.log('🔍 Store Portal - showPrices from store:', currentUser?.store?.showPrices);
+    console.log('🔍 Store Portal - Final showPrices value:', showPrices);
+
+    // إعادة جلب البيانات عند mount وعند تغيير المستخدم
+    useEffect(() => {
+        refetchCurrentUser();
+    }, [refetchCurrentUser]);
+
     useEffect(() => {
         if (currentUser) {
             refetchInvoices();
@@ -341,7 +355,9 @@ export default function StoreInvoicesPage() {
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">رقم الفاتورة</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">التاريخ</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">العميل</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">المبلغ</th>
+                                    {showPrices && (
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">المبلغ</th>
+                                    )}
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">الحالة</th>
                                 </tr>
                             </thead>
@@ -357,9 +373,11 @@ export default function StoreInvoicesPage() {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                             {invoice.customerName || 'عميل نقدي'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
-                                            {Number(invoice.total).toLocaleString('en-US')} د.ل
-                                        </td>
+                                        {showPrices && (
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
+                                                {Number(invoice.total).toLocaleString('en-US')} د.ل
+                                            </td>
+                                        )}
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${invoice.status === 'APPROVED' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
                                                 invoice.status === 'REJECTED' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' :
@@ -459,9 +477,11 @@ export default function StoreInvoicesPage() {
                                                             }
                                                         </div>
                                                     </div>
-                                                    <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                                                        {Number(item.product.prices?.find((p: any) => p.company?.code === 'TAQAZI' || p.company?.code === 'TG')?.sellPrice || item.product.prices?.[0]?.sellPrice || 0).toLocaleString('en-US')} د.ل
-                                                    </div>
+                                                    {showPrices && (
+                                                        <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                                                            {Number(item.product.prices?.find((p: any) => p.company?.code === 'TAQAZI' || p.company?.code === 'TG')?.sellPrice || item.product.prices?.[0]?.sellPrice || 0).toLocaleString('en-US')} د.ل
+                                                        </div>
+                                                    )}
                                                 </button>
                                             ))
                                         ) : (
@@ -474,21 +494,23 @@ export default function StoreInvoicesPage() {
                             </div>
 
                             {/* ملاحظة مهمة عن البيع بالمتر */}
-                            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-4 rounded-lg border-2 border-blue-300 dark:border-blue-700">
-                                <div className="flex items-start gap-3">
-                                    <FileText className="text-blue-600 dark:text-blue-400 mt-0.5" size={24} />
-                                    <div>
-                                        <p className="text-sm text-blue-900 dark:text-blue-100 font-bold mb-1">
-                                            ملاحظة مهمة: البيع بالمتر المربع
-                                        </p>
-                                        <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
-                                            • للأصناف التي وحدتها "صندوق": السعر يكون <strong>بالمتر المربع</strong><br />
-                                            • الإجمالي = عدد الصناديق × عدد الأمتار في الصندوق × سعر المتر<br />
-                                            • <strong>السعر ثابت</strong> ولا يمكن تعديله
-                                        </p>
+                            {showPrices && (
+                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-4 rounded-lg border-2 border-blue-300 dark:border-blue-700">
+                                    <div className="flex items-start gap-3">
+                                        <FileText className="text-blue-600 dark:text-blue-400 mt-0.5" size={24} />
+                                        <div>
+                                            <p className="text-sm text-blue-900 dark:text-blue-100 font-bold mb-1">
+                                                ملاحظة مهمة: البيع بالمتر المربع
+                                            </p>
+                                            <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
+                                                • للأصناف التي وحدتها "صندوق": السعر يكون <strong>بالمتر المربع</strong><br />
+                                                • الإجمالي = عدد الصناديق × عدد الأمتار في الصندوق × سعر المتر<br />
+                                                • <strong>السعر ثابت</strong> ولا يمكن تعديله
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Lines Table */}
                             <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -498,8 +520,12 @@ export default function StoreInvoicesPage() {
                                             <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">المنتج</th>
                                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-24">الكمية</th>
                                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-28">الأمتار</th>
-                                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-32">السعر</th>
-                                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-32">الإجمالي</th>
+                                            {showPrices && (
+                                                <>
+                                                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-32">السعر</th>
+                                                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-32">الإجمالي</th>
+                                                </>
+                                            )}
                                             <th className="px-4 py-3 w-10"></th>
                                         </tr>
                                     </thead>
@@ -551,25 +577,29 @@ export default function StoreInvoicesPage() {
                                                             <span className="text-gray-400 dark:text-gray-500">-</span>
                                                         )}
                                                     </td>
-                                                    <td className="px-4 py-3">
-                                                        {/* السعر مغلق - للعرض فقط */}
-                                                        <div className="bg-gray-100 dark:bg-gray-700 px-2 py-2 rounded-lg text-center">
-                                                            <span className="text-sm font-bold text-gray-700 dark:text-gray-200">
-                                                                {line.unitPrice.toFixed(2)}
-                                                            </span>
-                                                            <span className="text-xs text-gray-500 dark:text-gray-400 block">
-                                                                {line.unit === 'صندوق' ? 'د.ل/م²' : 'د.ل'}
-                                                            </span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-center">
-                                                        <div className="bg-green-100 dark:bg-green-900/30 px-2 py-2 rounded-lg">
-                                                            <span className="text-sm font-bold text-green-700 dark:text-green-300">
-                                                                {line.subTotal.toLocaleString('en-US')}
-                                                            </span>
-                                                            <span className="text-xs text-green-600 dark:text-green-400 block">د.ل</span>
-                                                        </div>
-                                                    </td>
+                                                    {showPrices && (
+                                                        <>
+                                                            <td className="px-4 py-3">
+                                                                {/* السعر مغلق - للعرض فقط */}
+                                                                <div className="bg-gray-100 dark:bg-gray-700 px-2 py-2 rounded-lg text-center">
+                                                                    <span className="text-sm font-bold text-gray-700 dark:text-gray-200">
+                                                                        {line.unitPrice.toFixed(2)}
+                                                                    </span>
+                                                                    <span className="text-xs text-gray-500 dark:text-gray-400 block">
+                                                                        {line.unit === 'صندوق' ? 'د.ل/م²' : 'د.ل'}
+                                                                    </span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center">
+                                                                <div className="bg-green-100 dark:bg-green-900/30 px-2 py-2 rounded-lg">
+                                                                    <span className="text-sm font-bold text-green-700 dark:text-green-300">
+                                                                        {line.subTotal.toLocaleString('en-US')}
+                                                                    </span>
+                                                                    <span className="text-xs text-green-600 dark:text-green-400 block">د.ل</span>
+                                                                </div>
+                                                            </td>
+                                                        </>
+                                                    )}
                                                     <td className="px-4 py-3 text-center">
                                                         <button
                                                             onClick={() => removeLine(index)}
@@ -590,7 +620,7 @@ export default function StoreInvoicesPage() {
                                             </tr>
                                         )}
                                     </tbody>
-                                    {lines.length > 0 && (
+                                    {lines.length > 0 && showPrices && (
                                         <tfoot className="bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20">
                                             <tr>
                                                 <td colSpan={4} className="px-4 py-4 text-left">

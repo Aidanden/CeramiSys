@@ -608,6 +608,7 @@ exports.Prisma.ExternalStoreScalarFieldEnum = {
   address: 'address',
   googleMapsUrl: 'googleMapsUrl',
   isActive: 'isActive',
+  showPrices: 'showPrices',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

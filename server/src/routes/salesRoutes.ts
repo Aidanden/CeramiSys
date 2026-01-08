@@ -37,6 +37,13 @@ router.post('/', salesController.createSale.bind(salesController));
 router.get('/stats', salesController.getSalesStats.bind(salesController));
 
 /**
+ * @route   GET /api/sales/by-company
+ * @desc    الحصول على إحصائيات المبيعات لكل شركة
+ * @access  Private
+ */
+router.get('/by-company', salesController.getSalesByCompany.bind(salesController));
+
+/**
  * @route   GET /api/sales/chart/daily
  * @desc    الحصول على بيانات الرسم البياني للمبيعات اليومية
  * @access  Private

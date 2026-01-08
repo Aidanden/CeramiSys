@@ -6,8 +6,18 @@ import { useState, useEffect } from 'react';
 
 export default function StoreProductsPage() {
     const [search, setSearch] = useState('');
-    const { data: currentUser } = useGetCurrentUserQuery();
+    const { data: currentUser, refetch: refetchCurrentUser } = useGetCurrentUserQuery(undefined, {
+        refetchOnMountOrArgChange: true,
+    });
     const { data: products, isLoading, refetch } = useGetAvailableProductsQuery();
+    
+    // إعداد إظهار الأسعار
+    const showPrices = currentUser?.store?.showPrices === true;
+    
+    // إعادة جلب بيانات المستخدم عند mount
+    useEffect(() => {
+        refetchCurrentUser();
+    }, [refetchCurrentUser]);
     
     // إعادة جلب المنتجات عند تغيير المستخدم
     useEffect(() => {
@@ -89,12 +99,14 @@ export default function StoreProductsPage() {
                                     </div>
 
                                     <div className="space-y-3">
-                                        <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
-                                            <span className="text-gray-600 dark:text-gray-400">السعر</span>
-                                            <span className="font-bold text-gray-900 dark:text-white">
-                                                {Number(price).toLocaleString('ar-EG')} د.ل
-                                            </span>
-                                        </div>
+                                        {showPrices && (
+                                            <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                                                <span className="text-gray-600 dark:text-gray-400">السعر</span>
+                                                <span className="font-bold text-gray-900 dark:text-white">
+                                                    {Number(price).toLocaleString('en-US')} د.ل
+                                                </span>
+                                            </div>
+                                        )}
 
                                         <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
                                             <span className="text-gray-600 dark:text-gray-400">الوحدة</span>

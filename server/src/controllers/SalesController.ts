@@ -403,6 +403,22 @@ export class SalesController {
   }
 
   /**
+   * الحصول على إحصائيات المبيعات لكل شركة
+   */
+  async getSalesByCompany(req: Request, res: Response): Promise<void> {
+    try {
+      const stats = await this.salesService.getSalesByCompany();
+      res.status(200).json(stats);
+    } catch (error: any) {
+      console.error('خطأ في جلب إحصائيات المبيعات لكل شركة:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'خطأ في الخادم الداخلي',
+      });
+    }
+  }
+
+  /**
    * الحصول على بيانات الرسم البياني للمبيعات اليومية
    */
   async getDailySalesChart(req: Request, res: Response): Promise<void> {

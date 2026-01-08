@@ -153,6 +153,14 @@ export interface SalesStats {
   yearRevenue: number;
 }
 
+export interface CompanySalesStats {
+  companyId: number;
+  companyName: string;
+  companyCode: string;
+  totalRevenue: number;
+  monthRevenue: number;
+}
+
 export interface DailySalesData {
   date: string;
   revenue: number;
@@ -458,6 +466,14 @@ export const salesApi = createApi({
     }),
 
     /**
+     * الحصول على إحصائيات المبيعات لكل شركة
+     */
+    getSalesByCompany: builder.query<{ success: boolean; message: string; data: CompanySalesStats[] }, void>({
+      query: () => "sales/by-company",
+      providesTags: [{ type: "SalesStats", id: "BY_COMPANY" }],
+    }),
+
+    /**
      * الحصول على الفواتير النقدية (للمحاسب)
      */
     getCashSales: builder.query<SalesResponse, SalesQueryParams>({
@@ -634,6 +650,7 @@ export const {
   useUpdateSaleMutation,
   useDeleteSaleMutation,
   useGetSalesStatsQuery,
+  useGetSalesByCompanyQuery,
   useGetCashSalesQuery,
   useIssueReceiptMutation,
   useApproveSaleMutation,

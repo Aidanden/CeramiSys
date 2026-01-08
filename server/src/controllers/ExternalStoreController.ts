@@ -183,7 +183,7 @@ export class ExternalStoreController {
      */
     async createStore(req: Request, res: Response) {
         try {
-            const { name, ownerName, phone1, phone2, address, googleMapsUrl } = req.body;
+            const { name, ownerName, phone1, phone2, address, googleMapsUrl, showPrices } = req.body;
 
             // التحقق من البيانات المطلوبة
             if (!name || !ownerName || !phone1) {
@@ -198,6 +198,7 @@ export class ExternalStoreController {
                     phone2,
                     address,
                     googleMapsUrl,
+                    showPrices: showPrices !== undefined ? showPrices : true,
                 },
             });
 
@@ -214,7 +215,7 @@ export class ExternalStoreController {
     async updateStore(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const { name, ownerName, phone1, phone2, address, googleMapsUrl, isActive } = req.body;
+            const { name, ownerName, phone1, phone2, address, googleMapsUrl, isActive, showPrices } = req.body;
 
             const store = await prisma.externalStore.update({
                 where: { id: Number(id) },
@@ -226,6 +227,7 @@ export class ExternalStoreController {
                     address,
                     googleMapsUrl,
                     isActive,
+                    showPrices,
                 },
             });
 

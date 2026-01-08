@@ -14,11 +14,13 @@ export interface StoreInfo {
     ownerName: string;
     phone1: string;
     address: string;
+    showPrices: boolean;
 }
 
 export interface LoginResponse {
     token: string;
     user: StoreUser;
+    store: StoreInfo;
 }
 
 export interface CurrentUserResponse {

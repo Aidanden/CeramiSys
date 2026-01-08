@@ -1344,6 +1344,66 @@ export class SalesService {
   }
 
   /**
+   * إحصائيات المبيعات لكل شركة
+   */
+  async getSalesByCompany() {
+    try {
+      const companies = await this.prisma.company.findMany({
+        select: {
+          id: true,
+          name: true,
+          code: true
+        }
+      });
+
+      const today = new Date();
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+      const companyStats = await Promise.all(
+        companies.map(async (company) => {
+          const [
+            totalRevenue,
+            monthRevenue
+          ] = await Promise.all([
+            this.prisma.sale.aggregate({
+              where: {
+                companyId: company.id,
+                status: 'APPROVED'
+              },
+              _sum: { total: true }
+            }),
+            this.prisma.sale.aggregate({
+              where: {
+                companyId: company.id,
+                status: 'APPROVED',
+                createdAt: { gte: startOfMonth }
+              },
+              _sum: { total: true }
+            })
+          ]);
+
+          return {
+            companyId: company.id,
+            companyName: company.name,
+            companyCode: company.code,
+            totalRevenue: Number(totalRevenue._sum.total || 0),
+            monthRevenue: Number(monthRevenue._sum.total || 0)
+          };
+        })
+      );
+
+      return {
+        success: true,
+        message: 'تم جلب إحصائيات المبيعات لكل شركة بنجاح',
+        data: companyStats
+      };
+    } catch (error) {
+      console.error('خطأ في جلب إحصائيات المبيعات لكل شركة:', error);
+      throw error;
+    }
+  }
+
+  /**
    * الحصول على بيانات المبيعات اليومية للرسم البياني
    * @param days - عدد الأيام (افتراضي: 30 يوم)
    */

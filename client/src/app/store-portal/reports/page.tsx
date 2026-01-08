@@ -1,11 +1,17 @@
 'use client';
 
-import { useGetInvoiceStatsQuery, useGetInvoicesQuery } from '@/state/storePortalApi';
+import { useGetInvoiceStatsQuery, useGetInvoicesQuery, useGetCurrentUserQuery } from '@/state/storePortalApi';
 import { BarChart3, TrendingUp, Calendar, DollarSign } from 'lucide-react';
 
 export default function StoreReportsPage() {
+    const { data: currentUser } = useGetCurrentUserQuery(undefined, {
+        refetchOnMountOrArgChange: true,
+    });
     const { data: stats, isLoading: statsLoading } = useGetInvoiceStatsQuery();
     const { data: invoicesData, isLoading: invoicesLoading } = useGetInvoicesQuery();
+    
+    // إعداد إظهار الأسعار
+    const showPrices = currentUser?.store?.showPrices === true;
 
     if (statsLoading || invoicesLoading) {
         return (
@@ -35,19 +41,21 @@ export default function StoreReportsPage() {
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
-                            <DollarSign className="text-green-600 dark:text-green-400" size={24} />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">إجمالي المبيعات</p>
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                                {Number(stats?.totalAmount || 0).toLocaleString('ar-EG')} د.ل
-                            </h3>
+                {showPrices && (
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                                <DollarSign className="text-green-600 dark:text-green-400" size={24} />
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">إجمالي المبيعات</p>
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    {Number(stats?.totalAmount || 0).toLocaleString('en-US')} د.ل
+                                </h3>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
 
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-4">
@@ -63,29 +71,32 @@ export default function StoreReportsPage() {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
-                            <BarChart3 className="text-purple-600 dark:text-purple-400" size={24} />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">متوسط قيمة الفاتورة</p>
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                                {stats?.approvedInvoices > 0
-                                    ? (Number(stats.totalAmount) / stats.approvedInvoices).toLocaleString('ar-EG')
-                                    : 0} د.ل
-                            </h3>
+                {showPrices && (
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+                                <BarChart3 className="text-purple-600 dark:text-purple-400" size={24} />
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">متوسط قيمة الفاتورة</p>
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    {stats?.approvedInvoices > 0
+                                        ? (Number(stats.totalAmount) / stats.approvedInvoices).toLocaleString('en-US')
+                                        : 0} د.ل
+                                </h3>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
             </div>
 
             {/* Monthly Sales Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <Calendar size={20} />
-                    المبيعات الشهرية
-                </h2>
+            {showPrices && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <Calendar size={20} />
+                        المبيعات الشهرية
+                    </h2>
                 {monthlySales && Object.keys(monthlySales).length > 0 ? (
                     <div className="overflow-x-auto">
                         <table className="w-full">
@@ -100,7 +111,7 @@ export default function StoreReportsPage() {
                                     <tr key={month}>
                                         <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{month}</td>
                                         <td className="px-4 py-3 text-sm font-bold text-gray-900 dark:text-white">
-                                            {Number(amount).toLocaleString('ar-EG')} د.ل
+                                            {Number(amount).toLocaleString('en-US')} د.ل
                                         </td>
                                     </tr>
                                 ))}
@@ -110,7 +121,8 @@ export default function StoreReportsPage() {
                 ) : (
                     <p className="text-gray-500 dark:text-gray-400 text-center py-4">لا توجد بيانات مبيعات</p>
                 )}
-            </div>
+                </div>
+            )}
 
             {/* Top Selling Products (Detailed) */}
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
@@ -123,8 +135,12 @@ export default function StoreReportsPage() {
                                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300">المنتج</th>
                                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300">SKU</th>
                                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300">الكمية المباعة</th>
-                                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300">إجمالي الإيرادات</th>
-                                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300">النسبة من الإجمالي</th>
+                                    {showPrices && (
+                                        <>
+                                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300">إجمالي الإيرادات</th>
+                                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300">النسبة من الإجمالي</th>
+                                        </>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -138,20 +154,24 @@ export default function StoreReportsPage() {
                                             <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{item.name}</td>
                                             <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 font-mono">{item.sku}</td>
                                             <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{item.totalQty}</td>
-                                            <td className="px-4 py-3 text-sm font-bold text-gray-900 dark:text-white">
-                                                {Number(item.totalAmount).toLocaleString('ar-EG')} د.ل
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-16 bg-gray-200 rounded-full h-2 dark:bg-gray-700">
-                                                        <div
-                                                            className="bg-blue-600 h-2 rounded-full"
-                                                            style={{ width: `${percentage}%` }}
-                                                        ></div>
-                                                    </div>
-                                                    <span>{percentage.toFixed(1)}%</span>
-                                                </div>
-                                            </td>
+                                            {showPrices && (
+                                                <>
+                                                    <td className="px-4 py-3 text-sm font-bold text-gray-900 dark:text-white">
+                                                        {Number(item.totalAmount).toLocaleString('en-US')} د.ل
+                                                    </td>
+                                                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-16 bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                                                                <div
+                                                                    className="bg-blue-600 h-2 rounded-full"
+                                                                    style={{ width: `${percentage}%` }}
+                                                                ></div>
+                                                            </div>
+                                                            <span>{percentage.toFixed(1)}%</span>
+                                                        </div>
+                                                    </td>
+                                                </>
+                                            )}
                                         </tr>
                                     );
                                 })}

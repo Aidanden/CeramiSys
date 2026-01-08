@@ -123,6 +123,14 @@ export class ExternalStoreAuthController {
                     storeId: user.storeId,
                     storeName: user.store.name,
                 },
+                store: {
+                    id: user.store.id,
+                    name: user.store.name,
+                    ownerName: user.store.ownerName,
+                    phone1: user.store.phone1,
+                    address: user.store.address,
+                    showPrices: user.store.showPrices,
+                },
             });
         } catch (error: any) {
             return res.status(500).json({ error: 'LOGIN_FAILED', message: 'فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.' });
@@ -169,6 +177,7 @@ export class ExternalStoreAuthController {
                             ownerName: true,
                             phone1: true,
                             address: true,
+                            showPrices: true,
                         },
                     },
                 },
@@ -192,6 +201,7 @@ export class ExternalStoreAuthController {
                     ownerName: user.store.ownerName,
                     phone1: user.store.phone1,
                     address: user.store.address,
+                    showPrices: user.store.showPrices,
                 },
             });
         } catch (error: any) {

@@ -23,6 +23,7 @@ export default function SettingsPage() {
   const [eurRate, setEurRate] = useState('5.20');
   const [isSavingRates, setIsSavingRates] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingInventory, setIsSavingInventory] = useState(false);
   const [isSavingDiscounts, setIsSavingDiscounts] = useState(false);
   const [isSavingCostMethod, setIsSavingCostMethod] = useState(false);
 
@@ -58,20 +59,8 @@ export default function SettingsPage() {
     setCostCalculationMethod((savedCostMethod as 'manual' | 'invoice') || 'manual');
   }, [exchangeRates]);
 
-  // حفظ إعدادات الواتساب والمخزون
-  const handleSave = () => {
-    if (!whatsappNumber.trim()) {
-      error('يرجى إدخال رقم الواتساب');
-      return;
-    }
-
-    // التحقق من صحة الرقم (يجب أن يحتوي على أرقام فقط)
-    const cleanNumber = whatsappNumber.replace(/[^0-9]/g, '');
-    if (cleanNumber.length < 10) {
-      error('رقم الواتساب غير صحيح. يجب أن يحتوي على 10 أرقام على الأقل');
-      return;
-    }
-
+  // حفظ إعدادات المخزون فقط
+  const handleSaveInventory = () => {
     // التحقق من حد المخزون
     const threshold = parseInt(lowStockThreshold);
     if (isNaN(threshold) || threshold < 0) {
@@ -86,30 +75,50 @@ export default function SettingsPage() {
       return;
     }
 
+    setIsSavingInventory(true);
+
+    try {
+      localStorage.setItem('lowStockThreshold', threshold.toString());
+      localStorage.setItem('profitMargin', margin.toString());
+      success('تم حفظ إعدادات المخزون بنجاح');
+    } catch (err) {
+      error('حدث خطأ أثناء حفظ إعدادات المخزون');
+    } finally {
+      setIsSavingInventory(false);
+    }
+  };
+
+  // حفظ إعدادات الواتساب فقط
+  const handleSaveWhatsApp = () => {
+    if (!whatsappNumber.trim()) {
+      error('يرجى إدخال رقم الواتساب');
+      return;
+    }
+
+    // التحقق من صحة الرقم (يجب أن يحتوي على أرقام فقط)
+    const cleanNumber = whatsappNumber.replace(/[^0-9]/g, '');
+    if (cleanNumber.length < 10) {
+      error('رقم الواتساب غير صحيح. يجب أن يحتوي على 10 أرقام على الأقل');
+      return;
+    }
+
     setIsSaving(true);
 
     try {
-      // حفظ في localStorage (بدون إعدادات الخصومات)
       localStorage.setItem('whatsappNumber', cleanNumber);
-      localStorage.setItem('lowStockThreshold', threshold.toString());
-      localStorage.setItem('profitMargin', margin.toString());
-      success('تم حفظ الإعدادات بنجاح');
+      success('تم حفظ إعدادات الواتساب بنجاح');
     } catch (err) {
-      error('حدث خطأ أثناء حفظ الإعدادات');
+      error('حدث خطأ أثناء حفظ إعدادات الواتساب');
     } finally {
       setIsSaving(false);
     }
   };
 
-  // مسح إعدادات الواتساب والمخزون
-  const handleClear = () => {
+  // مسح إعدادات الواتساب
+  const handleClearWhatsApp = () => {
     localStorage.removeItem('whatsappNumber');
-    localStorage.removeItem('lowStockThreshold');
-    localStorage.removeItem('profitMargin');
     setWhatsappNumber('');
-    setLowStockThreshold('10');
-    setProfitMargin(DEFAULT_PROFIT_MARGIN.toString());
-    success('تم مسح الإعدادات');
+    success('تم مسح رقم الواتساب');
   };
 
   // حفظ أسعار الصرف
@@ -295,6 +304,17 @@ export default function SettingsPage() {
               📊 مثال: إذا كان سعر الشركة الأم 100 د.ل وهامش الربح 20%، سيكون سعر البيع 120 د.ل
             </p>
           </div>
+
+          <button
+            onClick={handleSaveInventory}
+            disabled={isSavingInventory}
+            className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
+          >
+            <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            {isSavingInventory ? 'جاري الحفظ...' : 'حفظ إعدادات المخزون'}
+          </button>
         </div>
       </div>
 
@@ -611,17 +631,17 @@ export default function SettingsPage() {
 
           <div className="flex gap-3 pt-4">
             <button
-              onClick={handleSave}
+              onClick={handleSaveWhatsApp}
               disabled={isSaving}
               className="flex-1 inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 transition-colors"
             >
               <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              {isSaving ? 'جاري الحفظ...' : 'حفظ إعدادات الواتساب والمخزون'}
+              {isSaving ? 'جاري الحفظ...' : 'حفظ إعدادات الواتساب'}
             </button>
             <button
-              onClick={handleClear}
+              onClick={handleClearWhatsApp}
               className="px-6 py-3 border border-gray-300 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
             >
               مسح

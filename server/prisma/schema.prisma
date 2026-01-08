@@ -743,6 +743,7 @@ model ExternalStore {
   address            String?
   googleMapsUrl      String?
   isActive           Boolean                @default(true)
+  showPrices         Boolean                @default(true) // إظهار الأسعار في بوابة المحل
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt
   invoices           ExternalStoreInvoice[]

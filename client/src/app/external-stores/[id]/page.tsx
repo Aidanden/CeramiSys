@@ -38,6 +38,7 @@ export default function ExternalStoreDetailsPage() {
         address: '',
         googleMapsUrl: '',
         isActive: true,
+        showPrices: true,
     });
     const [newUserForm, setNewUserForm] = useState({ username: '', password: '' });
     const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -70,6 +71,7 @@ export default function ExternalStoreDetailsPage() {
                 address: store.address || '',
                 googleMapsUrl: store.googleMapsUrl || '',
                 isActive: !!store.isActive,
+                showPrices: store.showPrices !== undefined ? store.showPrices : true,
             });
         }
     }, [store]);
@@ -113,6 +115,7 @@ export default function ExternalStoreDetailsPage() {
                     address: storeForm.address || undefined,
                     googleMapsUrl: storeForm.googleMapsUrl || undefined,
                     isActive: storeForm.isActive,
+                    showPrices: storeForm.showPrices,
                 },
             }).unwrap();
 
@@ -412,36 +415,55 @@ export default function ExternalStoreDetailsPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
-                                        <label className="inline-flex items-center gap-3 cursor-pointer group">
-                                            <div className="relative flex items-center">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={storeForm.isActive}
-                                                    onChange={(e) => setStoreForm((prev) => ({ ...prev, isActive: e.target.checked }))}
-                                                    className="peer sr-only"
-                                                />
-                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                                            </div>
-                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition-colors">
-                                                تفعيل حساب المحل
-                                            </span>
-                                        </label>
+                                    <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                                        <div className="flex items-center justify-between">
+                                            <label className="inline-flex items-center gap-3 cursor-pointer group">
+                                                <div className="relative flex items-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={storeForm.isActive}
+                                                        onChange={(e) => setStoreForm((prev) => ({ ...prev, isActive: e.target.checked }))}
+                                                        className="peer sr-only"
+                                                    />
+                                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                                </div>
+                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition-colors">
+                                                    تفعيل حساب المحل
+                                                </span>
+                                            </label>
 
-                                        <button
-                                            type="submit"
-                                            disabled={isUpdatingStore}
-                                            className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {isUpdatingStore ? (
-                                                <>
-                                                    <RefreshCw size={18} className="animate-spin" />
-                                                    جاري الحفظ...
-                                                </>
-                                            ) : (
-                                                'حفظ التغييرات'
-                                            )}
-                                        </button>
+                                            <label className="inline-flex items-center gap-3 cursor-pointer group">
+                                                <div className="relative flex items-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={storeForm.showPrices}
+                                                        onChange={(e) => setStoreForm((prev) => ({ ...prev, showPrices: e.target.checked }))}
+                                                        className="peer sr-only"
+                                                    />
+                                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+                                                </div>
+                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-green-600 transition-colors">
+                                                    إظهار الأسعار في البوابة
+                                                </span>
+                                            </label>
+                                        </div>
+
+                                        <div className="flex justify-end">
+                                            <button
+                                                type="submit"
+                                                disabled={isUpdatingStore}
+                                                className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {isUpdatingStore ? (
+                                                    <>
+                                                        <RefreshCw size={18} className="animate-spin" />
+                                                        جاري الحفظ...
+                                                    </>
+                                                ) : (
+                                                    'حفظ التغييرات'
+                                                )}
+                                            </button>
+                                        </div>
                                     </div>
                                 </form>
                             </div>

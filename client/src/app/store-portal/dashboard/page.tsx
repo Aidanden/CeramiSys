@@ -13,8 +13,13 @@ import Link from 'next/link';
 
 export default function StoreDashboardPage() {
     // جلب بيانات المستخدم الحالي - البيانات تأتي بنفس بنية login response
-    const { data: currentUser, isLoading: isUserLoading } = useGetCurrentUserQuery();
+    const { data: currentUser, isLoading: isUserLoading } = useGetCurrentUserQuery(undefined, {
+        refetchOnMountOrArgChange: true,
+    });
     const { data: stats, isLoading: isStatsLoading } = useGetInvoiceStatsQuery();
+    
+    // إعداد إظهار الأسعار
+    const showPrices = currentUser?.store?.showPrices === true;
     
     const isLoading = isUserLoading || isStatsLoading;
 
@@ -41,17 +46,19 @@ export default function StoreDashboardPage() {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Total Sales */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                            <TrendingUp className="text-blue-600 dark:text-blue-400" size={24} />
+                {showPrices && (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                                <TrendingUp className="text-blue-600 dark:text-blue-400" size={24} />
+                            </div>
                         </div>
+                        <h3 className="text-gray-600 dark:text-gray-400 text-sm font-medium">إجمالي المبيعات المعتمدة</h3>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                            {Number(stats?.totalAmount || 0).toLocaleString('en-US')} د.ل
+                        </p>
                     </div>
-                    <h3 className="text-gray-600 dark:text-gray-400 text-sm font-medium">إجمالي المبيعات المعتمدة</h3>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                        {Number(stats?.totalAmount || 0).toLocaleString('ar-EG')} د.ل
-                    </p>
-                </div>
+                )}
 
                 {/* Pending Invoices */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -106,7 +113,9 @@ export default function StoreDashboardPage() {
                                 <tr>
                                     <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300">المنتج</th>
                                     <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300">الكمية المباعة</th>
-                                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300">إجمالي المبيعات</th>
+                                    {showPrices && (
+                                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300">إجمالي المبيعات</th>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -117,9 +126,11 @@ export default function StoreDashboardPage() {
                                             <div className="text-xs text-gray-500 dark:text-gray-400">{item.sku}</div>
                                         </td>
                                         <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{item.totalQty}</td>
-                                        <td className="px-4 py-2 text-sm font-bold text-gray-900 dark:text-white">
-                                            {Number(item.totalAmount).toLocaleString('ar-EG')} د.ل
-                                        </td>
+                                        {showPrices && (
+                                            <td className="px-4 py-2 text-sm font-bold text-gray-900 dark:text-white">
+                                                {Number(item.totalAmount).toLocaleString('en-US')} د.ل
+                                            </td>
+                                        )}
                                     </tr>
                                 ))}
                             </tbody>
