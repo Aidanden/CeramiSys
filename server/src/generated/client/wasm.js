@@ -759,6 +759,19 @@ exports.Prisma.EmployeeScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.EmployeeAccountScalarFieldEnum = {
+  id: 'id',
+  employeeId: 'employeeId',
+  transactionType: 'transactionType',
+  amount: 'amount',
+  balance: 'balance',
+  referenceType: 'referenceType',
+  referenceId: 'referenceId',
+  description: 'description',
+  transactionDate: 'transactionDate',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SalaryPaymentScalarFieldEnum = {
   id: 'id',
   employeeId: 'employeeId',
@@ -979,6 +992,18 @@ exports.TransactionSource = exports.$Enums.TransactionSource = {
   GENERAL_RECEIPT: 'GENERAL_RECEIPT'
 };
 
+exports.EmployeeTransactionType = exports.$Enums.EmployeeTransactionType = {
+  DEBIT: 'DEBIT',
+  CREDIT: 'CREDIT'
+};
+
+exports.EmployeeReferenceType = exports.$Enums.EmployeeReferenceType = {
+  SALARY_PAYMENT: 'SALARY_PAYMENT',
+  BONUS_PAYMENT: 'BONUS_PAYMENT',
+  GENERAL_RECEIPT: 'GENERAL_RECEIPT',
+  ADJUSTMENT: 'ADJUSTMENT'
+};
+
 exports.SalaryPaymentType = exports.$Enums.SalaryPaymentType = {
   PARTIAL: 'PARTIAL',
   FINAL: 'FINAL'
@@ -1044,6 +1069,7 @@ exports.Prisma.ModelName = {
   FinancialContactAccount: 'FinancialContactAccount',
   GeneralReceipt: 'GeneralReceipt',
   Employee: 'Employee',
+  EmployeeAccount: 'EmployeeAccount',
   SalaryPayment: 'SalaryPayment',
   EmployeeBonus: 'EmployeeBonus',
   BadDebtCategory: 'BadDebtCategory',

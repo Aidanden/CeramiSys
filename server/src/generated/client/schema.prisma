@@ -1090,25 +1090,45 @@ model GeneralReceipt {
 
 // الموظف
 model Employee {
-  id              Int              @id @default(autoincrement())
-  name            String
-  jobTitle        String? // المسمى الوظيفي
-  phone           String?
-  email           String?
-  baseSalary      Decimal          @db.Decimal(18, 4) // الراتب الأساسي
-  companyId       Int
-  isActive        Boolean          @default(true)
-  hireDate        DateTime? // تاريخ التعيين
-  notes           String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  company         Company          @relation(fields: [companyId], references: [id])
-  salaryPayments  SalaryPayment[]
-  bonuses         EmployeeBonus[]
-  generalReceipts GeneralReceipt[]
+  id               Int               @id @default(autoincrement())
+  name             String
+  jobTitle         String? // المسمى الوظيفي
+  phone            String?
+  email            String?
+  baseSalary       Decimal           @db.Decimal(18, 4) // الراتب الأساسي
+  companyId        Int
+  isActive         Boolean           @default(true)
+  hireDate         DateTime? // تاريخ التعيين
+  notes            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  company          Company           @relation(fields: [companyId], references: [id])
+  salaryPayments   SalaryPayment[]
+  bonuses          EmployeeBonus[]
+  generalReceipts  GeneralReceipt[]
+  employeeAccounts EmployeeAccount[]
 
   @@index([companyId])
   @@index([isActive])
+}
+
+// حساب الموظف (سلف ومدفوعات)
+model EmployeeAccount {
+  id              Int                     @id @default(autoincrement())
+  employeeId      Int
+  transactionType EmployeeTransactionType // DEBIT (سلفة) أو CREDIT (دفع)
+  amount          Decimal                 @db.Decimal(18, 4)
+  balance         Decimal                 @db.Decimal(18, 4) // الرصيد بعد العملية
+  referenceType   EmployeeReferenceType // نوع المرجع
+  referenceId     Int // معرف المرجع (SalaryPayment, EmployeeBonus, etc.)
+  description     String?
+  transactionDate DateTime                @default(now())
+  createdAt       DateTime                @default(now())
+  employee        Employee                @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+  @@index([transactionDate])
+  @@index([referenceType])
 }
 
 // صرف مرتب

@@ -82,7 +82,7 @@ class EmployeeAccountService {
       }
     });
 
-    const currentBalance = entries.length > 0 ? Number(entries[0].balance) : 0;
+    const currentBalance = entries.length > 0 && entries[0] ? Number(entries[0].balance) : 0;
 
     return {
       employee,
@@ -125,12 +125,12 @@ class EmployeeAccountService {
 
     // حساب إجمالي المدين (DEBIT) والدائن (CREDIT)
     const totalDebit = entries
-      .filter(e => e.transactionType === 'DEBIT')
-      .reduce((sum, e) => sum + Number(e.amount), 0);
+      .filter((e: any) => e.transactionType === 'DEBIT')
+      .reduce((sum: number, e: any) => sum + Number(e.amount), 0);
 
     const totalCredit = entries
-      .filter(e => e.transactionType === 'CREDIT')
-      .reduce((sum, e) => sum + Number(e.amount), 0);
+      .filter((e: any) => e.transactionType === 'CREDIT')
+      .reduce((sum: number, e: any) => sum + Number(e.amount), 0);
 
     return {
       employee,
