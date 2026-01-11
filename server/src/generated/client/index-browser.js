@@ -380,9 +380,7 @@ exports.Prisma.PurchaseScalarFieldEnum = {
   finalTotal: 'finalTotal',
   isApproved: 'isApproved',
   totalExpenses: 'totalExpenses',
-  currency: 'currency',
-  exchangeRate: 'exchangeRate',
-  totalForeign: 'totalForeign'
+  currency: 'currency'
 };
 
 exports.Prisma.PurchaseLineScalarFieldEnum = {
@@ -426,7 +424,8 @@ exports.Prisma.SupplierAccountScalarFieldEnum = {
   referenceId: 'referenceId',
   description: 'description',
   transactionDate: 'transactionDate',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  currency: 'currency'
 };
 
 exports.Prisma.PurchaseFromParentScalarFieldEnum = {
@@ -548,9 +547,7 @@ exports.Prisma.PurchaseExpenseScalarFieldEnum = {
   amount: 'amount',
   notes: 'notes',
   createdAt: 'createdAt',
-  amountForeign: 'amountForeign',
   currency: 'currency',
-  exchangeRate: 'exchangeRate',
   isActualExpense: 'isActualExpense'
 };
 

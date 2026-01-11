@@ -403,8 +403,7 @@ model Purchase {
   isApproved            Boolean                  @default(false)
   totalExpenses         Decimal                  @default(0) @db.Decimal(18, 4)
   currency              Currency                 @default(LYD)
-  exchangeRate          Decimal                  @default(1.0) @db.Decimal(18, 4)
-  totalForeign          Decimal?                 @db.Decimal(18, 4)
+  // ❌ تم إزالة exchangeRate و totalForeign - سعر الصرف يُحدد فقط عند الدفع
   costUpdates           ProductCostLog[]
   company               Company                  @relation(fields: [companyId], references: [id])
   supplier              Supplier?                @relation(fields: [supplierId], references: [id])
@@ -471,13 +470,15 @@ model SupplierAccount {
   id              Int                     @id @default(autoincrement())
   supplierId      Int
   transactionType SupplierTransactionType
-  amount          Decimal                 @db.Decimal(18, 4)
+  amount          Decimal                 @db.Decimal(18, 4) // المبلغ بالعملة الأصلية فقط
   balance         Decimal                 @db.Decimal(18, 4)
   referenceType   SupplierReferenceType
   referenceId     Int
   description     String?
   transactionDate DateTime                @default(now())
   createdAt       DateTime                @default(now())
+  currency        String                  @default("LYD")
+  // ❌ تم إزالة amountForeign و exchangeRate - سعر الصرف يُحدد فقط عند الدفع
   supplier        Supplier                @relation(fields: [supplierId], references: [id])
 
   @@index([supplierId])
@@ -651,12 +652,11 @@ model PurchaseExpense {
   purchaseId      Int
   categoryId      Int
   supplierId      Int?
-  amount          Decimal                 @db.Decimal(18, 4)
+  amount          Decimal                 @db.Decimal(18, 4) // المبلغ بالعملة الأصلية فقط
   notes           String?
   createdAt       DateTime                @default(now())
-  amountForeign   Decimal?                @db.Decimal(18, 4)
+  // ❌ تم إزالة amountForeign و exchangeRate - سعر الصرف يُحدد فقط عند الدفع
   currency        Currency                @default(LYD)
-  exchangeRate    Decimal                 @default(1.0) @db.Decimal(18, 4)
   isActualExpense Boolean                 @default(true) // true = مصروف فعلي (يؤثر على حساب المورد), false = مصروف تقديري (لتوزيع التكلفة فقط)
   category        PurchaseExpenseCategory @relation(fields: [categoryId], references: [id])
   purchase        Purchase                @relation(fields: [purchaseId], references: [id], onDelete: Cascade)

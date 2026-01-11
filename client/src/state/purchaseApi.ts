@@ -47,8 +47,6 @@ export interface Purchase {
   totalExpenses: number;
   finalTotal: number;
   currency: 'LYD' | 'USD' | 'EUR';
-  exchangeRate: number;
-  totalForeign: number | null;
   createdAt: string;
   lines: PurchaseLine[];
   payments: PurchasePayment[];
@@ -97,8 +95,6 @@ export interface CreatePurchaseRequest {
   purchaseType: 'CASH' | 'CREDIT';
   paymentMethod?: 'CASH' | 'BANK' | 'CARD';
   currency?: 'LYD' | 'USD' | 'EUR';
-  exchangeRate?: number;
-  totalForeign?: number;
   lines: {
     id?: number;
     productId: number;

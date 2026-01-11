@@ -4,24 +4,26 @@ import prisma from '../models/prismaClient';
 interface CreateSupplierAccountEntryInput {
   supplierId: number;
   transactionType: SupplierTransactionType;
-  amount: number;
+  amount: number; // المبلغ بالعملة الأصلية فقط
   referenceType: SupplierReferenceType;
   referenceId: number;
   description?: string;
   transactionDate?: Date;
+  currency?: string; // نبقي currency فقط
 }
 
 export interface SupplierAccountEntry {
   id: number;
   supplierId: number;
   transactionType: 'DEBIT' | 'CREDIT';
-  amount: number;
+  amount: number; // المبلغ بالعملة الأصلية
   balance: number;
   referenceType: 'PURCHASE' | 'PAYMENT' | 'ADJUSTMENT' | 'RETURN';
   referenceId: number;
   description?: string;
   transactionDate: Date;
   createdAt: Date;
+  currency: string;
   supplier: {
     id: number;
     name: string;
@@ -42,6 +44,7 @@ export interface SupplierAccount {
   currentBalance: number;
   totalDebit: number;
   totalCredit: number;
+  totalsByCurrency: Record<string, { credit: number; debit: number; balance: number }>;
   entries: SupplierAccountEntry[];
 }
 
@@ -75,19 +78,24 @@ class SupplierAccountService {
    * Create an entry in supplier account
    */
   async createAccountEntry(data: CreateSupplierAccountEntryInput) {
-    const { supplierId, transactionType, amount, referenceType, referenceId, description, transactionDate } = data;
+    const { supplierId, transactionType, amount, referenceType, referenceId, description, transactionDate, currency } = data;
 
-    // جلب آخر رصيد للمورد
-    // Get the latest balance for the supplier
+    const entryCurrency = currency || 'LYD';
+
+    // جلب آخر رصيد للمورد **بنفس العملة**
+    // Get the latest balance for the supplier in the same currency
     const lastEntry = await prisma.supplierAccount.findFirst({
-      where: { supplierId },
+      where: { 
+        supplierId,
+        currency: entryCurrency 
+      },
       orderBy: { createdAt: 'desc' }
     });
 
     const previousBalance = lastEntry ? Number(lastEntry.balance) : 0;
 
-    // حساب الرصيد الجديد
-    // Calculate new balance
+    // حساب الرصيد الجديد لهذه العملة فقط
+    // Calculate new balance for this currency only
     // CREDIT (له المورد) = زيادة في الدين على الشركة للمورد (شراء)
     // DEBIT (عليه المورد) = تخفيض من الدين (دفع للمورد)
     let newBalance: number;
@@ -103,17 +111,20 @@ class SupplierAccountService {
       data: {
         supplierId,
         transactionType,
-        amount,
-        balance: newBalance,
+        amount, // المبلغ بالعملة الأصلية
+        balance: newBalance, // الرصيد بهذه العملة فقط
         referenceType,
         referenceId,
         description,
-        transactionDate: transactionDate || new Date()
+        transactionDate: transactionDate || new Date(),
+        currency: entryCurrency,
       },
       include: {
         supplier: true
       }
     });
+
+    console.log(`✅ تم إنشاء قيد في حساب المورد: ${entry.supplierId} | المبلغ: ${amount} ${entryCurrency} | النوع: ${transactionType}`);
 
     return entry;
   }
@@ -152,6 +163,26 @@ class SupplierAccountService {
       .filter(e => e.transactionType === 'DEBIT')
       .reduce((sum, e) => sum + Number(e.amount), 0);
 
+    // حساب الإجماليات حسب العملة
+    const totalsByCurrency: Record<string, { credit: number; debit: number; balance: number }> = {};
+    
+    entries.forEach(entry => {
+      const currency = entry.currency || 'LYD';
+      const amount = Number(entry.amount); // المبلغ بالعملة الأصلية مباشرة
+      
+      if (!totalsByCurrency[currency]) {
+        totalsByCurrency[currency] = { credit: 0, debit: 0, balance: 0 };
+      }
+      
+      if (entry.transactionType === 'CREDIT') {
+        totalsByCurrency[currency].credit += amount;
+        totalsByCurrency[currency].balance += amount;
+      } else {
+        totalsByCurrency[currency].debit += amount;
+        totalsByCurrency[currency].balance -= amount;
+      }
+    });
+
     return {
       supplier: {
         id: supplier.id,
@@ -165,17 +196,19 @@ class SupplierAccountService {
       currentBalance,
       totalCredit,
       totalDebit,
+      totalsByCurrency,
       entries: entries.map(entry => ({
         id: entry.id,
         supplierId: entry.supplierId,
         transactionType: entry.transactionType as 'DEBIT' | 'CREDIT',
-        amount: Number(entry.amount),
+        amount: Number(entry.amount), // المبلغ بالعملة الأصلية
         balance: Number(entry.balance),
         referenceType: entry.referenceType as 'PURCHASE' | 'PAYMENT' | 'ADJUSTMENT' | 'RETURN',
         referenceId: entry.referenceId,
         description: entry.description || undefined,
         transactionDate: entry.transactionDate,
         createdAt: entry.createdAt,
+        currency: entry.currency || 'LYD',
         supplier: {
           id: supplier.id,
           name: supplier.name,

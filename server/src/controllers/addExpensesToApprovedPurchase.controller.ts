@@ -6,9 +6,13 @@ import { z } from 'zod';
 // DTO للتحقق من صحة البيانات
 const AddExpenseDto = z.object({
   categoryId: z.number().int().positive(),
-  supplierId: z.number().int().positive(), // المورد إجباري
+  supplierId: z.number().int().positive().optional(), // المورد اختياري (للمصروفات التقديرية)
   amount: z.number().positive(),
+  currency: z.enum(['LYD', 'USD', 'EUR']).optional().default('LYD'),
+  exchangeRate: z.number().positive().optional().default(1),
+  amountForeign: z.number().positive().optional().nullable(),
   notes: z.string().optional().nullable(),
+  isActualExpense: z.boolean().optional().default(true),
 });
 
 const AddExpensesToApprovedPurchaseDto = z.object({

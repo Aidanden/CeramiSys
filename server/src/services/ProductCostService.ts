@@ -18,7 +18,6 @@ export interface ProductCostInfo {
         invoiceNumber: string | null;
         purchaseDate: Date;
         currency: string;
-        exchangeRate: number;
 
         // بيانات الصنف في الفاتورة
         qty: number;
@@ -36,17 +35,14 @@ export interface ProductCostInfo {
             categoryName: string;
             supplierName: string | null;
             currency: string;
-            amountForeign: number | null; // المبلغ بالعملة الأجنبية
-            exchangeRate: number;
-            amountLYD: number; // المبلغ بالدينار الليبي
+            amount: number; // المبلغ بالعملة الأصلية
         }>;
 
         // الإجماليات
-        totalWithExpenses: number; // إجمالي الصنف + نصيبه من المصروفات
-        totalInLYD: number; // الإجمالي بالدينار الليبي
+        totalWithExpenses: number; // إجمالي الصنف + نصيبه من المصروفات (بالعملة الأصلية)
 
         // التكلفة المحسوبة
-        calculatedCostPerUnit: number;
+        calculatedCostPerUnit: number; // بالعملة الأصلية
     } | null;
 }
 
@@ -54,7 +50,6 @@ export interface UpdateProductCostRequest {
     productId: number;
     newCost: number;
     purchaseId: number;
-    exchangeRateUsed: number;
     notes?: string;
 }
 
@@ -65,7 +60,6 @@ export interface ProductCostUpdateLog {
     newCost: number;
     purchaseId: number;
     invoiceNumber: string | null;
-    exchangeRateUsed: number;
     updatedAt: Date;
     updatedBy: string;
     notes: string | null;
@@ -151,16 +145,12 @@ class ProductCostService {
         const expenseSharePercentage = purchaseTotal > 0 ? (lineSubTotal / purchaseTotal) * 100 : 0;
         const expenseShareAmount = (expenseSharePercentage / 100) * totalExpenses;
 
-        // إجمالي الصنف + نصيبه من المصروفات
+        // إجمالي الصنف + نصيبه من المصروفات (بالعملة الأصلية)
         const totalWithExpenses = lineSubTotal + expenseShareAmount;
 
-        // تحويل إلى الدينار الليبي إذا كانت العملة أجنبية
-        const exchangeRate = Number(purchase.exchangeRate || 1);
-        const totalInLYD = totalWithExpenses * exchangeRate;
-
-        // حساب التكلفة لكل وحدة
+        // حساب التكلفة لكل وحدة (بالعملة الأصلية)
         const qty = Number(lastPurchaseLine.qty);
-        const calculatedCostPerUnit = qty > 0 ? totalInLYD / qty : 0;
+        const calculatedCostPerUnit = qty > 0 ? totalWithExpenses / qty : 0;
 
         return {
             productId: product.id,
@@ -173,7 +163,6 @@ class ProductCostService {
                 invoiceNumber: purchase.invoiceNumber,
                 purchaseDate: purchase.createdAt,
                 currency: purchase.currency,
-                exchangeRate: exchangeRate,
 
                 qty: qty,
                 unitPrice: Number(lastPurchaseLine.unitPrice),
@@ -189,13 +178,10 @@ class ProductCostService {
                     categoryName: exp.category?.name || 'غير محدد',
                     supplierName: exp.supplier?.name || null,
                     currency: exp.currency,
-                    amountForeign: exp.amountForeign ? Number(exp.amountForeign) : null,
-                    exchangeRate: Number(exp.exchangeRate),
-                    amountLYD: Number(exp.amount)
+                    amount: Number(exp.amount) // المبلغ بالعملة الأصلية
                 })),
 
                 totalWithExpenses: Math.round(totalWithExpenses * 100) / 100,
-                totalInLYD: Math.round(totalInLYD * 100) / 100,
 
                 calculatedCostPerUnit: Math.round(calculatedCostPerUnit * 10000) / 10000
             }
@@ -260,7 +246,6 @@ class ProductCostService {
                     oldCost: oldCost,
                     newCost: data.newCost,
                     purchaseId: data.purchaseId,
-                    exchangeRateUsed: data.exchangeRateUsed,
                     updatedBy: updatedBy,
                     notes: data.notes
                 }
@@ -278,7 +263,6 @@ class ProductCostService {
                 oldCost: oldCost,
                 purchaseId: data.purchaseId,
                 invoiceNumber: purchase.invoiceNumber,
-                exchangeRateUsed: data.exchangeRateUsed,
             }
         };
     }
@@ -387,32 +371,6 @@ class ProductCostService {
         };
     }
 
-    /**
-     * حساب تكلفة صنف مع سعر صرف مخصص
-     */
-    async calculateCostWithCustomRate(productId: number, customExchangeRate: number): Promise<ProductCostInfo> {
-        const costInfo = await this.getProductCostInfo(productId);
-
-        if (!costInfo.lastPurchase) {
-            return costInfo;
-        }
-
-        // إعادة حساب مع سعر الصرف المخصص
-        const totalWithExpenses = costInfo.lastPurchase.totalWithExpenses;
-        const totalInLYD = totalWithExpenses * customExchangeRate;
-        const qty = costInfo.lastPurchase.qty;
-        const calculatedCostPerUnit = qty > 0 ? totalInLYD / qty : 0;
-
-        return {
-            ...costInfo,
-            lastPurchase: {
-                ...costInfo.lastPurchase,
-                exchangeRate: customExchangeRate,
-                totalInLYD: Math.round(totalInLYD * 100) / 100,
-                calculatedCostPerUnit: Math.round(calculatedCostPerUnit * 10000) / 10000
-            }
-        };
-    }
 }
 
 export default new ProductCostService();

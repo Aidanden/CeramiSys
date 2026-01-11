@@ -45,6 +45,14 @@ export class PurchaseService {
   static async createPurchase(data: CreatePurchaseRequest): Promise<Purchase> {
     let { companyId, supplierId, invoiceNumber, purchaseType, paymentMethod, lines } = data;
 
+    console.log('📝 [PurchaseService.createPurchase] البيانات المستلمة:', {
+      companyId,
+      supplierId,
+      purchaseType,
+      currency: data.currency,
+      linesCount: lines.length
+    });
+
     // إذا لم يتم تقديم رقم فاتورة، قم بتوليده تلقائياً
     if (!invoiceNumber) {
       invoiceNumber = await this.generateInvoiceNumber();
@@ -57,12 +65,13 @@ export class PurchaseService {
       select: { id: true, unit: true, unitsPerBox: true }
     });
 
-    // Calculate total (Assume unit prices in the lines are in the selected currency)
+    // Calculate total (الأسعار بالعملة المُختارة مباشرة - بدون تحويل)
     const currency = data.currency || 'LYD';
-    const exchangeRate = data.exchangeRate || 1.0;
+    
+    console.log('💰 [PurchaseService] العملة المستخدمة:', currency);
 
     // حساب الإجمالي مع الأخذ في الاعتبار وحدة المنتج
-    const totalForeign = lines.reduce((sum, line) => {
+    const total = lines.reduce((sum, line) => {
       const product = products.find(p => p.id === line.productId);
       let lineTotal = line.qty * line.unitPrice;
       
@@ -75,9 +84,6 @@ export class PurchaseService {
       return sum + lineTotal;
     }, 0);
 
-    // Convert to LYD for the main total field
-    const total = currency === 'LYD' ? totalForeign : totalForeign * exchangeRate;
-
     // For cash purchases, mark as fully paid
     const isFullyPaid = purchaseType === 'CASH';
     const paidAmount = isFullyPaid ? total : 0;
@@ -88,10 +94,8 @@ export class PurchaseService {
         companyId,
         supplierId,
         invoiceNumber,
-        total,
+        total, // المبلغ بالعملة الأصلية مباشرة
         currency,
-        exchangeRate,
-        totalForeign: currency === 'LYD' ? null : totalForeign,
         paidAmount,
         remainingAmount,
         purchaseType,
@@ -157,15 +161,23 @@ export class PurchaseService {
 
     // تسجيل قيد محاسبي في حساب المورد (إذا كانت مشتريات آجلة وهناك مورد)
     if (purchaseType === 'CREDIT' && supplierId) {
+      console.log('🔍 [PurchaseService] إنشاء قيد في حساب المورد:', {
+        supplierId,
+        amount: total,
+        currency,
+        purchaseId: purchase.id
+      });
+      
       const SupplierAccountService = (await import('./SupplierAccountService')).default;
       await SupplierAccountService.createAccountEntry({
         supplierId: supplierId,
         transactionType: 'CREDIT', // له المورد - زيادة في دين الشركة للمورد
-        amount: total,
+        amount: total, // المبلغ بالعملة الأصلية
         referenceType: 'PURCHASE',
         referenceId: purchase.id,
-        description: `فاتورة مشتريات آجلة رقم ${invoiceNumber || purchase.id}`,
-        transactionDate: new Date()
+        description: `فاتورة مشتريات #${purchase.id}`,
+        transactionDate: new Date(),
+        currency: currency, // العملة الأصلية للفاتورة (بدون fallback لـ LYD)
       });
 
     }
@@ -174,8 +186,6 @@ export class PurchaseService {
       ...purchase,
       total: Number(purchase.total),
       currency: purchase.currency as any,
-      exchangeRate: Number(purchase.exchangeRate),
-      totalForeign: purchase.totalForeign ? Number(purchase.totalForeign) : null,
       paidAmount: Number(purchase.paidAmount),
       remainingAmount: Number(purchase.remainingAmount),
       createdAt: purchase.createdAt.toISOString(),
@@ -358,8 +368,6 @@ export class PurchaseService {
         ...purchase,
         total: Number(purchase.total),
         currency: purchase.currency as any,
-        exchangeRate: Number(purchase.exchangeRate),
-        totalForeign: purchase.totalForeign ? Number(purchase.totalForeign) : null,
         paidAmount: Number(purchase.paidAmount),
         remainingAmount: Number(purchase.remainingAmount),
         createdAt: purchase.createdAt.toISOString(),
@@ -386,10 +394,8 @@ export class PurchaseService {
         })),
         expenses: purchase.expenses?.map(expense => ({
           ...expense,
-          amount: Number(expense.amount),
+          amount: Number(expense.amount), // المبلغ بالعملة الأصلية
           currency: expense.currency as any,
-          exchangeRate: Number(expense.exchangeRate),
-          amountForeign: expense.amountForeign ? Number(expense.amountForeign) : null,
           description: (expense as any).notes || null,
           createdAt: expense.createdAt.toISOString(),
         })) || [],
@@ -459,8 +465,6 @@ export class PurchaseService {
       ...purchase,
       total: Number(purchase.total),
       currency: purchase.currency as any,
-      exchangeRate: Number(purchase.exchangeRate),
-      totalForeign: purchase.totalForeign ? Number(purchase.totalForeign) : null,
       paidAmount: Number(purchase.paidAmount),
       remainingAmount: Number(purchase.remainingAmount),
       createdAt: purchase.createdAt.toISOString(),
@@ -487,10 +491,8 @@ export class PurchaseService {
       })),
       expenses: purchase.expenses?.map(expense => ({
         ...expense,
-        amount: Number(expense.amount),
+        amount: Number(expense.amount), // المبلغ بالعملة الأصلية
         currency: expense.currency as any,
-        exchangeRate: Number(expense.exchangeRate),
-        amountForeign: expense.amountForeign ? Number(expense.amountForeign) : null,
         description: (expense as any).notes || null,
         createdAt: expense.createdAt.toISOString(),
       })) || [],
@@ -631,8 +633,6 @@ export class PurchaseService {
         ...purchase,
         total: Number(purchase.total),
         currency: purchase.currency as any,
-        exchangeRate: Number(purchase.exchangeRate),
-        totalForeign: purchase.totalForeign ? Number(purchase.totalForeign) : null,
         paidAmount: Number(purchase.paidAmount),
         remainingAmount: Number(purchase.remainingAmount),
         createdAt: purchase.createdAt.toISOString(),
@@ -704,8 +704,6 @@ export class PurchaseService {
         ...purchase,
         total: Number(purchase.total),
         currency: purchase.currency as any,
-        exchangeRate: Number(purchase.exchangeRate),
-        totalForeign: purchase.totalForeign ? Number(purchase.totalForeign) : null,
         paidAmount: Number(purchase.paidAmount),
         remainingAmount: Number(purchase.remainingAmount),
         createdAt: purchase.createdAt.toISOString(),

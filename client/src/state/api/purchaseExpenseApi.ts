@@ -38,10 +38,8 @@ export interface PurchaseExpense {
   purchaseId: number;
   categoryId: number;
   supplierId?: number;
-  amount: string;
+  amount: string; // المبلغ بالعملة الأصلية
   currency: 'LYD' | 'USD' | 'EUR';
-  exchangeRate: string;
-  amountForeign?: string;
   notes?: string;
   isActualExpense: boolean; // true = مصروف فعلي (دين), false = مصروف تقديري (لتوزيع التكلفة فقط)
   createdAt: string;
@@ -55,10 +53,8 @@ export interface PurchaseExpense {
 export interface CreatePurchaseExpenseDto {
   categoryId: number;
   supplierId?: number;
-  amount: number;
+  amount: number; // المبلغ بالعملة الأصلية
   currency?: 'LYD' | 'USD' | 'EUR';
-  exchangeRate?: number;
-  amountForeign?: number;
   notes?: string;
   isActualExpense?: boolean; // true = مصروف فعلي (دين), false = مصروف تقديري (لتوزيع التكلفة فقط)
 }

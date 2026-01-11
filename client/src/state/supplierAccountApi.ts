@@ -12,6 +12,10 @@ export interface SupplierAccountEntry {
   description?: string;
   transactionDate: string;
   createdAt: string;
+  // دعم العملات الأجنبية
+  currency: string;
+  amountForeign?: number;
+  exchangeRate: number;
   supplier: {
     id: number;
     name: string;
@@ -32,6 +36,7 @@ export interface SupplierAccount {
   currentBalance: number;
   totalDebit: number;
   totalCredit: number;
+  totalsByCurrency: Record<string, { credit: number; debit: number; balance: number }>;
   entries: SupplierAccountEntry[];
 }
 

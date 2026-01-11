@@ -153,12 +153,10 @@ export class PurchaseExpenseService {
 
 
 
-      // حساب إجمالي المصروفات الجديدة (محولة للدينار الليبي)
+      // حساب إجمالي المصروفات الجديدة (بالعملة الأصلية فقط - بدون تحويل)
       const newExpensesTotal = expenses.reduce(
         (sum: number, expense: any) => {
-          const rate = expense.exchangeRate || 1.0;
-          const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
-          return sum + amountLYD;
+          return sum + expense.amount;
         },
         0
       );
@@ -168,24 +166,27 @@ export class PurchaseExpenseService {
       // إضافة المصروفات الجديدة فقط
       const result = await prisma.$transaction(async (tx) => {
         // 1. إضافة المصروفات الجديدة
-        await tx.purchaseExpense.createMany({
-          data: expenses.map((expense: any) => {
-            const rate = expense.exchangeRate || 1.0;
-            const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
-            const isActual = expense.isActualExpense !== false; // افتراضي: مصروف فعلي
+        console.log('🔍 المصروفات المستلمة من Frontend:', JSON.stringify(expenses, null, 2));
+        
+        const expensesData = expenses.map((expense: any) => {
+          const isActual = expense.isActualExpense !== false; // افتراضي: مصروف فعلي
 
-            return {
-              purchaseId,
-              categoryId: expense.categoryId,
-              supplierId: isActual ? expense.supplierId : null, // المورد فقط للمصروفات الفعلية
-              amount: new Prisma.Decimal(amountLYD),
-              currency: (expense.currency as Currency) || Currency.LYD,
-              exchangeRate: new Prisma.Decimal(rate),
-              amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
-              notes: expense.notes,
-              isActualExpense: isActual,
-            };
-          }),
+          const expenseData = {
+            purchaseId,
+            categoryId: expense.categoryId,
+            supplierId: isActual ? expense.supplierId : null, // المورد فقط للمصروفات الفعلية
+            amount: new Prisma.Decimal(expense.amount), // المبلغ بالعملة الأصلية
+            currency: (expense.currency as Currency) || Currency.LYD,
+            notes: expense.notes,
+            isActualExpense: isActual,
+          };
+          
+          console.log('💾 البيانات التي سيتم حفظها:', expenseData);
+          return expenseData;
+        });
+        
+        await tx.purchaseExpense.createMany({
+          data: expensesData,
         });
 
         // 2. تحديث إجمالي المصروفات والإجمالي النهائي
@@ -220,22 +221,26 @@ export class PurchaseExpenseService {
             });
 
             if (supplier) {
-              const rate = expense.exchangeRate || 1.0;
-              const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
+              // المبلغ بالعملة الأصلية (بدون تحويل)
+              const originalAmount = expense.amount;
 
               const receiptData = {
                 supplierId: expense.supplierId,
                 purchaseId: purchaseId,
                 companyId: purchase.companyId,
-                amount: new Prisma.Decimal(amountLYD),
-                amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
+                amount: new Prisma.Decimal(originalAmount), // المبلغ بالعملة الأصلية
                 currency: expense.currency || 'LYD',
-                exchangeRate: new Prisma.Decimal(rate),
                 type: 'EXPENSE' as const,
                 description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة #${purchase.id}`,
                 categoryName: category?.name,
                 status: 'PENDING' as const,
               };
+              
+              console.log('📝 إنشاء إيصال دفع للمصروف:', {
+                amount: originalAmount,
+                currency: expense.currency,
+                receiptData
+              });
 
               const createdReceipt = await tx.supplierPaymentReceipt.create({
                 data: receiptData,
@@ -248,7 +253,8 @@ export class PurchaseExpenseService {
                 id: createdReceipt.id,
                 supplierId: expense.supplierId,
                 supplierName: supplier.name,
-                amount: amountLYD,
+                amount: originalAmount,
+                currency: expense.currency,
                 type: 'EXPENSE',
                 description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة #${purchase.id}`,
                 categoryName: category?.name,
@@ -330,18 +336,14 @@ export class PurchaseExpenseService {
       // 1. إضافة المصروفات
       await tx.purchaseExpense.createMany({
         data: expenses.map((expense: any) => {
-          const rate = expense.exchangeRate || 1.0;
-          const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
           const isActual = expense.isActualExpense !== false; // افتراضي: مصروف فعلي
 
           return {
             purchaseId,
             categoryId: expense.categoryId,
             supplierId: isActual ? expense.supplierId : null, // المورد فقط للمصروفات الفعلية
-            amount: new Prisma.Decimal(amountLYD),
+            amount: new Prisma.Decimal(expense.amount), // المبلغ بالعملة الأصلية
             currency: (expense.currency as Currency) || Currency.LYD,
-            exchangeRate: new Prisma.Decimal(rate),
-            amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
             notes: expense.notes,
             isActualExpense: isActual,
           };
@@ -421,10 +423,8 @@ export class PurchaseExpenseService {
             supplierId: purchase.supplier.id,
             purchaseId: purchaseId,
             companyId: purchase.companyId,
-            amount: purchase.total,
-            amountForeign: purchase.currency === 'LYD' ? null : purchase.totalForeign,
+            amount: purchase.total, // المبلغ بالعملة الأصلية
             currency: purchase.currency || Currency.LYD,
-            exchangeRate: purchase.exchangeRate || 1,
             type: 'MAIN_PURCHASE',
             description: `فاتورة مشتريات #${purchase.id}`,
             status: 'PENDING',
@@ -440,6 +440,7 @@ export class PurchaseExpenseService {
           supplierId: purchase.supplier.id,
           supplierName: purchase.supplier.name,
           amount: Number(purchase.total),
+          currency: purchase.currency || 'LYD',
           type: 'MAIN_PURCHASE',
           description: `فاتورة مشتريات #${purchase.id}`,
         });
@@ -461,8 +462,8 @@ export class PurchaseExpenseService {
           });
 
           if (supplier) {
-            const rate = expense.exchangeRate || 1.0;
-            const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
+            // المبلغ بالعملة الأصلية
+            const amount = expense.amount;
 
             // إنشاء إيصال منفصل لكل مصروف فعلي
             const expenseReceipt = await tx.supplierPaymentReceipt.create({
@@ -470,10 +471,8 @@ export class PurchaseExpenseService {
                 supplierId: expense.supplierId,
                 purchaseId: purchaseId,
                 companyId: purchase.companyId,
-                amount: new Prisma.Decimal(amountLYD),
-                amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
+                amount: new Prisma.Decimal(amount), // المبلغ بالعملة الأصلية
                 currency: expense.currency || 'LYD',
-                exchangeRate: new Prisma.Decimal(rate),
                 type: 'EXPENSE',
                 description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة #${purchase.id}`,
                 categoryName: category?.name,
@@ -487,7 +486,8 @@ export class PurchaseExpenseService {
               id: expenseReceipt.id,
               supplierId: expense.supplierId,
               supplierName: supplier.name,
-              amount: amountLYD,
+              amount: amount,
+              currency: expense.currency || 'LYD',
               type: 'EXPENSE',
               description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة #${purchase.id}`,
               categoryName: category?.name,
@@ -510,6 +510,13 @@ export class PurchaseExpenseService {
 
     for (const receipt of result.paymentReceipts) {
       try {
+        console.log('✅ [PurchaseExpenseService] إنشاء قيد حساب المورد:', {
+          supplierId: receipt.supplierId,
+          supplierName: receipt.supplierName,
+          amount: receipt.amount,
+          currency: receipt.currency
+        });
+        
         await SupplierAccountService.createAccountEntry({
           supplierId: receipt.supplierId,
           transactionType: 'CREDIT',
@@ -518,6 +525,7 @@ export class PurchaseExpenseService {
           referenceId: receipt.id || 0,
           description: receipt.description,
           transactionDate: new Date(),
+          currency: receipt.currency, // 🎯 العملة الأصلية!
         });
 
       } catch (error) {
@@ -544,7 +552,7 @@ export class PurchaseExpenseService {
 
   // الحصول على مصروفات فاتورة معينة
   async getPurchaseExpenses(purchaseId: number) {
-    return await prisma.purchaseExpense.findMany({
+    const expenses = await prisma.purchaseExpense.findMany({
       where: { purchaseId },
       include: {
         category: true,
@@ -552,6 +560,14 @@ export class PurchaseExpenseService {
       },
       orderBy: { createdAt: 'asc' },
     });
+    
+    console.log('🔍 [getPurchaseExpenses] المصروفات من Database:', expenses.map(e => ({
+      id: e.id,
+      amount: e.amount,
+      currency: e.currency
+    })));
+    
+    return expenses;
   }
 
   // حذف مصروف

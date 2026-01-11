@@ -18,9 +18,6 @@ router.get('/products', ProductCostController.getProductsWithCostInfo);
 // الحصول على معلومات تكلفة صنف معين
 router.get('/products/:id', ProductCostController.getProductCostInfo);
 
-// حساب التكلفة مع سعر صرف مخصص
-router.post('/products/:id/calculate', ProductCostController.calculateCostWithCustomRate);
-
 // تحديث تكلفة الصنف
 router.post('/update', ProductCostController.updateProductCost);
 

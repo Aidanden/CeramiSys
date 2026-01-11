@@ -83,8 +83,13 @@ export class PaymentReceiptController {
       if (!id) {
         return res.status(400).json({ error: 'معرف الإيصال مطلوب' });
       }
-      const { notes, treasuryId } = req.body;
-      const receipt = await paymentReceiptService.payReceipt(id, notes, treasuryId);
+      const { notes, treasuryId, exchangeRate } = req.body;
+      const receipt = await paymentReceiptService.payReceipt(
+        id, 
+        notes, 
+        treasuryId, 
+        exchangeRate ? parseFloat(exchangeRate) : undefined
+      );
       return res.json(receipt);
     } catch (error: any) {
       console.error('خطأ في تسديد إيصال الدفع:', error);

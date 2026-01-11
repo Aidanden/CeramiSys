@@ -37,6 +37,7 @@ export default function PaymentReceiptsPage() {
   const [referenceNumber, setReferenceNumber] = useState('');
   const [selectedTreasuryId, setSelectedTreasuryId] = useState<number | undefined>(undefined);
   const [newExchangeRate, setNewExchangeRate] = useState('');
+  const [installmentExchangeRate, setInstallmentExchangeRate] = useState('');
 
   // API calls - تحديد الفلاتر حسب التبويب النشط
   const getQueryParams = () => {
@@ -111,12 +112,21 @@ export default function PaymentReceiptsPage() {
     setPaymentMethod('');
     setReferenceNumber('');
     setSelectedTreasuryId(undefined);
+    setInstallmentExchangeRate('');
   };
 
   const handleAddInstallment = async () => {
     if (!selectedReceipt || !installmentAmount || parseFloat(installmentAmount) <= 0) {
       showError('خطأ', 'يرجى إدخال مبلغ صحيح');
       return;
+    }
+
+    // التحقق من سعر الصرف للعملات الأجنبية
+    if (selectedReceipt.currency && selectedReceipt.currency !== 'LYD') {
+      if (!installmentExchangeRate || parseFloat(installmentExchangeRate) <= 0) {
+        showError('خطأ', 'يرجى إدخال سعر صرف صحيح للعملة الأجنبية');
+        return;
+      }
     }
 
     // التحقق من اختيار الخزينة
@@ -137,11 +147,12 @@ export default function PaymentReceiptsPage() {
     try {
       await addInstallment({
         paymentReceiptId: selectedReceipt.id,
-        amount: parseFloat(installmentAmount),
+        amount: parseFloat(installmentAmount), // المبلغ بالعملة الأصلية
         notes: installmentNotes || undefined,
         paymentMethod: paymentMethod || undefined,
         referenceNumber: referenceNumber || undefined,
         treasuryId: selectedTreasuryId,
+        exchangeRate: selectedReceipt.currency !== 'LYD' ? parseFloat(installmentExchangeRate) : undefined,
       }).unwrap();
 
       success('تم بنجاح', 'تم إضافة الدفعة بنجاح');
@@ -150,6 +161,7 @@ export default function PaymentReceiptsPage() {
       setPaymentMethod('');
       setReferenceNumber('');
       setSelectedTreasuryId(undefined);
+      setInstallmentExchangeRate('');
       refetch();
       refetchInstallments();
     } catch (err: any) {
@@ -161,13 +173,13 @@ export default function PaymentReceiptsPage() {
     // إذا كان الإيصال بعملة أجنبية، إظهار modal لإدخال سعر الصرف
     if (receipt.currency && receipt.currency !== 'LYD') {
       setSelectedReceipt(receipt);
-      setNewExchangeRate(receipt.exchangeRate?.toString() || '');
+      setNewExchangeRate('');
       setShowPaymentModal(true);
     } else {
       // إذا كان بالدينار، الدفع مباشرة
       const confirmed = await confirm(
         'تأكيد التسديد',
-        `هل أنت متأكد من تسديد إيصال الدفع للمورد "${receipt.supplier.name}" بمبلغ ${formatLibyanCurrencyArabic(receipt.amount)}؟`
+        `هل أنت متأكد من تسديد إيصال الدفع للمورد "${receipt.supplier.name}" بمبلغ ${receipt.amount.toFixed(2)} ${receipt.currency}؟`
       );
 
       if (confirmed) {
@@ -507,10 +519,7 @@ export default function PaymentReceiptsPage() {
                   </th>
                 )}
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  المبلغ بالعملة الأجنبية
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  المبلغ بالدينار
+                  المبلغ
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   المبلغ المدفوع
@@ -566,31 +575,23 @@ export default function PaymentReceiptsPage() {
                       )}
                     </td>
                   )}
-                  {/* المبلغ بالعملة الأجنبية */}
+                  {/* المبلغ */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    {receipt.currency && receipt.currency !== 'LYD' && receipt.amountForeign ? (
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                        {Number(receipt.amountForeign).toFixed(2)} {receipt.currency}
-                      </span>
-                    ) : receipt.type === 'MAIN_PURCHASE' && receipt.purchase?.currency && receipt.purchase.currency !== 'LYD' && receipt.purchase.totalForeign ? (
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                        {Number(receipt.purchase.totalForeign).toFixed(2)} {receipt.purchase.currency}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
-                  </td>
-                  {/* المبلغ بالدينار */}
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
-                      {formatLibyanCurrencyArabic(receipt.amount)}
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                      receipt.currency === 'LYD' 
+                        ? 'bg-green-100 text-green-800' 
+                        : receipt.currency === 'USD'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-purple-100 text-purple-800'
+                    }`}>
+                      {receipt.amount.toFixed(2)} {receipt.currency}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
-                    {formatLibyanCurrencyArabic(receipt.paidAmount ?? 0)}
+                    {(receipt.paidAmount ?? 0).toFixed(2)} {receipt.currency}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-red-600">
-                    {formatLibyanCurrencyArabic(receipt.remainingAmount ?? 0)}
+                    {(receipt.remainingAmount ?? 0).toFixed(2)} {receipt.currency}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(receipt.status)}`}>
@@ -721,13 +722,30 @@ export default function PaymentReceiptsPage() {
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">المبلغ</label>
-                  <p className="mt-1 text-sm text-gray-900">{formatLibyanCurrencyArabic(selectedReceipt.amount)}</p>
-                </div>
-                <div>
                   <label className="block text-sm font-medium text-gray-700">النوع</label>
                   <p className="mt-1 text-sm text-gray-900">{getTypeText(selectedReceipt.type)}</p>
                 </div>
+
+                {/* معلومات المبلغ */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">المبلغ</label>
+                  <p className="mt-1 text-base font-semibold text-gray-900">
+                    {selectedReceipt.amount.toFixed(2)} {selectedReceipt.currency}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">المبلغ المدفوع</label>
+                  <p className="mt-1 text-base font-semibold text-green-600">
+                    {(selectedReceipt.paidAmount ?? 0).toFixed(2)} {selectedReceipt.currency}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">المبلغ المتبقي</label>
+                  <p className="mt-1 text-base font-semibold text-red-600">
+                    {(selectedReceipt.remainingAmount ?? 0).toFixed(2)} {selectedReceipt.currency}
+                  </p>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700">الحالة</label>
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedReceipt.status)}`}>
@@ -782,7 +800,7 @@ export default function PaymentReceiptsPage() {
                             <div className="flex items-center justify-between">
                               <div>
                                 <p className="text-sm font-medium text-gray-900">
-                                  دفعة جزئية - {formatLibyanCurrencyArabic(installment.amount)}
+                                  دفعة جزئية - {installment.amount.toFixed(2)} {selectedReceipt.currency}
                                 </p>
                                 <p className="text-xs text-gray-500">
                                   تاريخ الدفع: {formatEnglishDate(installment.paidAt)}
@@ -978,31 +996,21 @@ export default function PaymentReceiptsPage() {
             <div className="bg-gray-50 p-4 rounded-lg mb-6">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">المبلغ بالدينار</label>
-                  <p className="text-lg font-semibold text-gray-900">{formatLibyanCurrencyArabic(selectedReceipt.amount)}</p>
+                  <label className="block text-sm font-medium text-gray-700">المبلغ الإجمالي</label>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {selectedReceipt.amount.toFixed(2)} {selectedReceipt.currency}
+                  </p>
                 </div>
-                {selectedReceipt.currency && selectedReceipt.currency !== 'LYD' && selectedReceipt.amountForeign && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">المبلغ بالعملة الأجنبية</label>
-                    <p className="text-lg font-semibold text-blue-600">
-                      {Number(selectedReceipt.amountForeign).toFixed(2)} {selectedReceipt.currency}
-                    </p>
-                  </div>
-                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">المبلغ المدفوع</label>
                   <p className="text-lg font-semibold text-green-600">
-                    {formatLibyanCurrencyArabic(
-                      installmentsData?.installments?.reduce((sum, inst) => sum + inst.amount, 0) || 0
-                    )}
+                    {(installmentsData?.installments?.reduce((sum, inst) => sum + inst.amount, 0) || 0).toFixed(2)} {selectedReceipt.currency}
                   </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">المبلغ المتبقي</label>
                   <p className="text-lg font-semibold text-red-600">
-                    {formatLibyanCurrencyArabic(
-                      selectedReceipt.amount - (installmentsData?.installments?.reduce((sum, inst) => sum + inst.amount, 0) || 0)
-                    )}
+                    {(selectedReceipt.amount - (installmentsData?.installments?.reduce((sum, inst) => sum + inst.amount, 0) || 0)).toFixed(2)} {selectedReceipt.currency}
                   </p>
                 </div>
                 <div>
@@ -1017,9 +1025,27 @@ export default function PaymentReceiptsPage() {
             {/* Add New Installment */}
             <div className="bg-blue-50 p-4 rounded-lg mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">إضافة دفعة جديدة</h3>
+              
+              {/* معلومات العملة */}
+              {selectedReceipt.currency && selectedReceipt.currency !== 'LYD' && (
+                <div className="bg-white p-3 rounded-lg mb-4 border border-blue-200">
+                  <p className="text-sm text-gray-700 mb-1">
+                    💱 <span className="font-semibold">العملة الأصلية:</span> {selectedReceipt.currency}
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    💰 <span className="font-semibold">المبلغ الإجمالي:</span> {selectedReceipt.amount.toFixed(2)} {selectedReceipt.currency}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    * أدخل المبلغ بالعملة الأصلية ({selectedReceipt.currency}) وسعر الصرف الحالي
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">المبلغ *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    المبلغ ({selectedReceipt.currency}) *
+                  </label>
                   <input
                     type="number"
                     step="0.001"
@@ -1029,6 +1055,27 @@ export default function PaymentReceiptsPage() {
                     placeholder="0.000"
                   />
                 </div>
+
+                {/* حقل سعر الصرف - يظهر فقط للعملات الأجنبية */}
+                {selectedReceipt.currency && selectedReceipt.currency !== 'LYD' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">سعر الصرف *</label>
+                    <input
+                      type="number"
+                      step="0.0001"
+                      value={installmentExchangeRate}
+                      onChange={(e) => setInstallmentExchangeRate(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="أدخل سعر الصرف الحالي"
+                    />
+                    {installmentAmount && installmentExchangeRate && (
+                      <p className="text-xs text-green-600 mt-1 font-medium">
+                        💸 سيُخصم من الخزينة: {(parseFloat(installmentAmount) * parseFloat(installmentExchangeRate)).toFixed(2)} LYD
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">طريقة الدفع *</label>
                   <select
@@ -1189,44 +1236,61 @@ export default function PaymentReceiptsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">تسديد إيصال دفع</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">💰 تسديد إيصال دفع</h2>
               
-              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">المورد: <span className="font-bold">{selectedReceipt.supplier.name}</span></p>
-                <p className="text-sm text-gray-600 mt-2">
-                  المبلغ بالعملة الأجنبية: <span className="font-bold">
-                    {formatLibyanCurrencyEnglish(selectedReceipt.amountForeign || selectedReceipt.amount)} {selectedReceipt.currency}
-                  </span>
+              <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-gray-700 mb-2">
+                  <span className="font-semibold">المورد:</span> {selectedReceipt.supplier.name}
                 </p>
-                <p className="text-sm text-gray-600 mt-2">
-                  سعر الصرف الحالي: <span className="font-bold">{formatEnglishNumber(selectedReceipt.exchangeRate || 1)}</span>
-                </p>
-                <p className="text-sm text-gray-600 mt-2">
-                  المبلغ بالدينار الليبي: <span className="font-bold">{formatLibyanCurrencyArabic(selectedReceipt.amount)}</span>
-                </p>
+                <div className="border-t border-blue-200 pt-2 mt-2">
+                  <p className="text-base font-bold text-blue-900 mb-1">
+                    💵 المبلغ المطلوب: {selectedReceipt.amount.toFixed(2)} {selectedReceipt.currency}
+                  </p>
+                  {selectedReceipt.currency !== 'LYD' && (
+                    <p className="text-xs text-gray-600 mt-1">
+                      * سيتم التسديد بـ {selectedReceipt.currency} والخصم من الخزينة بالدينار الليبي
+                    </p>
+                  )}
+                </div>
               </div>
 
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  سعر الصرف الجديد (اختياري)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={newExchangeRate}
-                  onChange={(e) => setNewExchangeRate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={`السعر الحالي: ${selectedReceipt.exchangeRate || 1}`}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  اترك الحقل كما هو لاستخدام سعر الصرف الحالي، أو قم بتعديله إذا تغير السعر
-                </p>
-                {newExchangeRate && parseFloat(newExchangeRate) > 0 && (
-                  <p className="text-sm font-medium text-blue-600 mt-2">
-                    المبلغ الجديد بالدينار: {formatLibyanCurrencyArabic((selectedReceipt.amountForeign || selectedReceipt.amount) * parseFloat(newExchangeRate))}
+              {selectedReceipt.currency !== 'LYD' ? (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📊 سعر الصرف *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    value={newExchangeRate}
+                    onChange={(e) => setNewExchangeRate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="أدخل سعر الصرف الحالي"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    أدخل سعر الصرف الحالي لحساب المبلغ بالدينار
                   </p>
-                )}
-              </div>
+                  {newExchangeRate && (
+                    <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <p className="text-sm font-semibold text-green-900">
+                        💸 المبلغ الذي سيُخصم من الخزينة:
+                      </p>
+                      <p className="text-lg font-bold text-green-700 mt-1">
+                        {(selectedReceipt.amount * parseFloat(newExchangeRate)).toFixed(2)} LYD
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-sm text-gray-700">
+                    💸 <span className="font-semibold">المبلغ الذي سيُخصم من الخزينة:</span>
+                  </p>
+                  <p className="text-lg font-bold text-green-700 mt-1">
+                    {selectedReceipt.amount.toFixed(2)} LYD
+                  </p>
+                </div>
+              )}
 
               <div className="flex gap-4">
                 <button

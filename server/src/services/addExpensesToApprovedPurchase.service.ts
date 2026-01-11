@@ -5,10 +5,8 @@ import SupplierAccountService from './SupplierAccountService';
 export interface AddExpenseRequest {
   categoryId: number;
   supplierId?: number | null;
-  amount: number;
+  amount: number; // المبلغ بالعملة الأصلية
   currency?: Currency;
-  exchangeRate?: number;
-  amountForeign?: number;
   notes?: string | null;
   isActualExpense?: boolean; // true = مصروف فعلي (دين), false = مصروف تقديري (لتوزيع التكلفة فقط)
 }
@@ -21,6 +19,8 @@ export interface AddExpensesToApprovedPurchaseRequest {
 export class AddExpensesToApprovedPurchaseService {
   async addExpensesToApprovedPurchase(data: AddExpensesToApprovedPurchaseRequest, userId: string) {
     const { purchaseId, expenses } = data;
+    
+    console.log('🔍 [addExpensesToApprovedPurchase] البيانات المستلمة:', JSON.stringify({ purchaseId, expenses }, null, 2));
 
 
 
@@ -60,24 +60,32 @@ export class AddExpensesToApprovedPurchaseService {
 
 
       // 1. إضافة المصروفات الجديدة
-      const createdExpenses = await tx.purchaseExpense.createMany({
-        data: expenses.map((expense: AddExpenseRequest) => {
-          const rate = expense.exchangeRate || 1.0;
-          const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
-          const isActual = expense.isActualExpense !== false; // افتراضي: مصروف فعلي
+      const expensesDataToCreate = expenses.map((expense: AddExpenseRequest) => {
+        const isActual = expense.isActualExpense !== false; // افتراضي: مصروف فعلي
 
-          return {
-            purchaseId,
-            categoryId: expense.categoryId,
-            supplierId: isActual ? (expense.supplierId || null) : null, // المورد فقط للمصروفات الفعلية
-            amount: new Prisma.Decimal(amountLYD),
-            currency: (expense.currency as Currency) || Currency.LYD,
-            exchangeRate: new Prisma.Decimal(rate),
-            amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
-            notes: expense.notes || null,
-            isActualExpense: isActual,
-          };
-        }),
+        const data = {
+          purchaseId,
+          categoryId: expense.categoryId,
+          supplierId: isActual ? (expense.supplierId || null) : null, // المورد فقط للمصروفات الفعلية
+          amount: new Prisma.Decimal(expense.amount), // المبلغ بالعملة الأصلية
+          currency: (expense.currency as Currency) || Currency.LYD,
+          notes: expense.notes || null,
+          isActualExpense: isActual,
+        };
+        
+        console.log('💾 [addExpensesToApprovedPurchase] البيانات التي سيتم حفظها:', {
+          originalExpense: expense,
+          dataToSave: {
+            ...data,
+            amount: data.amount.toString(),
+          }
+        });
+        
+        return data;
+      });
+      
+      const createdExpenses = await tx.purchaseExpense.createMany({
+        data: expensesDataToCreate,
       });
 
 
@@ -114,18 +122,22 @@ export class AddExpensesToApprovedPurchaseService {
           });
 
           if (supplier) {
-            const rate = expense.exchangeRate || 1.0;
-            const amountLYD = expense.currency === 'LYD' ? expense.amount : expense.amount * rate;
+            // المبلغ بالعملة الأصلية (بدون تحويل)
+            const amount = expense.amount;
+
+            console.log('📝 [AddExpensesToApproved] إنشاء إيصال دفع للمصروف:', {
+              amount,
+              currency: expense.currency,
+              expense
+            });
 
             const createdReceipt = await tx.supplierPaymentReceipt.create({
               data: {
                 supplierId: expense.supplierId,
                 purchaseId: purchaseId,
                 companyId: purchase.companyId,
-                amount: new Prisma.Decimal(amountLYD),
-                amountForeign: expense.currency === 'LYD' ? null : new Prisma.Decimal(expense.amount),
+                amount: new Prisma.Decimal(amount), // المبلغ بالعملة الأصلية
                 currency: (expense.currency as Currency) || Currency.LYD,
-                exchangeRate: new Prisma.Decimal(rate),
                 type: 'EXPENSE',
                 description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة #${purchase.id}`,
                 categoryName: category?.name,
@@ -140,6 +152,7 @@ export class AddExpensesToApprovedPurchaseService {
               supplierId: expense.supplierId,
               supplierName: supplier.name,
               amount: expense.amount,
+              currency: (expense.currency as string) || 'LYD',
               type: 'EXPENSE',
               description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة #${purchase.id}`,
               categoryName: category?.name,
@@ -159,6 +172,13 @@ export class AddExpensesToApprovedPurchaseService {
     // إنشاء قيود حساب المورد بعد انتهاء transaction
     for (const receipt of result.paymentReceipts) {
       try {
+        console.log('✅ [AddExpensesToApprovedPurchase] إنشاء قيد حساب المورد:', {
+          supplierId: receipt.supplierId,
+          supplierName: receipt.supplierName,
+          amount: receipt.amount,
+          currency: receipt.currency
+        });
+        
         await SupplierAccountService.createAccountEntry({
           supplierId: receipt.supplierId,
           transactionType: 'CREDIT',
@@ -167,6 +187,7 @@ export class AddExpensesToApprovedPurchaseService {
           referenceId: receipt.id || 0,
           description: receipt.description,
           transactionDate: new Date(),
+          currency: receipt.currency, // 🎯 العملة الأصلية!
         });
 
       } catch (error) {

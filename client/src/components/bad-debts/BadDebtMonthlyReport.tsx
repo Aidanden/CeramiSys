@@ -390,3 +390,4 @@ export const BadDebtMonthlyReport: React.FC<BadDebtReportProps> = ({
 export default BadDebtMonthlyReport;
 
 
+

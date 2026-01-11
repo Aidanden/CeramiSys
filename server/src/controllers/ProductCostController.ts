@@ -49,12 +49,12 @@ export class ProductCostController {
      */
     static async updateProductCost(req: Request, res: Response) {
         try {
-            const { productId, newCost, purchaseId, exchangeRateUsed, notes } = req.body;
+            const { productId, newCost, purchaseId, notes } = req.body;
 
-            if (!productId || newCost === undefined || !purchaseId || !exchangeRateUsed) {
+            if (!productId || newCost === undefined || !purchaseId) {
                 return res.status(400).json({
                     success: false,
-                    message: 'جميع الحقول مطلوبة: productId, newCost, purchaseId, exchangeRateUsed'
+                    message: 'جميع الحقول مطلوبة: productId, newCost, purchaseId'
                 });
             }
 
@@ -71,7 +71,6 @@ export class ProductCostController {
                 productId: parseInt(productId),
                 newCost: parseFloat(newCost),
                 purchaseId: parseInt(purchaseId),
-                exchangeRateUsed: parseFloat(exchangeRateUsed),
                 notes
             }, userId);
 
@@ -120,51 +119,4 @@ export class ProductCostController {
         }
     }
 
-    /**
-     * حساب التكلفة مع سعر صرف مخصص
-     */
-    static async calculateCostWithCustomRate(req: Request, res: Response) {
-        try {
-            const idParam = req.params.id;
-            if (!idParam) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'معرف الصنف مطلوب'
-                });
-            }
-            const productId = parseInt(idParam);
-            const { exchangeRate } = req.body;
-
-            if (isNaN(productId)) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'معرف الصنف غير صالح'
-                });
-            }
-
-            if (!exchangeRate || exchangeRate <= 0) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'سعر الصرف يجب أن يكون قيمة موجبة'
-                });
-            }
-
-            const costInfo = await ProductCostService.calculateCostWithCustomRate(
-                productId,
-                parseFloat(exchangeRate)
-            );
-
-            return res.json({
-                success: true,
-                message: 'تم حساب التكلفة بنجاح',
-                data: costInfo
-            });
-        } catch (error: any) {
-            console.error('خطأ في حساب التكلفة:', error);
-            return res.status(500).json({
-                success: false,
-                message: error.message || 'حدث خطأ في حساب التكلفة'
-            });
-        }
-    }
 }

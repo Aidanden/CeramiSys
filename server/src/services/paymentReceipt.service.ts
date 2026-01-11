@@ -60,17 +60,6 @@ export class PaymentReceiptService {
               id: true,
               invoiceNumber: true,
               currency: true,
-              exchangeRate: true,
-              totalForeign: true,
-              expenses: {
-                select: {
-                  supplierId: true,
-                  amount: true,
-                  currency: true,
-                  amountForeign: true,
-                  exchangeRate: true,
-                }
-              }
             },
           },
           installments: {
@@ -92,36 +81,10 @@ export class PaymentReceiptService {
       );
       const remainingAmount = Number(receipt.amount) - paidAmount;
 
-      let amountForeign = receipt.amountForeign ? Number(receipt.amountForeign) : null;
-      let currency = receipt.currency;
-      let exchangeRate = Number(receipt.exchangeRate);
-
-      // Fallback logic for old records
-      if (!amountForeign || currency === 'LYD') {
-        if (receipt.type === 'MAIN_PURCHASE' && receipt.purchase && receipt.purchase.currency !== 'LYD') {
-          amountForeign = Number(receipt.purchase.totalForeign);
-          currency = receipt.purchase.currency;
-          exchangeRate = Number(receipt.purchase.exchangeRate);
-        } else if (receipt.type === 'EXPENSE' && receipt.purchase?.expenses) {
-          // Find matching expense
-          const matchingExpense = receipt.purchase.expenses.find(e =>
-            e.supplierId === receipt.supplierId &&
-            Math.abs(Number(e.amount) - Number(receipt.amount)) < 0.01
-          );
-          if (matchingExpense && matchingExpense.currency !== 'LYD') {
-            amountForeign = Number(matchingExpense.amountForeign);
-            currency = matchingExpense.currency;
-            exchangeRate = Number(matchingExpense.exchangeRate);
-          }
-        }
-      }
-
       return {
         ...receipt,
         amount: Number(receipt.amount),
-        amountForeign,
-        currency,
-        exchangeRate,
+        currency: receipt.currency || 'LYD',
         paidAmount,
         remainingAmount,
       };
@@ -176,6 +139,8 @@ export class PaymentReceiptService {
               ? `مصروف على المورد رقم ${receipt.id}`
               : `فاتورة مشتريات للمورد رقم ${receipt.id}`),
         transactionDate: receipt.createdAt,
+        // معلومات العملة
+        currency: receipt.currency || 'LYD',
       });
     }
 
@@ -218,6 +183,8 @@ export class PaymentReceiptService {
               ? `مصروف على المورد رقم ${receipt.id}`
               : `فاتورة مشتريات للمورد رقم ${receipt.id}`),
         transactionDate: receipt.createdAt,
+        // معلومات العملة
+        currency: receipt.currency || 'LYD',
       });
     }
 
@@ -255,7 +222,7 @@ export class PaymentReceiptService {
   }
 
   // تسديد إيصال دفع
-  async payReceipt(id: number, notes?: string, treasuryId?: number) {
+  async payReceipt(id: number, notes?: string, treasuryId?: number, exchangeRate?: number) {
     return await prisma.$transaction(async (tx) => {
       // 1. الحصول على الإيصال مع المدفوعات السابقة والبيانات المرتبطة
       const receipt = await tx.supplierPaymentReceipt.findUnique({
@@ -285,7 +252,17 @@ export class PaymentReceiptService {
         0
       );
 
-      const amountToPayInLYD = Number(receipt.amount) - amountAlreadyPaid;
+      // إذا تم تقديم سعر صرف جديد وكان الإيصال بعملة أجنبية
+      let amountToPayInLYD = Number(receipt.amount) - amountAlreadyPaid;
+      let updatedExchangeRate = Number(receipt.exchangeRate) || 1;
+      let updatedAmountLYD = Number(receipt.amount);
+
+      if (exchangeRate && receipt.currency && receipt.currency !== 'LYD' && receipt.amountForeign) {
+        // تحديث سعر الصرف والمبلغ بالدينار
+        updatedExchangeRate = exchangeRate;
+        updatedAmountLYD = Number(receipt.amountForeign) * exchangeRate;
+        amountToPayInLYD = updatedAmountLYD - amountAlreadyPaid;
+      }
 
       // 3. تحديث حالة الإيصال
       const updatedReceipt = await tx.supplierPaymentReceipt.update({
@@ -294,6 +271,10 @@ export class PaymentReceiptService {
           status: 'PAID',
           paidAt: new Date(),
           notes: notes || receipt.notes,
+          ...(exchangeRate && receipt.currency && receipt.currency !== 'LYD' && receipt.amountForeign ? {
+            exchangeRate: new Prisma.Decimal(updatedExchangeRate),
+            amount: new Prisma.Decimal(updatedAmountLYD),
+          } : {}),
         },
       });
 
@@ -314,12 +295,14 @@ export class PaymentReceiptService {
             data: {
               supplierId: receipt.supplierId,
               transactionType: 'DEBIT',
-              amount: new Prisma.Decimal(amountToPayInLYD),
+              amount: new Prisma.Decimal(amountToPayInLYD), // المبلغ المدفوع بالدينار الليبي
               balance: new Prisma.Decimal(newBalance),
               referenceType: 'PAYMENT',
               referenceId: receipt.id,
               description: notes || receipt.description || `تسديد إيصال دفع رقم ${receipt.id}`,
               transactionDate: new Date(),
+              // معلومات العملة
+              currency: receipt.currency || 'LYD',
             },
           });
         }
@@ -367,9 +350,9 @@ export class PaymentReceiptService {
               let movementDesc = `إيصال صرف للمورد - ${receipt.description || `إيصال رقم ${receipt.id}`}`;
 
               // إضافة تفاصيل العملة الأجنبية في الوصف لتظهر في حركة الخزينة
-              if (receipt.currency && receipt.currency !== 'LYD') {
-                const foreignAmount = receipt.amountForeign ? Number(receipt.amountForeign) : 0;
-                movementDesc += ` [${foreignAmount} ${receipt.currency} @ ${receipt.exchangeRate}]`;
+              if (receipt.currency && receipt.currency !== 'LYD' && receipt.amountForeign) {
+                const foreignAmount = Number(receipt.amountForeign);
+                movementDesc += ` [${foreignAmount.toFixed(2)} ${receipt.currency} @ ${updatedExchangeRate.toFixed(4)}]`;
               }
 
               if (notes) movementDesc += ` (${notes})`;

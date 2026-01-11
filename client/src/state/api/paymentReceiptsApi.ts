@@ -16,8 +16,6 @@ export interface PaymentReceipt {
     id: number;
     invoiceNumber?: string;
     currency?: string;
-    exchangeRate?: number;
-    totalForeign?: number;
     companyId?: number;
     company?: {
       id: number;
@@ -25,10 +23,8 @@ export interface PaymentReceipt {
       code: string;
     };
   };
-  amount: number;
-  amountForeign?: number; // المبلغ بالعملة الأجنبية
-  currency?: string; // عملة الإيصال الأصلية
-  exchangeRate?: number; // سعر الصرف
+  amount: number; // المبلغ بالعملة الأصلية
+  currency: string; // عملة الإيصال (LYD/USD/EUR)
   paidAmount?: number;
   remainingAmount?: number;
   type: 'MAIN_PURCHASE' | 'EXPENSE' | 'RETURN';
@@ -43,10 +39,8 @@ export interface PaymentReceipt {
 export interface CreatePaymentReceiptDto {
   supplierId: number;
   purchaseId?: number;
-  amount: number;
-  amountForeign?: number;
-  currency?: string;
-  exchangeRate?: number;
+  amount: number; // المبلغ بالعملة الأصلية
+  currency?: string; // LYD/USD/EUR
   type: 'MAIN_PURCHASE' | 'EXPENSE' | 'RETURN';
   description?: string;
   categoryName?: string;
@@ -93,7 +87,8 @@ export interface PaymentInstallment {
 
 export interface CreateInstallmentDto {
   paymentReceiptId: number;
-  amount: number;
+  amount: number; // المبلغ بالعملة الأصلية
+  exchangeRate?: number; // سعر الصرف (للعملات الأجنبية فقط)
   notes?: string;
   paymentMethod?: string;
   referenceNumber?: string;

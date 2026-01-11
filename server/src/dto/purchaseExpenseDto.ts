@@ -4,10 +4,8 @@ import { z } from 'zod';
 export const CreatePurchaseExpenseDto = z.object({
   categoryId: z.number().int().positive(),
   supplierId: z.number().int().positive().optional(), // المورد إجباري فقط للمصروفات الفعلية
-  amount: z.number().positive(),
+  amount: z.number().positive(), // المبلغ بالعملة الأصلية
   currency: z.enum(['LYD', 'USD', 'EUR']).default('LYD'),
-  exchangeRate: z.number().positive().default(1),
-  amountForeign: z.number().positive().optional(),
   notes: z.string().optional().nullable(),
   isActualExpense: z.boolean().default(true), // true = مصروف فعلي (دين على المورد), false = مصروف تقديري (لتوزيع التكلفة فقط)
 });
@@ -82,10 +80,8 @@ export interface PurchaseExpense {
     id: number;
     name: string;
   } | null;
-  amount: number;
+  amount: number; // المبلغ بالعملة الأصلية
   currency: 'LYD' | 'USD' | 'EUR';
-  exchangeRate: number;
-  amountForeign: number | null;
   notes: string | null;
   isActualExpense: boolean; // true = مصروف فعلي, false = مصروف تقديري
   createdAt: string;
@@ -112,6 +108,7 @@ export interface SupplierPayable {
   supplierId: number;
   supplierName: string;
   amount: number;
+  currency: string; // العملة الأصلية
   type: 'MAIN_PURCHASE' | 'EXPENSE';
   description?: string;
   categoryName?: string;

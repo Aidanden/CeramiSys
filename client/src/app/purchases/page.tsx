@@ -64,7 +64,6 @@ const PurchasesPage = () => {
     supplierId: undefined,
     amount: 0,
     currency: 'LYD',
-    exchangeRate: 1,
     notes: '',
     isActualExpense: true // افتراضي: مصروف فعلي
   });
@@ -85,7 +84,6 @@ const PurchasesPage = () => {
     purchaseType: 'CASH',
     paymentMethod: 'CASH',
     currency: 'LYD',
-    exchangeRate: 1,
     lines: []
   });
 
@@ -316,7 +314,6 @@ const PurchasesPage = () => {
       purchaseType: purchase.purchaseType,
       paymentMethod: purchase.paymentMethod,
       currency: purchase.currency,
-      exchangeRate: purchase.exchangeRate,
       lines: purchase.lines || []
     });
     setSelectedSupplierName(purchase.supplier?.name || '');
@@ -332,7 +329,6 @@ const PurchasesPage = () => {
       supplierId: undefined,
       amount: 0,
       currency: 'LYD',
-      exchangeRate: 1.0,
       notes: '',
       isActualExpense: true
     });
@@ -360,21 +356,21 @@ const PurchasesPage = () => {
       const cleanExpense = {
         categoryId: newExpense.categoryId,
         supplierId: isActual ? newExpense.supplierId : undefined, // المورد فقط للمصروفات الفعلية
-        amount: newExpense.amount,
+        amount: newExpense.amount, // المبلغ بالعملة الأصلية
         currency: newExpense.currency || 'LYD',
-        exchangeRate: newExpense.exchangeRate || 1.0,
         notes: newExpense.notes || undefined,
         isActualExpense: isActual
       };
 
-      // console.log('✅ إضافة مصروف منظف:', cleanExpense);
-      // console.log('📋 قائمة المصروفات الحالية:', expenseForm);
+      console.log('✅ إضافة مصروف منظف:', cleanExpense);
+      console.log('📋 قائمة المصروفات الحالية:', expenseForm);
 
       setExpenseForm([...expenseForm, cleanExpense]);
       setNewExpense({
         categoryId: 0,
         supplierId: undefined,
         amount: 0,
+        currency: 'LYD',
         notes: '',
         isActualExpense: true
       });
@@ -412,9 +408,8 @@ const PurchasesPage = () => {
       const cleanExpenses = expenseForm.map(expense => ({
         categoryId: expense.categoryId,
         supplierId: expense.isActualExpense !== false ? expense.supplierId : undefined, // المورد فقط للمصروفات الفعلية
-        amount: expense.amount,
+        amount: expense.amount, // المبلغ بالعملة الأصلية
         currency: expense.currency || 'LYD',
-        exchangeRate: expense.exchangeRate || 1.0,
         notes: expense.notes || undefined,
         isActualExpense: expense.isActualExpense !== false // افتراضي: فعلي
       }));
@@ -423,16 +418,20 @@ const PurchasesPage = () => {
       let result;
       if (selectedPurchase.isApproved) {
         // للفواتير المعتمدة: استخدم API إضافة المصروفات
+        console.log('🚀 إرسال المصروفات للفاتورة المعتمدة:', JSON.stringify(cleanExpenses, null, 2));
         result = await addExpensesToApprovedPurchase({
           purchaseId: selectedPurchase.id,
           expenses: cleanExpenses
         }).unwrap();
+        console.log('✅ استجابة السيرفر:', JSON.stringify(result, null, 2));
       } else {
         // للفواتير الجديدة: استخدم API الاعتماد
+        console.log('🚀 اعتماد الفاتورة مع المصروفات:', JSON.stringify(cleanExpenses, null, 2));
         result = await approvePurchase({
           purchaseId: selectedPurchase.id,
           expenses: cleanExpenses
         }).unwrap();
+        console.log('✅ استجابة السيرفر:', JSON.stringify(result, null, 2));
       }
 
       // رسالة نجاح مخصصة حسب حالة الفاتورة
@@ -519,7 +518,6 @@ const PurchasesPage = () => {
       purchaseType: 'CASH',
       paymentMethod: 'CASH',
       currency: 'LYD',
-      exchangeRate: 1.0,
       lines: []
     });
     setSelectedSupplierName('');
@@ -773,12 +771,6 @@ const PurchasesPage = () => {
               <span className="info-label">العملة:</span>
               <span>${purchase.currency}</span>
             </div>
-            ${purchase.currency !== 'LYD' ? `
-            <div className="info-item">
-              <span className="info-label">سعر الصرف:</span>
-              <span>1 ${purchase.currency} = ${Number(purchase.exchangeRate).toFixed(4)} د.ل</span>
-            </div>
-            ` : ''}
           </div>
         </div>
 
@@ -1202,28 +1194,18 @@ const PurchasesPage = () => {
                       {purchase.supplier?.name || 'غير محدد'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-green-600">
-                          {purchase.currency === 'LYD'
-                            ? formatArabicCurrency(purchase.total)
-                            : `${Number(purchase.totalForeign || 0).toFixed(2)} ${purchase.currency}`
-                          }
-                        </span>
-                        {purchase.currency !== 'LYD' && (
-                          <span className="text-xs text-blue-600">
-                            = {formatArabicCurrency(purchase.total)}
-                          </span>
-                        )}
-                      </div>
+                      <span className="font-semibold text-green-600">
+                        {Number(purchase.total).toFixed(2)} {purchase.currency}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div className="flex flex-col">
                         <span className="font-semibold text-blue-600">
-                          {formatArabicCurrency(purchase.finalTotal || (Number(purchase.total) + Number(purchase.totalExpenses || 0)))}
+                          {Number(purchase.finalTotal || (Number(purchase.total) + Number(purchase.totalExpenses || 0))).toFixed(2)} {purchase.currency}
                         </span>
                         {Number(purchase.totalExpenses) > 0 && (
                           <span className="text-xs text-orange-500">
-                            +{formatArabicCurrency(purchase.totalExpenses)} مصروفات
+                            +{Number(purchase.totalExpenses).toFixed(2)} {purchase.currency} مصروفات
                           </span>
                         )}
                       </div>
@@ -1466,7 +1448,6 @@ const PurchasesPage = () => {
                           purchaseType: purchaseForm.purchaseType,
                           paymentMethod: purchaseForm.paymentMethod,
                           currency: purchaseForm.currency,
-                          exchangeRate: purchaseForm.exchangeRate,
                           lines: purchaseForm.lines.map(line => ({
                             ...(line.id && { id: line.id }),
                             productId: line.productId,
@@ -1604,46 +1585,28 @@ const PurchasesPage = () => {
                       </p>
                     </div>
 
-                    {/* Currency and Exchange Rate */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          العملة *
-                        </label>
-                        <select
-                          value={purchaseForm.currency}
-                          onChange={(e) => {
-                            const curr = e.target.value as 'LYD' | 'USD' | 'EUR';
-                            let rate = 1.0;
-                            if (curr === 'USD') rate = exchangeRates?.USD_EXCHANGE_RATE || 4.80;
-                            if (curr === 'EUR') rate = exchangeRates?.EUR_EXCHANGE_RATE || 5.20;
-
-                            setPurchaseForm(prev => ({
-                              ...prev,
-                              currency: curr,
-                              exchangeRate: curr === 'LYD' ? 1.0 : rate
-                            }));
-                          }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="LYD">دينار ليبي (LYD)</option>
-                          <option value="USD">دولار أمريكي (USD)</option>
-                          <option value="EUR">يورو (EUR)</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          سعر الصرف *
-                        </label>
-                        <input
-                          type="number"
-                          step="0.0001"
-                          value={purchaseForm.exchangeRate ?? 1}
-                          onChange={(e) => setPurchaseForm(prev => ({ ...prev, exchangeRate: parseFloat(e.target.value) }))}
-                          disabled={purchaseForm.currency === 'LYD'}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-                        />
-                      </div>
+                    {/* Currency */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        العملة *
+                      </label>
+                      <select
+                        value={purchaseForm.currency}
+                        onChange={(e) => {
+                          setPurchaseForm(prev => ({
+                            ...prev,
+                            currency: e.target.value as 'LYD' | 'USD' | 'EUR'
+                          }));
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="LYD">دينار ليبي (LYD)</option>
+                        <option value="USD">دولار أمريكي (USD)</option>
+                        <option value="EUR">يورو (EUR)</option>
+                      </select>
+                      <p className="text-xs text-blue-600 mt-1">
+                        💡 سعر الصرف يُدخل عند الدفع الفعلي فقط
+                      </p>
                     </div>
 
                   </div>
@@ -1844,11 +1807,9 @@ const PurchasesPage = () => {
                               <span className="text-2xl font-bold text-green-600">
                                 {Number(calculateGrandTotal()).toFixed(2)} {purchaseForm.currency}
                               </span>
-                              {purchaseForm.currency !== 'LYD' && (
-                                <div className="text-sm font-medium text-blue-600 mt-1">
-                                  ما يعادل: {formatArabicCurrency(calculateGrandTotal() * (purchaseForm.exchangeRate || 1))}
-                                </div>
-                              )}
+                              <div className="text-xs text-gray-500 mt-1">
+                                💡 يتم حساب القيمة بالدينار عند الدفع الفعلي
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1924,15 +1885,7 @@ const PurchasesPage = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700">مجموع الأصناف</label>
                     <p className="text-lg font-semibold text-green-600">
-                      {selectedPurchase.currency === 'LYD'
-                        ? formatArabicCurrency(selectedPurchase.total)
-                        : `${Number(selectedPurchase.totalForeign || (Number(selectedPurchase.total) / Number(selectedPurchase.exchangeRate))).toFixed(2)} ${selectedPurchase.currency}`
-                      }
-                      {selectedPurchase.currency !== 'LYD' && (
-                        <span className="text-xs text-blue-600 block">
-                          ما يعادل: {formatArabicCurrency(selectedPurchase.total)}
-                        </span>
-                      )}
+                      {Number(selectedPurchase.total).toFixed(2)} {selectedPurchase.currency}
                     </p>
                   </div>
                   <div>
@@ -2005,14 +1958,14 @@ const PurchasesPage = () => {
                           <tr>
                             <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">نوع المصروف</th>
                             <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">المورد</th>
-                            <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">المبلغ بالعملة الأجنبية</th>
-                            <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">سعر الصرف</th>
-                            <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">المبلغ بالدينار</th>
+                            <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">المبلغ</th>
                             <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">إجراء</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-orange-100">
-                          {(selectedPurchase as any).expenses.map((expense: any, index: number) => (
+                          {(selectedPurchase as any).expenses.map((expense: any, index: number) => {
+                            console.log('🔍 [Purchase Details] Expense:', expense);
+                            return (
                             <tr key={index} className="hover:bg-orange-50/50">
                               <td className="px-3 py-2 text-gray-800">
                                 <div className="font-medium text-orange-800">{expense.category?.name || 'مصروف عام'}</div>
@@ -2023,27 +1976,9 @@ const PurchasesPage = () => {
                               <td className="px-3 py-2 text-gray-600 text-xs">
                                 {expense.supplier?.name || 'غير محدد'}
                               </td>
-                              <td className="px-3 py-2 font-mono">
-                                {expense.currency !== 'LYD' && expense.amountForeign ? (
-                                  <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
-                                    {Number(expense.amountForeign).toFixed(2)} {expense.currency}
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-400">-</span>
-                                )}
-                              </td>
-                              <td className="px-3 py-2 font-mono">
-                                {expense.currency !== 'LYD' ? (
-                                  <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs">
-                                    {Number(expense.exchangeRate).toFixed(2)}
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-400">-</span>
-                                )}
-                              </td>
                               <td className="px-3 py-2 font-bold font-mono">
                                 <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs">
-                                  {Number(expense.amount).toFixed(2)} د.ل
+                                  {Number(expense.amount).toFixed(2)} {expense.currency || 'LYD'}
                                 </span>
                               </td>
                               <td className="px-3 py-2">
@@ -2058,7 +1993,8 @@ const PurchasesPage = () => {
                                 </button>
                               </td>
                             </tr>
-                          ))}
+                          );
+                        })}
                         </tbody>
                       </table>
                     </div>
@@ -2293,13 +2229,7 @@ const PurchasesPage = () => {
                               المورد
                             </th>
                             <th className="px-3 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
-                              المبلغ بالعملة الأجنبية
-                            </th>
-                            <th className="px-3 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
-                              سعر الصرف
-                            </th>
-                            <th className="px-3 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
-                              المبلغ بالدينار
+                              المبلغ
                             </th>
                             <th className="px-3 py-2 text-right text-xs font-medium text-yellow-800 uppercase tracking-wider">
                               ملاحظات
@@ -2307,7 +2237,13 @@ const PurchasesPage = () => {
                           </tr>
                         </thead>
                         <tbody className="bg-yellow-50 divide-y divide-yellow-200">
-                          {existingExpenses.map((expense) => (
+                          {existingExpenses.map((expense) => {
+                            console.log('🔍 [existingExpenses] Expense:', {
+                              id: expense.id,
+                              amount: expense.amount,
+                              currency: (expense as any).currency
+                            });
+                            return (
                             <tr key={expense.id} className={(expense as any).isActualExpense === false ? 'bg-orange-100' : ''}>
                               <td className="px-3 py-2 whitespace-nowrap text-sm">
                                 {(expense as any).isActualExpense !== false ? (
@@ -2329,34 +2265,17 @@ const PurchasesPage = () => {
                                   : <span className="text-gray-400 italic">-</span>
                                 }
                               </td>
-                              <td className="px-3 py-2 whitespace-nowrap text-sm font-mono">
-                                {expense.currency !== 'LYD' && expense.amountForeign ? (
-                                  <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
-                                    {Number(expense.amountForeign).toFixed(2)} {expense.currency}
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-400">-</span>
-                                )}
-                              </td>
-                              <td className="px-3 py-2 whitespace-nowrap text-sm font-mono">
-                                {expense.currency !== 'LYD' ? (
-                                  <span className="bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded text-xs">
-                                    {Number(expense.exchangeRate).toFixed(2)}
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-400">-</span>
-                                )}
-                              </td>
                               <td className="px-3 py-2 whitespace-nowrap text-sm font-bold font-mono">
                                 <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs">
-                                  {Number(expense.amount).toFixed(2)} د.ل
+                                  {Number(expense.amount).toFixed(2)} {expense.currency || 'LYD'}
                                 </span>
                               </td>
                               <td className="px-3 py-2 whitespace-nowrap text-sm text-yellow-600">
                                 {expense.notes || '-'}
                               </td>
                             </tr>
-                          ))}
+                          );
+                        })}
                         </tbody>
                       </table>
                     </div>
@@ -2364,7 +2283,7 @@ const PurchasesPage = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-yellow-800">إجمالي المصروفات الموجودة:</span>
                         <span className="text-lg font-bold text-yellow-700">
-                          {formatArabicCurrency(existingExpenses.reduce((sum, exp) => sum + (Number(exp.amount) * Number(exp.exchangeRate)), 0))}
+                          {formatArabicCurrency(existingExpenses.reduce((sum, exp) => sum + Number(exp.amount), 0))}
                         </span>
                       </div>
                     </div>
@@ -2475,14 +2394,9 @@ const PurchasesPage = () => {
                         <select
                           value={newExpense.currency}
                           onChange={(e) => {
-                            const curr = e.target.value as 'LYD' | 'USD' | 'EUR';
-                            let rate = 1.0;
-                            if (curr === 'USD') rate = exchangeRates?.USD_EXCHANGE_RATE || 4.80;
-                            if (curr === 'EUR') rate = exchangeRates?.EUR_EXCHANGE_RATE || 5.20;
                             setNewExpense({
                               ...newExpense,
-                              currency: curr,
-                              exchangeRate: curr === 'LYD' ? 1.0 : rate
+                              currency: e.target.value as 'LYD' | 'USD' | 'EUR'
                             });
                           }}
                           className="px-2 py-2 border border-gray-300 rounded-md bg-gray-50 text-xs"
@@ -2492,20 +2406,10 @@ const PurchasesPage = () => {
                           <option value="EUR">EUR</option>
                         </select>
                       </div>
+                      <p className="text-xs text-blue-600 mt-1">
+                        💡 سعر الصرف يُدخل عند الدفع الفعلي فقط
+                      </p>
                     </div>
-                    {newExpense.currency !== 'LYD' && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">سعر الصرف *</label>
-                        <input
-                          type="number"
-                          step="0.0001"
-                          value={newExpense.exchangeRate ?? 1}
-                          onChange={(e) => setNewExpense({ ...newExpense, exchangeRate: parseFloat(e.target.value) })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <p className="text-[10px] text-blue-600 mt-1">= {(newExpense.amount * (newExpense.exchangeRate || 1)).toFixed(2)} د.ل</p>
-                      </div>
-                    )}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">ملاحظات</label>
                       <input
@@ -2616,21 +2520,11 @@ const PurchasesPage = () => {
                       </table>
                     </div>
                     <div className="mt-4 bg-blue-50 p-4 rounded-lg">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="font-medium text-gray-700">إجمالي المصروفات الجديدة (LYD):</span>
-                        <span className="font-bold text-blue-600">
-                          {formatArabicCurrency(expenseForm.reduce((sum, exp: any) => sum + (Number(exp.amount) * Number(exp.exchangeRate)), 0))}
-                        </span>
+                      <div className="text-xs text-blue-700 mb-2">
+                        💡 إجمالي المصروفات: {expenseForm.length} مصروف بعملات مختلفة
                       </div>
-                      <div className="flex justify-between items-center mt-2 border-t pt-2">
-                        <span className="text-sm font-medium text-gray-700">الإجمالي النهائي للفاتورة (LYD):</span>
-                        <span className="text-xl font-bold text-green-600">
-                          {formatArabicCurrency(
-                            (Number(selectedPurchase.total) || 0) +
-                            existingExpenses.reduce((sum, exp) => sum + (Number(exp.amount) * Number(exp.exchangeRate)), 0) +
-                            expenseForm.reduce((sum, exp: any) => sum + (Number(exp.amount) * Number(exp.exchangeRate)), 0)
-                          )}
-                        </span>
+                      <div className="text-xs text-gray-600">
+                        سيتم حساب القيمة الإجمالية بالدينار عند الدفع الفعلي
                       </div>
                     </div>
                   </div>

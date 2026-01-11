@@ -6,7 +6,8 @@ import { TransactionSource } from '@prisma/client';
 
 export interface CreateInstallmentDto {
   paymentReceiptId: number;
-  amount: number;
+  amount: number; // المبلغ بالعملة الأصلية
+  exchangeRate?: number; // سعر الصرف (للعملات الأجنبية فقط)
   notes?: string;
   paymentMethod?: string;
   referenceNumber?: string;
@@ -77,25 +78,27 @@ class PaymentInstallmentService {
             ? `دفعة على ${paymentReceipt.description}`
             : `دفعة على إيصال دفع رقم ${paymentReceipt.id}`,
           transactionDate: installment.paidAt,
+          // معلومات العملة
+          currency: paymentReceipt.currency || 'LYD',
         });
       }
 
       // الخصم من الخزينة المحددة
       if (data.treasuryId) {
         try {
-          // تجهيز وصف الحركة مع مراعاة العملة الأجنبية
+          // حساب المبلغ الذي سيُخصم من الخزينة (بالدينار)
+          let amountToWithdraw = Number(data.amount);
           let movementDesc = `دفعة للمورد (${paymentReceipt.description || `إيصال #${paymentReceipt.id}`})`;
 
-          if (paymentReceipt.currency && paymentReceipt.currency !== 'LYD') {
-            // حساب القيمة التقريبية بالعملة الأجنبية لهذه الدفعة
-            const exchangeRate = Number(paymentReceipt.exchangeRate) || 1;
-            const foreignAmount = Number(data.amount) / exchangeRate;
-            movementDesc += ` [مقابل ${foreignAmount.toFixed(2)} ${paymentReceipt.currency}]`;
+          if (paymentReceipt.currency && paymentReceipt.currency !== 'LYD' && data.exchangeRate) {
+            // للعملات الأجنبية: المبلغ بالدينار = المبلغ بالعملة الأجنبية × سعر الصرف
+            amountToWithdraw = Number(data.amount) * Number(data.exchangeRate);
+            movementDesc += ` [${Number(data.amount).toFixed(2)} ${paymentReceipt.currency} × ${Number(data.exchangeRate).toFixed(4)} = ${amountToWithdraw.toFixed(2)} LYD]`;
           }
 
           await TreasuryController.withdrawFromTreasury(
             data.treasuryId,
-            Number(data.amount),
+            amountToWithdraw,
             TransactionSource.PAYMENT,
             'PaymentReceiptInstallment',
             installment.id,
