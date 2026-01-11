@@ -1183,8 +1183,13 @@ export default function PaymentReceiptsPage() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {installmentsData.installments.map((installment) => (
                         <tr key={installment.id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {formatLibyanCurrencyArabic(installment.amount)}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <span className={`font-semibold ${
+                              selectedReceipt.currency === 'LYD' ? 'text-green-600' :
+                              selectedReceipt.currency === 'USD' ? 'text-blue-600' : 'text-purple-600'
+                            }`}>
+                              {installment.amount.toFixed(2)} {selectedReceipt.currency}
+                            </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {installment.paymentMethod || '-'}

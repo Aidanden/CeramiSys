@@ -117,7 +117,7 @@ export const printReceipt = (receipt: any, installment?: any, isFullPayment: boo
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
               <span>المبلغ المدفوع:</span>
               <span style="font-weight: bold; font-size: 16px; color: #28a745;">
-                ${formatLibyanCurrencyArabic(installment.amount)}
+                ${installment.amount.toFixed(2)} ${receipt.currency || 'LYD'}
               </span>
             </div>
 
@@ -150,13 +150,13 @@ export const printReceipt = (receipt: any, installment?: any, isFullPayment: boo
             <!-- Full payment -->
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
               <span>المبلغ الإجمالي:</span>
-              <span>${formatLibyanCurrencyArabic(receipt.amount)}</span>
+              <span>${receipt.amount.toFixed(2)} ${receipt.currency || 'LYD'}</span>
             </div>
 
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
               <span>المبلغ المدفوع:</span>
               <span style="font-weight: bold; font-size: 16px; color: #28a745;">
-                ${formatLibyanCurrencyArabic(receipt.amount)}
+                ${receipt.amount.toFixed(2)} ${receipt.currency || 'LYD'}
               </span>
             </div>
 
@@ -175,18 +175,18 @@ export const printReceipt = (receipt: any, installment?: any, isFullPayment: boo
 
           <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
             <span>المبلغ الإجمالي:</span>
-            <span style="font-weight: bold;">${formatLibyanCurrencyArabic(receipt.amount)}</span>
+            <span style="font-weight: bold;">${(receipt.amount || 0).toFixed(2)} ${receipt.currency || 'LYD'}</span>
           </div>
 
           <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
             <span>المبلغ المدفوع:</span>
-            <span style="font-weight: bold; color: #28a745;">${formatLibyanCurrencyArabic(receipt.paidAmount || 0)}</span>
+            <span style="font-weight: bold; color: #28a745;">${(receipt.paidAmount || 0).toFixed(2)} ${receipt.currency || 'LYD'}</span>
           </div>
 
           <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 2px solid #007bff; padding-top: 8px; margin-top: 8px; font-size: 13px;">
             <span>المبلغ المتبقي:</span>
             <span style="color: #dc3545;">
-              ${formatLibyanCurrencyArabic(receipt.remainingAmount || receipt.amount)}
+              ${(receipt.remainingAmount || receipt.amount || 0).toFixed(2)} ${receipt.currency || 'LYD'}
             </span>
           </div>
         </div>

@@ -175,7 +175,7 @@ export class PurchaseService {
         amount: total, // المبلغ بالعملة الأصلية
         referenceType: 'PURCHASE',
         referenceId: purchase.id,
-        description: `فاتورة مشتريات #${purchase.id}`,
+        description: `فاتورة مشتريات ${purchase.invoiceNumber || `#${purchase.id}`}`,
         transactionDate: new Date(),
         currency: currency, // العملة الأصلية للفاتورة (بدون fallback لـ LYD)
       });

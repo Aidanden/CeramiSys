@@ -182,13 +182,16 @@ model Customer {
   id               Int               @id @default(autoincrement())
   name             String
   phone            String?
-  note             String?
+  phone2           String?
+  address          String?
+  notes            String?           @map("note")
   createdAt        DateTime          @default(now())
   accountEntries   CustomerAccount[]
   provisionalSales ProvisionalSale[]
   sales            Sale[]
   saleReturns      SaleReturn[]
   generalReceipts  GeneralReceipt[]
+  externalStores   ExternalStore[]   // المحلات الخارجية المرتبطة بهذا العميل
 }
 
 model CustomerAccount {
@@ -742,16 +745,19 @@ model ExternalStore {
   phone2             String?
   address            String?
   googleMapsUrl      String?
+  customerId         Int?                   // العميل المرتبط بالمحل
   isActive           Boolean                @default(true)
   showPrices         Boolean                @default(true) // إظهار الأسعار في بوابة المحل
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt
+  customer           Customer?              @relation(fields: [customerId], references: [id])
   invoices           ExternalStoreInvoice[]
   productAssignments ExternalStoreProduct[]
   users              ExternalStoreUser[]
 
   @@index([isActive])
   @@index([createdAt])
+  @@index([customerId])
 }
 
 model ExternalStoreUser {

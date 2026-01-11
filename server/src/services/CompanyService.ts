@@ -62,7 +62,7 @@ export class CompanyService {
             data: {
               name: result.name,
               phone: `BRANCH-${result.id}`,
-              note: `عميل وهمي يمثل الشركة الفرعية: ${result.name}`
+              notes: `عميل وهمي يمثل الشركة الفرعية: ${result.name}`
             }
           });
         } catch (customerError) {

@@ -225,7 +225,9 @@ exports.Prisma.CustomerScalarFieldEnum = {
   id: 'id',
   name: 'name',
   phone: 'phone',
-  note: 'note',
+  phone2: 'phone2',
+  address: 'address',
+  notes: 'notes',
   createdAt: 'createdAt'
 };
 
@@ -604,6 +606,7 @@ exports.Prisma.ExternalStoreScalarFieldEnum = {
   phone2: 'phone2',
   address: 'address',
   googleMapsUrl: 'googleMapsUrl',
+  customerId: 'customerId',
   isActive: 'isActive',
   showPrices: 'showPrices',
   createdAt: 'createdAt',

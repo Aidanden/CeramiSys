@@ -342,26 +342,10 @@ export class ExternalStoreInvoiceController {
         try {
             const { id } = req.params;
             const userId = (req as any).user?.UserID;
+            const userCompanyId = (req as any).user?.companyId;
 
             const invoice = await prisma.externalStoreInvoice.findUnique({
                 where: { id: Number(id) },
-            });
-
-            if (!invoice) {
-                return res.status(404).json({ error: 'Invoice not found' });
-            }
-
-            if (invoice.status !== 'PENDING') {
-                return res.status(400).json({ error: 'Invoice is not pending' });
-            }
-
-            const updatedInvoice = await prisma.externalStoreInvoice.update({
-                where: { id: Number(id) },
-                data: {
-                    status: 'APPROVED',
-                    reviewedAt: new Date(),
-                    reviewedBy: userId,
-                },
                 include: {
                     store: true,
                     lines: {
@@ -372,7 +356,86 @@ export class ExternalStoreInvoiceController {
                 },
             });
 
-            return res.json(updatedInvoice);
+            if (!invoice) {
+                return res.status(404).json({ error: 'Invoice not found' });
+            }
+
+            if (invoice.status !== 'PENDING') {
+                return res.status(400).json({ error: 'Invoice is not pending' });
+            }
+
+            // استخدام transaction للتأكد من تنفيذ جميع العمليات
+            const result = await prisma.$transaction(async (tx) => {
+                // 1. تحديث حالة الفاتورة إلى معتمدة
+                const updatedInvoice = await tx.externalStoreInvoice.update({
+                    where: { id: Number(id) },
+                    data: {
+                        status: 'APPROVED',
+                        reviewedAt: new Date(),
+                        reviewedBy: userId,
+                    },
+                    include: {
+                        store: true,
+                        lines: {
+                            include: {
+                                product: true,
+                            },
+                        },
+                    },
+                });
+
+                // 2. إنشاء فاتورة مبيعات آجلة للعميل المرتبط بالمحل
+                const sale = await tx.sale.create({
+                    data: {
+                        companyId: userCompanyId || 1, // شركة التقازي الرئيسية
+                        customerId: invoice.store.customerId, // العميل المرتبط بالمحل
+                        invoiceNumber: `EXT-${invoice.store.id}-${invoice.id}`,
+                        saleType: 'CREDIT', // آجلة
+                        paymentMethod: null,
+                        total: invoice.total,
+                        status: 'APPROVED', // معتمدة تلقائياً
+                        notes: `فاتورة محل خارجي: ${invoice.store.name} - رقم الفاتورة: ${invoice.invoiceNumber || invoice.id}`,
+                        approvedBy: userId,
+                        approvedAt: new Date(),
+                    },
+                });
+
+                // 3. إنشاء بنود فاتورة المبيعات
+                for (const line of invoice.lines) {
+                    await tx.saleLine.create({
+                        data: {
+                            saleId: sale.id,
+                            productId: line.productId,
+                            qty: line.qty,
+                            unitPrice: line.unitPrice,
+                            subTotal: line.subTotal,
+                        },
+                    });
+                }
+
+                // 4. إنشاء أمر صرف مرتبط بالفاتورة
+                const dispatchOrder = await tx.dispatchOrder.create({
+                    data: {
+                        saleId: sale.id,
+                        companyId: userCompanyId || 1,
+                        status: 'PENDING',
+                        notes: `أمر صرف تلقائي - محل: ${invoice.store.name} - فاتورة: ${invoice.invoiceNumber || invoice.id}`,
+                    },
+                });
+
+                return {
+                    invoice: updatedInvoice,
+                    sale,
+                    dispatchOrder,
+                };
+            });
+
+            return res.json({
+                ...result.invoice,
+                createdSaleId: result.sale.id,
+                createdDispatchOrderId: result.dispatchOrder.id,
+                message: 'تمت الموافقة على الفاتورة وإنشاء أمر الصرف بنجاح',
+            });
         } catch (error: any) {
             console.error('Error approving invoice:', error);
             return res.status(500).json({ error: 'Failed to approve invoice', details: error.message });

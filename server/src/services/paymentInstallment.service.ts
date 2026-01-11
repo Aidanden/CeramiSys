@@ -93,7 +93,7 @@ class PaymentInstallmentService {
           if (paymentReceipt.currency && paymentReceipt.currency !== 'LYD' && data.exchangeRate) {
             // للعملات الأجنبية: المبلغ بالدينار = المبلغ بالعملة الأجنبية × سعر الصرف
             amountToWithdraw = Number(data.amount) * Number(data.exchangeRate);
-            movementDesc += ` [${Number(data.amount).toFixed(2)} ${paymentReceipt.currency} × ${Number(data.exchangeRate).toFixed(4)} = ${amountToWithdraw.toFixed(2)} LYD]`;
+            movementDesc = `دفعة للمورد (${paymentReceipt.description || `إيصال #${paymentReceipt.id}`}) - المدفوع: ${Number(data.amount).toFixed(2)} ${paymentReceipt.currency} | سعر الصرف: ${Number(data.exchangeRate).toFixed(2)} | الإجمالي: ${amountToWithdraw.toFixed(2)} د.ل`;
           }
 
           await TreasuryController.withdrawFromTreasury(

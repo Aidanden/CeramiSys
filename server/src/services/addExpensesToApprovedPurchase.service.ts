@@ -139,7 +139,7 @@ export class AddExpensesToApprovedPurchaseService {
                 amount: new Prisma.Decimal(amount), // المبلغ بالعملة الأصلية
                 currency: (expense.currency as Currency) || Currency.LYD,
                 type: 'EXPENSE',
-                description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة #${purchase.id}`,
+                description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة ${purchase.invoiceNumber || `#${purchase.id}`}`,
                 categoryName: category?.name,
                 status: 'PENDING',
               },

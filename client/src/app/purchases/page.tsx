@@ -802,7 +802,7 @@ const PurchasesPage = () => {
                       ${line.qty} ${line.product?.unit || 'وحدة'}
                       ${isBox ? `<br><small style="color: #0066cc;">= ${totalMeters} م²</small>` : ''}
                     </td>
-                    <td>${Number(line.unitPrice).toFixed(2)} ${purchase.currency}${isBox ? '/م²' : ''}</td>
+                    <td>${Number(line.unitPrice).toFixed(2)} ${purchase.currency} / ${isBox ? 'م²' : (line.product?.unit || 'وحدة')}</td>
                     <td>${lineTotal.toFixed(2)} ${purchase.currency}</td>
                   </tr>
                 `;
@@ -819,9 +819,7 @@ const PurchasesPage = () => {
             <tr>
               <th>بند المصروف</th>
               <th>الشخص المتبع</th>
-              <th>المبلغ بالعملة الأجنبية</th>
-              <th>سعر الصرف</th>
-              <th>المبلغ بالدينار</th>
+              <th>المبلغ</th>
             </tr>
           </thead>
           <tbody>
@@ -832,40 +830,40 @@ const PurchasesPage = () => {
                   ${expense.notes ? `<div style="font-size: 10px; color: #666;">${expense.notes}</div>` : ''}
                 </td>
                 <td>${expense.supplier?.name || 'غير محدد'}</td>
-                <td>${expense.currency !== 'LYD' && expense.amountForeign ? `${Number(expense.amountForeign).toFixed(2)} ${expense.currency}` : '-'}</td>
-                <td>${expense.currency !== 'LYD' ? Number(expense.exchangeRate).toFixed(2) : '-'}</td>
-                <td style="font-weight: bold;">${Number(expense.amount).toFixed(2)} د.ل</td>
+                <td style="font-weight: bold;">${Number(expense.amount).toFixed(2)} ${expense.currency || 'LYD'}</td>
               </tr>
-            `).join('') || '<tr><td colspan="5">لا توجد مصروفات</td></tr>'}
+            `).join('') || '<tr><td colspan="3">لا توجد مصروفات</td></tr>'}
           </tbody>
         </table>
         ` : ''}
 
         <div class="total-section">
           <div class="total-title">ملخص الفاتورة</div>
-          <div className="total-row">
+          <div className="total-row total-final">
             <span>مجموع الأصناف:</span>
-            <span>
-              ${purchase.currency === 'LYD'
-        ? Number(purchase.total).toFixed(2)
-        : Number(purchase.totalForeign || (Number(purchase.total) / Number(purchase.exchangeRate))).toFixed(2)
-      } ${purchase.currency}
+            <span style="font-weight: bold;">
+              ${Number(purchase.total).toFixed(2)} ${purchase.currency}
             </span>
           </div>
-          ${purchase.currency !== 'LYD' ? `
-          <div className="total-row">
-            <span>ما يعادل بالدينار:</span>
-            <span>${Number(purchase.total).toFixed(2)} د.ل</span>
+          ${(purchase as any).expenses?.length > 0 ? `
+          <div className="total-row" style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #000;">
+            <span style="font-weight: bold;">المصروفات حسب العملة:</span>
+            <span></span>
           </div>
+          ${(() => {
+            const expensesByCurrency: Record<string, number> = {};
+            (purchase as any).expenses?.forEach((expense: any) => {
+              const currency = expense.currency || 'LYD';
+              expensesByCurrency[currency] = (expensesByCurrency[currency] || 0) + Number(expense.amount);
+            });
+            return Object.entries(expensesByCurrency).map(([currency, total]) => `
+              <div className="total-row">
+                <span>• ${currency}:</span>
+                <span>${total.toFixed(2)} ${currency}</span>
+              </div>
+            `).join('');
+          })()}
           ` : ''}
-          <div className="total-row">
-            <span>إجمالي المصروفات:</span>
-            <span>${Number((purchase as any).totalExpenses || 0).toFixed(2)} د.ل</span>
-          </div>
-          <div className="total-row total-final">
-            <span>الإجمالي النهائي (LYD):</span>
-            <span>${Number((purchase as any).finalTotal || (Number(purchase.total) + Number((purchase as any).totalExpenses || 0))).toFixed(2)} د.ل</span>
-          </div>
         </div>
 
         <div class="footer">
@@ -1152,7 +1150,7 @@ const PurchasesPage = () => {
                   المجموع
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  الإجمالي مع المصروفات
+                  المصروفات
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   التاريخ
@@ -1199,16 +1197,26 @@ const PurchasesPage = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-blue-600">
-                          {Number(purchase.finalTotal || (Number(purchase.total) + Number(purchase.totalExpenses || 0))).toFixed(2)} {purchase.currency}
-                        </span>
-                        {Number(purchase.totalExpenses) > 0 && (
-                          <span className="text-xs text-orange-500">
-                            +{Number(purchase.totalExpenses).toFixed(2)} {purchase.currency} مصروفات
-                          </span>
-                        )}
-                      </div>
+                      {(purchase as any).expenses && (purchase as any).expenses.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          {(() => {
+                            // حساب المصروفات حسب العملة
+                            const expensesByCurrency: Record<string, number> = {};
+                            (purchase as any).expenses.forEach((expense: any) => {
+                              const currency = expense.currency || 'LYD';
+                              expensesByCurrency[currency] = (expensesByCurrency[currency] || 0) + Number(expense.amount);
+                            });
+                            
+                            return Object.entries(expensesByCurrency).map(([currency, total]) => (
+                              <span key={currency} className="text-xs text-orange-600 font-semibold">
+                                {total.toFixed(2)} {currency}
+                              </span>
+                            ));
+                          })()}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">لا يوجد</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {new Date(purchase.createdAt).toLocaleDateString('en-US')}
@@ -1882,24 +1890,43 @@ const PurchasesPage = () => {
                     <label className="block text-sm font-medium text-gray-700">المورد</label>
                     <p className="text-lg font-semibold">{selectedPurchase.supplier?.name || 'غير محدد'}</p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">مجموع الأصناف</label>
-                    <p className="text-lg font-semibold text-green-600">
-                      {Number(selectedPurchase.total).toFixed(2)} {selectedPurchase.currency}
-                    </p>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">إجماليات الفاتورة</label>
+                    <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-green-700">مجموع الأصناف:</span>
+                        <span className="text-xl font-bold text-green-700">
+                          {Number(selectedPurchase.total).toFixed(2)} {selectedPurchase.currency}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">إجمالي المصروفات</label>
-                    <p className="text-lg font-semibold text-orange-600">
-                      {formatArabicCurrency(selectedPurchase.totalExpenses)}
-                    </p>
-                  </div>
-                  <div className="col-span-2 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <label className="block text-sm font-medium text-gray-700">الإجمالي النهائي</label>
-                    <p className="text-2xl font-bold text-indigo-700">
-                      {formatArabicCurrency(selectedPurchase.finalTotal || (Number(selectedPurchase.total) + Number(selectedPurchase.totalExpenses || 0)))}
-                    </p>
-                  </div>
+                  {(selectedPurchase as any).expenses && (selectedPurchase as any).expenses.length > 0 && (() => {
+                    // حساب المصروفات حسب العملة
+                    const expensesByCurrency: Record<string, number> = {};
+                    (selectedPurchase as any).expenses.forEach((expense: any) => {
+                      const currency = expense.currency || 'LYD';
+                      expensesByCurrency[currency] = (expensesByCurrency[currency] || 0) + Number(expense.amount);
+                    });
+                    
+                    return (
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">إجمالي المصروفات</label>
+                        <div className="space-y-2">
+                          {Object.entries(expensesByCurrency).map(([currency, total]) => (
+                            <div key={currency} className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm text-orange-700">مصروفات {currency}:</span>
+                                <span className="text-lg font-bold text-orange-700">
+                                  {total.toFixed(2)} {currency}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {selectedPurchase.lines && selectedPurchase.lines.length > 0 && (
@@ -1936,7 +1963,7 @@ const PurchasesPage = () => {
                                     {lineTotal.toFixed(2)} {selectedPurchase.currency}
                                   </span>
                                   <span className="text-xs text-gray-500">
-                                    {(isBox ? line.unitPrice / unitsPerBox : line.unitPrice).toFixed(2)} {selectedPurchase.currency} / {isBox ? 'م²' : (line.product?.unit || 'وحدة')}
+                                    {line.unitPrice.toFixed(2)} {selectedPurchase.currency} / {isBox ? 'م²' : (line.product?.unit || 'وحدة')}
                                   </span>
                                 </div>
                               </div>
@@ -2495,11 +2522,6 @@ const PurchasesPage = () => {
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-green-600">
                                 {expense.amount} {expense.currency}
-                                {expense.currency !== 'LYD' && (
-                                  <div className="text-[10px] text-blue-500">
-                                    ({(Number(expense.amount) * Number(expense.exchangeRate)).toFixed(2)} د.ل)
-                                  </div>
-                                )}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                                 {expense.notes || '-'}

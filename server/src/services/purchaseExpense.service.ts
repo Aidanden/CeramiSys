@@ -231,7 +231,7 @@ export class PurchaseExpenseService {
                 amount: new Prisma.Decimal(originalAmount), // المبلغ بالعملة الأصلية
                 currency: expense.currency || 'LYD',
                 type: 'EXPENSE' as const,
-                description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة #${purchase.id}`,
+                description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة ${purchase.invoiceNumber || `#${purchase.id}`}`,
                 categoryName: category?.name,
                 status: 'PENDING' as const,
               };
@@ -256,7 +256,7 @@ export class PurchaseExpenseService {
                 amount: originalAmount,
                 currency: expense.currency,
                 type: 'EXPENSE',
-                description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة #${purchase.id}`,
+                description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة ${purchase.invoiceNumber || `#${purchase.id}`}`,
                 categoryName: category?.name,
               });
             }
@@ -426,7 +426,7 @@ export class PurchaseExpenseService {
             amount: purchase.total, // المبلغ بالعملة الأصلية
             currency: purchase.currency || Currency.LYD,
             type: 'MAIN_PURCHASE',
-            description: `فاتورة مشتريات #${purchase.id}`,
+            description: `فاتورة مشتريات ${purchase.invoiceNumber || `#${purchase.id}`}`,
             status: 'PENDING',
           },
         });
@@ -442,7 +442,7 @@ export class PurchaseExpenseService {
           amount: Number(purchase.total),
           currency: purchase.currency || 'LYD',
           type: 'MAIN_PURCHASE',
-          description: `فاتورة مشتريات #${purchase.id}`,
+          description: `فاتورة مشتريات ${purchase.invoiceNumber || `#${purchase.id}`}`,
         });
       }
 
@@ -474,7 +474,7 @@ export class PurchaseExpenseService {
                 amount: new Prisma.Decimal(amount), // المبلغ بالعملة الأصلية
                 currency: expense.currency || 'LYD',
                 type: 'EXPENSE',
-                description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة #${purchase.id}`,
+                description: expense.notes || `مصروف ${category?.name || 'غير محدد'} - فاتورة ${purchase.invoiceNumber || `#${purchase.id}`}`,
                 categoryName: category?.name,
                 status: 'PENDING',
               },

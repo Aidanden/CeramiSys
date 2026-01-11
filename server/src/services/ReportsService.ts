@@ -201,7 +201,7 @@ export class ReportsService {
           id: customer.id,
           name: customer.name,
           phone: customer.phone,
-          note: customer.note,
+          notes: customer.notes,
           totalPurchases,
           totalSales,
           averagePurchase: totalSales > 0 ? totalPurchases / totalSales : 0,

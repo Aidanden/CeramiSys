@@ -383,34 +383,81 @@ export class WarehouseService {
         updateData.completedBy = userId;
       }
 
-      const dispatchOrder = await this.prisma.dispatchOrder.update({
-        where: { id },
-        data: updateData,
-        include: {
-          sale: {
-            include: {
-              customer: {
-                select: { id: true, name: true, phone: true }
-              },
-              company: {
-                select: { id: true, name: true, code: true }
-              },
-              lines: {
-                include: {
-                  product: {
-                    select: { id: true, name: true, sku: true, unit: true, unitsPerBox: true }
+      // استخدام transaction لضمان تنفيذ جميع العمليات معاً
+      const dispatchOrder = await this.prisma.$transaction(async (tx) => {
+        // 1. تحديث حالة أمر الصرف
+        const updatedOrder = await tx.dispatchOrder.update({
+          where: { id },
+          data: updateData,
+          include: {
+            sale: {
+              include: {
+                customer: {
+                  select: { id: true, name: true, phone: true }
+                },
+                company: {
+                  select: { id: true, name: true, code: true }
+                },
+                lines: {
+                  include: {
+                    product: {
+                      select: { id: true, name: true, sku: true, unit: true, unitsPerBox: true }
+                    }
                   }
                 }
               }
+            },
+            company: {
+              select: { id: true, name: true, code: true }
+            },
+            completedByUser: {
+              select: { UserID: true, FullName: true }
             }
-          },
-          company: {
-            select: { id: true, name: true, code: true }
-          },
-          completedByUser: {
-            select: { UserID: true, FullName: true }
+          }
+        });
+
+        // 2. إذا تم الإتمام، خصم الكميات من المخزن
+        if (data.status === 'COMPLETED' && updatedOrder.sale?.lines) {
+          console.log(`🚀 بدء خصم الكميات من المخزن لأمر الصرف #${id}`);
+          
+          for (const line of updatedOrder.sale.lines) {
+            // خصم الكمية من المخزن
+            const stock = await tx.stock.findUnique({
+              where: {
+                companyId_productId: {
+                  companyId: updatedOrder.companyId,
+                  productId: line.productId,
+                },
+              },
+            });
+
+            if (!stock) {
+              throw new Error(`المخزون غير موجود للمنتج: ${line.product.name}`);
+            }
+
+            const newBoxes = Number(stock.boxes) - Number(line.qty);
+            
+            if (newBoxes < 0) {
+              throw new Error(`الكمية غير كافية في المخزن للمنتج: ${line.product.name}`);
+            }
+
+            await tx.stock.update({
+              where: {
+                companyId_productId: {
+                  companyId: updatedOrder.companyId,
+                  productId: line.productId,
+                },
+              },
+              data: {
+                boxes: newBoxes,
+              },
+            });
+
+            console.log(`✅ تم خصم ${line.qty} من ${line.product.name} - الرصيد الجديد: ${newBoxes}`);
           }
         }
+
+        return updatedOrder;
       });
 
       return dispatchOrder;

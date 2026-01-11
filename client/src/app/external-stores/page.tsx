@@ -18,21 +18,33 @@ export default function ExternalStoresPage() {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
 
-        try {
-            await createStore({
-                name: formData.get('name') as string,
-                ownerName: formData.get('ownerName') as string,
-                phone1: formData.get('phone1') as string,
-                phone2: formData.get('phone2') as string || undefined,
-                address: formData.get('address') as string || undefined,
-                googleMapsUrl: formData.get('googleMapsUrl') as string || undefined,
-            }).unwrap();
+        const storeData = {
+            name: formData.get('name') as string,
+            ownerName: formData.get('ownerName') as string,
+            phone1: formData.get('phone1') as string,
+            phone2: (formData.get('phone2') as string) || undefined,
+            address: (formData.get('address') as string) || undefined,
+            googleMapsUrl: (formData.get('googleMapsUrl') as string) || undefined,
+        };
 
+        console.log('📝 Creating store with data:', storeData);
+
+        try {
+            const result = await createStore(storeData).unwrap();
+            console.log('✅ Store created successfully:', result);
+            alert('✅ تم إنشاء المحل بنجاح');
             setShowCreateModal(false);
             refetch();
-        } catch (error) {
-            console.error('Failed to create store:', error);
-            alert('فشل في إنشاء المحل');
+        } catch (error: any) {
+            console.error('❌ Failed to create store:', error);
+            console.error('❌ Error details:', {
+                status: error?.status,
+                data: error?.data,
+                message: error?.message,
+            });
+            
+            const errorMessage = error?.data?.error || error?.data?.message || error?.message || 'فشل في إنشاء المحل';
+            alert(`❌ خطأ: ${errorMessage}`);
         }
     };
 

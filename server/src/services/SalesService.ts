@@ -1484,7 +1484,7 @@ export class SalesService {
     const customerData = {
       name: data.name,
       phone: data.phone || null,
-      note: data.note || null
+      notes: data.note || null
     };
 
     try {
@@ -1627,7 +1627,7 @@ export class SalesService {
         data: {
           name: data.name,
           phone: data.phone,
-          note: data.note
+          notes: data.note
         }
       });
 
@@ -2139,7 +2139,7 @@ export class SalesService {
         data: {
           name: branchSale.company.name,
           phone: `BRANCH-${branchSale.companyId}`,
-          note: `عميل وهمي يمثل ${branchSale.company.name}`
+          notes: `عميل وهمي يمثل ${branchSale.company.name}`
         }
       });
 

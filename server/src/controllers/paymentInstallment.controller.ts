@@ -7,6 +7,7 @@ import { z } from 'zod';
 const CreateInstallmentDto = z.object({
   paymentReceiptId: z.number().int().positive(),
   amount: z.number().positive(),
+  exchangeRate: z.number().positive().optional(), // سعر الصرف للعملات الأجنبية
   notes: z.string().optional(),
   paymentMethod: z.string().optional(),
   referenceNumber: z.string().optional(),

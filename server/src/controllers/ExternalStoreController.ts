@@ -190,19 +190,43 @@ export class ExternalStoreController {
                 return res.status(400).json({ error: 'Name, owner name, and phone1 are required' });
             }
 
-            const store = await prisma.externalStore.create({
-                data: {
-                    name,
-                    ownerName,
-                    phone1,
-                    phone2,
-                    address,
-                    googleMapsUrl,
-                    showPrices: showPrices !== undefined ? showPrices : true,
-                },
+            // استخدام transaction لإنشاء العميل والمحل معاً
+            const result = await prisma.$transaction(async (tx) => {
+                // 1. إنشاء عميل أولاً
+                const customer = await tx.customer.create({
+                    data: {
+                        name,
+                        phone: phone1,
+                        phone2: phone2 || undefined,
+                        address: address || undefined,
+                        notes: `عميل تابع لمحل خارجي: ${name}`,
+                    },
+                });
+
+                // 2. إنشاء المحل وربطه بالعميل
+                const store = await tx.externalStore.create({
+                    data: {
+                        name,
+                        ownerName,
+                        phone1,
+                        phone2,
+                        address,
+                        googleMapsUrl,
+                        customerId: customer.id,
+                        showPrices: showPrices !== undefined ? showPrices : true,
+                    },
+                });
+
+                console.log(`✅ تم إنشاء محل "${name}" وعميل مرتبط به - Customer ID: ${customer.id}`);
+
+                return { store, customer };
             });
 
-            return res.status(201).json(store);
+            return res.status(201).json({
+                ...result.store,
+                customerId: result.customer.id,
+                customerName: result.customer.name,
+            });
         } catch (error: any) {
             console.error('Error creating store:', error);
             return res.status(500).json({ error: 'Failed to create store', details: error.message });

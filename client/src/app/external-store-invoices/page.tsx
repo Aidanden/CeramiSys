@@ -61,14 +61,24 @@ export default function ExternalStoreInvoicesPage() {
     });
 
     const handleApprove = async (id: number) => {
-        if (confirm('هل أنت متأكد من الموافقة على هذه الفاتورة؟')) {
+        if (confirm('هل أنت متأكد من الموافقة على هذه الفاتورة؟\n\nسيتم إنشاء:\n✓ فاتورة مبيعات\n✓ أمر صرف من المخزن')) {
             try {
-                await approveInvoice(id).unwrap();
+                const result = await approveInvoice(id).unwrap();
                 refetch();
                 setSelectedInvoice(null);
+                
+                // عرض رسالة نجاح مع تفاصيل العمليات المُنشأة
+                if ((result as any).createdDispatchOrderId) {
+                    alert(`✅ تمت الموافقة بنجاح!\n\n` +
+                          `📋 تم إنشاء فاتورة مبيعات\n` +
+                          `📦 تم إنشاء أمر صرف رقم: ${(result as any).createdDispatchOrderId}\n\n` +
+                          `يمكنك متابعة أمر الصرف من شاشة "إدارة المخزن"`);
+                } else {
+                    alert('✅ تمت الموافقة على الفاتورة بنجاح');
+                }
             } catch (error) {
                 console.error('Failed to approve invoice:', error);
-                alert('فشل في الموافقة على الفاتورة');
+                alert('❌ فشل في الموافقة على الفاتورة');
             }
         }
     };
