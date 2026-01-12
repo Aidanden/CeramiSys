@@ -61,6 +61,11 @@ export interface FinancialReportQuery {
   productId?: number;
 }
 
+export interface SupplierStockReportQuery {
+  supplierId: number;
+  companyId?: number;
+}
+
 export const reportsApi = createApi({
   reducerPath: "reportsApi",
   baseQuery: baseQueryWithAuthInterceptor,
@@ -142,6 +147,15 @@ export const reportsApi = createApi({
         params,
       }),
     }),
+
+    // تقرير بضاعة الموردين (جديد)
+    getSupplierStockReport: build.query({
+      query: (params: SupplierStockReportQuery) => ({
+        url: "/reports/supplier-stock",
+        method: "GET",
+        params,
+      }),
+    }),
   }),
 });
 
@@ -154,4 +168,5 @@ export const {
   useGetPurchaseReportQuery,
   useGetProductMovementReportQuery,
   useGetProfitReportQuery,
+  useGetSupplierStockReportQuery,
 } = reportsApi;

@@ -121,15 +121,15 @@ const SupplierAccountsPage = () => {
     const rowsHtml = (account.entries.length
       ? account.entries
       : [{
-          id: 0,
-          transactionDate: '',
-          description: 'لا توجد معاملات',
-          referenceType: '',
-          referenceId: 0,
-          transactionType: 'DEBIT' as 'DEBIT' | 'CREDIT',
-          amount: 0,
-          currency: 'LYD',
-        }]
+        id: 0,
+        transactionDate: '',
+        description: 'لا توجد معاملات',
+        referenceType: '',
+        referenceId: 0,
+        transactionType: 'DEBIT' as 'DEBIT' | 'CREDIT',
+        amount: 0,
+        currency: 'LYD',
+      }]
     ).map((entry) => `
         <tr>
           <td>${entry.transactionDate ? formatEnglishDate(entry.transactionDate) : ''}</td>
@@ -144,10 +144,10 @@ const SupplierAccountsPage = () => {
     if (!printWindow) return;
 
     // إنشاء جدول الأرصدة حسب العملة
-    const balancesByCurrency = account.totalsByCurrency 
+    const balancesByCurrency = account.totalsByCurrency
       ? Object.entries(account.totalsByCurrency)
-          .filter(([_, totals]) => Math.abs(totals.balance) > 0.01 || totals.credit > 0 || totals.debit > 0)
-          .map(([currency, totals]) => `
+        .filter(([_, totals]) => Math.abs(totals.balance) > 0.01 || totals.credit > 0 || totals.debit > 0)
+        .map(([currency, totals]) => `
             <div style="border: 1px solid #ddd; padding: 12px; border-radius: 4px; background: #f9fafb;">
               <h4 style="margin: 0 0 8px 0; color: #1f2937;">حساب ${currency}</h4>
               <p style="margin: 4px 0;"><strong>الرصيد:</strong> ${Math.abs(totals.balance).toFixed(2)} ${currency} 
@@ -372,12 +372,10 @@ const SupplierAccountsPage = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${
-                                supplier.currentBalance > 0 ? 'bg-red-100' : supplier.currentBalance < 0 ? 'bg-green-100' : 'bg-gray-100'
-                              }`}>
-                                <User className={`w-5 h-5 ${
-                                  supplier.currentBalance > 0 ? 'text-red-600' : supplier.currentBalance < 0 ? 'text-green-600' : 'text-gray-600'
-                                }`} />
+                              <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${supplier.currentBalance > 0 ? 'bg-red-100' : supplier.currentBalance < 0 ? 'bg-green-100' : 'bg-gray-100'
+                                }`}>
+                                <User className={`w-5 h-5 ${supplier.currentBalance > 0 ? 'text-red-600' : supplier.currentBalance < 0 ? 'text-green-600' : 'text-gray-600'
+                                  }`} />
                               </div>
                               <div className="mr-4">
                                 <div className="text-sm font-medium text-gray-900">{supplier.name}</div>
@@ -386,9 +384,8 @@ const SupplierAccountsPage = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{supplier.phone || '-'}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              supplier.currentBalance > 0 ? 'bg-red-100 text-red-800' : supplier.currentBalance < 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                            }`}>
+                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${supplier.currentBalance > 0 ? 'bg-red-100 text-red-800' : supplier.currentBalance < 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                              }`}>
                               {getBalanceText(supplier.currentBalance)}
                             </span>
                           </td>
@@ -455,7 +452,7 @@ const SupplierAccountsPage = () => {
                         </button>
                         {(() => {
                           const pages: (number | string)[] = [];
-                          
+
                           if (totalPages <= 7) {
                             for (let i = 1; i <= totalPages; i++) pages.push(i);
                           } else {
@@ -475,7 +472,7 @@ const SupplierAccountsPage = () => {
                               pages.push(totalPages);
                             }
                           }
-                          
+
                           return pages.map((page, idx) => (
                             page === '...' ? (
                               <span key={`ellipsis-${idx}`} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
@@ -485,11 +482,10 @@ const SupplierAccountsPage = () => {
                               <button
                                 key={page}
                                 onClick={() => setCurrentPage(page as number)}
-                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                                  currentPage === page
-                                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                                }`}
+                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === page
+                                  ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                                  : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                  }`}
                               >
                                 {page}
                               </button>
@@ -580,15 +576,14 @@ const SupplierAccountsPage = () => {
                           <div key={currency} className={`rounded-lg p-5 shadow-md border-l-4 ${getCurrencyColor(currency)}`}>
                             <div className="flex items-center justify-between mb-4">
                               <p className="text-sm font-bold text-gray-700">حساب {currency}</p>
-                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                currency === 'LYD' ? 'bg-green-200 text-green-800' :
+                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${currency === 'LYD' ? 'bg-green-200 text-green-800' :
                                 currency === 'USD' ? 'bg-blue-200 text-blue-800' :
-                                'bg-purple-200 text-purple-800'
-                              }`}>
+                                  'bg-purple-200 text-purple-800'
+                                }`}>
                                 {currency}
                               </span>
                             </div>
-                            
+
                             {/* الرصيد */}
                             <div className="mb-4 pb-3 border-b-2 border-gray-200">
                               <p className="text-xs text-gray-600 mb-1">الرصيد الحالي</p>
@@ -599,7 +594,7 @@ const SupplierAccountsPage = () => {
                                 {totals.balance > 0 ? '🔴 مستحق عليك' : totals.balance < 0 ? '🟢 مدين لك' : '⚪ متوازن'}
                               </p>
                             </div>
-                            
+
                             {/* الديون والمدفوعات */}
                             <div className="grid grid-cols-2 gap-3">
                               <div className="bg-white bg-opacity-60 rounded-md p-2">
@@ -658,24 +653,21 @@ const SupplierAccountsPage = () => {
                                 {entry.description || `${entry.referenceType} #${entry.referenceId}`}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                  entry.transactionType === 'DEBIT' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                }`}>
+                                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${entry.transactionType === 'DEBIT' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                  }`}>
                                   {entry.transactionType === 'DEBIT' ? 'دفعة' : 'دين'}
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center gap-2">
-                                  <span className={`text-base font-bold ${
-                                    entry.transactionType === 'DEBIT' ? 'text-green-700' : 'text-red-700'
-                                  }`}>
+                                  <span className={`text-base font-bold ${entry.transactionType === 'DEBIT' ? 'text-green-700' : 'text-red-700'
+                                    }`}>
                                     {entry.amount.toFixed(2)}
                                   </span>
-                                  <span className={`px-2 py-0.5 text-xs font-bold rounded ${
-                                    entry.currency === 'LYD' ? 'bg-green-100 text-green-800' :
-                                    entry.currency === 'USD' ? 'bg-blue-100 text-blue-800' :
-                                    'bg-purple-100 text-purple-800'
-                                  }`}>
+                                  <span className={`px-2 py-0.5 text-xs font-bold rounded ${entry.currency === 'LYD' ? 'bg-green-100 text-green-800' :
+                                      entry.currency === 'USD' ? 'bg-blue-100 text-blue-800' :
+                                        'bg-purple-100 text-purple-800'
+                                    }`}>
                                     {entry.currency || 'LYD'}
                                   </span>
                                 </div>

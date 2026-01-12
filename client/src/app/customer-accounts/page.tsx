@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { 
-  useGetAllCustomersAccountSummaryQuery, 
+import {
+  useGetAllCustomersAccountSummaryQuery,
   useGetCustomerAccountQuery,
-  useGetCustomerOpenInvoicesQuery 
+  useGetCustomerOpenInvoicesQuery
 } from "@/state/customerAccountApi";
 import { User, Search, TrendingUp, TrendingDown, FileText, X, DollarSign, Calendar, Phone, Printer, Eye, Filter, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
@@ -20,36 +20,36 @@ const CustomerAccountsPage = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('summary');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  
+
   // فلاتر كشف الحساب
   const [accountStartDate, setAccountStartDate] = useState("");
   const [accountEndDate, setAccountEndDate] = useState("");
-  
+
   // فلاتر الفواتير المفتوحة
   const [invoicesStartDate, setInvoicesStartDate] = useState("");
   const [invoicesEndDate, setInvoicesEndDate] = useState("");
-  
+
   // Reference للطباعة
   const printRef = useRef<HTMLDivElement>(null);
-  
+
   // Current user for print header
   const currentUser = useAppSelector((state) => state.auth.user);
-  
+
   const { data: summaryData, isLoading, error } = useGetAllCustomersAccountSummaryQuery();
   const { data: accountData, isLoading: isLoadingAccount } = useGetCustomerAccountQuery(
-    { 
-      customerId: selectedCustomerId!, 
+    {
+      customerId: selectedCustomerId!,
       startDate: accountStartDate || undefined,
       endDate: accountEndDate || undefined
-    }, 
+    },
     { skip: !selectedCustomerId || viewMode !== 'account' }
   );
   const { data: invoicesData, isLoading: isLoadingInvoices } = useGetCustomerOpenInvoicesQuery(
-    { 
+    {
       customerId: selectedCustomerId!,
       startDate: invoicesStartDate || undefined,
       endDate: invoicesEndDate || undefined
-    }, 
+    },
     { skip: !selectedCustomerId || viewMode !== 'invoices' }
   );
 
@@ -122,13 +122,13 @@ const CustomerAccountsPage = () => {
     setInvoicesStartDate("");
     setInvoicesEndDate("");
   };
-  
+
   // مسح فلاتر كشف الحساب
   const clearAccountFilters = () => {
     setAccountStartDate("");
     setAccountEndDate("");
   };
-  
+
   // مسح فلاتر الفواتير
   const clearInvoicesFilters = () => {
     setInvoicesStartDate("");
@@ -138,16 +138,16 @@ const CustomerAccountsPage = () => {
   // طباعة كشف الحساب
   const handlePrintAccount = () => {
     if (!account || !selectedCustomer) return;
-    
+
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
-    
-    const filterInfo = (accountStartDate || accountEndDate) 
+
+    const filterInfo = (accountStartDate || accountEndDate)
       ? `<p style="text-align: center; color: #666; margin-bottom: 20px;">
           الفترة: ${accountStartDate ? formatEnglishDate(accountStartDate) : 'البداية'} - ${accountEndDate ? formatEnglishDate(accountEndDate) : 'النهاية'}
-        </p>` 
+        </p>`
       : '';
-    
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html dir="rtl" lang="ar">
@@ -362,29 +362,29 @@ const CustomerAccountsPage = () => {
       </body>
       </html>
     `);
-    
+
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => {
       printWindow.print();
     }, 250);
   };
-  
+
   // طباعة الفواتير المفتوحة
   const handlePrintInvoices = () => {
     if (!openInvoices || !selectedCustomer) return;
-    
+
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
-    
-    const filterInfo = (invoicesStartDate || invoicesEndDate) 
+
+    const filterInfo = (invoicesStartDate || invoicesEndDate)
       ? `<p style="text-align: center; color: #666; margin-bottom: 20px;">
           الفترة: ${invoicesStartDate ? formatEnglishDate(invoicesStartDate) : 'البداية'} - ${invoicesEndDate ? formatEnglishDate(invoicesEndDate) : 'النهاية'}
-        </p>` 
+        </p>`
       : '';
-    
+
     const totalRemaining = openInvoices.reduce((sum, inv) => sum + inv.remainingAmount, 0);
-    
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html dir="rtl" lang="ar">
@@ -520,7 +520,7 @@ const CustomerAccountsPage = () => {
       </body>
       </html>
     `);
-    
+
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => {
@@ -689,14 +689,12 @@ const CustomerAccountsPage = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${
-                                customer.currentBalance > 0 ? 'bg-red-100' :
+                              <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${customer.currentBalance > 0 ? 'bg-red-100' :
                                 customer.currentBalance < 0 ? 'bg-green-100' : 'bg-gray-100'
-                              }`}>
-                                <User className={`w-5 h-5 ${
-                                  customer.currentBalance > 0 ? 'text-red-600' :
+                                }`}>
+                                <User className={`w-5 h-5 ${customer.currentBalance > 0 ? 'text-red-600' :
                                   customer.currentBalance < 0 ? 'text-green-600' : 'text-gray-600'
-                                }`} />
+                                  }`} />
                               </div>
                               <div className="mr-4">
                                 <div className="text-sm font-medium text-gray-900">
@@ -709,10 +707,9 @@ const CustomerAccountsPage = () => {
                             <div className="text-sm text-gray-900">{customer.phone || "-"}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className={`text-sm font-semibold ${
-                              customer.currentBalance > 0 ? 'text-red-600' :
+                            <div className={`text-sm font-semibold ${customer.currentBalance > 0 ? 'text-red-600' :
                               customer.currentBalance < 0 ? 'text-green-600' : 'text-gray-600'
-                            }`}>
+                              }`}>
                               {customer.currentBalance.toFixed(2)} د.ل
                             </div>
                           </td>
@@ -803,7 +800,7 @@ const CustomerAccountsPage = () => {
                         </button>
                         {(() => {
                           const pages: (number | string)[] = [];
-                          
+
                           if (totalPages <= 7) {
                             for (let i = 1; i <= totalPages; i++) pages.push(i);
                           } else {
@@ -823,7 +820,7 @@ const CustomerAccountsPage = () => {
                               pages.push(totalPages);
                             }
                           }
-                          
+
                           return pages.map((page, idx) => (
                             page === '...' ? (
                               <span key={`ellipsis-${idx}`} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
@@ -833,11 +830,10 @@ const CustomerAccountsPage = () => {
                               <button
                                 key={page}
                                 onClick={() => setCurrentPage(page as number)}
-                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                                  currentPage === page
-                                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                                }`}
+                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === page
+                                  ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                                  : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                  }`}
                               >
                                 {page}
                               </button>
@@ -903,7 +899,7 @@ const CustomerAccountsPage = () => {
                     </button>
                   )}
                 </div>
-                
+
                 {/* أزرار الطباعة */}
                 <div className="flex items-center gap-2">
                   <button
@@ -916,7 +912,7 @@ const CustomerAccountsPage = () => {
                 </div>
               </div>
             </div>
-          
+
             {/* معلومات العميل */}
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">معلومات العميل</h2>
@@ -977,25 +973,22 @@ const CustomerAccountsPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600 mb-1">الرصيد الحالي</p>
-                    <p className={`text-2xl font-bold ${
-                      account.currentBalance > 0 ? 'text-red-600' :
+                    <p className={`text-2xl font-bold ${account.currentBalance > 0 ? 'text-red-600' :
                       account.currentBalance < 0 ? 'text-green-600' : 'text-gray-600'
-                    }`}>
+                      }`}>
                       {account.currentBalance.toFixed(2)} د.ل
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
                       {account.currentBalance > 0 ? 'عليه (مدين)' :
-                       account.currentBalance < 0 ? 'له (دائن)' : 'متوازن'}
+                        account.currentBalance < 0 ? 'له (دائن)' : 'متوازن'}
                     </p>
                   </div>
-                  <div className={`p-3 rounded-full ${
-                    account.currentBalance > 0 ? 'bg-red-100' :
+                  <div className={`p-3 rounded-full ${account.currentBalance > 0 ? 'bg-red-100' :
                     account.currentBalance < 0 ? 'bg-green-100' : 'bg-gray-100'
-                  }`}>
-                    <FileText className={`w-6 h-6 ${
-                      account.currentBalance > 0 ? 'text-red-600' :
+                    }`}>
+                    <FileText className={`w-6 h-6 ${account.currentBalance > 0 ? 'text-red-600' :
                       account.currentBalance < 0 ? 'text-green-600' : 'text-gray-600'
-                    }`} />
+                      }`} />
                   </div>
                 </div>
               </div>
@@ -1041,17 +1034,15 @@ const CustomerAccountsPage = () => {
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`text-sm font-semibold ${
-                              entry.transactionType === 'DEBIT' ? 'text-red-600' : 'text-green-600'
-                            }`}>
+                            <span className={`text-sm font-semibold ${entry.transactionType === 'DEBIT' ? 'text-red-600' : 'text-green-600'
+                              }`}>
                               {entry.transactionType === 'DEBIT' ? '+' : '-'} {entry.amount.toFixed(2)} د.ل
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`text-sm font-semibold ${
-                              entry.balance > 0 ? 'text-red-600' :
+                            <span className={`text-sm font-semibold ${entry.balance > 0 ? 'text-red-600' :
                               entry.balance < 0 ? 'text-green-600' : 'text-gray-600'
-                            }`}>
+                              }`}>
                               {entry.balance.toFixed(2)} د.ل
                             </span>
                           </td>
@@ -1105,7 +1096,7 @@ const CustomerAccountsPage = () => {
                     </button>
                   )}
                 </div>
-                
+
                 {/* أزرار الطباعة */}
                 <div className="flex items-center gap-2">
                   <button
@@ -1118,7 +1109,7 @@ const CustomerAccountsPage = () => {
                 </div>
               </div>
             </div>
-            
+
             {isLoadingInvoices ? (
               <div className="text-center py-8">
                 <div className="text-gray-600">جاري تحميل الفواتير...</div>
@@ -1143,7 +1134,7 @@ const CustomerAccountsPage = () => {
                         غير مسددة
                       </span>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                       <div>
                         <p className="text-xs text-gray-600">الشركة</p>

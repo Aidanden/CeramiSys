@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  allowedDevOrigins: ['https://tg-em.com'],
+
 
 };
 

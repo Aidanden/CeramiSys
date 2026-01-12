@@ -97,10 +97,10 @@ const Sidebar = () => {
   const { data: userData } = useGetCurrentUserQuery();
   const user = userData?.data;
   const isParentCompany = user?.company?.parentId === null; // الشركة الأم ليس لها parentId
-  
+
   // جلب طريقة حساب التكلفة من localStorage
   const [costCalculationMethod, setCostCalculationMethod] = React.useState<'manual' | 'invoice'>('manual');
-  
+
   React.useEffect(() => {
     const savedMethod = localStorage.getItem('costCalculationMethod');
     setCostCalculationMethod((savedMethod as 'manual' | 'invoice') || 'manual');
@@ -448,12 +448,7 @@ const Sidebar = () => {
                 label="التقارير"
                 isCollapsed={isSidebarCollapsed}
               />
-              <SidebarLink
-                href="/reports/supplier-products"
-                icon={FileText}
-                label="بضاعة الشركات"
-                isCollapsed={isSidebarCollapsed}
-              />
+
             </>
           )}
         </nav>

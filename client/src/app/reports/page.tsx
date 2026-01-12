@@ -9,8 +9,11 @@ import {
   useGetSupplierReportQuery,
   useGetPurchaseReportQuery,
   useGetProductMovementReportQuery,
-  useGetProfitReportQuery
+  useGetProfitReportQuery,
+  useGetSupplierStockReportQuery,
+
 } from "@/state/reportsApi";
+import { useGetSuppliersQuery } from "@/state/purchaseApi";
 
 import { useGetCompaniesQuery } from "@/state/companyApi";
 import { useGetProductsQuery } from "@/state/productsApi";
@@ -23,15 +26,13 @@ import {
   X,
   Building2,
   ArrowRight,
-  ArrowLeft,
-  RotateCcw,
   AlertCircle,
   TrendingUp,
   Layout
 } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 
-type ReportType = "sales" | "stock" | "customers" | "top-products" | "suppliers" | "purchases" | "product-movement" | "profit";
+type ReportType = "sales" | "stock" | "customers" | "top-products" | "suppliers" | "purchases" | "product-movement" | "profit" | "company-stock";
 
 export default function ReportsPage() {
   const [activeReport, setActiveReport] = useState<ReportType>("sales");
@@ -65,6 +66,10 @@ export default function ReportsPage() {
   const { data: companiesData } = useGetCompaniesQuery({ limit: 100 });
   const companies = companiesData?.data?.companies || [];
 
+  // جلب قائمة الموردين
+  const { data: suppliersData } = useGetSuppliersQuery({ limit: 1000 });
+  const suppliersList = suppliersData?.data?.suppliers || [];
+
   // جلب الأصناف لاختيار صنف في التقرير
   const { data: productsData } = useGetProductsQuery({
     limit: 10000,
@@ -97,6 +102,7 @@ export default function ReportsPage() {
     customerPhone: "",
     supplierReportName: "",
     supplierReportPhone: "",
+    supplierId: "",
   });
 
   // دالة لتوحيد الحروف العربية لتحسين البحث
@@ -134,6 +140,7 @@ export default function ReportsPage() {
     let stats: any = null;
     let tableHeaders: string[] = [];
     let tableRows: (item: any, index: number) => string = () => '';
+    let customPrintContent = '';
 
     if (activeReport === 'sales' && salesReport) {
       stats = salesReport.data.stats;
@@ -176,6 +183,87 @@ export default function ReportsPage() {
           <td>${stock.product.costPrice ? stock.product.costPrice.toLocaleString('ar-LY', { minimumFractionDigits: 2 }) + ' د.ل' : '-'}</td>
           <td>${stock.product.costPrice ? (stock.totalUnits * stock.product.costPrice).toLocaleString('ar-LY', { minimumFractionDigits: 2 }) + ' د.ل' : '-'}</td>
         </tr>
+      `;
+
+    } else if (activeReport === 'company-stock' && supplierStockReport) {
+      customPrintContent = `
+        <div style="margin-bottom: 30px; border: 1px solid #eee; padding: 20px; border-radius: 8px;">
+          <h2 style="margin-top: 0; color: #1e40af;">تقرير بضاعة الشركات - ${supplierStockReport.data.supplier.name}</h2>
+          <p style="color: #666;">رقم الهاتف: ${supplierStockReport.data.supplier.phone || 'غير مسجل'}</p>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px;">
+            <div style="background: #f0fdf4; padding: 15px; border-radius: 6px; border: 1px solid #dcfce7;">
+              <p style="margin: 0; font-size: 12px; color: #166534;">رصيد LYD</p>
+              <p style="margin: 5px 0 0; font-size: 18px; font-weight: bold; color: ${(supplierStockReport.data.supplier.balances?.LYD || 0) > 0 ? '#b91c1c' : '#166534'}">
+                ${Math.abs(supplierStockReport.data.supplier.balances?.LYD || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                ${(supplierStockReport.data.supplier.balances?.LYD || 0) > 0 ? '(عليك)' : '(لك)'}
+              </p>
+            </div>
+            <div style="background: #eff6ff; padding: 15px; border-radius: 6px; border: 1px solid #dbeafe;">
+              <p style="margin: 0; font-size: 12px; color: #1e40af;">رصيد USD</p>
+              <p style="margin: 5px 0 0; font-size: 18px; font-weight: bold; color: ${(supplierStockReport.data.supplier.balances?.USD || 0) > 0 ? '#b91c1c' : '#1e40af'}">
+                ${Math.abs(supplierStockReport.data.supplier.balances?.USD || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} $
+                ${(supplierStockReport.data.supplier.balances?.USD || 0) > 0 ? '(عليك)' : '(لك)'}
+              </p>
+            </div>
+            <div style="background: #f5f3ff; padding: 15px; border-radius: 6px; border: 1px solid #ede9fe;">
+              <p style="margin: 0; font-size: 12px; color: #5b21b6;">رصيد EUR</p>
+              <p style="margin: 5px 0 0; font-size: 18px; font-weight: bold; color: ${(supplierStockReport.data.supplier.balances?.EUR || 0) > 0 ? '#b91c1c' : '#5b21b6'}">
+                ${Math.abs(supplierStockReport.data.supplier.balances?.EUR || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} €
+                ${(supplierStockReport.data.supplier.balances?.EUR || 0) > 0 ? '(عليك)' : '(لك)'}
+              </p>
+            </div>
+          </div>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <thead>
+            <tr style="background: #f1f5f9;">
+              <th style="border: 1px solid #e2e8f0; padding: 12px; text-align: right; font-size: 11px;">الصنف</th>
+              <th style="border: 1px solid #e2e8f0; padding: 12px; text-align: center; font-size: 11px;">إجمالي المشتراة</th>
+              <th style="border: 1px solid #e2e8f0; padding: 12px; text-align: center; font-size: 11px;">الكمية المباعة</th>
+              <th style="border: 1px solid #e2e8f0; padding: 12px; text-align: center; font-size: 11px;">الرصيد الحالي</th>
+              <th style="border: 1px solid #e2e8f0; padding: 12px; text-align: center; font-size: 11px;">التكلفة</th>
+              <th style="border: 1px solid #e2e8f0; padding: 12px; text-align: center; font-size: 11px;">الأداء</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(supplierStockReport.data.items || []).map((item: any) => `
+              <tr>
+                <td style="border: 1px solid #e2e8f0; padding: 10px;">
+                  <div style="font-weight: bold; font-size: 12px;">${item.product.name}</div>
+                  <div style="font-size: 10px; color: #64748b; font-family: monospace;">${item.product.sku}</div>
+                </td>
+                <td style="border: 1px solid #e2e8f0; padding: 10px; text-align: center;">
+                  <div style="font-weight: bold;">${item.totalPurchased.toLocaleString('ar-LY')} ص</div>
+                  <div style="font-size: 9px; color: #64748b;">
+                    ${(item.totalPurchased * (item.product.unitsPerBox || 1)).toLocaleString('ar-LY', { minimumFractionDigits: 1 })} ${item.product.unitsPerBox && item.product.unitsPerBox !== 1 ? 'م²' : 'وحدة'}
+                  </div>
+                </td>
+                <td style="border: 1px solid #e2e8f0; padding: 10px; text-align: center;">
+                  <div style="font-weight: bold; color: #15803d;">${item.soldQty.toLocaleString('ar-LY')} ص</div>
+                  <div style="font-size: 9px; color: #166534;">
+                    ${(item.soldQty * (item.product.unitsPerBox || 1)).toLocaleString('ar-LY', { minimumFractionDigits: 1 })} ${item.product.unitsPerBox && item.product.unitsPerBox !== 1 ? 'م²' : 'وحدة'}
+                  </div>
+                </td>
+                <td style="border: 1px solid #e2e8f0; padding: 10px; text-align: center;">
+                  <div style="font-weight: bold; color: #1e40af;">
+                    ${(item.currentStock * (item.product.unitsPerBox || 1)).toLocaleString('ar-LY', { minimumFractionDigits: 2 })} ${item.product.unitsPerBox && item.product.unitsPerBox !== 1 ? 'م²' : 'وحدة'}
+                  </div>
+                  <div style="font-size: 9px; color: #64748b;">
+                    ${item.currentStock.toLocaleString('ar-LY')} صندوق
+                  </div>
+                </td>
+                <td style="border: 1px solid #e2e8f0; padding: 10px; text-align: center; font-size: 11px;">
+                  ${item.product.cost ? Number(item.product.cost).toLocaleString('ar-LY', { minimumFractionDigits: 2 }) + ' د.ل' : '-'}
+                </td>
+                <td style="border: 1px solid #e2e8f0; padding: 10px; text-align: center;">
+                  <div style="font-weight: bold; color: ${item.performance > 70 ? '#15803d' : item.performance > 30 ? '#b45309' : '#b91c1c'}; font-size: 11px;">
+                    ${item.performance.toFixed(1)}%
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
       `;
     } else if (activeReport === 'customers' && customerReport) {
       stats = customerReport.data.stats;
@@ -386,6 +474,7 @@ export default function ReportsPage() {
           <p><strong>عدد السجلات:</strong> ${printData.length}</p>
         </div>
         
+        ${customPrintContent ? customPrintContent : `
         <table>
           <thead>
             <tr>
@@ -396,6 +485,7 @@ export default function ReportsPage() {
             ${printData.map((item, index) => tableRows(item, index)).join('')}
           </tbody>
         </table>
+        `}
         
         <div class="footer">
           <p>تم إنشاء هذا التقرير بواسطة نظام سيراميسيس - CeramiSys</p>
@@ -516,19 +606,28 @@ export default function ReportsPage() {
     { skip: activeReport !== "profit" }
   );
 
+  const { data: supplierStockReport, isLoading: supplierStockLoading } = useGetSupplierStockReportQuery(
+    { supplierId: parseInt(filters.supplierId) },
+    { skip: activeReport !== "company-stock" || !filters.supplierId }
+  );
+
+
+
   const reports = [
     { id: "sales" as ReportType, name: "تقرير المبيعات", icon: BarChart3, color: "blue" },
     { id: "purchases" as ReportType, name: "تقرير المشتريات", icon: ShoppingCart, color: "teal" },
     { id: "stock" as ReportType, name: "تقرير المخزون", icon: ShoppingCart, color: "green" },
+
     { id: "customers" as ReportType, name: "تقرير العملاء", icon: Users, color: "orange" },
     { id: "suppliers" as ReportType, name: "تقرير الموردين", icon: Users, color: "indigo" },
     { id: "top-products" as ReportType, name: "الأكثر مبيعاً", icon: FileText, color: "red" },
-    { id: "product-movement" as ReportType, name: "حركة صنف", icon: RotateCcw, color: "purple" },
+    { id: "product-movement" as ReportType, name: "حركة صنف", icon: FileText, color: "purple" },
     { id: "profit" as ReportType, name: "الأرباح والخسائر", icon: TrendingUp, color: "indigo" },
+    { id: "company-stock" as ReportType, name: "بضاعة الشركات", icon: Building2, color: "orange" },
   ];
 
   const isLoading = salesLoading || stockLoading || customerLoading || topProductsLoading ||
-    supplierLoading || purchaseLoading || movementLoading || financialLoading;
+    supplierLoading || purchaseLoading || movementLoading || financialLoading || supplierStockLoading;
 
   return (
     <div className="p-6">
@@ -562,7 +661,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Filters Section */}
-      {(activeReport === "sales" || activeReport === "stock" || activeReport === "customers" || activeReport === "top-products" || activeReport === "suppliers" || activeReport === "purchases" || activeReport === "product-movement" || activeReport === "profit") && (
+      {(activeReport === "sales" || activeReport === "stock" || activeReport === "customers" || activeReport === "top-products" || activeReport === "suppliers" || activeReport === "purchases" || activeReport === "product-movement" || activeReport === "profit" || activeReport === "company-stock") && (
         <div className="bg-white p-4 rounded-lg shadow mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
@@ -571,7 +670,7 @@ export default function ReportsPage() {
             </h3>
             <button
               onClick={() => {
-                setFilters({ customerName: "", invoiceNumber: "", productName: "", productCode: "", minAmount: "", maxAmount: "", supplierName: "", supplierPhone: "", invoiceAmount: "", customerPhone: "", supplierReportName: "", supplierReportPhone: "" });
+                setFilters({ customerName: "", invoiceNumber: "", productName: "", productCode: "", minAmount: "", maxAmount: "", supplierName: "", supplierPhone: "", invoiceAmount: "", customerPhone: "", supplierReportName: "", supplierReportPhone: "", supplierId: "" });
                 setSelectedCompanyId(undefined);
                 setSelectedProductId(undefined);
                 setProductCodeSearch('');
@@ -707,6 +806,8 @@ export default function ReportsPage() {
               </>
             )}
 
+
+
             {/* Customers Report Filters */}
             {activeReport === "customers" && (
               <>
@@ -771,6 +872,25 @@ export default function ReportsPage() {
                   />
                 </div>
               </>
+            )}
+
+            {/* Company Stock Report Filters */}
+            {activeReport === "company-stock" && (
+              <div className="md:col-span-2">
+                <label className="block text-sm text-gray-600 mb-1">اختر المورد</label>
+                <select
+                  value={filters.supplierId}
+                  onChange={(e) => setFilters({ ...filters, supplierId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">اختر مورد...</option>
+                  {suppliersList.map((supplier: any) => (
+                    <option key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
 
             {/* Purchases Report Filters */}
@@ -1206,6 +1326,8 @@ export default function ReportsPage() {
           </div>
         )}
 
+
+
         {/* Customers Report */}
         {activeReport === "customers" && customerReport && !customerLoading && (
           <div className="space-y-6">
@@ -1566,6 +1688,160 @@ export default function ReportsPage() {
           </div>
         )}
 
+        {/* Company Stock Report */}
+        {activeReport === "company-stock" && (
+          <div className="space-y-6">
+            {!filters.supplierId ? (
+              <div className="bg-orange-50 border-r-4 border-orange-500 p-8 rounded-lg text-center">
+                <AlertCircle className="w-12 h-12 text-orange-500 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-orange-800">يرجى اختيار مورد</h3>
+                <p className="text-orange-600 mt-2">يرجى اختيار مورد من قائمة الفلاتر بالأعلى لعرض تقرير بضاعة الشركات</p>
+              </div>
+            ) : supplierStockLoading ? (
+              <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100 italic text-gray-400">
+                جاري التحميل...
+              </div>
+            ) : supplierStockReport && (
+              <>
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">{supplierStockReport.data.supplier.name}</h2>
+                      <p className="text-sm text-gray-500">{supplierStockReport.data.supplier.phone || "بدون هاتف"}</p>
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm text-gray-500">تاريخ التقرير</p>
+                      <p className="font-medium">{new Date().toLocaleDateString("ar-LY")}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    {/* LYD Balance */}
+                    <div className="bg-emerald-50 rounded-lg p-5 border border-emerald-100">
+                      <p className="text-sm text-emerald-600 font-medium mb-1">الرصيد بالدينار (LYD)</p>
+                      <p className={`text-2xl font-bold ${(supplierStockReport.data.supplier.balances?.LYD || 0) > 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                        {Math.abs(supplierStockReport.data.supplier.balances?.LYD || 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}
+                        <span className="text-sm mr-1 font-normal opacity-75">
+                          {(supplierStockReport.data.supplier.balances?.LYD || 0) > 0 ? ' (مستحق عليك)' : (supplierStockReport.data.supplier.balances?.LYD || 0) < 0 ? ' (مدين لك)' : ''}
+                        </span>
+                      </p>
+                    </div>
+
+                    {/* USD Balance */}
+                    <div className="bg-blue-50 rounded-lg p-5 border border-blue-100">
+                      <p className="text-sm text-blue-600 font-medium mb-1">الرصيد بالدولار (USD)</p>
+                      <p className={`text-2xl font-bold ${(supplierStockReport.data.supplier.balances?.USD || 0) > 0 ? 'text-red-600' : 'text-blue-700'}`}>
+                        {Math.abs(supplierStockReport.data.supplier.balances?.USD || 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}
+                        <span className="text-sm mr-1 font-normal opacity-75">$</span>
+                        <span className="text-sm opacity-75">
+                          {(supplierStockReport.data.supplier.balances?.USD || 0) > 0 ? ' (مستحق عليك)' : (supplierStockReport.data.supplier.balances?.USD || 0) < 0 ? ' (مدين لك)' : ''}
+                        </span>
+                      </p>
+                    </div>
+
+                    {/* EUR Balance */}
+                    <div className="bg-indigo-50 rounded-lg p-5 border border-indigo-100">
+                      <p className="text-sm text-indigo-600 font-medium mb-1">الرصيد باليورو (EUR)</p>
+                      <p className={`text-2xl font-bold ${(supplierStockReport.data.supplier.balances?.EUR || 0) > 0 ? 'text-red-600' : 'text-indigo-700'}`}>
+                        {Math.abs(supplierStockReport.data.supplier.balances?.EUR || 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}
+                        <span className="text-sm mr-1 font-normal opacity-75">€</span>
+                        <span className="text-sm opacity-75">
+                          {(supplierStockReport.data.supplier.balances?.EUR || 0) > 0 ? ' (مستحق عليك)' : (supplierStockReport.data.supplier.balances?.EUR || 0) < 0 ? ' (مدين لك)' : ''}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50 font-bold border-b-2 border-gray-200">
+                        <tr>
+                          <th className="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase">الصنف</th>
+                          <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase">الوحدة</th>
+                          <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase">إجمالي المشتراة</th>
+                          <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase">الكمية المباعة</th>
+                          <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase">المخزون الحالي</th>
+                          <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase">التكلفة</th>
+                          <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase">الأداء</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {(supplierStockReport.data.items || []).length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="px-6 py-8 text-center text-gray-500 italic">
+                              لا يوجد مخزون مسجل لهذا المورد
+                            </td>
+                          </tr>
+                        ) : (
+                          supplierStockReport.data.items.map((item: any) => {
+                            const unitsPerBox = item.product.unitsPerBox || 1;
+                            const totalQty = item.currentStock * unitsPerBox;
+                            const isMetric = unitsPerBox !== 1 && item.product.unit === 'صندوق';
+
+                            return (
+                              <tr key={item.product.id} className="hover:bg-gray-50">
+                                <td className="px-6 py-4">
+                                  <div className="text-sm font-bold text-gray-900">{item.product.name}</div>
+                                  <div className="text-xs text-gray-500 font-mono mt-0.5">{item.product.sku}</div>
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                  <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium">
+                                    {item.product.unit || 'صندوق'}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                  <div className="text-sm font-bold text-gray-600">
+                                    {item.totalPurchased.toLocaleString("ar-LY")} <span className="text-[10px]">ص</span>
+                                  </div>
+                                  <div className="text-[10px] text-gray-400">
+                                    {(item.totalPurchased * unitsPerBox).toLocaleString("ar-LY", { minimumFractionDigits: 1 })} {isMetric ? 'م²' : 'قطعة'}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                  <div className="text-sm font-bold text-green-700">
+                                    {item.soldQty.toLocaleString("ar-LY")} <span className="text-[10px]">ص</span>
+                                  </div>
+                                  <div className="text-[10px] text-green-600/70">
+                                    {(item.soldQty * unitsPerBox).toLocaleString("ar-LY", { minimumFractionDigits: 1 })} {isMetric ? 'م²' : 'قطعة'}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                  <div className="text-sm font-extrabold text-blue-800">
+                                    {item.currentStock.toLocaleString("ar-LY")} <span className="text-[10px]">ص</span>
+                                  </div>
+                                  <div className="text-[10px] text-blue-600/70">
+                                    {totalQty.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} {isMetric ? 'م²' : 'قطعة'}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 text-center font-mono text-sm font-bold text-gray-700">
+                                  {item.product.cost ? Number(item.product.cost).toLocaleString("ar-LY", { minimumFractionDigits: 2 }) + ' د.ل' : '-'}
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                  <div className="flex flex-col items-center gap-1">
+                                    <div className="w-16 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full ${item.performance > 70 ? 'bg-green-500' : item.performance > 30 ? 'bg-orange-500' : 'bg-red-500'}`}
+                                        style={{ width: `${Math.min(100, item.performance)}%` }}
+                                      ></div>
+                                    </div>
+                                    <span className={`text-xs font-bold ${item.performance > 70 ? 'text-green-700' : item.performance > 30 ? 'text-orange-700' : 'text-red-700'}`}>
+                                      {item.performance.toFixed(1)}%
+                                    </span>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Product Movement Report */}
         {activeReport === "product-movement" && (
           <div className="space-y-6">
@@ -1637,7 +1913,7 @@ export default function ReportsPage() {
                                       'bg-gray-100 text-gray-800'
                                 }`}>
                                 {m.type === 'SALE' && <ArrowRight className="w-3 h-3" />}
-                                {m.type === 'PURCHASE' && <ArrowLeft className="w-3 h-3" />}
+                                {m.type === 'PURCHASE' && <ArrowRight className="w-3 h-3 rotate-180" />}
                                 {m.type === 'SALE' ? 'بيع' : m.type === 'PURCHASE' ? 'شراء' : m.type === 'RETURN' ? 'مردود' : m.type === 'DAMAGE' ? 'تالف' : 'افتتاحي'}
                               </span>
                             </td>
@@ -1690,7 +1966,7 @@ export default function ReportsPage() {
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-amber-500">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="bg-amber-100 p-2 rounded-lg">
-                    <ArrowLeft className="w-5 h-5 text-amber-600" />
+                    <ArrowRight className="w-5 h-5 text-amber-600 rotate-180" />
                   </div>
                   <p className="text-slate-600 font-medium">تكلفة البضاعة المباعة</p>
                 </div>
@@ -1702,7 +1978,7 @@ export default function ReportsPage() {
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-orange-500">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="bg-orange-100 p-2 rounded-lg">
-                    <RotateCcw className="w-5 h-5 text-orange-600" />
+                    <FileText className="w-5 h-5 text-orange-600" />
                   </div>
                   <p className="text-slate-600 font-medium">تكلفة المردودات</p>
                 </div>

@@ -81,3 +81,11 @@ export const ProductMovementReportQueryDto = z.object({
 });
 
 export type ProductMovementReportQuery = z.infer<typeof ProductMovementReportQueryDto>;
+
+// DTO لتقرير بضاعة الموردين
+export const SupplierStockReportQueryDto = z.object({
+  supplierId: z.string().transform(Number),
+  companyId: z.string().optional().transform(Number),
+});
+
+export type SupplierStockReportQuery = z.infer<typeof SupplierStockReportQueryDto>;

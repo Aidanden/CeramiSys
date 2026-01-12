@@ -281,4 +281,39 @@ export class ReportsController {
       });
     }
   };
+
+
+  /**
+   * GET /api/reports/supplier-stock
+   * تقرير بضاعة الموردين
+   */
+  getSupplierStockReport = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userCompanyId = (req as any).user?.companyId;
+      const isSystemUser = (req as any).user?.isSystemUser;
+
+      if (!userCompanyId) {
+        res.status(401).json({
+          success: false,
+          message: "غير مصرح - معرف الشركة مفقود",
+        });
+        return;
+      }
+
+      const { SupplierStockReportQueryDto } = require("../dto/reportsDto");
+      const validatedQuery = SupplierStockReportQueryDto.parse(req.query);
+      const report = await this.reportsService.getSupplierStockReport(validatedQuery, userCompanyId, isSystemUser);
+
+      res.json({
+        success: true,
+        data: report,
+      });
+    } catch (error: any) {
+      console.error("Error in getSupplierStockReport:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "حدث خطأ أثناء جلب تقرير بضاعة الموردين",
+      });
+    }
+  };
 }

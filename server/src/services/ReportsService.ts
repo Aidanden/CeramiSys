@@ -683,4 +683,148 @@ export class ReportsService {
       }
     };
   }
+
+  /**
+   * تقرير بضاعة الموردين (أداء بضاعة المورد)
+   */
+  async getSupplierStockReport(query: any, userCompanyId: number, isSystemUser: boolean = false) {
+    const { supplierId, companyId: queryCompanyId } = query;
+    const companyId = queryCompanyId || (isSystemUser !== true ? userCompanyId : undefined);
+
+    if (!supplierId) throw new Error("يجب تحديد المورد");
+
+    // 1. جلب بيانات المورد
+    const supplier = await this.prisma.supplier.findUnique({
+      where: { id: supplierId }
+    });
+
+    if (!supplier) throw new Error("المورد غير موجود");
+
+    // حساب الرصيد لكل عملة (مديونية المورد)
+    // CREDIT = له (دائن)، DEBIT = عليه (مدين)
+    // الرصيد = مجموع الداين - مجموع المدين
+    const balanceAggregates = await this.prisma.supplierAccount.groupBy({
+      by: ['currency', 'transactionType'],
+      where: { supplierId },
+      _sum: {
+        amount: true
+      }
+    });
+
+    const balances: Record<string, number> = { LYD: 0, USD: 0, EUR: 0 };
+
+    balanceAggregates.forEach(agg => {
+      const currency = agg.currency || 'LYD';
+      const amount = Number(agg._sum.amount || 0);
+
+      if (!balances[currency]) balances[currency] = 0;
+
+      if (agg.transactionType === 'CREDIT') {
+        balances[currency] += amount;
+      } else {
+        balances[currency] -= amount;
+      }
+    });
+
+    // الرصيد "عليه" (لنا) عندما يكون سالب، و"له" (علينا) عندما يكون موجب
+    // في هذا السياق: Credit (له) يزيد الرصيد، Debit (عليه) ينقص الرصيد
+    // إذن: موجب = دين علينا للمورد، سالب = دين للمورد علينا (رصيد مدين) -> دفعنا اكثر مما اشترينا
+    // ولكن المستخدم قال: 55000 (علينا) د.ل. هذا يعني رصيد موجب.
+
+    // سنعيد كائن الأرصدة بدلاً من رصيد واحد
+    const currentBalance = balances['LYD']; // Default for backward compatibility if needed, but we prefer using the map
+
+    // 2. جلب المشتريات من هذا المورد لتحديد الأصناف والكميات المشتراة
+    // نحتاج للأصناف التي اشتريناها من هذا المورد فقط (purchase lines)
+    const purchaseLines = await this.prisma.purchaseLine.findMany({
+      where: {
+        purchase: {
+          supplierId,
+          isApproved: true, // فقط المشتريات المعتمدة
+          ...(companyId && { companyId })
+        }
+      },
+      include: {
+        product: true,
+        purchase: {
+          select: { currency: true } // نحتاج العملة إذا أردنا تفصيل المبالغ
+        }
+      }
+    });
+
+    // تجميع البيانات حسب الصنف
+    const productsMap = new Map<number, any>();
+
+    purchaseLines.forEach(line => {
+      const productId = line.productId;
+      const qty = Number(line.qty);
+
+      if (!productsMap.has(productId)) {
+        productsMap.set(productId, {
+          product: line.product,
+          totalPurchased: 0,
+          purchaseCount: 0
+        });
+      }
+
+      const item = productsMap.get(productId);
+      item.totalPurchased += qty;
+      item.purchaseCount += 1;
+    });
+
+    // 3. جلب المخزون الحالي لهذه الأصناف
+    const productIds = Array.from(productsMap.keys());
+
+    const stocks = await this.prisma.stock.findMany({
+      where: {
+        productId: { in: productIds },
+        ...(companyId && { companyId })
+      }
+    });
+
+    const stockMap = new Map<number, number>();
+    stocks.forEach(stock => {
+      stockMap.set(stock.productId, Number(stock.boxes));
+    });
+
+    // 4. دمج البيانات
+    const reportItems = Array.from(productsMap.values()).map(item => {
+      const productId = item.product.id;
+      const currentStockBoxes = stockMap.get(productId) || 0;
+
+      // التعامل مع الوحدات (صندوق + متر/قطعة)
+      const unitsPerBox = item.product.unitsPerBox ? Number(item.product.unitsPerBox) : 1;
+      const totalPurchasedUnits = item.totalPurchased * unitsPerBox; // الكمية المشتراة (قد تكون بالصناديق في الفواتير؟ عادة purchase line qty is boxes usually?)
+      // *تحقق*: في PurchaseLine، هل qty صناديق أم قطع؟ 
+      // عادة في السيرفس، purchaseLine.qty هي الكمية المدخلة، والتي غالباً ما تكون صناديق إذا كان المنتج يباع بالصندوق.
+      // Stock.boxes هي الصناديق.
+      // لنفترض التوافق حالياً: الكمية المشتراة = boxes, المخزون = boxes.
+
+      return {
+        product: {
+          id: item.product.id,
+          sku: item.product.sku,
+          name: item.product.name,
+          unit: item.product.unit,
+          unitsPerBox: unitsPerBox,
+          cost: item.product.cost,
+        },
+        totalPurchased: item.totalPurchased, // boxes usually
+        currentStock: currentStockBoxes, // boxes
+        soldQty: item.totalPurchased - currentStockBoxes,
+        performance: item.totalPurchased > 0 ? ((item.totalPurchased - currentStockBoxes) / item.totalPurchased) * 100 : 0
+      };
+    });
+
+    return {
+      supplier: {
+        id: supplier.id,
+        name: supplier.name,
+        phone: supplier.phone,
+        balance: currentBalance,
+        balances: balances // { LYD: number, USD: number, EUR: number }
+      },
+      items: reportItems.sort((a, b) => b.totalPurchased - a.totalPurchased) // الأكثر شراءً أولاً
+    };
+  }
 }
