@@ -38,6 +38,7 @@ import payrollRoutes from "./routes/payrollRoutes";
 import badDebtRoutes from "./routes/badDebtRoutes";
 import generalReceiptRoutes from "./routes/generalReceipt.routes";
 import dashboardRoutes from "./routes/dashboardRoutes";
+import supplierProductsReportRoutes from "./routes/supplierProductsReportRoutes";
 
 
 /*CONFIGRATION*/
@@ -124,6 +125,7 @@ app.use('/api/payment-receipts', paymentReceiptRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/complex-inter-company-sales', complexInterCompanySaleRoutes);
 app.use('/api/reports', reportsRoute);
+app.use('/api/reports/supplier-products', supplierProductsReportRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/provisional-sales', provisionalSalesRoutes);
 app.use('/api/sale-returns', saleReturnRoutes);

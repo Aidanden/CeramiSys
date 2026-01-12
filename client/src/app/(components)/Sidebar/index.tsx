@@ -441,12 +441,20 @@ const Sidebar = () => {
             />
           )}
           {canAccessScreen('/reports') && (
-            <SidebarLink
-              href="/reports"
-              icon={BarChart3}
-              label="التقارير"
-              isCollapsed={isSidebarCollapsed}
-            />
+            <>
+              <SidebarLink
+                href="/reports"
+                icon={BarChart3}
+                label="التقارير"
+                isCollapsed={isSidebarCollapsed}
+              />
+              <SidebarLink
+                href="/reports/supplier-products"
+                icon={FileText}
+                label="بضاعة الشركات"
+                isCollapsed={isSidebarCollapsed}
+              />
+            </>
           )}
         </nav>
 
