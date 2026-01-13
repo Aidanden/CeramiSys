@@ -67,12 +67,16 @@ async function deleteAllData() {
   // Delete in reverse order to handle foreign key constraints
   const deletionOrder = [
     "notification",                  // Notification model
+    "generalReceipt",                // GeneralReceipt model (الإيصالات العامة) - يجب حذفه قبل Treasury و Customer و Supplier و Employee
+    "financialContactAccount",       // FinancialContactAccount model (كشف حساب جهات الاتصال المالية)
+    "financialContact",              // FinancialContact model (جهات الاتصال المالية)
     "treasuryTransaction",           // TreasuryTransaction model
-    "treasury",                      // Treasury model
-    "salaryPayment",                 // SalaryPayment model (صرف المرتبات)
-    "employeeBonus",                 // EmployeeBonus model (المكافآت)
-    "employee",                      // Employee model (الموظفين)
     "badDebtExpense",                // BadDebtExpense model (صرف المصروفات المعدومة)
+    "salaryPayment",                 // SalaryPayment model (صرف المرتبات) - يجب حذفه قبل Treasury و Employee
+    "employeeBonus",                 // EmployeeBonus model (المكافآت)
+    "employeeAccount",               // EmployeeAccount model (حسابات الموظفين)
+    "employee",                      // Employee model (الموظفين)
+    "treasury",                      // Treasury model
     "badDebtCategory",               // BadDebtCategory model (بنود المصروفات المعدومة)
     "returnOrder",                   // ReturnOrder model
     "dispatchOrder",                 // DispatchOrder model
@@ -91,6 +95,7 @@ async function deleteAllData() {
     "purchase",                      // Purchase model
     "supplier",                      // Supplier model
     "saleReturnLine",                // SaleReturnLine model
+    "returnPayment",                 // ReturnPayment model (مدفوعات المرتجعات)
     "saleReturn",                    // SaleReturn model
     "salePayment",                   // SalePayment model
     "customerAccount",               // CustomerAccount model (حسابات العملاء) - يجب حذفه قبل Customer
@@ -104,11 +109,14 @@ async function deleteAllData() {
     "stock",                         // Stock model
     "damageReportLine",              // DamageReportLine model (أسطر محاضر الإتلاف)
     "damageReport",                  // DamageReport model (محاضر الإتلاف)
+    "externalStoreSession",          // ExternalStoreSession model (جلسات المستخدمين)
+    "externalStoreUser",             // ExternalStoreUser model (مستخدمي المحلات الخارجية)
     "externalStoreInvoiceLine",      // ExternalStoreInvoiceLine model (أسطر فواتير المخازن الخارجية)
     "externalStoreInvoice",          // ExternalStoreInvoice model (فواتير المخازن الخارجية)
     "externalStoreProduct",          // ExternalStoreProduct model (منتجات المخازن الخارجية)
     "externalStore",                 // ExternalStore model (المخازن الخارجية)
     "productCostLog",                // ProductCostLog model (سجل تكاليف المنتجات)
+    "productCostHistory",            // ProductCostHistory model (تاريخ تكاليف المنتجات)
     "product",                       // Product model
     "productGroup",                  // ProductGroup model (مجموعات المنتجات)
     "users",                         // Users model
@@ -394,20 +402,33 @@ async function main() {
     } else {
       // معالجة عادية للجداول الأخرى
       if (jsonData.length > 0) {
+        // معالجة خاصة للحقول التي تحتاج إلى إعادة تسمية
+        let processedData = jsonData;
+        if (modelName === 'customer') {
+          // تحويل note إلى notes للعملاء
+          processedData = jsonData.map((item: any) => {
+            const { note, ...rest } = item;
+            return {
+              ...rest,
+              notes: note
+            };
+          });
+        }
+
         try {
           // محاولة استخدام createMany أولاً (أسرع وأكثر كفاءة)
           await model.createMany({
-            data: jsonData,
+            data: processedData,
             skipDuplicates: true,
           });
-          console.log(`✅ Seeded ${modelName} with ${jsonData.length} records from ${fileName}`);
+          console.log(`✅ Seeded ${modelName} with ${processedData.length} records from ${fileName}`);
         } catch (error: any) {
           // إذا فشل createMany (بعض النماذج لا تدعمه بسبب nested relations أو قيود أخرى)
           // نستخدم create بشكل فردي بدون IDs
           console.log(`⚠️ createMany failed for ${modelName}: ${error.message}`);
           console.log(`   Trying individual creates without IDs...`);
           let successCount = 0;
-          for (const data of jsonData) {
+          for (const data of processedData) {
             try {
               // إزالة ID من البيانات لأن create لا يدعم تمرير IDs
               const { id, ...dataWithoutId } = data;
@@ -419,7 +440,7 @@ async function main() {
               console.error(`  ❌ Failed to create item in ${modelName}:`, itemError.message);
             }
           }
-          console.log(`✅ Seeded ${modelName} with ${successCount}/${jsonData.length} records from ${fileName}`);
+          console.log(`✅ Seeded ${modelName} with ${successCount}/${processedData.length} records from ${fileName}`);
         }
       }
     }

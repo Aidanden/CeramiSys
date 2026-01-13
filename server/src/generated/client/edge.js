@@ -1058,7 +1058,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "G:\\Code\\CeramiSys\\CeramiSys\\server\\src\\generated\\client",
+      "value": "/run/media/shark/033e2f56-34e7-4428-b4ef-bf76d5c4b6fb/CODE/CeramiSys/server/src/generated/client",
       "fromEnvVar": null
     },
     "config": {
@@ -1067,12 +1067,12 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "windows",
+        "value": "rhel-openssl-3.0.x",
         "native": true
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "G:\\Code\\CeramiSys\\CeramiSys\\server\\prisma\\schema.prisma",
+    "sourceFilePath": "/run/media/shark/033e2f56-34e7-4428-b4ef-bf76d5c4b6fb/CODE/CeramiSys/server/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
