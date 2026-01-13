@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقرير النظام - SIMS</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --bg-color: #eef2f3;
+            /* Softer gray background */
+            --text-color: #333;
+            --border-color: #ddd;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px 0;
+        }
+
+        .container {
+            max-width: 210mm;
+            /* A4 width */
+            margin: 0 auto;
+            background: #fff;
+            padding: 60px;
+            /* Generous padding */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            min-height: 297mm;
+            /* A4 height */
+            position: relative;
+        }
+
+        /* Typography */
+        h1,
+        h2,
+        h3 {
+            color: var(--primary-color);
+        }
+
+        h2 {
+            font-size: 2em;
+            border-bottom: 3px solid var(--secondary-color);
+            padding-bottom: 10px;
+            margin-top: 50px;
+            margin-bottom: 25px;
+            page-break-before: always;
+        }
+
+        h2:first-of-type {
+            page-break-before: auto;
+        }
+
+        /* No break for first H2 */
+
+        h3 {
+            font-size: 1.4em;
+            color: var(--secondary-color);
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--secondary-color);
+            padding-left: 10px;
+            /* RTL padding adjustment needed? No, padding-right for RTL */
+            padding-right: 15px;
+            border-left: none;
+            border-right: 4px solid var(--secondary-color);
+        }
+
+        p {
+            text-align: justify;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            color: #555;
+        }
+
+        ul {
+            margin-right: 20px;
+            color: #555;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        /* Cover Page */
+        .cover-page {
+            text-align: center;
+            padding: 120px 0;
+            margin-bottom: 0;
+            height: auto;
+            min-height: 800px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            page-break-after: always;
+            border-bottom: none;
+        }
+
+        .logo {
+            max-width: 350px;
+            margin-bottom: 40px;
+            filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.1));
+        }
+
+        .report-title {
+            font-size: 4em;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .report-subtitle {
+            font-size: 2em;
+            font-weight: 300;
+            color: #7f8c8d;
+        }
+
+        /* Modern Cards */
+        .bg-light {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+            border-right: 6px solid var(--secondary-color);
+            margin: 25px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 30px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid #eee;
+        }
+
+        th,
+        td {
+            padding: 15px;
+            text-align: right;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: #fff;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        /* Gallery */
+        .gallery-item {
+            display: block;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            /* Nice aesthetic shadow */
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+            text-align: center;
+            border: 1px solid #eee;
+        }
+
+        .gallery-item img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .gallery-caption {
+            display: none;
+        }
+
+        /* TOC */
+        .toc {
+            background-color: #fff;
+            padding: 40px;
+            border: 2px solid #f0f0f0;
+            margin: 40px 0;
+            border-radius: 15px;
+            page-break-after: always;
+        }
+
+        .toc h3 {
+            border-right: none;
+            margin-top: 0;
+            font-size: 1.8em;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .toc li {
+            margin-bottom: 18px;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 8px;
+        }
+
+        .toc a {
+            text-decoration: none;
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 1.2em;
+            transition: color 0.3s;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .toc a:hover {
+            color: var(--secondary-color);
+            padding-right: 10px;
+        }
+
+        /* Print Logic */
+        @media print {
+            body {
+                background: none;
+                padding: 0;
+            }
+
+            .container {
+                width: 100%;
+                max-width: none;
+                box-shadow: none;
+                padding: 0;
+                margin: 0;
+                min-height: auto;
+            }
+
+            .no-print {
+                display: none;
+            }
+
+            h2 {
+                page-break-before: always;
+                margin-top: 50px;
+            }
+
+            .gallery-item {
+                page-break-after: always;
+                /* Force new page for each image */
+                box-shadow: none;
+                /* No shadow in print */
+                border: 1px solid #ccc;
+                height: 95vh;
+                /* Occupy full page */
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                margin: 0;
+            }
+
+            .gallery-item img {
+                max-height: 85vh;
+                /* Leave room for caption */
+                width: auto;
+                max-width: 100%;
+            }
+
+            .gallery-caption {
+                margin-top: auto;
+                margin-bottom: 20px;
+            }
+
+            a {
+                text-decoration: none;
+                color: #000;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <!-- Cover Page -->
+        <div class="cover-page">
+            <img src="./Arabtech@3x.png" alt="Arabtech Logo" class="logo">
+            <h1 class="report-title">SIMS</h1>
+            <h2 class="report-subtitle">Smart Integrated Management System</h2>
+
+        </div>
+
+        <!-- Table of Contents -->
+        <div class="toc no-print">
+            <h3>جدول المحتويات</h3>
+            <ul>
+                <li><a href="#intro">1. مقدمة النظام</a></li>
+                <li><a href="#tech-stack">2. البيئة التقنية (Technical Stack)</a></li>
+                <li><a href="#architecture">3. معمارية وهيكلية النظام</a></li>
+                <li><a href="#modules">4. الوحدات الوظيفية (Modules)</a></li>
+                <li><a href="#database">5. هيكل البيانات (Database Schema)</a></li>
+                <li><a href="#features">6. المميزات التنافسية</a></li>
+                <li><a href="#gallery">7. ملحق: واجهات النظام (Screenshots)</a></li>
+            </ul>
+        </div>
+
+        <!-- Section 1: Intro -->
+        <div id="intro">
+            <h2>1. مقدمة النظام</h2>
+            <p>نظام <strong>SIMS (Smart Integrated Management System)</strong> هو حل برمجي ذكي وشامل تم تطويره خصيصًا
+                لتلبية احتياجات كافة أنواع المشاريع والأعمال (All Projects and Businesses). يتميز النظام بمرونة فائقة
+                وقابلية للتخصيص الكامل، مما يجعله الخيار الأمثل لإدارة أي نشاط تجاري أو خدمي بغض النظر عن حجمه أو مجاله.
+            </p>
+            <p>يهدف SIMS إلى دمج جميع أقسام المؤسسة في منصة موحدة، من المشتريات والمخزون إلى المبيعات والحسابات، مما
+                يوفر رؤية شاملة ولحظية لأصحاب القرار، ويضمن السيطرة الكاملة على موارد المشروع.</p>
+        </div>
+
+        <!-- Section 2: Tech Stack -->
+        <div id="tech-stack">
+            <h2>2. البيئة التقنية (Technical Stack)</h2>
+            <p>يعتمد SIMS على بنية تحتية برمجية حديثة تضمن الاستقرار، الأمان، والسرعة:</p>
+
+            <div class="bg-light">
+                <h3>Frontend (الواجهة الأمامية)</h3>
+                <ul>
+                    <li><strong>Next.js 15:</strong> استخدام أحدث إصدار من إطار العمل الشهير لضمان سرعة تحميل الصفحات
+                        وتحسين محركات البحث.</li>
+                    <li><strong>Material UI (MUI 6):</strong> واجهات مستخدم عصرية، متجاوبة، وسهلة الاستخدام.</li>
+                    <li><strong>Redux Toolkit:</strong> إدارة حالة التطبيق بفاعلية لضمان تجربة مستخدم سلسة.</li>
+                </ul>
+            </div>
+
+            <div class="bg-light">
+                <h3>Backend (الواجهة الخلفية)</h3>
+                <ul>
+                    <li><strong>Node.js & Express:</strong> خادم قوي وقابل للتوسع (Scalable).</li>
+                    <li><strong>TypeScript:</strong> لغة برمجة صارمة تقلل من الأخطاء البرمجية وتسهل الصيانة.</li>
+                    <li><strong>Prisma ORM:</strong> طبقة متقدمة للتعامل مع البيانات تضمن أمان الاستعلامات.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 3: Architecture -->
+        <div id="architecture">
+            <h2>3. معمارية وهيكلية النظام</h2>
+            <p>صُمم SIMS ليكون نظامًا سحابيًا (Cloud-Ready) يدعم الشركات ذات الفروع المتعددة:</p>
+            <ul>
+                <li><strong>Multi-Branch Architecture:</strong> قاعدة بيانات مركزية تدعم عددًا غير محدود من الفروع
+                    والشركات الشقيقة، مع فصل كامل للبيانات المالية لكل فرع.</li>
+                <li><strong>Security First:</strong> يعتمد النظام على بروتوكولات أمان متقدمة، بما في ذلك تشفير كلمات
+                    المرور وإدارة الجلسات باستخدام JWT.</li>
+                <li><strong>Role-Based Access Control (RBAC):</strong> نظام صلاحيات دقيق يسمح للمدير بتحديد ما يمكن لكل
+                    مستخدم رؤيته أو فعله بدقة متناهية.</li>
+            </ul>
+        </div>
+
+        <!-- Section 4: Modules -->
+        <div id="modules">
+            <h2>4. الوحدات الوظيفية (Modules)</h2>
+            <p>يتكون النظام من عدة وحدات مترابطة تعمل بتناغم تام:</p>
+
+            <h3>🔹 المبيعات ونقاط البيع (Sales & POS)</h3>
+            <p>دورة مبيعات كاملة تبدأ من عروض الأسعار (Provisional Sales) وتتحول إلى فواتير نهائية، مع دعم المبيعات
+                النقدية والآجلة، وإمكانية البيع المتبادل بين الفروع.</p>
+
+            <h3>🔹 إدارة سلسلة التوريد (Purchases & SCM)</h3>
+            <p>إدارة الموردين وفواتير الشراء، مع ميزات متقدمة لحساب تكلفة المنتج النهائية (Landed Cost) بعد إضافة جميع
+                المصاريف (شحن، جمارك، نقل).</p>
+
+            <h3>🔹 إدارة المخزون والمستودعات (WMS)</h3>
+            <p>مراقبة دقيقة للمخزون، حركات النقل بين المخازن، إدارة التالف، وتقارير الجرد اللحظية. يدعم النظام وحدات
+                قياس متعددة لنفس الصنف.</p>
+
+            <h3>🔹 الحسابات العامة (General Ledger)</h3>
+            <p>تتم القيود المحاسبية آليًا في الخلفية. يشمل النظام كشوف حسابات تفصيلية للعملاء، الموردين، والخزينة، مع
+                تقارير الأرباح والخسائر.</p>
+        </div>
+
+        <!-- Section 5: Database Schema -->
+        <div id="database">
+            <h2>5. هيكل البيانات (Database Schema)</h2>
+            <p>نظرة فنية على الجداول الرئيسية التي تشكل العمود الفقري للنظام:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>الجدول (Entity)</th>
+                        <th>الدور الوظيفي</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Company</td>
+                        <td>الكيان الرئيسي (الشركة/الفرع) ويربط جميع العمليات به.</td>
+                    </tr>
+                    <tr>
+                        <td>Product & Stock</td>
+                        <td>تعريف المنتجات وتتبع كمياتها في كل فرع بشكل مستقل.</td>
+                    </tr>
+                    <tr>
+                        <td>Sales & Purchases</td>
+                        <td>جداول الحركات التجارية وتفاصيلها المالية.</td>
+                    </tr>
+                    <tr>
+                        <td>Users & Permissions</td>
+                        <td>جداول الأمان وتخزين ملفات الدخول والصلاحيات.</td>
+                    </tr>
+                    <tr>
+                        <td>DispatchOrder</td>
+                        <td>إدارة عمليات تسليم البضاعة من المخزن (إذن الصرف).</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Section 6: Features -->
+        <div id="features">
+            <h2>6. المميزات التنافسية</h2>
+
+            <div class="bg-light">
+                <h3>منظومة الربط الفروعي الذكي</h3>
+                <p>يتميز SIMS بقدرته على تحويل "فاتورة مبيعات" من الشركة الأم تلقائيًا إلى "فاتورة مشتريات" في نظام
+                    الفرع بنقرة زر، مما يوفر وقت الإدخال ويمنع الأخطاء.</p>
+            </div>
+
+            <div class="bg-light">
+                <h3>الأتمتة والذكاء</h3>
+                <p>يقوم النظام بحساب هوامش الربح تلقائيًا، ويمنع البيع بأقل من السعر المحدد (حسب الصلاحية)، وينبه عند
+                    وصول المخزون للحد الأدنى.</p>
+            </div>
+        </div>
+
+        <!-- Section 7: System Gallery -->
+        <div id="gallery" class="gallery-section">
+            <h2>7. ملحق: واجهات النظام (System Screenshots)</h2>
+            <p>فيما يلي استعراض شامل لشاشات النظام الفعلية، يوضح واجهات المستخدم لمختلف الوحدات:</p>
+
+            <div class="gallery-grid">
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-51-15.png"
+                        alt="واجهة النظام 1">
+                    <div class="gallery-caption">الشاشة الرئيسية / لوحة المعلومات</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-51-30.png"
+                        alt="واجهة النظام 2">
+                    <div class="gallery-caption">إدارة المبيعات</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-51-37.png"
+                        alt="واجهة النظام 3">
+                    <div class="gallery-caption">تفاصيل الفاتورة</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-51-50.png"
+                        alt="واجهة النظام 4">
+                    <div class="gallery-caption">قائمة المنتجات</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-52-00.png"
+                        alt="واجهة النظام 5">
+                    <div class="gallery-caption">إضافة منتج جديد</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-52-13.png"
+                        alt="واجهة النظام 6">
+                    <div class="gallery-caption">ادارة المخزون</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-52-25.png"
+                        alt="واجهة النظام 7">
+                    <div class="gallery-caption">التقارير المالية</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-52-36.png"
+                        alt="واجهة النظام 8">
+                    <div class="gallery-caption">كشف حساب عميل</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-52-46.png"
+                        alt="واجهة النظام 9">
+                    <div class="gallery-caption">إدارة الموردين</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-53-00.png"
+                        alt="واجهة النظام 10">
+                    <div class="gallery-caption">سندات القبض والصرف</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-53-08.png"
+                        alt="واجهة النظام 11">
+                    <div class="gallery-caption">إدارة المستخدمين</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-53-20.png"
+                        alt="واجهة النظام 12">
+                    <div class="gallery-caption">الصلاحيات</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-53-28.png"
+                        alt="واجهة النظام 13">
+                    <div class="gallery-caption">إعدادات النظام</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-54-23.png"
+                        alt="واجهة النظام 14">
+                    <div class="gallery-caption">تقارير المبيعات</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-54-36.png"
+                        alt="واجهة النظام 15">
+                    <div class="gallery-caption">تقارير المشتريات</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-54-52.png"
+                        alt="واجهة النظام 16">
+                    <div class="gallery-caption">واجهة نقاط البيع</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-55-01.png"
+                        alt="واجهة النظام 17">
+                    <div class="gallery-caption">شاشة الدخول</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-55-09.png"
+                        alt="واجهة النظام 18">
+                    <div class="gallery-caption">لوحة تحكم المدير</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-55-18.png"
+                        alt="واجهة النظام 19">
+                    <div class="gallery-caption">إدارة الفروع</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-55-31.png"
+                        alt="واجهة النظام 20">
+                    <div class="gallery-caption">التنبيهات</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-55-42.png"
+                        alt="واجهة النظام 21">
+                    <div class="gallery-caption">الملف الشخصي</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-56-21.png"
+                        alt="واجهة النظام 22">
+                    <div class="gallery-caption">إدارة الخزينة</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-56-33.png"
+                        alt="واجهة النظام 23">
+                    <div class="gallery-caption">الديون المعدومة</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-56-43.png"
+                        alt="واجهة النظام 24">
+                    <div class="gallery-caption">تقارير الأرباح</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-56-51.png"
+                        alt="واجهة النظام 25">
+                    <div class="gallery-caption">أوامر الصرف</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-57-02.png"
+                        alt="واجهة النظام 26">
+                    <div class="gallery-caption">مرتجع مبيعات</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-57-14.png"
+                        alt="واجهة النظام 27">
+                    <div class="gallery-caption">مرتجع مشتريات</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-57-22.png"
+                        alt="واجهة النظام 28">
+                    <div class="gallery-caption">إعدادات الطباعة</div>
+                </div>
+                <div class="gallery-item"><img src="./images/Screenshot From 2026-01-12 19-57-29.png"
+                        alt="واجهة النظام 29">
+                    <div class="gallery-caption">نظرة عامة</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

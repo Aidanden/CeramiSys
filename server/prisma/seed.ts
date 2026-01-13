@@ -43,6 +43,26 @@ function loadProductCosts() {
 }
 
 
+async function resetSequences() {
+  // إعادة تعيين sequences في PostgreSQL لكي نتمكن من إدراج IDs محددة
+  console.log('🔄 إعادة تعيين auto-increment sequences...');
+  try {
+    await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('"Company"', 'id'), 1, false);`;
+    await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('"Customer"', 'id'), 1, false);`;
+    await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('"Supplier"', 'id'), 1, false);`;
+    await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('"Product"', 'id'), 1, false);`;
+    await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('"Treasury"', 'id'), 1, false);`;
+    await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('"Employee"', 'id'), 1, false);`;
+    await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('"User"', 'id'), 1, false);`;
+    await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('"UserRoles"', 'id'), 1, false);`;
+    await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('"PurchaseExpenseCategory"', 'id'), 1, false);`;
+    await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('"BadDebtCategory"', 'id'), 1, false);`;
+    console.log('✅ تم إعادة تعيين sequences بنجاح');
+  } catch (error) {
+    console.log('⚠️ فشل في إعادة تعيين بعض sequences (هذا طبيعي إذا كانت الجداول فارغة)');
+  }
+}
+
 async function deleteAllData() {
   // Delete in reverse order to handle foreign key constraints
   const deletionOrder = [
@@ -133,6 +153,7 @@ async function main() {
   ];
 
   await deleteAllData();
+  await resetSequences();
 
   for (const fileName of orderedFileNames) {
     const filePath = path.join(dataDirectory, fileName);
@@ -372,12 +393,35 @@ async function main() {
       console.log(`✅ Seeded ${modelName} based on names mapping from ${fileName}`);
     } else {
       // معالجة عادية للجداول الأخرى
-      for (const data of jsonData) {
-        await model.create({
-          data,
-        });
+      if (jsonData.length > 0) {
+        try {
+          // محاولة استخدام createMany أولاً (أسرع وأكثر كفاءة)
+          await model.createMany({
+            data: jsonData,
+            skipDuplicates: true,
+          });
+          console.log(`✅ Seeded ${modelName} with ${jsonData.length} records from ${fileName}`);
+        } catch (error: any) {
+          // إذا فشل createMany (بعض النماذج لا تدعمه بسبب nested relations أو قيود أخرى)
+          // نستخدم create بشكل فردي بدون IDs
+          console.log(`⚠️ createMany failed for ${modelName}: ${error.message}`);
+          console.log(`   Trying individual creates without IDs...`);
+          let successCount = 0;
+          for (const data of jsonData) {
+            try {
+              // إزالة ID من البيانات لأن create لا يدعم تمرير IDs
+              const { id, ...dataWithoutId } = data;
+              await model.create({
+                data: dataWithoutId,
+              });
+              successCount++;
+            } catch (itemError: any) {
+              console.error(`  ❌ Failed to create item in ${modelName}:`, itemError.message);
+            }
+          }
+          console.log(`✅ Seeded ${modelName} with ${successCount}/${jsonData.length} records from ${fileName}`);
+        }
       }
-      console.log(`✅ Seeded ${modelName} with data from ${fileName}`);
     }
   }
 }

@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>عرض المشروع - Arabtech</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Slides Container */
+        .slides-container {
+            position: relative;
+            height: 100%;
+            width: 100%;
+        }
+
+        /* Individual Slide */
+        .slide {
+            display: none;
+            /* Hidden by default */
+            height: 100%;
+            width: 100%;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            animation: fadeEffect 0.5s;
+        }
+
+        .slide.active {
+            display: flex;
+            /* Show active slide */
+        }
+
+        /* Fade Animation */
+        @keyframes fadeEffect {
+            from {
+                opacity: 0.4;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Content Styling */
+        .logo-slide img {
+            max-width: 400px;
+            /* Logo size */
+            margin-bottom: 20px;
+        }
+
+        .logo-slide h1 {
+            font-size: 3em;
+            color: #ecf0f1;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .logo-slide p {
+            font-size: 1.5em;
+            color: #bdc3c7;
+            margin-top: 10px;
+        }
+
+        .image-slide img {
+            max-height: 90vh;
+            max-width: 90vw;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+        }
+
+        .slide-number {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #f1f1f1;
+            font-size: 18px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+
+        /* Navigation Buttons */
+        .prev,
+        .next {
+            cursor: pointer;
+            position: absolute;
+            top: 50%;
+            width: auto;
+            margin-top: -22px;
+            padding: 16px;
+            color: white;
+            font-weight: bold;
+            font-size: 24px;
+            transition: 0.6s ease;
+            border-radius: 0 3px 3px 0;
+            user-select: none;
+            background-color: rgba(0, 0, 0, 0.3);
+            text-decoration: none;
+        }
+
+        .next {
+            left: 0;
+            /* RTL: Next is on left */
+            border-radius: 3px 0 0 3px;
+        }
+
+        .prev {
+            right: 0;
+            /* RTL: Prev is on right */
+            border-radius: 0 3px 3px 0;
+        }
+
+        .prev:hover,
+        .next:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Dots/Indicator */
+        .dots-container {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            /* In case of many slides */
+            padding: 0 20px;
+        }
+
+        .dot {
+            cursor: pointer;
+            height: 12px;
+            width: 12px;
+            margin: 0 2px;
+            background-color: #717171;
+            border-radius: 50%;
+            display: inline-block;
+            transition: background-color 0.6s ease;
+        }
+
+
+        .dot.active,
+        .dot:hover {
+            background-color: #fff;
+        }
+
+        /* PRINT STYLES */
+        @media print {
+            body {
+                background-color: #fff;
+                color: #000;
+                height: auto;
+                width: auto;
+                overflow: visible;
+            }
+
+            .slides-container {
+                position: static;
+                height: auto;
+                display: block;
+            }
+
+            .slide {
+                display: flex !important;
+                /* Show all slides */
+                height: 100vh;
+                /* Force full height per page */
+                page-break-after: always;
+                /* New page after each slide */
+                break-after: page;
+                opacity: 1;
+                /* Disable fade effect static */
+                animation: none;
+                border: none;
+                box-shadow: none;
+            }
+
+            .slide:last-child {
+                page-break-after: auto;
+            }
+
+            /* Adjust content for print */
+            .logo-slide h1 {
+                color: #000;
+            }
+
+            .logo-slide p {
+                color: #333;
+            }
+
+            .image-slide img {
+                box-shadow: none;
+                max-height: 80vh;
+                /* Leave room for margins */
+                border: 1px solid #ddd;
+            }
+
+            .slide-number {
+                color: #000;
+                background: none;
+                top: 10px;
+                left: 10px;
+                border: 1px solid #ccc;
+            }
+
+            /* Hide interactive elements */
+            .prev,
+            .next,
+            .dots-container {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="slides-container">
+
+        <!-- Slide 1: Cover / Logo -->
+        <div class="slide active logo-slide">
+            <img src="./Arabtech@3x.png" alt="Arabtech Logo">
+            <h1>مشروع CeramiSys</h1>
+            <p>عرض توضيحي للنظام</p>
+        </div>
+
+        <!-- Image Slides -->
+        <!-- Slide 2 -->
+        <div class="slide image-slide">
+            <div class="slide-number">1 / 29</div>
+            <img src="./images/Screenshot From 2026-01-12 19-51-15.png" alt="Screenshot 1">
+        </div>
+
+        <!-- Slide 3 -->
+        <div class="slide image-slide">
+            <div class="slide-number">2 / 29</div>
+            <img src="./images/Screenshot From 2026-01-12 19-51-30.png" alt="Screenshot 2">
+        </div>
+
+        <!-- Slide 4 -->
+        <div class="slide image-slide">
+            <div class="slide-number">3 / 29</div>
+            <img src="./images/Screenshot From 2026-01-12 19-51-37.png" alt="Screenshot 3">
+        </div>
+
+        <!-- Slide 5 -->
+        <div class="slide image-slide">
+            <div class="slide-number">4 / 29</div>
+            <img src="./images/Screenshot From 2026-01-12 19-51-50.png" alt="Screenshot 4">
+        </div>
+
+        <div class="slide image-slide">
+            <div class="slide-number">5 / 29</div><img src="./images/Screenshot From 2026-01-12 19-52-00.png"
+                alt="Screenshot 5">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">6 / 29</div><img src="./images/Screenshot From 2026-01-12 19-52-13.png"
+                alt="Screenshot 6">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">7 / 29</div><img src="./images/Screenshot From 2026-01-12 19-52-25.png"
+                alt="Screenshot 7">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">8 / 29</div><img src="./images/Screenshot From 2026-01-12 19-52-36.png"
+                alt="Screenshot 8">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">9 / 29</div><img src="./images/Screenshot From 2026-01-12 19-52-46.png"
+                alt="Screenshot 9">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">10 / 29</div><img src="./images/Screenshot From 2026-01-12 19-53-00.png"
+                alt="Screenshot 10">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">11 / 29</div><img src="./images/Screenshot From 2026-01-12 19-53-08.png"
+                alt="Screenshot 11">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">12 / 29</div><img src="./images/Screenshot From 2026-01-12 19-53-20.png"
+                alt="Screenshot 12">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">13 / 29</div><img src="./images/Screenshot From 2026-01-12 19-53-28.png"
+                alt="Screenshot 13">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">14 / 29</div><img src="./images/Screenshot From 2026-01-12 19-54-23.png"
+                alt="Screenshot 14">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">15 / 29</div><img src="./images/Screenshot From 2026-01-12 19-54-36.png"
+                alt="Screenshot 15">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">16 / 29</div><img src="./images/Screenshot From 2026-01-12 19-54-52.png"
+                alt="Screenshot 16">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">17 / 29</div><img src="./images/Screenshot From 2026-01-12 19-55-01.png"
+                alt="Screenshot 17">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">18 / 29</div><img src="./images/Screenshot From 2026-01-12 19-55-09.png"
+                alt="Screenshot 18">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">19 / 29</div><img src="./images/Screenshot From 2026-01-12 19-55-18.png"
+                alt="Screenshot 19">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">20 / 29</div><img src="./images/Screenshot From 2026-01-12 19-55-31.png"
+                alt="Screenshot 20">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">21 / 29</div><img src="./images/Screenshot From 2026-01-12 19-55-42.png"
+                alt="Screenshot 21">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">22 / 29</div><img src="./images/Screenshot From 2026-01-12 19-56-21.png"
+                alt="Screenshot 22">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">23 / 29</div><img src="./images/Screenshot From 2026-01-12 19-56-33.png"
+                alt="Screenshot 23">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">24 / 29</div><img src="./images/Screenshot From 2026-01-12 19-56-43.png"
+                alt="Screenshot 24">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">25 / 29</div><img src="./images/Screenshot From 2026-01-12 19-56-51.png"
+                alt="Screenshot 25">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">26 / 29</div><img src="./images/Screenshot From 2026-01-12 19-57-02.png"
+                alt="Screenshot 26">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">27 / 29</div><img src="./images/Screenshot From 2026-01-12 19-57-14.png"
+                alt="Screenshot 27">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">28 / 29</div><img src="./images/Screenshot From 2026-01-12 19-57-22.png"
+                alt="Screenshot 28">
+        </div>
+        <div class="slide image-slide">
+            <div class="slide-number">29 / 29</div><img src="./images/Screenshot From 2026-01-12 19-57-29.png"
+                alt="Screenshot 29">
+        </div>
+
+        <!-- Navigation -->
+        <a class="prev" onclick="plusSlides(-1)">&#10095;</a>
+        <a class="next" onclick="plusSlides(1)">&#10094;</a>
+
+    </div>
+
+    <script>
+        let slideIndex = 1;
+        showSlides(slideIndex);
+
+        // Next/previous controls
+        function plusSlides(n) {
+            showSlides(slideIndex += n);
+        }
+
+        // Thumbnail image controls
+        function currentSlide(n) {
+            showSlides(slideIndex = n);
+        }
+
+        function showSlides(n) {
+            let i;
+            let slides = document.getElementsByClassName("slide");
+            if (n > slides.length) { slideIndex = 1 }
+            if (n < 1) { slideIndex = slides.length }
+            for (i = 0; i < slides.length; i++) {
+                slides[i].style.display = "none";
+                slides[i].className = slides[i].className.replace(" active", "");
+            }
+
+            slides[slideIndex - 1].style.display = "flex";
+            slides[slideIndex - 1].className += " active";
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'ArrowRight' || event.key === 'ArrowDown' || event.code === 'Space') {
+                // RTL: ArrowRight usually goes "back" in logic if visualized, but "Next" is usually desired progression. 
+                // In RTL context: Left Arrow often means NEXT (progression), Right Arrow means PREVIOUS (back).
+                // Let's standardise: 
+                // Right Arrow -> Next slide logic (visually left in RTL)
+                // Left Arrow -> Prev slide logic (visually right in RTL)
+                // Actually, for slideshows, users expect Right Arrow to mean "Advance".
+                plusSlides(1); // Advance
+            } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+                plusSlides(-1); // Go back
+            }
+        });
+    </script>
+
+</body>
+
+</html>
