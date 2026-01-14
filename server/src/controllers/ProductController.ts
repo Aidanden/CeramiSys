@@ -39,7 +39,7 @@ export class ProductController {
 
       const userCompanyId = (req as any).user?.companyId;
       const isSystemUser = (req as any).user?.isSystemUser;
-      
+
       if (!userCompanyId) {
         console.log('ProductController Error: userCompanyId is null or undefined');
         res.status(401).json({
@@ -66,7 +66,7 @@ export class ProductController {
   async getProductById(req: Request, res: Response): Promise<void> {
     try {
       const productId = parseInt(req.params.id!);
-      
+
       if (isNaN(productId)) {
         res.status(400).json({
           success: false,
@@ -77,7 +77,7 @@ export class ProductController {
 
       const userCompanyId = (req as any).user?.companyId;
       const isSystemUser = (req as any).user?.isSystemUser;
-      
+
       if (!userCompanyId) {
         res.status(401).json({
           success: false,
@@ -87,7 +87,7 @@ export class ProductController {
       }
 
       const product = await this.productService.getProductById(productId, userCompanyId, isSystemUser);
-      
+
       res.status(200).json({
         success: true,
         message: 'تم جلب الصنف بنجاح',
@@ -95,7 +95,7 @@ export class ProductController {
       });
     } catch (error: any) {
       console.error('خطأ في جلب الصنف:', error);
-      
+
       if (error.message === 'الصنف غير موجود') {
         res.status(404).json({
           success: false,
@@ -128,7 +128,7 @@ export class ProductController {
 
       const userCompanyId = (req as any).user?.companyId;
       const isSystemUser = (req as any).user?.isSystemUser;
-      
+
       if (!userCompanyId) {
         res.status(401).json({
           success: false,
@@ -154,6 +154,7 @@ export class ProductController {
         createdByCompanyId,
         sellPrice: sellPrice ? parseFloat(sellPrice) : undefined,
         initialBoxes: initialBoxes ? parseFloat(initialBoxes) : undefined,
+        groupId: req.body.groupId,
       };
 
       // Debug logging for initialBoxes
@@ -167,7 +168,7 @@ export class ProductController {
       }
 
       const product = await this.productService.createProduct(productData);
-      
+
       res.status(201).json({
         success: true,
         message: 'تم إنشاء الصنف بنجاح',
@@ -175,7 +176,7 @@ export class ProductController {
       });
     } catch (error: any) {
       console.error('خطأ في إنشاء الصنف:', error);
-      
+
       if (error.message.includes('موجود مسبقاً')) {
         res.status(409).json({
           success: false,
@@ -201,7 +202,7 @@ export class ProductController {
   async updateProduct(req: Request, res: Response): Promise<void> {
     try {
       const productId = parseInt(req.params.id!);
-      
+
       if (isNaN(productId)) {
         res.status(400).json({
           success: false,
@@ -212,7 +213,7 @@ export class ProductController {
 
       const userCompanyId = (req as any).user?.companyId;
       const isSystemUser = (req as any).user?.isSystemUser;
-      
+
       if (!userCompanyId) {
         res.status(401).json({
           success: false,
@@ -227,10 +228,11 @@ export class ProductController {
         unit: req.body.unit,
         unitsPerBox: req.body.unitsPerBox ? parseFloat(req.body.unitsPerBox) : undefined,
         sellPrice: req.body.sellPrice ? parseFloat(req.body.sellPrice) : undefined,
+        groupId: req.body.groupId,
       };
 
       const product = await this.productService.updateProduct(productId, updateData, userCompanyId, isSystemUser);
-      
+
       res.status(200).json({
         success: true,
         message: 'تم تحديث الصنف بنجاح',
@@ -238,7 +240,7 @@ export class ProductController {
       });
     } catch (error: any) {
       console.error('خطأ في تحديث الصنف:', error);
-      
+
       if (error.message === 'الصنف غير موجود') {
         res.status(404).json({
           success: false,
@@ -264,12 +266,51 @@ export class ProductController {
   }
 
   /**
+   * تحديث مجموعة الأصناف لمجموعة من المنتجات
+   */
+  async bulkUpdateProductGroup(req: Request, res: Response): Promise<void> {
+    try {
+      const { productIds, groupId } = req.body;
+
+      if (!Array.isArray(productIds) || productIds.length === 0) {
+        res.status(400).json({
+          success: false,
+          message: 'يجب تحديد الأصناف المراد تحديثها',
+        });
+        return;
+      }
+
+      const userCompanyId = (req as any).user?.companyId;
+      if (!userCompanyId) {
+        res.status(401).json({
+          success: false,
+          message: 'غير مصرح لك بالوصول',
+        });
+        return;
+      }
+
+      await this.productService.bulkUpdateProductGroup(productIds, groupId);
+
+      res.status(200).json({
+        success: true,
+        message: 'تم تحديث مجموعة الأصناف بنجاح',
+      });
+    } catch (error: any) {
+      console.error('خطأ في تحديث مجموعة الأصناف:', error);
+      res.status(500).json({
+        success: false,
+        message: 'خطأ في الخادم الداخلي',
+      });
+    }
+  }
+
+  /**
    * حذف صنف
    */
   async deleteProduct(req: Request, res: Response): Promise<void> {
     try {
       const productId = parseInt(req.params.id!);
-      
+
       if (isNaN(productId)) {
         res.status(400).json({
           success: false,
@@ -289,7 +330,7 @@ export class ProductController {
 
       const isSystemUser = (req as any).user?.isSystemUser;
       await this.productService.deleteProduct(productId, userCompanyId, isSystemUser);
-      
+
       res.status(200).json({
         success: true,
         message: 'تم حذف الصنف بنجاح',
@@ -354,7 +395,7 @@ export class ProductController {
       };
 
       await this.productService.updateStock(stockData);
-      
+
       res.status(200).json({
         success: true,
         message: 'تم تحديث المخزون بنجاح',
@@ -419,7 +460,7 @@ export class ProductController {
       };
 
       await this.productService.updatePrice(priceData);
-      
+
       res.status(200).json({
         success: true,
         message: 'تم تحديث السعر بنجاح',
@@ -440,7 +481,7 @@ export class ProductController {
     try {
       const userCompanyId = (req as any).user?.companyId;
       const isSystemUser = (req as any).user?.isSystemUser;
-      
+
       if (!userCompanyId) {
         res.status(401).json({
           success: false,
@@ -469,7 +510,7 @@ export class ProductController {
       const isSystemUser = (req as any).user?.isSystemUser;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
       const companyId = req.query.companyId ? parseInt(req.query.companyId as string) : undefined;
-      
+
       if (!userCompanyId) {
         res.status(401).json({
           success: false,
@@ -479,9 +520,9 @@ export class ProductController {
       }
 
       const topProducts = await this.productService.getTopSellingProducts(
-        userCompanyId, 
-        isSystemUser, 
-        limit, 
+        userCompanyId,
+        isSystemUser,
+        limit,
         companyId
       );
       res.status(200).json(topProducts);
@@ -531,7 +572,7 @@ export class ProductController {
       const isSystemUser = (req as any).user?.isSystemUser;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
       const companyId = req.query.companyId ? parseInt(req.query.companyId as string) : undefined;
-      
+
       if (!userCompanyId) {
         res.status(401).json({
           success: false,
@@ -541,9 +582,9 @@ export class ProductController {
       }
 
       const lowStockProducts = await this.productService.getLowStockProducts(
-        userCompanyId, 
-        isSystemUser, 
-        limit, 
+        userCompanyId,
+        isSystemUser,
+        limit,
         companyId
       );
       res.status(200).json(lowStockProducts);

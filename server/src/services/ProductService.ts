@@ -496,6 +496,21 @@ export class ProductService {
   }
 
   /**
+   * تحديث مجموعة الأصناف (Bulk Update)
+   */
+  async bulkUpdateProductGroup(productIds: number[], groupId: number | null): Promise<void> {
+    try {
+      await this.prisma.product.updateMany({
+        where: { id: { in: productIds } },
+        data: { groupId: groupId }
+      });
+    } catch (error) {
+      console.error('خطأ في تحديث مجموعة الأصناف:', error);
+      throw error;
+    }
+  }
+
+  /**
    * حذف صنف
    */
   async deleteProduct(id: number, userCompanyId: number, isSystemUser?: boolean): Promise<void> {

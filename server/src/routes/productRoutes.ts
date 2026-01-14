@@ -98,4 +98,12 @@ router.put('/stock/update', (req, res) => productController.updateStock(req, res
  */
 router.put('/price/update', (req, res) => productController.updatePrice(req, res));
 
+/**
+ * @route PUT /api/products/groups/bulk-update
+ * @desc تحديث مجموعة الأصناف لمجموعة من المنتجات
+ * @access Private
+ * @body productIds[], groupId
+ */
+router.put('/groups/bulk-update', (req, res) => productController.bulkUpdateProductGroup(req, res));
+
 export default router;

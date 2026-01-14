@@ -146,8 +146,18 @@ exports.Prisma.ProductGroupScalarFieldEnum = {
   id: 'id',
   name: 'name',
   maxDiscountPercentage: 'maxDiscountPercentage',
+  supplierId: 'supplierId',
+  currency: 'currency',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ProductGroupSupplierScalarFieldEnum = {
+  id: 'id',
+  productGroupId: 'productGroupId',
+  supplierId: 'supplierId',
+  isPrimary: 'isPrimary',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.ProductCostLogScalarFieldEnum = {
@@ -1020,6 +1030,7 @@ exports.Prisma.ModelName = {
   Company: 'Company',
   Product: 'Product',
   ProductGroup: 'ProductGroup',
+  ProductGroupSupplier: 'ProductGroupSupplier',
   ProductCostLog: 'ProductCostLog',
   Stock: 'Stock',
   CompanyProductPrice: 'CompanyProductPrice',

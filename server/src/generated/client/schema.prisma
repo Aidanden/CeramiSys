@@ -75,12 +75,32 @@ model Product {
 }
 
 model ProductGroup {
-  id                    Int       @id @default(autoincrement())
-  name                  String    @unique
-  maxDiscountPercentage Decimal   @default(0) @db.Decimal(5, 2)
+  id                    Int                    @id @default(autoincrement())
+  name                  String                 @unique
+  maxDiscountPercentage Decimal?               @db.Decimal(5, 2)
+  supplierId            Int?
+  currency              String?                @default("USD")
   products              Product[]
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  supplier              Supplier?              @relation("PrimarySupplier", fields: [supplierId], references: [id])
+  suppliers             ProductGroupSupplier[]
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  @@index([supplierId])
+}
+
+model ProductGroupSupplier {
+  id             Int          @id @default(autoincrement())
+  productGroupId Int
+  supplierId     Int
+  isPrimary      Boolean      @default(false)
+  productGroup   ProductGroup @relation(fields: [productGroupId], references: [id], onDelete: Cascade)
+  supplier       Supplier     @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@unique([productGroupId, supplierId])
+  @@index([productGroupId])
+  @@index([supplierId])
 }
 
 model ProductCostLog {
@@ -454,19 +474,21 @@ model PurchasePayment {
 }
 
 model Supplier {
-  id                Int                       @id @default(autoincrement())
-  name              String
-  phone             String?
-  email             String?
-  address           String?
-  note              String?
-  createdAt         DateTime                  @default(now())
-  expenseCategories ExpenseCategorySupplier[]
-  purchases         Purchase[]
-  purchaseExpenses  PurchaseExpense[]
-  accountEntries    SupplierAccount[]
-  paymentReceipts   SupplierPaymentReceipt[]
-  generalReceipts   GeneralReceipt[]
+  id                    Int                       @id @default(autoincrement())
+  name                  String
+  phone                 String?
+  email                 String?
+  address               String?
+  note                  String?
+  createdAt             DateTime                  @default(now())
+  expenseCategories     ExpenseCategorySupplier[]
+  purchases             Purchase[]
+  purchaseExpenses      PurchaseExpense[]
+  accountEntries        SupplierAccount[]
+  paymentReceipts       SupplierPaymentReceipt[]
+  generalReceipts       GeneralReceipt[]
+  primaryProductGroups  ProductGroup[]            @relation("PrimarySupplier")
+  productGroupSuppliers ProductGroupSupplier[]
 }
 
 model SupplierAccount {

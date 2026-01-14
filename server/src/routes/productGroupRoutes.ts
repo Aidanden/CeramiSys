@@ -1,17 +1,31 @@
 import { Router } from 'express';
 import { ProductGroupController } from '../controllers/ProductGroupController';
-import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
-const controller = new ProductGroupController();
+const productGroupController = new ProductGroupController();
 
-router.get('/', authenticateToken, controller.getProductGroups.bind(controller));
-router.get('/products', authenticateToken, controller.getProductsWithGroupStatus.bind(controller));
-router.get('/:id', authenticateToken, controller.getProductGroupById.bind(controller));
-router.post('/', authenticateToken, controller.createProductGroup.bind(controller));
-router.put('/:id', authenticateToken, controller.updateProductGroup.bind(controller));
-router.delete('/:id', authenticateToken, controller.deleteProductGroup.bind(controller));
-router.post('/:id/assign-products', authenticateToken, controller.assignProductsToGroup.bind(controller));
-router.post('/remove-products', authenticateToken, controller.removeProductsFromGroup.bind(controller));
+// البحث في مجموعات الأصناف (يجب أن يكون قبل /:id)
+router.get('/search', productGroupController.searchProductGroups.bind(productGroupController));
+
+// الحصول على جميع مجموعات الأصناف
+router.get('/', productGroupController.getAllProductGroups.bind(productGroupController));
+
+// الحصول على مجموعة أصناف محددة
+router.get('/:id', productGroupController.getProductGroupById.bind(productGroupController));
+
+// إنشاء مجموعة أصناف جديدة
+router.post('/', productGroupController.createProductGroup.bind(productGroupController));
+
+// تحديث مجموعة أصناف
+router.put('/:id', productGroupController.updateProductGroup.bind(productGroupController));
+
+// حذف مجموعة أصناف
+router.delete('/:id', productGroupController.deleteProductGroup.bind(productGroupController));
+
+// الحصول على الأصناف التابعة لمجموعة
+router.get('/:id/products', productGroupController.getProductsByGroup.bind(productGroupController));
+
+// تقرير المشتريات لمجموعة أصناف
+router.get('/:id/purchase-report', productGroupController.getGroupPurchaseReport.bind(productGroupController));
 
 export default router;

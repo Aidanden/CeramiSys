@@ -199,17 +199,10 @@ export const productsApi = createApi({
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: 'Product', id },
-        { type: 'Products', id: 'LIST' },
         'ProductStats'
       ],
-      async onQueryStarted({ id, productData }, { dispatch, queryFulfilled }) {
-        try {
-          await queryFulfilled;
-          dispatch(productsApi.util.invalidateTags([{ type: 'Products', id: 'LIST' }]));
-        } catch (error) {
-          // Error handled by RTK Query
-        }
-      },
+      // تمت إزالة التحديث القسري للقائمة بالكامل لتحسين الأداء وتجربة المستخدم
+      // القائمة يجب أن يتم تحديثها محلياً أو عند الحاجة فقط
     }),
 
     // حذف صنف
@@ -327,6 +320,16 @@ export const productsApi = createApi({
       },
       providesTags: ['Product'],
     }),
+
+    // تحديث مجموعة الأصناف (Bulk Update)
+    bulkUpdateProductGroup: builder.mutation<{ success: boolean; message: string }, { productIds: number[]; groupId: number | null }>({
+      query: (data) => ({
+        url: "/products/groups/bulk-update",
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ['Products', 'Product', 'ProductStats'],
+    }),
   }),
 });
 
@@ -342,4 +345,5 @@ export const {
   useGetTopSellingProductsQuery,
   useGetLowStockProductsQuery,
   useGetParentCompanyProductsQuery,
+  useBulkUpdateProductGroupMutation,
 } = productsApi;

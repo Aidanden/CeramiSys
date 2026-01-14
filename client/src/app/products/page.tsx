@@ -730,7 +730,7 @@ const ProductsPage = () => {
 
 
             <button
-              onClick={() => router.push('/products/groups')}
+              onClick={() => router.push('/product-groups')}
               className="flex items-center gap-2 bg-slate-600 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-all duration-200 shadow-md hover:shadow-lg"
             >
               <Shield className="w-5 h-5" />
@@ -1543,19 +1543,24 @@ const ProductsPage = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    مجموعة الأصناف (اختياري - للخصومات)
+                    مجموعة الأصناف (اختياري)
                   </label>
                   <select
                     name="groupId"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">لا توجد مجموعة</option>
-                    {groupsData?.data?.map((group) => (
+                    {groupsData?.map((group) => (
                       <option key={group.id} value={group.id}>
-                        {group.name} (أقصى خصم: {group.maxDiscountPercentage}%)
+                        {group.name}
+                        {group.supplier ? ` - ${group.supplier.name}` : ''}
+                        {group.maxDiscountPercentage ? ` (خصم: ${group.maxDiscountPercentage}%)` : ''}
                       </option>
                     ))}
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    عند اختيار مجموعة، سيتم ربط الصنف بالمورد الافتراضي للمجموعة
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1742,7 +1747,7 @@ const ProductsPage = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    مجموعة الأصناف (اختياري - للخصومات)
+                    مجموعة الأصناف (اختياري)
                   </label>
                   <select
                     name="groupId"
@@ -1750,12 +1755,17 @@ const ProductsPage = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">لا توجد مجموعة</option>
-                    {groupsData?.data?.map((group: any) => (
+                    {groupsData?.map((group: any) => (
                       <option key={group.id} value={group.id}>
-                        {group.name} (أقصى خصم: {group.maxDiscountPercentage}%)
+                        {group.name}
+                        {group.supplier ? ` - ${group.supplier.name}` : ''}
+                        {group.maxDiscountPercentage ? ` (خصم: ${group.maxDiscountPercentage}%)` : ''}
                       </option>
                     ))}
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    عند اختيار مجموعة، سيتم ربط الصنف بالمورد الافتراضي للمجموعة
+                  </p>
                 </div>
 
                 {/* حقل unitsPerBox يظهر فقط للصندوق */}

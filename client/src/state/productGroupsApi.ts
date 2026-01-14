@@ -5,13 +5,25 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithAuthInterceptor } from './apiUtils';
 
+export interface Supplier {
+    id: number;
+    name: string;
+    phone?: string;
+    email?: string;
+}
+
 export interface ProductGroup {
     id: number;
     name: string;
-    maxDiscountPercentage: number;
-    _count?: {
-        products: number;
-    };
+    maxDiscountPercentage?: number | null;
+    supplierId?: number | null;
+    currency?: string;
+    supplier?: Supplier;
+    suppliers?: Supplier[];
+    productsCount?: number;
+    createdAt?: string;
+    updatedAt?: string;
+    products?: any[];
 }
 
 export interface ProductWithGroupStatus {
@@ -25,12 +37,12 @@ export interface ProductWithGroupStatus {
 
 export interface ProductGroupsResponse {
     success: boolean;
-    data: ProductGroup[];
+    data?: ProductGroup[];
 }
 
 export interface ProductGroupResponse {
     success: boolean;
-    data: ProductGroup;
+    data?: ProductGroup;
 }
 
 export interface ProductsWithGroupStatusResponse {
@@ -53,19 +65,26 @@ export const productGroupsApi = createApi({
     baseQuery: baseQueryWithAuthInterceptor,
     tagTypes: ["ProductGroups", "ProductsGroupStatus"],
     endpoints: (builder) => ({
-        getProductGroups: builder.query<ProductGroupsResponse, void>({
+        getProductGroups: builder.query<ProductGroup[], void>({
             query: () => "/product-groups",
             providesTags: ["ProductGroups"],
         }),
-        getProductGroup: builder.query<ProductGroupResponse, number>({
+        getProductGroup: builder.query<ProductGroup, number>({
             query: (id) => `/product-groups/${id}`,
             providesTags: (result, error, id) => [{ type: "ProductGroups", id }],
+        }),
+        searchProductGroups: builder.query<ProductGroup[], string>({
+            query: (searchQuery) => `/product-groups/search?q=${encodeURIComponent(searchQuery)}`,
+            providesTags: ["ProductGroups"],
+        }),
+        getGroupPurchaseReport: builder.query<any, number>({
+            query: (groupId) => `/product-groups/${groupId}/purchase-report`,
         }),
         getProductsWithGroupStatus: builder.query<ProductsWithGroupStatusResponse, number | undefined>({
             query: (groupId) => `/product-groups/products${groupId ? `?groupId=${groupId}` : ''}`,
             providesTags: ["ProductsGroupStatus"],
         }),
-        createProductGroup: builder.mutation<ProductGroupResponse, Partial<ProductGroup>>({
+        createProductGroup: builder.mutation<ProductGroup, Partial<ProductGroup>>({
             query: (data) => ({
                 url: "/product-groups",
                 method: "POST",
@@ -73,7 +92,7 @@ export const productGroupsApi = createApi({
             }),
             invalidatesTags: ["ProductGroups"],
         }),
-        updateProductGroup: builder.mutation<ProductGroupResponse, { id: number; data: Partial<ProductGroup> }>({
+        updateProductGroup: builder.mutation<ProductGroup, { id: number; data: Partial<ProductGroup> }>({
             query: ({ id, data }) => ({
                 url: `/product-groups/${id}`,
                 method: "PUT",
@@ -110,6 +129,8 @@ export const productGroupsApi = createApi({
 export const {
     useGetProductGroupsQuery,
     useGetProductGroupQuery,
+    useSearchProductGroupsQuery,
+    useGetGroupPurchaseReportQuery,
     useGetProductsWithGroupStatusQuery,
     useCreateProductGroupMutation,
     useUpdateProductGroupMutation,

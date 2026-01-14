@@ -274,9 +274,9 @@ const Sidebar = () => {
             />
           )}
 
-          {canAccessScreen('/products/groups') && (
+          {canAccessScreen('/product-groups') && (
             <SidebarLink
-              href="/products/groups"
+              href="/product-groups"
               icon={Shield}
               label="مجموعات الأصناف"
               isCollapsed={isSidebarCollapsed}
