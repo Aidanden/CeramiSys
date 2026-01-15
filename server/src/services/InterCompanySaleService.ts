@@ -64,7 +64,8 @@ export class InterCompanySaleService {
                 productId: line.productId,
                 qty: line.qty,
                 unitPrice: line.branchUnitPrice,
-                subTotal: line.subTotal
+                subTotal: line.subTotal,
+                isFromParentCompany: true // ✅ تحديد المصدر للاعتماد لاحقاً
               }))
             }
           },
@@ -107,32 +108,7 @@ export class InterCompanySaleService {
           }
         });
 
-        // 3. تحديث المخزون (خصم من مخزون الشركة الأم)
-        for (const line of data.lines) {
-          // البحث عن المخزون في الشركة الأم
-          const stock = await tx.stock.findFirst({
-            where: {
-              productId: line.productId,
-              companyId: parentCompanyId
-            }
-          });
-
-          if (!stock) {
-            throw new Error(`المخزون غير موجود للصنف ${line.productId} في الشركة الأم`);
-          }
-
-          if (Number(stock.boxes) < line.qty) {
-            throw new Error(`المخزون غير كافٍ للصنف ${line.productId}. المتوفر: ${stock.boxes}`);
-          }
-
-          // خصم من مخزون الشركة الأم
-          await tx.stock.update({
-            where: { id: stock.id },
-            data: {
-              boxes: new Prisma.Decimal(Number(stock.boxes) - line.qty)
-            }
-          });
-        }
+        // تم إزالة خصم المخزون من هنا لأن الفاتورة تُنشأ DRAFT وسيتم الخصم عند الاعتماد من المحاسب
 
         return {
           branchSale,

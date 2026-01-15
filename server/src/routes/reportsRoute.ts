@@ -35,4 +35,8 @@ router.get("/financial", reportsController.getFinancialReport);
 // تقرير بضاعة الموردين (جديد)
 router.get("/supplier-stock", reportsController.getSupplierStockReport);
 
+// تقرير بضاعة المجموعات (جديد)
+router.get("/group-stock", reportsController.getGroupStockReport);
+
 export default router;
+

@@ -25,7 +25,7 @@ export class ProductService {
    */
   async getProducts(query: GetProductsQueryDto, userCompanyId: number, isSystemUser?: boolean): Promise<ProductsResponseDto> {
     try {
-      const { page = 1, limit = 10, search, sku, companyId, unit } = query;
+      const { page = 1, limit = 10, search, sku, companyId, unit, groupId } = query;
       const skip = (page - 1) * limit;
 
       // بناء شروط البحث
@@ -83,6 +83,17 @@ export class ProductService {
       // إضافة شرط الوحدة
       if (unit && unit !== 'الكل') {
         whereConditions.unit = unit;
+      }
+
+      // إضافة شرط مجموعة الأصناف
+      if (groupId !== undefined) {
+        if (groupId === null || groupId === 0) {
+          // عرض الأصناف غير المرتبطة بأي مجموعة
+          whereConditions.groupId = null;
+        } else {
+          // عرض الأصناف التابعة لمجموعة معينة
+          whereConditions.groupId = groupId;
+        }
       }
 
       // الحصول على العدد الإجمالي

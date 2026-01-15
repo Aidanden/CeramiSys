@@ -89,3 +89,12 @@ export const SupplierStockReportQueryDto = z.object({
 });
 
 export type SupplierStockReportQuery = z.infer<typeof SupplierStockReportQueryDto>;
+
+// DTO لتقرير بضاعة المجموعات
+export const GroupStockReportQueryDto = z.object({
+  groupId: z.string().transform(Number),
+  companyId: z.string().optional().transform(Number),
+});
+
+export type GroupStockReportQuery = z.infer<typeof GroupStockReportQueryDto>;
+

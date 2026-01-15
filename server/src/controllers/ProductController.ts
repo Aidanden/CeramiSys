@@ -25,6 +25,7 @@ export class ProductController {
         sku: req.query.sku as string,
         companyId: req.query.companyId ? parseInt(req.query.companyId as string) : undefined,
         unit: req.query.unit as string,
+        groupId: req.query.groupId !== undefined ? (req.query.groupId === '0' ? 0 : parseInt(req.query.groupId as string)) : undefined,
       };
 
       // Debug logging

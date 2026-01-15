@@ -1747,7 +1747,6 @@ export class SalesService {
 
       // التحقق: الفاتورة معتمدة بالفعل
       if (saleCheck.status === 'APPROVED') {
-
         throw new Error('الفاتورة معتمدة بالفعل');
       }
 
@@ -1755,7 +1754,7 @@ export class SalesService {
         throw new Error(`لا يمكن اعتماد فاتورة بحالة: ${saleCheck.status}`);
       }
 
-      // التحقق من وجود الفاتورة وأنها مبدئية
+      // التحقق من وجود الفاتورة وأنها مبدئية مع جلب العلاقات اللازمة
       const existingSale = await this.prisma.sale.findFirst({
         where: {
           id,
@@ -1775,99 +1774,19 @@ export class SalesService {
       });
 
       if (!existingSale) {
-        throw new Error('الفاتورة غير موجودة أو ليس لديك صلاحية لاعتمادها');
+        throw new Error('الفاتورة غير موجودة أو تم اعتمادها بالفعل من قبل مستخدم آخر');
       }
 
-
-
-      // جلب معلومات الشركة الأم إذا كانت الشركة الحالية فرعية
-      let parentCompanyId: number | null = null;
+      // جلب معلومات الشركة الأم
+      let parentCompanyId = existingSale.company.parentId;
       let parentCompanyName = '';
 
-      if (existingSale.company.parentId) {
-        parentCompanyId = existingSale.company.parentId;
+      if (parentCompanyId) {
         const parentCompany = await this.prisma.company.findUnique({
           where: { id: parentCompanyId },
           select: { name: true }
         });
         parentCompanyName = parentCompany?.name || '';
-
-      }
-
-      // التحقق من توفر المخزون قبل الاعتماد
-      // التحقق من توفر المخزون قبل الاعتماد
-      // 🟢 تحسين: جلب جميع المخزونات ذات الصلة دفعة واحدة
-      const stockKeys = existingSale.lines.map(line => {
-        const stockCompanyId = line.isFromParentCompany && parentCompanyId
-          ? parentCompanyId
-          : existingSale.companyId;
-
-        return {
-          companyId: stockCompanyId,
-          productId: line.productId
-        };
-      });
-
-      const stocks = await this.prisma.stock.findMany({
-        where: {
-          OR: stockKeys
-        }
-      });
-
-      const stocksMap = new Map();
-      stocks.forEach(stock => {
-        stocksMap.set(`${stock.companyId}-${stock.productId}`, Number(stock.boxes));
-      });
-
-      for (const line of existingSale.lines) {
-        // تحديد من أي شركة سيتم خصم المخزون
-        let stockCompanyId = line.isFromParentCompany && parentCompanyId
-          ? parentCompanyId  // خصم من الشركة الأم
-          : existingSale.companyId;  // خصم من الشركة الحالية
-
-        let stockCompanyName = line.isFromParentCompany && parentCompanyName
-          ? parentCompanyName
-          : existingSale.company.name;
-
-        // التحقق من المخزون باستخدام Map
-        let stockKey = `${stockCompanyId}-${line.productId}`;
-        const availableBoxes = stocksMap.get(stockKey) || 0;
-        const requiredBoxes = Number(line.qty);
-
-        if (availableBoxes < requiredBoxes) {
-          // 💡 محاولة إصلاح تلقائي: إذا لم يكن المخزون المحلي كافياً، والمنتج تابع للشركة الأم، ولديها مخزون
-          if (!line.isFromParentCompany && parentCompanyId && (line.product as any).createdByCompanyId === parentCompanyId) {
-            // جلب مخزون الشركة الأم (قد لا يكون محملاً في Map إذا لم نطلبه)
-            // لكن بما أننا سنقوم بعملية مكلفة (Update DB)، لا بأس بطلب المخزون هنا
-            const parentStock = await this.prisma.stock.findUnique({
-              where: {
-                companyId_productId: {
-                  companyId: parentCompanyId,
-                  productId: line.productId
-                }
-              }
-            });
-
-            const availableInParent = parentStock ? Number(parentStock.boxes) : 0;
-            if (availableInParent >= requiredBoxes) {
-              // ✅ المخزون متوفر في الشركة الأم! لنقم بتصحيح الوضع
-              // 1. تحديث العلامة في قاعدة البيانات
-              await this.prisma.saleLine.update({
-                where: { id: line.id },
-                data: { isFromParentCompany: true }
-              });
-
-              // 2. تحديث الكائن في الذاكرة لتستمر العملية بشكل صحيح
-              (line as any).isFromParentCompany = true;
-              stockCompanyId = parentCompanyId; // تبديل المصدر
-
-              // والآن نتابع الحلقة بدون رمي خطأ
-              continue;
-            }
-          }
-
-          throw new Error(`المخزون غير كافي للصنف: ${line.product.name}. المتوفر في ${stockCompanyName}: ${availableBoxes} صندوق، المطلوب: ${requiredBoxes} صندوق`);
-        }
       }
 
       // حساب المبالغ حسب نوع البيع
@@ -1875,103 +1794,115 @@ export class SalesService {
       const paidAmount = approvalData.saleType === 'CASH' ? total : 0;
       const remainingAmount = approvalData.saleType === 'CASH' ? 0 : total;
       const isFullyPaid = approvalData.saleType === 'CASH';
-
-      // إصدار إيصال قبض تلقائياً عند اعتماد فاتورة نقدية
       const shouldIssueReceipt = approvalData.saleType === 'CASH';
 
-      // اعتماد الفاتورة وتحديث بياناتها
-      const approvedSale = await this.prisma.sale.update({
-        where: { id },
-        data: {
-          status: 'APPROVED',
-          saleType: approvalData.saleType,
-          paymentMethod: approvalData.paymentMethod || null,
-          paidAmount,
-          remainingAmount,
-          isFullyPaid,
-          approvedAt: new Date(),
-          approvedBy,
-          ...(shouldIssueReceipt
-            ? {
-              receiptIssued: true,
-              receiptIssuedAt: new Date(),
-              receiptIssuedBy: approvedBy
-            }
-            : {})
-        },
-        include: {
-          customer: true,
-          company: {
-            select: { id: true, name: true, code: true }
-          },
-          lines: {
-            include: {
-              product: {
-                select: { id: true, sku: true, name: true, unit: true, unitsPerBox: true }
-              }
-            }
-          }
+      // 1. التحقق من المخزون وتحديد المصادر (Auto-Fix)
+      // 🟢 تحسين: جلب جميع المخزونات الممكنة (المحلية والأم) لتقليل الاستعلامات
+      const allProductIds = existingSale.lines.map(l => l.productId);
+      const relevantCompanyIds = [existingSale.companyId];
+      if (parentCompanyId) relevantCompanyIds.push(parentCompanyId);
+
+      const allStocks = await this.prisma.stock.findMany({
+        where: {
+          productId: { in: allProductIds },
+          companyId: { in: relevantCompanyIds }
         }
       });
 
-      // خصم المخزون
+      const getStockLevel = (companyId: number, productId: number) => {
+        const s = allStocks.find(st => st.companyId === companyId && st.productId === productId);
+        return s ? Number(s.boxes) : 0;
+      };
 
-      // خصم المخزون
-      const stockDecrementUpdates = [];
+      // مصفوفة لتخزين تحديثات أسطر الفاتورة إذا احتجنا لتغيير isFromParentCompany
+      const lineAttributeUpdates: { id: number; data: any }[] = [];
 
       for (const line of existingSale.lines) {
-        const boxesToDecrement = Number(line.qty);
+        const required = Number(line.qty);
+        let currentSourceId = line.isFromParentCompany && parentCompanyId ? parentCompanyId : existingSale.companyId;
+        let available = getStockLevel(currentSourceId, line.productId);
 
-        // تحديد من أي شركة سيتم خصم المخزون (نفس المنطق المستخدم في التحقق)
-        const stockCompanyId = line.isFromParentCompany && parentCompanyId
-          ? parentCompanyId  // خصم من الشركة الأم
-          : existingSale.companyId;  // خصم من الشركة الحالية
-
-        // إضافة عملية التحديث للقائمة
-        stockDecrementUpdates.push(
-          this.prisma.stock.upsert({
-            where: {
-              companyId_productId: {
-                companyId: stockCompanyId,
-                productId: line.productId
-              }
-            },
-            update: {
-              boxes: {
-                decrement: boxesToDecrement
-              }
-            },
-            // نظرياً المفروض لا نصل لـ create هنا لأننا تحققنا من التوفر، لكن للأمان
-            create: {
-              companyId: stockCompanyId,
-              productId: line.productId,
-              boxes: -boxesToDecrement
+        if (available < required) {
+          // محاولة تبديل المصدر للشركة الأم إذا لم يكن محلياً وكان المنتج للشركة الأم
+          if (!line.isFromParentCompany && parentCompanyId && (line.product as any).createdByCompanyId === parentCompanyId) {
+            const parentAvailable = getStockLevel(parentCompanyId, line.productId);
+            if (parentAvailable >= required) {
+              // تغيير المصدر في الذاكرة وفي قاعدة البيانات لاحقاً
+              (line as any).isFromParentCompany = true;
+              lineAttributeUpdates.push({
+                id: line.id,
+                data: { isFromParentCompany: true }
+              });
+            } else {
+              throw new Error(`المخزون غير كافي للصنف ${line.product.name}. المتوفر محلياً: ${available} وفي الشركة الأم: ${parentAvailable}. المطلوب: ${required}`);
             }
-          })
-        );
+          } else {
+            const sourceName = currentSourceId === parentCompanyId ? parentCompanyName : existingSale.company.name;
+            throw new Error(`المخزون غير كافي للصنف ${line.product.name} في ${sourceName}. المتوفر: ${available}. المطلوب: ${required}`);
+          }
+        }
       }
 
-      // تنفيذ جميع التحديثات دفعة واحدة
-      if (stockDecrementUpdates.length > 0) {
-        await this.prisma.$transaction(stockDecrementUpdates);
-      }
+      // 2. تنفيذ الاعتماد وخصم المخزون في transaction واحد
+      const approvedSale = await this.prisma.$transaction(async (tx) => {
+        // أ. تحديث أسطر الفاتورة (إذا تم تغيير مصدر أي صنف)
+        if (lineAttributeUpdates.length > 0) {
+          for (const updateOp of lineAttributeUpdates) {
+            await tx.saleLine.update({
+              where: { id: updateOp.id },
+              data: updateOp.data
+            });
+          }
+        }
 
+        // ب. تحديث حالة الفاتورة (Optimistic Lock)
+        const updated = await tx.sale.update({
+          where: { id, status: 'DRAFT' },
+          data: {
+            status: 'APPROVED',
+            saleType: approvalData.saleType,
+            paymentMethod: approvalData.paymentMethod || null,
+            paidAmount,
+            remainingAmount,
+            isFullyPaid,
+            approvedAt: new Date(),
+            approvedBy,
+            ...(shouldIssueReceipt ? {
+              receiptIssued: true,
+              receiptIssuedAt: new Date(),
+              receiptIssuedBy: approvedBy
+            } : {})
+          },
+          include: {
+            customer: true,
+            company: { select: { id: true, name: true, code: true } },
+            lines: { include: { product: true } }
+          }
+        });
 
-      // 🔄 إنشاء الفواتير التلقائية (إذا كانت هناك أصناف من الشركة الأم)
+        // ج. خصم المخزون
+        for (const line of existingSale.lines) {
+          const boxesToDecrement = Number(line.qty);
+          const stockCompanyId = line.isFromParentCompany && parentCompanyId ? parentCompanyId : existingSale.companyId;
+
+          await tx.stock.upsert({
+            where: { companyId_productId: { companyId: stockCompanyId, productId: line.productId } },
+            update: { boxes: { decrement: boxesToDecrement } },
+            create: { companyId: stockCompanyId, productId: line.productId, boxes: -boxesToDecrement }
+          });
+        }
+
+        return updated;
+      });
+
+      // 3. العمليات اللاحقة (خارج الـ transaction الرئيسي لتجنب تعليق قاعدة البيانات)
+      // 🔄 إنشاء الفواتير التلقائية
       const linesFromParent = existingSale.lines.filter(line => line.isFromParentCompany);
       if (linesFromParent.length > 0 && parentCompanyId) {
-
         try {
-          await this.createAutoGeneratedInvoices(
-            existingSale,
-            linesFromParent,
-            parentCompanyId,
-            parentCompanyName
-          );
-
+          await this.createAutoGeneratedInvoices(existingSale, linesFromParent, parentCompanyId, parentCompanyName);
         } catch (error: any) {
           console.error('❌ خطأ في إنشاء الفواتير التلقائية:', error.message);
-          // لا نوقف العملية، الفاتورة الأساسية تم اعتمادها بنجاح
         }
       }
 

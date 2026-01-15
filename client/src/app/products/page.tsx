@@ -44,6 +44,7 @@ const ProductsPage = () => {
   const [searchSKU, setSearchSKU] = useState('');
   const [selectedUnit, setSelectedUnit] = useState('');
   const [selectedCompany, setSelectedCompany] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState('');
   const [stockFilter, setStockFilter] = useState<'all' | 'out' | 'low' | 'available'>('all');
   const [lowStockThreshold, setLowStockThreshold] = useState(10);
   const [stockFromQty, setStockFromQty] = useState<string>('');
@@ -85,10 +86,10 @@ const ProductsPage = () => {
   // إعادة تعيين الصفحة إلى الأولى عند تغيير الفلاتر
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, searchSKU, selectedCompany, selectedUnit, stockFilter, stockFromQty, stockToQty]);
+  }, [searchTerm, searchSKU, selectedCompany, selectedUnit, selectedGroup, stockFilter, stockFromQty, stockToQty]);
 
   // تحديد ما إذا كان هناك أي فلاتر نشطة
-  const hasActiveFilters = searchTerm || searchSKU || selectedCompany || selectedUnit || stockFilter !== 'all' || stockFromQty || stockToQty;
+  const hasActiveFilters = searchTerm || searchSKU || selectedCompany || selectedUnit || selectedGroup || stockFilter !== 'all' || stockFromQty || stockToQty;
   const hasStockRangeFilter = stockFromQty || stockToQty;
   const hasSearchFilters = searchTerm || searchSKU;
 
@@ -100,6 +101,7 @@ const ProductsPage = () => {
     sku: searchSKU || undefined,
     unit: selectedUnit || undefined,
     companyId: selectedCompany ? Number(selectedCompany) : undefined,
+    groupId: selectedGroup ? (selectedGroup === '0' ? 0 : Number(selectedGroup)) : undefined,
   }, {
     pollingInterval, // إعادة جلب تلقائية كل X ميلي ثانية
   });
@@ -828,6 +830,7 @@ const ProductsPage = () => {
                 setStockFilter('all');
                 setStockFromQty('');
                 setStockToQty('');
+                setSelectedGroup('');
                 setCurrentPage(1);
               }}
               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-all duration-200"
@@ -902,6 +905,30 @@ const ProductsPage = () => {
               {companiesData?.data?.companies.map((company) => (
                 <option key={company.id} value={company.id}>
                   {company.name}
+                </option>
+              ))}
+            </select>
+            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+
+          {/* Product Group Filter */}
+          <div className="relative">
+            <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-tertiary w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <select
+              value={selectedGroup}
+              onChange={(e) => setSelectedGroup(e.target.value)}
+              className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary transition-all duration-200 appearance-none ${selectedGroup ? 'border-blue-500 ring-2 ring-blue-100 font-medium' : 'border-border-primary'
+                }`}
+            >
+              <option value="">جميع المجموعات</option>
+              <option value="0">بدون مجموعة</option>
+              {groupsData?.map((group: any) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
                 </option>
               ))}
             </select>
@@ -1009,6 +1036,16 @@ const ProductsPage = () => {
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
                   {companiesData?.data?.companies.find(c => c.id === Number(selectedCompany))?.name}
                   <button onClick={() => setSelectedCompany('')} className="hover:text-purple-900">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+              )}
+              {selectedGroup && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm">
+                  {selectedGroup === '0' ? 'بدون مجموعة' : groupsData?.find((g: any) => g.id === Number(selectedGroup))?.name}
+                  <button onClick={() => setSelectedGroup('')} className="hover:text-amber-900">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>

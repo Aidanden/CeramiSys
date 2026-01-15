@@ -316,4 +316,39 @@ export class ReportsController {
       });
     }
   };
+
+  /**
+   * GET /api/reports/group-stock
+   * تقرير بضاعة المجموعات
+   */
+  getGroupStockReport = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userCompanyId = (req as any).user?.companyId;
+      const isSystemUser = (req as any).user?.isSystemUser;
+
+      if (!userCompanyId) {
+        res.status(401).json({
+          success: false,
+          message: "غير مصرح - معرف الشركة مفقود",
+        });
+        return;
+      }
+
+      const { GroupStockReportQueryDto } = require("../dto/reportsDto");
+      const validatedQuery = GroupStockReportQueryDto.parse(req.query);
+      const report = await this.reportsService.getGroupStockReport(validatedQuery, userCompanyId, isSystemUser);
+
+      res.json({
+        success: true,
+        data: report,
+      });
+    } catch (error: any) {
+      console.error("Error in getGroupStockReport:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "حدث خطأ أثناء جلب تقرير بضاعة المجموعات",
+      });
+    }
+  };
 }
+

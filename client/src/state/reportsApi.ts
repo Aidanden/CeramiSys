@@ -66,6 +66,12 @@ export interface SupplierStockReportQuery {
   companyId?: number;
 }
 
+export interface GroupStockReportQuery {
+  groupId: number;
+  companyId?: number;
+}
+
+
 export const reportsApi = createApi({
   reducerPath: "reportsApi",
   baseQuery: baseQueryWithAuthInterceptor,
@@ -156,6 +162,16 @@ export const reportsApi = createApi({
         params,
       }),
     }),
+
+    // تقرير بضاعة المجموعات (جديد)
+    getGroupStockReport: build.query({
+      query: (params: GroupStockReportQuery) => ({
+        url: "/reports/group-stock",
+        method: "GET",
+        params,
+      }),
+    }),
+
   }),
 });
 
@@ -169,4 +185,6 @@ export const {
   useGetProductMovementReportQuery,
   useGetProfitReportQuery,
   useGetSupplierStockReportQuery,
+  useGetGroupStockReportQuery,
 } = reportsApi;
+

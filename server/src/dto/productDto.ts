@@ -115,6 +115,11 @@ export class GetProductsQueryDto {
   unit?: string;
 
   @IsOptional()
+  @Transform(({ value }) => value === null || value === 'null' ? null : parseInt(value))
+  @IsInt({ message: 'معرف المجموعة يجب أن يكون رقم صحيح' })
+  groupId?: number | null;
+
+  @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)
   strict?: boolean;
 }

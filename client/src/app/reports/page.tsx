@@ -11,9 +11,12 @@ import {
   useGetProductMovementReportQuery,
   useGetProfitReportQuery,
   useGetSupplierStockReportQuery,
+  useGetGroupStockReportQuery,
 
 } from "@/state/reportsApi";
 import { useGetSuppliersQuery } from "@/state/purchaseApi";
+import { useGetProductGroupsQuery } from "@/state/productGroupsApi";
+
 
 import { useGetCompaniesQuery } from "@/state/companyApi";
 import { useGetProductsQuery } from "@/state/productsApi";
@@ -32,7 +35,8 @@ import {
 } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 
-type ReportType = "sales" | "stock" | "customers" | "top-products" | "suppliers" | "purchases" | "product-movement" | "profit" | "company-stock";
+type ReportType = "sales" | "stock" | "customers" | "top-products" | "suppliers" | "purchases" | "product-movement" | "profit" | "company-stock" | "group-stock";
+
 
 export default function ReportsPage() {
   const [activeReport, setActiveReport] = useState<ReportType>("sales");
@@ -70,6 +74,11 @@ export default function ReportsPage() {
   const { data: suppliersData } = useGetSuppliersQuery({ limit: 1000 });
   const suppliersList = suppliersData?.data?.suppliers || [];
 
+  // جلب قائمة المجموعات
+  const { data: groupsData } = useGetProductGroupsQuery();
+  const groupsList = groupsData || [];
+
+
   // جلب الأصناف لاختيار صنف في التقرير
   const { data: productsData } = useGetProductsQuery({
     limit: 10000,
@@ -103,7 +112,9 @@ export default function ReportsPage() {
     supplierReportName: "",
     supplierReportPhone: "",
     supplierId: "",
+    groupId: "",
   });
+
 
   // دالة لتوحيد الحروف العربية لتحسين البحث
   const normalizeArabic = (text: string): string => {
@@ -265,7 +276,79 @@ export default function ReportsPage() {
           </tbody>
         </table>
       `;
+
+    } else if (activeReport === 'group-stock' && groupStockReport) {
+      customPrintContent = `
+        <div style="margin-bottom: 30px; border: 1px solid #ecc94b; padding: 20px; border-radius: 8px; background-color: #fefcbf;">
+          <h2 style="margin-top: 0; color: #744210;">تقرير بضاعة المجموعات - ${groupStockReport.data.group.name}</h2>
+          <p style="color: #744210;">إجمالي عدد الأصناف: ${groupStockReport.data.items.length}</p>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <thead>
+            <tr style="background: #fdf6e3;">
+              <th style="border: 1px solid #d69e2e; padding: 10px; text-align: right; font-size: 11px;">الصنف</th>
+              <th style="border: 1px solid #d69e2e; padding: 10px; text-align: center; font-size: 11px;">بضاعة أول المدة</th>
+              <th style="border: 1px solid #d69e2e; padding: 10px; text-align: center; font-size: 11px;">إجمالي المشتريات</th>
+              <th style="border: 1px solid #d69e2e; padding: 10px; text-align: center; font-size: 11px;">العبوة (الكمية)</th>
+              <th style="border: 1px solid #d69e2e; padding: 10px; text-align: center; font-size: 11px;">التكلفة الإجمالية</th>
+              <th style="border: 1px solid #d69e2e; padding: 10px; text-align: center; font-size: 11px;">إجمالي المبيعات</th>
+              <th style="border: 1px solid #d69e2e; padding: 10px; text-align: center; font-size: 11px;">نسبة البيع</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(groupStockReport.data.items || []).map((item: any) => {
+        const unitsPerBox = item.product.unitsPerBox || 1;
+        const isDimensional = unitsPerBox !== 1 && item.product.unit === 'صندوق';
+        const unitLabel = isDimensional ? "م²" : (item.product.unit || 'وحدة');
+        return `
+              <tr>
+                <td style="border: 1px solid #d69e2e; padding: 8px;">
+                  <div style="font-weight: bold; font-size: 11px;">${item.product.name}</div>
+                  <div style="font-size: 9px; color: #718096; font-family: monospace;">${item.product.sku}</div>
+                </td>
+                <td style="border: 1px solid #d69e2e; padding: 8px; text-align: center;">
+                  <div style="font-size: 11px; font-weight: bold;">${item.openingStock.toLocaleString('ar-LY')} ${item.product.unit === 'صندوق' ? 'ص' : (item.product.unit || 'وحدة')}</div>
+                  <div style="font-size: 9px; color: #718096;">
+                    ${parseFloat(item.openingStockUnits.toFixed(2)).toLocaleString('ar-LY')} ${unitLabel}
+                  </div>
+                </td>
+                <td style="border: 1px solid #d69e2e; padding: 8px; text-align: center;">
+                  <div style="font-size: 11px; font-weight: bold; color: #4c51bf;">${item.totalPurchased.toLocaleString('ar-LY')} ${item.product.unit === 'صندوق' ? 'ص' : (item.product.unit || 'وحدة')}</div>
+                  <div style="font-size: 9px; color: #7f9cf5;">
+                    ${parseFloat(item.purchasedUnits.toFixed(2)).toLocaleString('ar-LY')} ${unitLabel}
+                  </div>
+                </td>
+                <td style="border: 1px solid #d69e2e; padding: 8px; text-align: center;">
+                  <div style="font-size: 11px; font-weight: bold;">
+                    ${parseFloat(item.currentStockUnits.toFixed(2)).toLocaleString('ar-LY')} ${unitLabel}
+                  </div>
+                  <div style="font-size: 9px; color: #718096;">
+                    ${item.currentStock.toLocaleString('ar-LY')} ${item.product.unit || 'صندوق'}
+                  </div>
+                </td>
+                <td style="border: 1px solid #d69e2e; padding: 8px; text-align: center; font-size: 10px; font-weight: bold; color: #c53030;">
+                  ${item.totalCost.toLocaleString('ar-LY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} د.ل
+                </td>
+                <td style="border: 1px solid #d69e2e; padding: 8px; text-align: center;">
+                  <div style="font-size: 11px; font-weight: bold; color: #2f855a;">
+                    ${parseFloat(item.soldUnits.toFixed(2)).toLocaleString('ar-LY')} ${unitLabel}
+                  </div>
+                  <div style="font-size: 9px; color: #166534;">
+                    ${item.totalSold.toLocaleString('ar-LY')} ${item.product.unit || 'صندوق'}
+                  </div>
+                </td>
+                <td style="border: 1px solid #d69e2e; padding: 8px; text-align: center; font-size: 10px; font-weight: bold; color: ${item.performance > 70 ? '#276749' : item.performance > 30 ? '#975a16' : '#9b2c2c'};">
+                  ${item.performance.toFixed(1)}%
+                </td>
+              </tr>
+            `;
+      }).join('')}
+          </tbody>
+        </table>
+      `;
+
     } else if (activeReport === 'customers' && customerReport) {
+
       stats = customerReport.data.stats;
       printData = customerReport.data.customers.filter((customer: any) => {
         if (filters.customerName && !textSearch(customer.name, filters.customerName)) return false;
@@ -611,6 +694,12 @@ export default function ReportsPage() {
     { skip: activeReport !== "company-stock" || !filters.supplierId }
   );
 
+  const { data: groupStockReport, isLoading: groupStockLoading } = useGetGroupStockReportQuery(
+    { groupId: parseInt(filters.groupId) },
+    { skip: activeReport !== "group-stock" || !filters.groupId }
+  );
+
+
 
 
   const reports = [
@@ -624,10 +713,13 @@ export default function ReportsPage() {
     { id: "product-movement" as ReportType, name: "حركة صنف", icon: FileText, color: "purple" },
     { id: "profit" as ReportType, name: "الأرباح والخسائر", icon: TrendingUp, color: "indigo" },
     { id: "company-stock" as ReportType, name: "بضاعة الشركات", icon: Building2, color: "orange" },
+    { id: "group-stock" as ReportType, name: "بضاعة المجموعات", icon: Layout, color: "pink" },
   ];
 
+
   const isLoading = salesLoading || stockLoading || customerLoading || topProductsLoading ||
-    supplierLoading || purchaseLoading || movementLoading || financialLoading || supplierStockLoading;
+    supplierLoading || purchaseLoading || movementLoading || financialLoading || supplierStockLoading || groupStockLoading;
+
 
   return (
     <div className="p-6">
@@ -661,7 +753,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Filters Section */}
-      {(activeReport === "sales" || activeReport === "stock" || activeReport === "customers" || activeReport === "top-products" || activeReport === "suppliers" || activeReport === "purchases" || activeReport === "product-movement" || activeReport === "profit" || activeReport === "company-stock") && (
+      {(activeReport === "sales" || activeReport === "stock" || activeReport === "customers" || activeReport === "top-products" || activeReport === "suppliers" || activeReport === "purchases" || activeReport === "product-movement" || activeReport === "profit" || activeReport === "company-stock" || activeReport === "group-stock") && (
         <div className="bg-white p-4 rounded-lg shadow mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
@@ -670,7 +762,7 @@ export default function ReportsPage() {
             </h3>
             <button
               onClick={() => {
-                setFilters({ customerName: "", invoiceNumber: "", productName: "", productCode: "", minAmount: "", maxAmount: "", supplierName: "", supplierPhone: "", invoiceAmount: "", customerPhone: "", supplierReportName: "", supplierReportPhone: "", supplierId: "" });
+                setFilters({ customerName: "", invoiceNumber: "", productName: "", productCode: "", minAmount: "", maxAmount: "", supplierName: "", supplierPhone: "", invoiceAmount: "", customerPhone: "", supplierReportName: "", supplierReportPhone: "", supplierId: "", groupId: "" });
                 setSelectedCompanyId(undefined);
                 setSelectedProductId(undefined);
                 setProductCodeSearch('');
@@ -681,6 +773,7 @@ export default function ReportsPage() {
               <X className="w-4 h-4" />
               مسح الفلاتر
             </button>
+
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -892,6 +985,28 @@ export default function ReportsPage() {
                 </select>
               </div>
             )}
+
+            {activeReport === "group-stock" && (
+              <div className="md:col-span-2">
+                <label className="block text-sm text-gray-600 mb-1 flex items-center gap-1">
+                  <Layout className="w-4 h-4" />
+                  مجموعة الأصناف
+                </label>
+                <select
+                  value={filters.groupId}
+                  onChange={(e) => setFilters({ ...filters, groupId: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                >
+                  <option value="">اختر المجموعة...</option>
+                  {groupsList.map((group: any) => (
+                    <option key={group.id} value={group.id}>
+                      {group.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
 
             {/* Purchases Report Filters */}
             {activeReport === "purchases" && (
@@ -1842,7 +1957,129 @@ export default function ReportsPage() {
           </div>
         )}
 
+        {activeReport === "group-stock" && (
+          <>
+            {!filters.groupId ? (
+              <div className="bg-pink-50 border-r-4 border-pink-500 p-8 rounded-lg text-center">
+                <Layout className="w-12 h-12 text-pink-500 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-pink-800">يرجى اختيار مجموعة</h3>
+                <p className="text-pink-600 mt-2">يرجى اختيار مجموعة من قائمة الفلاتر بالأعلى لعرض تقرير بضاعة المجموعة</p>
+              </div>
+            ) : groupStockLoading ? (
+              <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100 italic text-gray-400">
+                جاري التحميل...
+              </div>
+            ) : groupStockReport && (
+              <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+                <div className="bg-gradient-to-r from-pink-50 via-white to-pink-50 p-6 border-b border-gray-100 flex justify-between items-center">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                      <Layout className="w-6 h-6 text-pink-600" />
+                      {groupStockReport.data.group.name}
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">إجمالي عدد الأصناف: {groupStockReport.data.items.length}</p>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50/50">
+                      <tr>
+                        <th className="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase">الصنف</th>
+                        <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase">بضاعة أول المدة</th>
+                        <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase">إجمالي المشتريات</th>
+                        <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase">العبوة (الكمية)</th>
+                        <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase">التكلفة الإجمالية</th>
+                        <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase">إجمالي المبيعات</th>
+                        <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase">نسبة البيع</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {(groupStockReport.data.items || []).length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="px-6 py-8 text-center text-gray-500 italic font-medium">
+                            لا توجد أصناف مرتبطة بهذه المجموعة
+                          </td>
+                        </tr>
+                      ) : (
+                        paginateData(groupStockReport.data.items).map((item: any) => {
+                          const unitsPerBox = item.product.unitsPerBox || 1;
+                          const isDimensional = unitsPerBox !== 1 && item.product.unit === 'صندوق';
+                          const unitLabel = isDimensional ? "م²" : (item.product.unit || 'وحدة');
+
+                          return (
+                            <tr key={item.product.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-6 py-4">
+                                <div className="text-sm font-bold text-gray-900">{item.product.name}</div>
+                                <div className="text-[10px] text-gray-400 font-mono mt-0.5">{item.product.sku}</div>
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                <div className="text-sm font-bold text-gray-700">
+                                  {item.openingStock.toLocaleString("ar-LY")} <span className="text-[10px] text-gray-400">{item.product.unit === 'صندوق' ? 'ص' : (item.product.unit || 'وحدة')}</span>
+                                </div>
+                                <div className="text-[10px] text-gray-400">
+                                  {parseFloat(item.openingStockUnits.toFixed(2)).toLocaleString("ar-LY")} {unitLabel}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                <div className="text-sm font-bold text-indigo-700">
+                                  {item.totalPurchased.toLocaleString("ar-LY")} <span className="text-[10px]">{item.product.unit === 'صندوق' ? 'ص' : (item.product.unit || 'وحدة')}</span>
+                                </div>
+                                <div className="text-[10px] text-indigo-400">
+                                  {parseFloat(item.purchasedUnits.toFixed(2)).toLocaleString("ar-LY")} {unitLabel}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                <div className="text-sm font-extrabold text-gray-900 bg-gray-100 py-1 px-2 rounded-lg inline-block">
+                                  {parseFloat(item.currentStockUnits.toFixed(2)).toLocaleString("ar-LY")} {unitLabel}
+                                </div>
+                                <div className="text-[10px] text-gray-500 mt-1">
+                                  {item.currentStock.toLocaleString("ar-LY")} {item.product.unit || 'صندوق'}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-center font-mono text-sm font-bold text-red-600">
+                                {item.totalCost.toLocaleString("ar-LY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} د.ل
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                <div className="text-sm font-bold text-green-700">
+                                  {parseFloat(item.soldUnits.toFixed(2)).toLocaleString("ar-LY")} {unitLabel}
+                                </div>
+                                <div className="text-[10px] text-green-600/70">
+                                  {item.totalSold.toLocaleString("ar-LY")} {item.product.unit || 'صندوق'}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                <div className="flex flex-col items-center gap-1">
+                                  <div className={`text-xs font-bold px-2 py-0.5 rounded-full ${item.performance > 70 ? 'bg-green-100 text-green-800' : item.performance > 30 ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800'}`}>
+                                    {item.performance.toFixed(1)}%
+                                  </div>
+                                  <div className="w-12 bg-gray-100 rounded-full h-1 mt-1">
+                                    <div
+                                      className={`h-full rounded-full ${item.performance > 70 ? 'bg-green-500' : item.performance > 30 ? 'bg-orange-500' : 'bg-red-500'}`}
+                                      style={{ width: `${Math.min(100, item.performance)}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <Pagination
+                  totalItems={groupStockReport.data.items.length}
+                  filteredItems={groupStockReport.data.items}
+                />
+              </div>
+            )}
+          </>
+        )}
+
         {/* Product Movement Report */}
+
         {activeReport === "product-movement" && (
           <div className="space-y-6">
             {!selectedProductId ? (

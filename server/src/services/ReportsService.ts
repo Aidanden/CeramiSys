@@ -827,4 +827,136 @@ export class ReportsService {
       items: reportItems.sort((a, b) => b.totalPurchased - a.totalPurchased) // الأكثر شراءً أولاً
     };
   }
+
+  /**
+   * تقرير بضاعة المجموعات
+   */
+  async getGroupStockReport(query: any, userCompanyId: number, isSystemUser: boolean = false) {
+    const { groupId, companyId: qCompanyId } = query;
+    const companyId = qCompanyId || (isSystemUser !== true ? userCompanyId : undefined);
+
+    if (!groupId) throw new Error("يجب تحديد المجموعة");
+
+    // 1. جلب بيانات المجموعة
+    const group = await this.prisma.productGroup.findUnique({
+      where: { id: groupId }
+    });
+
+    if (!group) throw new Error("المجموعة غير موجودة");
+
+    // 2. جلب المنتجات التابعة للمجموعة
+    const products = await this.prisma.product.findMany({
+      where: { groupId }
+    });
+
+    const productIds = products.map(p => p.id);
+
+    // 3. جلب المخزون الحالي
+    const stocks = await this.prisma.stock.findMany({
+      where: {
+        productId: { in: productIds },
+        ...(companyId && { companyId })
+      }
+    });
+
+    // 4. جلب المشتريات
+    const purchaseLines = await this.prisma.purchaseLine.findMany({
+      where: {
+        productId: { in: productIds },
+        purchase: { isApproved: true, ...(companyId && { companyId }) }
+      }
+    });
+
+    const parentPurchaseLines = await this.prisma.purchaseFromParentLine.findMany({
+      where: {
+        productId: { in: productIds },
+        purchase: { ...(companyId && { branchCompanyId: companyId }) }
+      }
+    });
+
+    // 5. جلب المبيعات
+    const saleLines = await this.prisma.saleLine.findMany({
+      where: {
+        productId: { in: productIds },
+        sale: { status: 'APPROVED', ...(companyId && { companyId }) }
+      }
+    });
+
+    // 6. جلب المردودات
+    const returnLines = await this.prisma.saleReturnLine.findMany({
+      where: {
+        productId: { in: productIds },
+        saleReturn: { status: 'APPROVED', ...(companyId && { companyId }) }
+      }
+    });
+
+    // 7. جلب التالف
+    const damageLines = await this.prisma.damageReportLine.findMany({
+      where: {
+        productId: { in: productIds },
+        damageReport: { status: 'APPROVED', ...(companyId && { companyId }) }
+      }
+    });
+
+    // تجميع البيانات
+    const reportItems = products.map(product => {
+      const productId = product.id;
+      const currentStockBoxes = stocks.find(s => s.productId === productId)?.boxes ? Number(stocks.find(s => s.productId === productId)!.boxes) : 0;
+
+      const totalPurchasedBoxes =
+        purchaseLines.filter(l => l.productId === productId).reduce((sum, l) => sum + Number(l.qty), 0) +
+        parentPurchaseLines.filter(l => l.productId === productId).reduce((sum, l) => sum + Number(l.qty), 0);
+
+      const totalSoldBoxes = saleLines.filter(l => l.productId === productId).reduce((sum, l) => sum + Number(l.qty), 0);
+      const totalReturnedBoxes = returnLines.filter(l => l.productId === productId).reduce((sum, l) => sum + Number(l.qty), 0);
+      const totalDamagedBoxes = damageLines.filter(l => l.productId === productId).reduce((sum, l) => sum + Number(l.quantity), 0);
+
+      // بضاعة أول المدة = الحالي - المشتريات + المبيعات - المردودات + التالف
+      // (Current = Opening + Pur - Sale + Return - Damage)
+      const openingStockBoxes = currentStockBoxes - totalPurchasedBoxes + totalSoldBoxes - totalReturnedBoxes + totalDamagedBoxes;
+
+      const unitsPerBox = product.unitsPerBox ? Number(product.unitsPerBox) : 1;
+      const unitCost = product.cost ? Number(product.cost) : 0;
+
+      return {
+        product: {
+          id: product.id,
+          sku: product.sku,
+          name: product.name,
+          unit: product.unit,
+          unitsPerBox,
+          cost: unitCost
+        },
+        openingStock: openingStockBoxes,
+        totalPurchased: totalPurchasedBoxes,
+        totalSold: totalSoldBoxes,
+        totalReturned: totalReturnedBoxes,
+        totalDamaged: totalDamagedBoxes,
+        currentStock: currentStockBoxes,
+
+        // حساب القيم المطلوبة للتقرير
+        openingStockUnits: openingStockBoxes * unitsPerBox,
+        purchasedUnits: totalPurchasedBoxes * unitsPerBox,
+        soldUnits: totalSoldBoxes * unitsPerBox,
+        currentStockUnits: currentStockBoxes * unitsPerBox,
+
+        totalAvailableUnits: (openingStockBoxes + totalPurchasedBoxes) * unitsPerBox,
+
+        // اجمالي التكلفة يحسب على الأمتار/القطع وليس الصناديق
+        totalCost: currentStockBoxes * unitsPerBox * unitCost,
+
+        // نسبة البيع = المبيعات / (بضاعة أول المدة + المشتريات)
+        performance: ((openingStockBoxes + totalPurchasedBoxes) > 0)
+          ? (totalSoldBoxes / (openingStockBoxes + totalPurchasedBoxes)) * 100
+          : 0
+      };
+    });
+
+    return {
+      group: { id: group.id, name: group.name },
+      items: reportItems,
+      companyId
+    };
+  }
 }
+

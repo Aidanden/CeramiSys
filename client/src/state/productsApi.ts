@@ -67,6 +67,7 @@ export interface GetProductsQuery {
   sku?: string;
   companyId?: number;
   unit?: string;
+  groupId?: number;
   strict?: boolean;
 }
 
@@ -154,6 +155,7 @@ export const productsApi = createApi({
         if (params.sku) searchParams.append('sku', params.sku);
         if (params.companyId) searchParams.append('companyId', params.companyId.toString());
         if (params.unit) searchParams.append('unit', params.unit);
+        if (params.groupId) searchParams.append('groupId', params.groupId.toString());
         if (params.strict) searchParams.append('strict', 'true');
 
         // إضافة timestamp لمنع الـ cache في المتصفح

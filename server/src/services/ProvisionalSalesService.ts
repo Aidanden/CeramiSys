@@ -439,50 +439,8 @@ export class ProvisionalSalesService {
 
 
 
-      // تحديث المخزون (خصم الكميات)
-      // ملاحظة: line.qty في الفاتورة المبدئية يمثل عدد الصناديق مباشرة
-
-
-      for (const line of provisionalSale.lines) {
-        const boxesToDecrement = Number(line.qty);
-
-
-
-        // الحصول على المخزون الحالي قبل التحديث
-        const currentStock = await prisma.stock.findUnique({
-          where: {
-            companyId_productId: {
-              companyId: provisionalSale.companyId,
-              productId: line.productId
-            }
-          }
-        });
-
-
-
-        const updatedStock = await prisma.stock.upsert({
-          where: {
-            companyId_productId: {
-              companyId: provisionalSale.companyId,
-              productId: line.productId
-            }
-          },
-          update: {
-            boxes: {
-              decrement: boxesToDecrement
-            }
-          },
-          create: {
-            companyId: provisionalSale.companyId,
-            productId: line.productId,
-            boxes: -boxesToDecrement
-          }
-        });
-
-
-      }
-
-
+      // تم إزالة خصم المخزون من هنا لأن الفاتورة تُنشأ DRAFT وسيتم الخصم عند اعتمادها من المحاسب لاحقاً
+      // لضمان سياق عمل موحد لجميع أنواع الفواتير ومنع الخصم المزدوج
 
       // تحديث الفاتورة المبدئية
       const updatedProvisionalSale = await prisma.provisionalSale.update({

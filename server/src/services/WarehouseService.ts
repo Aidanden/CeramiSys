@@ -416,45 +416,10 @@ export class WarehouseService {
           }
         });
 
-        // 2. إذا تم الإتمام، خصم الكميات من المخزن
-        if (data.status === 'COMPLETED' && updatedOrder.sale?.lines) {
-          console.log(`🚀 بدء خصم الكميات من المخزن لأمر الصرف #${id}`);
-          
-          for (const line of updatedOrder.sale.lines) {
-            // خصم الكمية من المخزن
-            const stock = await tx.stock.findUnique({
-              where: {
-                companyId_productId: {
-                  companyId: updatedOrder.companyId,
-                  productId: line.productId,
-                },
-              },
-            });
-
-            if (!stock) {
-              throw new Error(`المخزون غير موجود للمنتج: ${line.product.name}`);
-            }
-
-            const newBoxes = Number(stock.boxes) - Number(line.qty);
-            
-            if (newBoxes < 0) {
-              throw new Error(`الكمية غير كافية في المخزن للمنتج: ${line.product.name}`);
-            }
-
-            await tx.stock.update({
-              where: {
-                companyId_productId: {
-                  companyId: updatedOrder.companyId,
-                  productId: line.productId,
-                },
-              },
-              data: {
-                boxes: newBoxes,
-              },
-            });
-
-            console.log(`✅ تم خصم ${line.qty} من ${line.product.name} - الرصيد الجديد: ${newBoxes}`);
-          }
+        // 2. إذا تم الإتمام، نحدث الحالة فقط (تخصم الكميات عند اعتماد الفاتورة من المحاسب)
+        // تم إزالة كود خصم المخزون من هنا لمنع الخصم المزدوج
+        if (data.status === 'COMPLETED') {
+          console.log(`✅ تم إتمام أمر الصرف #${id} (يتم خصم المخزون مسبقاً عند اعتماد الفاتورة)`);
         }
 
         return updatedOrder;
