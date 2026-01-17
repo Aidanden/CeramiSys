@@ -40,6 +40,11 @@ export interface CustomerAccountSummary {
   name: string;
   phone?: string;
   currentBalance: number;
+  totalDebit: number;
+  totalCredit: number;
+  totalPayments: number;
+  totalReturns: number;
+  remainingDebt: number;
   hasDebt: boolean;
 }
 

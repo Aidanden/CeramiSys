@@ -319,21 +319,59 @@ class CustomerAccountService {
    * جلب ملخص حسابات جميع العملاء
    */
   async getAllCustomersAccountSummary() {
-    const customers = await prisma.customer.findMany({
-      include: {
-        accountEntries: {
-          orderBy: { createdAt: 'desc' },
-          take: 1
+    const [customers, aggregates] = await Promise.all([
+      prisma.customer.findMany(),
+      prisma.customerAccount.groupBy({
+        by: ['customerId', 'transactionType', 'referenceType'],
+        _sum: { amount: true }
+      })
+    ]);
+
+    // تحويل التجميعات إلى ماب للبحث السريع
+    const statsMap: Record<number, { debit: number, payments: number, otherCredits: number }> = {};
+
+    aggregates.forEach(agg => {
+      if (!statsMap[agg.customerId]) {
+        statsMap[agg.customerId] = { debit: 0, payments: 0, otherCredits: 0 };
+      }
+
+      const stats = statsMap[agg.customerId]!;
+      const amount = Number(agg._sum.amount || 0);
+
+      if (agg.transactionType === 'DEBIT') {
+        stats.debit += amount;
+      } else {
+        // CREDIT - Match logic in getCustomerAccount
+        // هناك، الـ totalPaymentsSum يحسب فقط referenceType: 'PAYMENT'
+        // والـ totalAllCredit يحسب كل شيء
+        if (agg.referenceType === 'PAYMENT' || agg.referenceType === 'GENERAL_RECEIPT') {
+          stats.payments += amount;
+        } else {
+          stats.otherCredits += amount;
         }
       }
     });
 
-    return customers.map(customer => ({
-      id: customer.id,
-      name: customer.name,
-      phone: customer.phone,
-      currentBalance: Number(customer.accountEntries[0]?.balance || 0)
-    }));
+    return customers.map(customer => {
+      const stats = statsMap[customer.id] || { debit: 0, payments: 0, otherCredits: 0 };
+
+      // إجمالي الخصومات (مدفوعات + مردودات + تسويات)
+      const totalAllCredit = stats.payments + stats.otherCredits;
+      // الرصيد الصافي (يجب أن يطابق تماماً كشف الحساب)
+      const currentBalance = stats.debit - totalAllCredit;
+
+      return {
+        id: customer.id,
+        name: customer.name,
+        phone: customer.phone,
+        totalDebit: stats.debit,         // إجمالي العليه (المسحوبات)
+        totalPayments: stats.payments,   // إجمالي المدفوعات (القبض)
+        totalReturns: stats.otherCredits, // إجمالي المردودات (له)
+        totalCredit: totalAllCredit,     // إجمالي الخصومات
+        currentBalance: currentBalance,  // صافي الرصيد
+        remainingDebt: Math.max(0, currentBalance) // المتبقي عليه
+      };
+    });
   }
 
   /**

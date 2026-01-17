@@ -1906,19 +1906,45 @@ export class SalesService {
         }
       }
 
-      // تسجيل قيد محاسبي في حساب العميل (إذا كانت مبيعات آجلة وهناك عميل)
-      if (approvalData.saleType === 'CREDIT' && approvedSale.customerId) {
+      // تسجيل قيد محاسبي في حساب العميل (إذا كان هناك عميل)
+      if (approvedSale.customerId) {
         const CustomerAccountService = (await import('./CustomerAccountService')).default;
-        await CustomerAccountService.createAccountEntry({
-          customerId: approvedSale.customerId,
-          transactionType: 'DEBIT', // عليه - زيادة في دين العميل
-          amount: total,
-          referenceType: 'SALE',
-          referenceId: approvedSale.id,
-          description: `فاتورة مبيعات آجلة رقم ${approvedSale.invoiceNumber || approvedSale.id}`,
-          transactionDate: new Date()
-        });
 
+        if (approvalData.saleType === 'CREDIT') {
+          // مبيعات آجلة - قيد مديونية فقط
+          await CustomerAccountService.createAccountEntry({
+            customerId: approvedSale.customerId,
+            transactionType: 'DEBIT', // عليه - زيادة في دين العميل
+            amount: total,
+            referenceType: 'SALE',
+            referenceId: approvedSale.id,
+            description: `فاتورة مبيعات آجلة رقم ${approvedSale.invoiceNumber || approvedSale.id}`,
+            transactionDate: new Date()
+          });
+        } else if (approvalData.saleType === 'CASH') {
+          // مبيعات نقدية - قيد مديونية + قيد دفع لسدادها فوراً في كشف الحساب
+          // 1. قيد المديونية
+          await CustomerAccountService.createAccountEntry({
+            customerId: approvedSale.customerId,
+            transactionType: 'DEBIT',
+            amount: total,
+            referenceType: 'SALE',
+            referenceId: approvedSale.id,
+            description: `فاتورة مبيعات نقدية رقم ${approvedSale.invoiceNumber || approvedSale.id}`,
+            transactionDate: new Date()
+          });
+
+          // 2. قيد الدفع
+          await CustomerAccountService.createAccountEntry({
+            customerId: approvedSale.customerId,
+            transactionType: 'CREDIT', // له - تخفيض من دين العميل
+            amount: total,
+            referenceType: 'PAYMENT',
+            referenceId: approvedSale.id,
+            description: `دفع نقداً مقابل فاتورة رقم ${approvedSale.invoiceNumber || approvedSale.id}`,
+            transactionDate: new Date()
+          });
+        }
       }
 
       // إضافة المبلغ للخزينة (إذا كانت مبيعات نقدية)

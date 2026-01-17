@@ -31,7 +31,10 @@ import {
   ArrowRight,
   AlertCircle,
   TrendingUp,
-  Layout
+  Layout,
+  Undo2,
+  AlertTriangle,
+  Layers
 } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 
@@ -389,16 +392,72 @@ export default function ReportsPage() {
         if (filters.supplierName && !textSearch(purchase.supplier?.name, filters.supplierName)) return false;
         return true;
       });
-      tableHeaders = ['رقم الفاتورة', 'التاريخ', 'المورد', 'المبلغ', 'المصروفات', 'الإجمالي'];
-      tableRows = (purchase: any) => `
-        <tr>
-          <td>${purchase.invoiceNumber || '-'}</td>
-          <td>${new Date(purchase.createdAt).toLocaleDateString('ar-LY')}</td>
-          <td>${purchase.supplier?.name || '-'}</td>
-          <td>${Number(purchase.total).toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</td>
-          <td>${(purchase.totalExpenses || 0).toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</td>
-          <td style="font-weight: bold;">${Number(purchase.finalTotal).toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</td>
-        </tr>
+      tableHeaders = ['رقم الفاتورة', 'التاريخ', 'المورد', 'المشتريات', 'المصروفات'];
+      tableRows = (purchase: any) => {
+        const currencySymbol = purchase.currency === 'USD' ? '$' : purchase.currency === 'EUR' ? '€' : 'د.ل';
+
+        // تجهيز عرض المصروفات
+        let expensesDisplay = '-';
+        if (purchase.expenses && purchase.expenses.length > 0) {
+          const expTotals: { [key: string]: number } = {};
+          purchase.expenses.forEach((ex: any) => {
+            const cur = ex.currency || 'LYD';
+            expTotals[cur] = (expTotals[cur] || 0) + Number(ex.amount);
+          });
+          expensesDisplay = Object.entries(expTotals)
+            .map(([cur, total]) => {
+              const sym = cur === 'USD' ? '$' : cur === 'EUR' ? '€' : 'د.ل';
+              return `${total.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${sym}`;
+            })
+            .join(' | ');
+        }
+
+        return `
+          <tr>
+            <td style="border: 1px solid #333; padding: 8px;">${purchase.invoiceNumber || '-'}</td>
+            <td style="border: 1px solid #333; padding: 8px;">${new Date(purchase.createdAt).toLocaleDateString('ar-LY')}</td>
+            <td style="border: 1px solid #333; padding: 8px;">${purchase.supplier?.name || '-'}</td>
+            <td style="border: 1px solid #333; padding: 8px; text-align: left;">${Number(purchase.total).toLocaleString('en-US', { minimumFractionDigits: 2 })} ${currencySymbol}</td>
+            <td style="border: 1px solid #333; padding: 8px; text-align: left; font-size: 10px;">${expensesDisplay}</td>
+          </tr>
+        `;
+      };
+
+      customPrintContent = `
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+          <div style="border: 1px solid #3b82f6; padding: 10px; border-radius: 6px; background: #eff6ff;">
+            <div style="font-size: 10px; color: #1e40af;">تقرير بالدينار (LYD)</div>
+            <div style="font-size: 14px; font-weight: bold; color: #1e40af;">الإجمالي النهائي: ${stats.grandTotalLYD.toLocaleString('en-US', { minimumFractionDigits: 2 })} د.ل</div>
+            <div style="font-size: 12px; color: #1e40af;">المشتريات: ${stats.totalPurchasesLYD.toLocaleString('en-US', { minimumFractionDigits: 2 })} د.ل</div>
+            <div style="font-size: 12px; color: #1e40af;">المصروفات: ${stats.totalExpensesLYD.toLocaleString('en-US', { minimumFractionDigits: 2 })} د.ل</div>
+          </div>
+          <div style="border: 1px solid #10b981; padding: 10px; border-radius: 6px; background: #ecfdf5;">
+            <div style="font-size: 10px; color: #065f46;">تقرير بالدولار (USD)</div>
+            <div style="font-size: 14px; font-weight: bold; color: #065f46;">الإجمالي النهائي: ${stats.grandTotalUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} $</div>
+            <div style="font-size: 12px; color: #065f46;">المشتريات: ${stats.totalPurchasesUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} $</div>
+            <div style="font-size: 12px; color: #065f46;">المصروفات: ${stats.totalExpensesUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })} $</div>
+          </div>
+          <div style="border: 1px solid #8b5cf6; padding: 10px; border-radius: 6px; background: #f5f3ff;">
+            <div style="font-size: 10px; color: #5b21b6;">تقرير باليورو (EUR)</div>
+            <div style="font-size: 14px; font-weight: bold; color: #5b21b6;">الإجمالي النهائي: ${stats.grandTotalEUR.toLocaleString('en-US', { minimumFractionDigits: 2 })} €</div>
+            <div style="font-size: 12px; color: #5b21b6;">المشتريات: ${stats.totalPurchasesEUR.toLocaleString('en-US', { minimumFractionDigits: 2 })} €</div>
+            <div style="font-size: 12px; color: #5b21b6;">المصروفات: ${stats.totalExpensesEUR.toLocaleString('en-US', { minimumFractionDigits: 2 })} €</div>
+          </div>
+        </div>
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #f1f5f9;">
+              <th style="border: 1px solid #333; padding: 8px;">رقم الفاتورة</th>
+              <th style="border: 1px solid #333; padding: 8px;">التاريخ</th>
+              <th style="border: 1px solid #333; padding: 8px;">المورد</th>
+              <th style="border: 1px solid #333; padding: 8px;">المشتريات</th>
+              <th style="border: 1px solid #333; padding: 8px;">المصروفات</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${printData.map((item: any) => tableRows(item)).join('')}
+          </tbody>
+        </table>
       `;
     } else if (activeReport === 'top-products' && topProductsReport) {
       stats = topProductsReport.data.stats;
@@ -436,22 +495,22 @@ export default function ReportsPage() {
       `;
     } else if (activeReport === 'product-movement' && productMovementReport) {
       const data = productMovementReport.data;
-      printData = data.movements;
-      tableHeaders = ['التاريخ', 'النوع', 'الوصف', 'الوارد', 'الصادر', 'الرصيد'];
+      tableHeaders = ['التاريخ', 'النوع', 'الوصف', 'الوارد', 'الصادر', 'الرصيد التحليلي'];
       tableRows = (m: any) => `
-        <tr>
+        <tr style="background-color: ${m.type === 'SALE' ? '#f0f9ff' : m.type === 'PURCHASE' ? '#f0fdf4' : m.type === 'RETURN' ? '#fff7ed' : m.type === 'DAMAGE' ? '#fef2f2' : 'white'}">
           <td>${new Date(m.date).toLocaleDateString('ar-LY')}</td>
-          <td>${m.type === 'SALE' ? 'بيع' : m.type === 'PURCHASE' ? 'شراء' : m.type === 'RETURN' ? 'مردود' : m.type === 'DAMAGE' ? 'تالف' : 'افتتاحي'}</td>
-          <td>${m.description}</td>
-          <td style="color: ${m.qtyIn > 0 ? 'green' : 'black'}">${m.qtyIn > 0 ? m.qtyIn.toLocaleString('ar-LY') : '-'}</td>
-          <td style="color: ${m.qtyOut > 0 ? 'red' : 'black'}">${m.qtyOut > 0 ? m.qtyOut.toLocaleString('ar-LY') : '-'}</td>
-          <td style="font-weight: bold;">${m.balance.toLocaleString('ar-LY')}</td>
+          <td><span style="font-weight: bold; color: ${m.type === 'SALE' ? '#1e40af' : m.type === 'PURCHASE' ? '#166534' : m.type === 'RETURN' ? '#9a3412' : m.type === 'DAMAGE' ? '#991b1b' : '#374151'}">${m.type === 'SALE' ? 'بيع' : m.type === 'PURCHASE' ? 'شراء' : m.type === 'RETURN' ? 'مردود' : m.type === 'DAMAGE' ? 'تالف' : 'افتتاحي'}</span></td>
+          <td style="font-size: 10px;">${m.description}</td>
+          <td style="color: #166534; font-weight: bold;">${m.qtyIn > 0 ? `+${m.qtyIn.toLocaleString('ar-LY')}` : '-'}</td>
+          <td style="color: #991b1b; font-weight: bold;">${m.qtyOut > 0 ? `-${m.qtyOut.toLocaleString('ar-LY')}` : '-'}</td>
+          <td style="font-weight: 800; border-right: 2px solid #333;">${m.balance.toLocaleString('ar-LY')}</td>
         </tr>
       `;
       // إضافة معلومات الصنف للطباعة
       stats = {
         'اسم الصنف': data.product.name,
-        'الكود': data.product.sku,
+        'الكود (SKU)': data.product.sku,
+        'الوحدة': data.product.unit || 'وحدة',
         'رصيد أول المدة': data.openingBalance.toLocaleString('ar-LY'),
         'المخزون الحالي': data.currentStock.toLocaleString('ar-LY')
       };
@@ -468,32 +527,32 @@ export default function ReportsPage() {
         <title>${reportName}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            font-family: 'Cairo', 'Tahoma', 'Arial', sans-serif; 
+          body {
+            font-family: 'Cairo', 'Tahoma', 'Arial', sans-serif;
             padding: 20px;
             direction: rtl;
             font-size: 12px;
           }
-          table { 
-            width: 100%; 
-            border-collapse: collapse; 
+          table {
+            width: 100%;
+            border-collapse: collapse;
             margin: 15px 0;
           }
-          th, td { 
-            border: 1px solid #333; 
-            padding: 8px 6px; 
+          th, td {
+            border: 1px solid #333;
+            padding: 8px 6px;
             text-align: right;
           }
-          th { 
-            background-color: #e5e7eb; 
+          th {
+            background-color: #e5e7eb;
             font-weight: bold;
             font-size: 11px;
           }
           tr:nth-child(even) {
             background-color: #f9fafb;
           }
-          .header { 
-            text-align: center; 
+          .header {
+            text-align: center;
             margin-bottom: 20px;
             border-bottom: 3px double #333;
             padding-bottom: 15px;
@@ -556,7 +615,7 @@ export default function ReportsPage() {
           ` : ''}
           <p><strong>عدد السجلات:</strong> ${printData.length}</p>
         </div>
-        
+
         ${customPrintContent ? customPrintContent : `
         <table>
           <thead>
@@ -569,7 +628,7 @@ export default function ReportsPage() {
           </tbody>
         </table>
         `}
-        
+
         <div class="footer">
           <p>تم إنشاء هذا التقرير بواسطة نظام سيراميسيس - CeramiSys</p>
         </div>
@@ -1616,29 +1675,66 @@ export default function ReportsPage() {
           <div className="space-y-6">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white p-4 rounded-lg shadow">
-                <p className="text-sm text-gray-600">إجمالي المشتريات</p>
-                <p className="text-2xl font-bold text-teal-600">
-                  {purchaseReport.data.stats.totalPurchases.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                </p>
+              <div className="bg-white p-4 rounded-lg shadow border-r-4 border-blue-500">
+                <p className="text-xs text-gray-500 font-bold mb-1">تقرير بالدينار (LYD)</p>
+                <div className="flex justify-between items-end border-b pb-1 mb-1">
+                  <span className="text-[10px] text-gray-400">إجمالي المشتريات</span>
+                  <span className="text-sm font-semibold">{purchaseReport.data.stats.totalPurchasesLYD.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-end border-b pb-1 mb-1">
+                  <span className="text-[10px] text-gray-400">إجمالي المصروفات</span>
+                  <span className="text-sm font-semibold">{purchaseReport.data.stats.totalExpensesLYD.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-end pt-1">
+                  <span className="text-[11px] font-bold text-blue-800">الإجمالي النهائي</span>
+                  <span className="text-lg font-black text-blue-600">
+                    {purchaseReport.data.stats.grandTotalLYD.toLocaleString("en-US", { minimumFractionDigits: 2 })} <span className="text-[10px]">د.ل</span>
+                  </span>
+                </div>
               </div>
-              <div className="bg-white p-4 rounded-lg shadow">
-                <p className="text-sm text-gray-600">المشتريات النقدية</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {purchaseReport.data.stats.totalCash.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                </p>
+
+              <div className="bg-white p-4 rounded-lg shadow border-r-4 border-green-500">
+                <p className="text-xs text-gray-500 font-bold mb-1">تقرير بالدولار (USD)</p>
+                <div className="flex justify-between items-end border-b pb-1 mb-1">
+                  <span className="text-[10px] text-gray-400">إجمالي المشتريات</span>
+                  <span className="text-sm font-semibold">{purchaseReport.data.stats.totalPurchasesUSD.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-end border-b pb-1 mb-1">
+                  <span className="text-[10px] text-gray-400">إجمالي المصروفات</span>
+                  <span className="text-sm font-semibold">{purchaseReport.data.stats.totalExpensesUSD.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-end pt-1">
+                  <span className="text-[11px] font-bold text-green-800">الإجمالي النهائي</span>
+                  <span className="text-lg font-black text-green-600">
+                    {purchaseReport.data.stats.grandTotalUSD.toLocaleString("en-US", { minimumFractionDigits: 2 })} <span className="text-[10px]">$</span>
+                  </span>
+                </div>
               </div>
-              <div className="bg-white p-4 rounded-lg shadow">
-                <p className="text-sm text-gray-600">المشتريات الآجلة</p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {purchaseReport.data.stats.totalCredit.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                </p>
+
+              <div className="bg-white p-4 rounded-lg shadow border-r-4 border-purple-500">
+                <p className="text-xs text-gray-500 font-bold mb-1">تقرير باليورو (EUR)</p>
+                <div className="flex justify-between items-end border-b pb-1 mb-1">
+                  <span className="text-[10px] text-gray-400">إجمالي المشتريات</span>
+                  <span className="text-sm font-semibold">{purchaseReport.data.stats.totalPurchasesEUR.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-end border-b pb-1 mb-1">
+                  <span className="text-[10px] text-gray-400">إجمالي المصروفات</span>
+                  <span className="text-sm font-semibold">{purchaseReport.data.stats.totalExpensesEUR.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-end pt-1">
+                  <span className="text-[11px] font-bold text-purple-800">الإجمالي النهائي</span>
+                  <span className="text-lg font-black text-purple-600">
+                    {purchaseReport.data.stats.grandTotalEUR.toLocaleString("en-US", { minimumFractionDigits: 2 })} <span className="text-[10px]">€</span>
+                  </span>
+                </div>
               </div>
-              <div className="bg-white p-4 rounded-lg shadow">
-                <p className="text-sm text-gray-600">عدد الفواتير</p>
-                <p className="text-2xl font-bold text-purple-600">
+
+              <div className="bg-white p-4 rounded-lg shadow border-r-4 border-gray-400">
+                <p className="text-xs text-gray-500">عدد الفواتير</p>
+                <p className="text-xl font-bold text-gray-700">
                   {purchaseReport.data.stats.purchaseCount.toLocaleString("ar-LY")}
                 </p>
+                <p className="text-[10px] text-gray-500 mt-1">إجمالي الحركات في الفترة</p>
               </div>
             </div>
 
@@ -1651,9 +1747,8 @@ export default function ReportsPage() {
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">رقم الفاتورة</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">التاريخ</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المورد</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المبلغ</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المشتريات</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المصروفات</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الإجمالي</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -1667,28 +1762,46 @@ export default function ReportsPage() {
                         if (filters.invoiceAmount && Number(purchase.total) !== Number(filters.invoiceAmount)) return false;
                         return true;
                       });
-                      return paginateData(filteredPurchases).map((purchase: any) => (
-                        <tr key={purchase.id} className="hover:bg-gray-50 print:hover:bg-white">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {purchase.invoiceNumber || "-"}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {new Date(purchase.createdAt).toLocaleDateString("ar-LY")}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {purchase.supplier?.name || "-"}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {Number(purchase.total).toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {(purchase.totalExpenses || 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {Number(purchase.finalTotal).toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                          </td>
-                        </tr>
-                      ));
+                      return paginateData(filteredPurchases).map((purchase: any) => {
+                        const currencySymbol = purchase.currency === 'USD' ? '$' : purchase.currency === 'EUR' ? '€' : 'د.ل';
+                        return (
+                          <tr key={purchase.id} className="hover:bg-gray-50 print:hover:bg-white">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {purchase.invoiceNumber || "-"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                              {new Date(purchase.createdAt).toLocaleDateString("ar-LY")}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {purchase.supplier?.name || "-"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {Number(purchase.total).toLocaleString("en-US", { minimumFractionDigits: 2 })} <span className="text-xs text-gray-500">{currencySymbol}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                              {(() => {
+                                if (!purchase.expenses || purchase.expenses.length === 0) return "-";
+
+                                // تجميع المصروفات حسب العملة
+                                const expTotals: { [key: string]: number } = {};
+                                purchase.expenses.forEach((ex: any) => {
+                                  const cur = ex.currency || 'LYD';
+                                  expTotals[cur] = (expTotals[cur] || 0) + Number(ex.amount);
+                                });
+
+                                return Object.entries(expTotals).map(([cur, total], idx) => {
+                                  const sym = cur === 'USD' ? '$' : cur === 'EUR' ? '€' : 'د.ل';
+                                  return (
+                                    <span key={cur} className="block text-xs">
+                                      {total.toLocaleString("en-US", { minimumFractionDigits: 2 })} {sym}
+                                    </span>
+                                  );
+                                });
+                              })()}
+                            </td>
+                          </tr>
+                        );
+                      });
                     })()}
                   </tbody>
                 </table>
@@ -2096,74 +2209,89 @@ export default function ReportsPage() {
               <>
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="bg-white p-4 rounded-lg shadow border-b-4 border-gray-500">
-                    <p className="text-sm text-gray-600">رصيد أول المدة</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {productMovementReport.data.openingBalance.toLocaleString("ar-LY")} <span className="text-xs">{productMovementReport.data.product.unit || 'وحدة'}</span>
-                    </p>
+                  <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-slate-400">
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">رصيد أول المدة</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-2xl font-black text-slate-800">
+                        {productMovementReport.data.openingBalance.toLocaleString("ar-LY")}
+                      </p>
+                      <span className="text-xs font-medium text-slate-400">{productMovementReport.data.product.unit || 'وحدة'}</span>
+                    </div>
                   </div>
-                  <div className="bg-white p-4 rounded-lg shadow border-b-4 border-green-500">
-                    <p className="text-sm text-gray-600">إجمالي الوارد</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {productMovementReport.data.movements.reduce((sum: number, m: any) => sum + m.qtyIn, 0).toLocaleString("ar-LY")}
-                    </p>
+                  <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-emerald-500">
+                    <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">إجمالي الوارد (+)</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-2xl font-black text-emerald-600">
+                        {productMovementReport.data.movements.reduce((sum: number, m: any) => sum + m.qtyIn, 0).toLocaleString("ar-LY")}
+                      </p>
+                      <span className="text-xs font-medium text-emerald-400">{productMovementReport.data.product.unit || 'وحدة'}</span>
+                    </div>
                   </div>
-                  <div className="bg-white p-4 rounded-lg shadow border-b-4 border-red-500">
-                    <p className="text-sm text-gray-600">إجمالي الصادر</p>
-                    <p className="text-2xl font-bold text-red-600">
-                      {productMovementReport.data.movements.reduce((sum: number, m: any) => sum + m.qtyOut, 0).toLocaleString("ar-LY")}
-                    </p>
+                  <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-rose-500">
+                    <p className="text-xs font-bold text-rose-600 uppercase tracking-wider mb-1">إجمالي الصادر (-)</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-2xl font-black text-rose-600">
+                        {productMovementReport.data.movements.reduce((sum: number, m: any) => sum + m.qtyOut, 0).toLocaleString("ar-LY")}
+                      </p>
+                      <span className="text-xs font-medium text-rose-400">{productMovementReport.data.product.unit || 'وحدة'}</span>
+                    </div>
                   </div>
-                  <div className="bg-white p-4 rounded-lg shadow border-b-4 border-blue-600">
-                    <p className="text-sm text-gray-600">المخزون الحالي</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {productMovementReport.data.currentStock.toLocaleString("ar-LY")}
-                    </p>
+                  <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-b-4 border-blue-600">
+                    <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">المخزون الحالي</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-2xl font-black text-blue-700">
+                        {productMovementReport.data.currentStock.toLocaleString("ar-LY")}
+                      </p>
+                      <span className="text-xs font-medium text-blue-400">{productMovementReport.data.product.unit || 'وحدة'}</span>
+                    </div>
                   </div>
                 </div>
 
                 {/* Movements Table */}
-                <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y divide-slate-200">
+                      <thead className="bg-slate-50">
                         <tr>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">التاريخ</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">النوع</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الوصف</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الوارد</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الصادر</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الرصيد التحليلي</th>
+                          <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">التاريخ</th>
+                          <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">النوع</th>
+                          <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">الوصف التفصيلي</th>
+                          <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">الوارد (+)</th>
+                          <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">الصادر (-)</th>
+                          <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-100/50">الرصيد التحليلي</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-white divide-y divide-slate-100">
                         {paginateData(productMovementReport.data.movements).map((m: any, idx: number) => (
-                          <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <tr key={idx} className={`hover:bg-slate-50/80 transition-colors ${m.type === 'INITIAL' ? 'bg-slate-50/30' : ''}`}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-600">
                               {new Date(m.date).toLocaleDateString("ar-LY")}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${m.type === 'SALE' ? 'bg-blue-100 text-blue-800' :
-                                m.type === 'PURCHASE' ? 'bg-green-100 text-green-800' :
-                                  m.type === 'RETURN' ? 'bg-orange-100 text-orange-800' :
-                                    m.type === 'DAMAGE' ? 'bg-red-100 text-red-800' :
-                                      'bg-gray-100 text-gray-800'
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${m.type === 'SALE' ? 'bg-blue-100 text-blue-700' :
+                                m.type === 'PURCHASE' ? 'bg-emerald-100 text-emerald-700' :
+                                  m.type === 'RETURN' ? 'bg-orange-100 text-orange-700' :
+                                    m.type === 'DAMAGE' ? 'bg-rose-100 text-rose-700' :
+                                      'bg-slate-200 text-slate-700'
                                 }`}>
                                 {m.type === 'SALE' && <ArrowRight className="w-3 h-3" />}
                                 {m.type === 'PURCHASE' && <ArrowRight className="w-3 h-3 rotate-180" />}
-                                {m.type === 'SALE' ? 'بيع' : m.type === 'PURCHASE' ? 'شراء' : m.type === 'RETURN' ? 'مردود' : m.type === 'DAMAGE' ? 'تالف' : 'افتتاحي'}
+                                {m.type === 'RETURN' && <Undo2 className="w-3 h-3" />}
+                                {m.type === 'DAMAGE' && <AlertTriangle className="w-3 h-3" />}
+                                {m.type === 'INITIAL' && <Layers className="w-3 h-3" />}
+                                {m.type === 'SALE' ? 'مبيعات' : m.type === 'PURCHASE' ? 'مشتريات' : m.type === 'RETURN' ? 'مردود' : m.type === 'DAMAGE' ? 'تالف' : 'رصيد أول'}
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-600">
+                            <td className="px-6 py-4 text-sm text-slate-600 leading-relaxed max-w-md">
                               {m.description}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                            <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-emerald-600">
                               {m.qtyIn > 0 ? `+${m.qtyIn.toLocaleString("ar-LY")}` : "-"}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
+                            <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-rose-600">
                               {m.qtyOut > 0 ? `-${m.qtyOut.toLocaleString("ar-LY")}` : "-"}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                            <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-black text-slate-900 bg-slate-50/30">
                               {m.balance.toLocaleString("ar-LY")}
                             </td>
                           </tr>

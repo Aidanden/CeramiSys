@@ -311,19 +311,19 @@ const CustomerAccountsPage = () => {
         
         <div class="summary">
           <div class="summary-card debit">
-            <label>إجمالي عليه (مدين)</label>
-            <div class="value">${account.totalDebit.toFixed(2)} د.ل</div>
+            <label>المتبقي عليه (الديون)</label>
+            <div class="value">${Math.max(0, account.currentBalance).toFixed(2)} د.ل</div>
           </div>
           <div class="summary-card credit">
-            <label>إجمالي له (مدفوع)</label>
-            <div class="value">${account.totalCredit.toFixed(2)} د.ل</div>
+            <label>إجمالي المدفوعات</label>
+            <div class="value">${account.totalPayments.toFixed(2)} د.ل</div>
           </div>
           <div class="summary-card balance">
-            <label>الرصيد الحالي</label>
+            <label>صافي الرصيد</label>
             <div class="value" style="color: ${account.currentBalance > 0 ? '#dc2626' : account.currentBalance < 0 ? '#16a34a' : '#374151'}">
               ${account.currentBalance.toFixed(2)} د.ل
               <small style="font-size: 11px; font-weight: normal; display: block;">
-                ${account.currentBalance > 0 ? '(عليه)' : account.currentBalance < 0 ? '(له)' : '(متوازن)'}
+                ${account.currentBalance > 0 ? '(مدين) - مطلوب منه' : account.currentBalance < 0 ? '(دائن) - له رصيد' : '(متوازن)'}
               </small>
             </div>
           </div>
@@ -589,7 +589,7 @@ const CustomerAccountsPage = () => {
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-600 mb-1">عملاء مدينون (عليهم)</p>
+                <p className="text-xs text-gray-600 mb-1">إجمالي المتبقي لنا (الديون)</p>
                 <p className="text-2xl font-bold text-red-600">{formatStatsNumber(totalDebtors)}</p>
                 <p className="text-xs text-red-600 font-semibold">{formatStatsCurrency(totalDebt)}</p>
               </div>
@@ -602,7 +602,7 @@ const CustomerAccountsPage = () => {
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-600 mb-1">عملاء دائنون (لهم)</p>
+                <p className="text-xs text-gray-600 mb-1">إجمالي له (أرصدة العملاء)</p>
                 <p className="text-2xl font-bold text-green-600">{formatStatsNumber(totalCreditors)}</p>
                 <p className="text-xs text-green-600 font-semibold">{formatStatsCurrency(totalCredit)}</p>
               </div>
@@ -615,12 +615,12 @@ const CustomerAccountsPage = () => {
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-600 mb-1">صافي الديون</p>
+                <p className="text-xs text-gray-600 mb-1">صافي ديون السوق</p>
                 <p className={`text-2xl font-bold ${netBalance > 0 ? 'text-red-600' : netBalance < 0 ? 'text-green-600' : 'text-gray-700'}`}>
                   {formatStatsCurrency(netBalance)}
                 </p>
                 <p className="text-xs text-gray-500 font-semibold">
-                  {netBalance > 0 ? 'صافي عليه (مدين)' : netBalance < 0 ? 'صافي له (دائن)' : 'متوازن'}
+                  {netBalance > 0 ? 'صافي مطلوب منا تحصيله' : netBalance < 0 ? 'صافي ذمم دائنة' : 'متوازن'}
                 </p>
               </div>
               <div className="bg-gray-100 p-2 rounded-full">
@@ -670,10 +670,19 @@ const CustomerAccountsPage = () => {
                         العميل
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                        رقم الهاتف
+                        إجمالي العليه
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                        الرصيد الحالي
+                        إجمالي المدفوعات
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase text-blue-600">
+                        إجمالي المردودات
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase font-bold text-red-600">
+                        المتبقي عليه
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase w-32">
+                        صافي الرصيد
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                         الحالة
@@ -686,7 +695,7 @@ const CustomerAccountsPage = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {paginatedCustomers.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                        <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
                           لا توجد نتائج
                         </td>
                       </tr>
@@ -698,26 +707,42 @@ const CustomerAccountsPage = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${customer.currentBalance > 0 ? 'bg-red-100' :
+                              <div className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${customer.currentBalance > 0 ? 'bg-red-100' :
                                 customer.currentBalance < 0 ? 'bg-green-100' : 'bg-gray-100'
                                 }`}>
-                                <User className={`w-5 h-5 ${customer.currentBalance > 0 ? 'text-red-600' :
+                                <User className={`w-4 h-4 ${customer.currentBalance > 0 ? 'text-red-600' :
                                   customer.currentBalance < 0 ? 'text-green-600' : 'text-gray-600'
                                   }`} />
                               </div>
-                              <div className="mr-4">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {customer.name}
-                                </div>
+                              <div className="mr-3">
+                                <div className="text-sm font-medium text-gray-900">{customer.name}</div>
+                                {customer.phone && <div className="text-xs text-gray-500">{customer.phone}</div>}
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{customer.phone || "-"}</div>
+                            <div className="text-sm text-red-600 font-medium">
+                              {customer.totalDebit.toFixed(2)} د.ل
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className={`text-sm font-semibold ${customer.currentBalance > 0 ? 'text-red-600' :
-                              customer.currentBalance < 0 ? 'text-green-600' : 'text-gray-600'
+                            <div className="text-sm text-blue-600 font-medium">
+                              {customer.totalPayments.toFixed(2)} د.ل
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-blue-600">
+                            <div className="text-sm font-medium">
+                              {customer.totalReturns.toFixed(2)} د.ل
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className={`text-sm font-bold ${customer.remainingDebt > 0 ? 'text-red-700' : 'text-gray-400'}`}>
+                              {customer.remainingDebt.toFixed(2)} د.ل
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className={`text-sm font-bold ${customer.currentBalance > 0 ? 'text-red-600' :
+                              customer.currentBalance < 0 ? 'text-green-600' : 'text-gray-900'
                               }`}>
                               {customer.currentBalance.toFixed(2)} د.ل
                             </div>
@@ -725,11 +750,11 @@ const CustomerAccountsPage = () => {
                           <td className="px-6 py-4 whitespace-nowrap">
                             {customer.currentBalance > 0 ? (
                               <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                عليه (مدين)
+                                عليه ديون
                               </span>
                             ) : customer.currentBalance < 0 ? (
                               <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                له (دائن)
+                                له رصيد (دائن)
                               </span>
                             ) : (
                               <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
@@ -957,9 +982,11 @@ const CustomerAccountsPage = () => {
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 mb-1">إجمالي عليه</p>
-                    <p className="text-2xl font-bold text-red-600">{account.totalDebit.toFixed(2)} د.ل</p>
-                    <p className="text-xs text-gray-500 mt-1">ديون العميل</p>
+                    <p className="text-sm text-gray-600 mb-1">المتبقي عليه</p>
+                    <p className={`text-2xl font-bold ${account.currentBalance > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                      {Math.max(0, account.currentBalance).toFixed(2)} د.ل
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">الديون المستحقة</p>
                   </div>
                   <div className="bg-red-100 p-3 rounded-full">
                     <TrendingUp className="w-6 h-6 text-red-600" />
@@ -970,9 +997,9 @@ const CustomerAccountsPage = () => {
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 mb-1">المدفوع</p>
+                    <p className="text-sm text-gray-600 mb-1">إجمالي المدفوعات</p>
                     <p className="text-2xl font-bold text-blue-600">{account.totalPayments.toFixed(2)} د.ل</p>
-                    <p className="text-xs text-gray-500 mt-1">الدفعات المستلمة</p>
+                    <p className="text-xs text-gray-500 mt-1">المبالغ المسددة</p>
                   </div>
                   <div className="bg-blue-100 p-3 rounded-full">
                     <DollarSign className="w-6 h-6 text-blue-600" />
@@ -985,7 +1012,7 @@ const CustomerAccountsPage = () => {
                   <div>
                     <p className="text-sm text-gray-600 mb-1">إجمالي له</p>
                     <p className="text-2xl font-bold text-green-600">{account.totalOtherCredits.toFixed(2)} د.ل</p>
-                    <p className="text-xs text-gray-500 mt-1">مردودات وأرصدة</p>
+                    <p className="text-xs text-gray-500 mt-1">مردودات وتصحيحات</p>
                   </div>
                   <div className="bg-green-100 p-3 rounded-full">
                     <TrendingDown className="w-6 h-6 text-green-600" />
@@ -996,15 +1023,15 @@ const CustomerAccountsPage = () => {
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600 mb-1">الرصيد الحالي</p>
+                    <p className="text-sm text-gray-600 mb-1">صافي الرصيد</p>
                     <p className={`text-2xl font-bold ${account.currentBalance > 0 ? 'text-red-600' :
                       account.currentBalance < 0 ? 'text-green-600' : 'text-gray-600'
                       }`}>
                       {account.currentBalance.toFixed(2)} د.ل
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      {account.currentBalance > 0 ? 'عليه (مدين)' :
-                        account.currentBalance < 0 ? 'له (دائن)' : 'متوازن'}
+                      {account.currentBalance > 0 ? '(مدين) - مطلوب منه' :
+                        account.currentBalance < 0 ? '(دائن) - له رصيد' : 'متوازن'}
                     </p>
                   </div>
                   <div className={`p-3 rounded-full ${account.currentBalance > 0 ? 'bg-red-100' :

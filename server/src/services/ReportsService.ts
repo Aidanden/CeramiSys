@@ -384,21 +384,76 @@ export class ReportsService {
       include: {
         supplier: { select: { id: true, name: true, phone: true } },
         company: { select: { id: true, name: true, code: true } },
+        expenses: true, // جلب المصروفات
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    const totalPurchases = purchases.reduce((sum, p) => sum + Number(p.finalTotal), 0);
-    const totalCash = purchases.filter(p => p.purchaseType === 'CASH').reduce((sum, p) => sum + Number(p.finalTotal), 0);
-    const totalCredit = purchases.filter(p => p.purchaseType === 'CREDIT').reduce((sum, p) => sum + Number(p.finalTotal), 0);
+    // حساب الإحصائيات حسب العملة
+    const stats = {
+      totalPurchasesLYD: 0,
+      totalPurchasesUSD: 0,
+      totalPurchasesEUR: 0,
+      totalCashLYD: 0,
+      totalCashUSD: 0,
+      totalCashEUR: 0,
+      totalCreditLYD: 0,
+      totalCreditUSD: 0,
+      totalCreditEUR: 0,
+      // مجاميع المصروفات حسب العملة
+      totalExpensesLYD: 0,
+      totalExpensesUSD: 0,
+      totalExpensesEUR: 0,
+      purchaseCount: purchases.length,
+    };
+
+    purchases.forEach(p => {
+      const invoiceTotal = Number(p.total); // المبلغ الأساسي للفاتورة بعملتها
+      const currency = p.currency || 'LYD';
+
+      // إحصائيات المشتريات (على الصافي قبل المصروفات)
+      if (currency === 'LYD') {
+        stats.totalPurchasesLYD += invoiceTotal;
+        if (p.purchaseType === 'CASH') stats.totalCashLYD += invoiceTotal;
+        else stats.totalCreditLYD += invoiceTotal;
+      } else if (currency === 'USD') {
+        stats.totalPurchasesUSD += invoiceTotal;
+        if (p.purchaseType === 'CASH') stats.totalCashUSD += invoiceTotal;
+        else stats.totalCreditUSD += invoiceTotal;
+      } else if (currency === 'EUR') {
+        stats.totalPurchasesEUR += invoiceTotal;
+        if (p.purchaseType === 'CASH') stats.totalCashEUR += invoiceTotal;
+        else stats.totalCreditEUR += invoiceTotal;
+      }
+
+      // إحصائيات المصروفات (بناءً على عملة كل مصروف)
+      p.expenses.forEach(ex => {
+        const exAmount = Number(ex.amount);
+        const exCurrency = ex.currency || 'LYD';
+        if (exCurrency === 'LYD') stats.totalExpensesLYD += exAmount;
+        else if (exCurrency === 'USD') stats.totalExpensesUSD += exAmount;
+        else if (exCurrency === 'EUR') stats.totalExpensesEUR += exAmount;
+      });
+    });
 
     return {
-      purchases,
+      purchases: purchases.map(p => ({
+        ...p,
+        total: Number(p.total),
+        paidAmount: Number(p.paidAmount),
+        remainingAmount: Number(p.remainingAmount),
+        finalTotal: Number(p.finalTotal),
+        totalExpenses: Number(p.totalExpenses),
+        expenses: p.expenses.map(ex => ({
+          ...ex,
+          amount: Number(ex.amount)
+        }))
+      })),
       stats: {
-        totalPurchases,
-        totalCash,
-        totalCredit,
-        purchaseCount: purchases.length,
+        ...stats,
+        grandTotalLYD: stats.totalPurchasesLYD + stats.totalExpensesLYD,
+        grandTotalUSD: stats.totalPurchasesUSD + stats.totalExpensesUSD,
+        grandTotalEUR: stats.totalPurchasesEUR + stats.totalExpensesEUR,
       }
     };
   }
@@ -431,31 +486,67 @@ export class ReportsService {
 
     // 2. جلب جميع الحركات تاريخياً
     // المبيعات (نقص)
+    // - للشركة الأم (1): نجلب مبيعاتها المباشرة + مبيعات الفروع التي استخدمت مخزونها
+    // - للشركات الأخرى: نجلب مبيعاتها المحلية فقط (التي لم تؤخذ من مخزون الأم)
     const sales = await this.prisma.saleLine.findMany({
-      where: { productId, sale: { companyId, status: 'APPROVED' } },
-      include: { sale: { select: { createdAt: true, invoiceNumber: true, customer: { select: { name: true } } } } }
+      where: {
+        productId,
+        sale: { status: 'APPROVED' },
+        ...(companyId === 1
+          ? { OR: [{ sale: { companyId: 1 } }, { isFromParentCompany: true }] }
+          : { sale: { companyId: companyId }, isFromParentCompany: false }
+        )
+      },
+      include: {
+        sale: {
+          select: {
+            createdAt: true,
+            invoiceNumber: true,
+            company: { select: { id: true, name: true } },
+            customer: { select: { name: true } }
+          }
+        }
+      }
     });
 
     // المشتريات (زيادة)
     const purchases = await this.prisma.purchaseLine.findMany({
-      where: { productId, purchase: { companyId, isApproved: true } },
+      where: {
+        productId,
+        purchase: {
+          companyId,
+          isApproved: true,
+          affectsInventory: true // فقط المشتريات التي تؤثر فعلياً على المخزون المحلي
+        }
+      },
       include: { purchase: { select: { createdAt: true, supplier: { select: { name: true } } } } }
     });
 
     // المشتريات من الشركة الأم (زيادة)
+    // تظهر فقط للشركة الفرعية كـ "وارد" يعادل الـ "صادر" للعميل إذا كانت مبيعات بين شركات
     const parentPurchases = await this.prisma.purchaseFromParentLine.findMany({
       where: { productId, purchase: { branchCompanyId: companyId } },
       include: { purchase: { select: { createdAt: true, invoiceNumber: true } } }
     });
 
     // مردودات المبيعات (زيادة)
+    // تظهر في حساب الشركة التي تمتلك الصنف (التي يتم إرجاع المخزون إليها)
     const saleReturns = await this.prisma.saleReturnLine.findMany({
-      where: { productId, saleReturn: { companyId } },
-      include: { saleReturn: { select: { createdAt: true, sale: { select: { invoiceNumber: true } } } } }
+      where: {
+        productId,
+        saleReturn: { status: 'APPROVED' },
+        product: { createdByCompanyId: companyId }
+      },
+      include: {
+        saleReturn: {
+          select: {
+            createdAt: true,
+            company: { select: { id: true, name: true } },
+            sale: { select: { invoiceNumber: true } }
+          }
+        }
+      }
     });
-
-    // المردودات للموردين (نقص) - إذا كانت موجودة في النظام
-    // ملاحظة: قد لا يكون هناك موديل PurchaseReturnLine حالياً، إذا وجد يجب إضافته
 
     // التالف (نقص)
     const damages = await this.prisma.damageReportLine.findMany({
@@ -465,13 +556,16 @@ export class ReportsService {
 
     // 3. توحيد الحركات في قائمة واحدة
     const allMovements: any[] = [
-      ...sales.map(s => ({
-        date: s.sale.createdAt,
-        type: 'SALE',
-        description: `بيع: فاتورة ${s.sale.invoiceNumber || '-'} (${s.sale.customer?.name || 'عميل نقدي'})`,
-        qtyIn: 0,
-        qtyOut: Number(s.qty),
-      })),
+      ...sales.map(s => {
+        const isInternal = s.sale.companyId !== companyId;
+        return {
+          date: s.sale.createdAt,
+          type: 'SALE',
+          description: `بيع: فاتورة ${s.sale.invoiceNumber || '-'} (${s.sale.customer?.name || 'عميل نقدي'})${isInternal ? ` - [${s.sale.company.name}]` : ''}`,
+          qtyIn: 0,
+          qtyOut: Number(s.qty),
+        };
+      }),
       ...purchases.map(p => ({
         date: p.purchase.createdAt,
         type: 'PURCHASE',
@@ -486,13 +580,16 @@ export class ReportsService {
         qtyIn: Number(p.qty),
         qtyOut: 0,
       })),
-      ...saleReturns.map(r => ({
-        date: r.saleReturn.createdAt,
-        type: 'RETURN',
-        description: `مردود مبيعات: فاتورة ${r.saleReturn.sale?.invoiceNumber || '-'}`,
-        qtyIn: Number(r.qty),
-        qtyOut: 0,
-      })),
+      ...saleReturns.map(r => {
+        const isInternal = r.saleReturn.company.id !== companyId;
+        return {
+          date: r.saleReturn.createdAt,
+          type: 'RETURN',
+          description: `مردود مبيعات: فاتورة ${r.saleReturn.sale?.invoiceNumber || '-'}${isInternal ? ` - [${r.saleReturn.company.name}]` : ''}`,
+          qtyIn: Number(r.qty),
+          qtyOut: 0,
+        };
+      }),
       ...damages.map((d: any) => ({
         date: d.damageReport.createdAt,
         type: 'DAMAGE',
@@ -506,8 +603,6 @@ export class ReportsService {
     allMovements.sort((a, b) => a.date.getTime() - b.date.getTime());
 
     // 4. حساب "رصيد البداية الأول" (قبل كل الحركات)
-    // الكمية الحالية = الرصيد الأول + (مجموع الداخل - مجموع الخارج)
-    // الرصيد الأول = الكمية الحالية - (مجموع الداخل - مجموع الخارج)
     const totalIn = allMovements.reduce((sum, m) => sum + m.qtyIn, 0);
     const totalOut = allMovements.reduce((sum, m) => sum + m.qtyOut, 0);
     const initialQty = currentQty - (totalIn - totalOut);

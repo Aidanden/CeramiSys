@@ -199,19 +199,20 @@ model UserSessions {
 }
 
 model Customer {
-  id               Int               @id @default(autoincrement())
+  id               Int                      @id @default(autoincrement())
   name             String
   phone            String?
   phone2           String?
   address          String?
-  notes            String?           @map("note")
-  createdAt        DateTime          @default(now())
+  notes            String?                  @map("note")
+  createdAt        DateTime                 @default(now())
   accountEntries   CustomerAccount[]
   provisionalSales ProvisionalSale[]
   sales            Sale[]
   saleReturns      SaleReturn[]
   generalReceipts  GeneralReceipt[]
   externalStores   ExternalStore[] // المحلات الخارجية المرتبطة بهذا العميل
+  paymentReceipts  SupplierPaymentReceipt[] // Added
 }
 
 model CustomerAccount {
@@ -313,26 +314,27 @@ model SalePayment {
 }
 
 model SaleReturn {
-  id              Int              @id @default(autoincrement())
+  id              Int                      @id @default(autoincrement())
   saleId          Int
   companyId       Int
   customerId      Int?
   returnNumber    String?
-  total           Decimal          @default(0) @db.Decimal(18, 4)
-  paidAmount      Decimal          @default(0) @db.Decimal(18, 4)
-  remainingAmount Decimal          @default(0) @db.Decimal(18, 4)
-  isFullyPaid     Boolean          @default(false)
+  total           Decimal                  @default(0) @db.Decimal(18, 4)
+  paidAmount      Decimal                  @default(0) @db.Decimal(18, 4)
+  remainingAmount Decimal                  @default(0) @db.Decimal(18, 4)
+  isFullyPaid     Boolean                  @default(false)
   refundMethod    PaymentMethod?
-  status          ReturnStatus     @default(PENDING)
+  status          ReturnStatus             @default(PENDING)
   reason          String?
   notes           String?
-  createdAt       DateTime         @default(now())
+  createdAt       DateTime                 @default(now())
   processedAt     DateTime?
   returnOrders    ReturnOrder[]
   payments        ReturnPayment[]
-  company         Company          @relation(fields: [companyId], references: [id])
-  customer        Customer?        @relation(fields: [customerId], references: [id])
-  sale            Sale             @relation(fields: [saleId], references: [id])
+  paymentReceipts SupplierPaymentReceipt[] // Added
+  company         Company                  @relation(fields: [companyId], references: [id])
+  customer        Customer?                @relation(fields: [customerId], references: [id])
+  sale            Sale                     @relation(fields: [saleId], references: [id])
   lines           SaleReturnLine[]
 
   @@index([saleId])
@@ -623,8 +625,10 @@ model Notification {
 
 model SupplierPaymentReceipt {
   id            Int                         @id @default(autoincrement())
-  supplierId    Int
+  supplierId    Int? // Modified to optional
   purchaseId    Int?
+  saleReturnId  Int? // Added
+  customerId    Int? // Added
   companyId     Int
   amount        Decimal                     @db.Decimal(18, 4)
   type          SupplierPaymentType
@@ -640,10 +644,14 @@ model SupplierPaymentReceipt {
   installments  PaymentReceiptInstallment[]
   company       Company                     @relation(fields: [companyId], references: [id])
   purchase      Purchase?                   @relation(fields: [purchaseId], references: [id])
-  supplier      Supplier                    @relation(fields: [supplierId], references: [id])
+  saleReturn    SaleReturn?                 @relation(fields: [saleReturnId], references: [id]) // Added
+  customer      Customer?                   @relation(fields: [customerId], references: [id]) // Added
+  supplier      Supplier?                   @relation(fields: [supplierId], references: [id]) // Modified to optional
 
   @@index([supplierId])
   @@index([purchaseId])
+  @@index([saleReturnId]) // Added
+  @@index([customerId]) // Added
   @@index([companyId])
   @@index([status])
   @@index([type])
