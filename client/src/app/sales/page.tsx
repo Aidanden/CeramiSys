@@ -310,6 +310,33 @@ const SalesPage = () => {
     return baseTotal - (line.discountAmount || 0);
   };
 
+  // دالة مساعدة للحصول على المخزون المتاح للمنتج
+  const getProductStock = (product: any, targetCompanyId: number | null) => {
+    if (!product?.stock || !Array.isArray(product.stock) || product.stock.length === 0) {
+      return { boxes: 0, quantity: 0, source: 'غير متوفر' };
+    }
+
+    // البحث عن مخزون الشركة المستهدفة أولاً
+    let stockInfo = product.stock.find((s: any) => s.companyId === targetCompanyId);
+    let source = 'المخزن المحلي';
+
+    // إذا لم يوجد مخزون في الشركة المستهدفة، نبحث في الشركة الأم (التقازي)
+    if ((!stockInfo || stockInfo.boxes === 0) && targetCompanyId !== 1) {
+      stockInfo = product.stock.find((s: any) => s.companyId === 1);
+      source = 'مخزن التقازي';
+    }
+
+    if (!stockInfo) {
+      return { boxes: 0, quantity: 0, source: 'غير متوفر' };
+    }
+
+    return {
+      boxes: stockInfo.boxes || 0,
+      quantity: stockInfo.quantity || 0,
+      source
+    };
+  };
+
   // دالة مساعدة للتركيز السريع على مربع اختيار الصنف
   const focusProductSelect = (lineIndex: number) => {
     const attempts = [
@@ -2043,8 +2070,8 @@ const SalesPage = () => {
                                     className={`w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors ${isFromParentCompany ? 'hover:bg-orange-50' : 'hover:bg-blue-50'
                                       }`}
                                   >
-                                    <div className="flex justify-between items-center">
-                                      <div className="text-sm">
+                                    <div className="flex justify-between items-start gap-3">
+                                      <div className="text-sm flex-1">
                                         <div className={`font-medium ${isFromParentCompany ? 'text-orange-900' : 'text-gray-900'}`}>
                                           {product.name}
                                           {isFromParentCompany && (
@@ -2053,9 +2080,29 @@ const SalesPage = () => {
                                             </span>
                                           )}
                                         </div>
-                                        <div className="text-xs text-gray-500">كود: {product.sku}</div>
+                                        <div className="text-xs text-gray-500 mt-1">كود: {product.sku}</div>
+                                        {/* عرض معلومات المخزون */}
+                                        {(() => {
+                                          const stockInfo = getProductStock(product, targetCompanyId || null);
+                                          return (
+                                            <div className="flex items-center gap-2 mt-1">
+                                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${stockInfo.boxes > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                                }`}>
+                                                📦 {stockInfo.boxes} {product.unit || 'وحدة'}
+                                                {product.unit === 'صندوق' && product.unitsPerBox && (
+                                                  <span className="text-[10px]">
+                                                    ({stockInfo.quantity.toFixed(2)} م²)
+                                                  </span>
+                                                )}
+                                              </span>
+                                              <span className="text-[10px] text-gray-500">
+                                                {stockInfo.source}
+                                              </span>
+                                            </div>
+                                          );
+                                        })()}
                                       </div>
-                                      <div className="text-xs font-medium text-blue-600">
+                                      <div className="text-xs font-medium text-blue-600 whitespace-nowrap">
                                         {product.price?.sellPrice ? `${Number(product.price.sellPrice).toFixed(2)} د.ل` : 'غير محدد'}
                                       </div>
                                     </div>
@@ -2098,8 +2145,8 @@ const SalesPage = () => {
                                     className={`w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors ${isFromParentCompany ? 'hover:bg-orange-50' : 'hover:bg-blue-50'
                                       }`}
                                   >
-                                    <div className="flex justify-between items-center">
-                                      <div className="text-sm">
+                                    <div className="flex justify-between items-start gap-3">
+                                      <div className="text-sm flex-1">
                                         <div className={`font-medium ${isFromParentCompany ? 'text-orange-900' : 'text-gray-900'}`}>
                                           {product.name}
                                           {isFromParentCompany && (
@@ -2108,22 +2155,29 @@ const SalesPage = () => {
                                             </span>
                                           )}
                                         </div>
-                                        <div className="text-xs text-gray-500 flex items-center gap-2">
-                                          <span>كود: {product.sku}</span>
-                                          {product.stock && product.stock.length > 0 && (
-                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">
-                                              📦 {(() => {
-                                                let stock = product.stock.find((s: any) => s.companyId === product.createdByCompanyId);
-                                                if (!stock || stock.boxes === 0) {
-                                                  stock = product.stock.find((s: any) => s.companyId === selectedCompanyId);
-                                                }
-                                                return stock?.boxes || 0;
-                                              })()} {product.unit || 'وحدة'}
-                                            </span>
-                                          )}
-                                        </div>
+                                        <div className="text-xs text-gray-500 mt-1">كود: {product.sku}</div>
+                                        {/* عرض معلومات المخزون */}
+                                        {(() => {
+                                          const stockInfo = getProductStock(product, targetCompanyId || null);
+                                          return (
+                                            <div className="flex items-center gap-2 mt-1">
+                                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${stockInfo.boxes > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                                }`}>
+                                                📦 {stockInfo.boxes} {product.unit || 'وحدة'}
+                                                {product.unit === 'صندوق' && product.unitsPerBox && (
+                                                  <span className="text-[10px]">
+                                                    ({stockInfo.quantity.toFixed(2)} م²)
+                                                  </span>
+                                                )}
+                                              </span>
+                                              <span className="text-[10px] text-gray-500">
+                                                {stockInfo.source}
+                                              </span>
+                                            </div>
+                                          );
+                                        })()}
                                       </div>
-                                      <div className={`text-xs font-medium ${isFromParentCompany ? 'text-orange-600' : 'text-blue-600'}`}>
+                                      <div className={`text-xs font-medium whitespace-nowrap ${isFromParentCompany ? 'text-orange-600' : 'text-blue-600'}`}>
                                         {product.price?.sellPrice ? `${Number(product.price.sellPrice).toFixed(2)} د.ل` : 'غير محدد'}
                                       </div>
                                     </div>
@@ -2794,7 +2848,7 @@ const SalesPage = () => {
                                 className={`w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors ${isInInvoice ? 'bg-green-50 hover:bg-green-100' : (isFromParentCompany ? 'hover:bg-orange-50' : 'hover:bg-blue-50')
                                   }`}
                               >
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between items-start gap-3">
                                   <div className="text-sm flex-1">
                                     <div className={`font-medium ${isFromParentCompany ? 'text-orange-900' : 'text-gray-900'}`}>
                                       {product.name}
@@ -2809,9 +2863,29 @@ const SalesPage = () => {
                                         </span>
                                       )}
                                     </div>
-                                    <div className="text-xs text-gray-500">كود: {product.sku}</div>
+                                    <div className="text-xs text-gray-500 mt-1">كود: {product.sku}</div>
+                                    {/* عرض معلومات المخزون */}
+                                    {(() => {
+                                      const stockInfo = getProductStock(product, targetCompanyId || null);
+                                      return (
+                                        <div className="flex items-center gap-2 mt-1">
+                                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${stockInfo.boxes > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                            }`}>
+                                            📦 {stockInfo.boxes} {product.unit || 'وحدة'}
+                                            {product.unit === 'صندوق' && product.unitsPerBox && (
+                                              <span className="text-[10px]">
+                                                ({stockInfo.quantity.toFixed(2)} م²)
+                                              </span>
+                                            )}
+                                          </span>
+                                          <span className="text-[10px] text-gray-500">
+                                            {stockInfo.source}
+                                          </span>
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
-                                  <div className="text-xs font-medium text-blue-600">
+                                  <div className="text-xs font-medium text-blue-600 whitespace-nowrap">
                                     {product.price?.sellPrice ? `${Number(product.price.sellPrice).toFixed(2)} د.ل` : 'غير محدد'}
                                   </div>
                                 </div>
@@ -2856,7 +2930,7 @@ const SalesPage = () => {
                                 className={`w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors ${isInInvoice ? 'bg-green-50 hover:bg-green-100' : (isFromParentCompany ? 'hover:bg-orange-50' : 'hover:bg-blue-50')
                                   }`}
                               >
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between items-start gap-3">
                                   <div className="text-sm flex-1">
                                     <div className={`font-medium ${isFromParentCompany ? 'text-orange-900' : 'text-gray-900'}`}>
                                       {product.name}
@@ -2871,22 +2945,29 @@ const SalesPage = () => {
                                         </span>
                                       )}
                                     </div>
-                                    <div className="text-xs text-gray-500 flex items-center gap-2">
-                                      <span>كود: {product.sku}</span>
-                                      {product.stock && product.stock.length > 0 && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">
-                                          📦 {(() => {
-                                            let stock = product.stock.find((s: any) => s.companyId === product.createdByCompanyId);
-                                            if (!stock || stock.boxes === 0) {
-                                              stock = product.stock.find((s: any) => s.companyId === selectedCompanyId);
-                                            }
-                                            return stock?.boxes || 0;
-                                          })()} {product.unit || 'وحدة'}
-                                        </span>
-                                      )}
-                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">كود: {product.sku}</div>
+                                    {/* عرض معلومات المخزون */}
+                                    {(() => {
+                                      const stockInfo = getProductStock(product, targetCompanyId || null);
+                                      return (
+                                        <div className="flex items-center gap-2 mt-1">
+                                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${stockInfo.boxes > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                            }`}>
+                                            📦 {stockInfo.boxes} {product.unit || 'وحدة'}
+                                            {product.unit === 'صندوق' && product.unitsPerBox && (
+                                              <span className="text-[10px]">
+                                                ({stockInfo.quantity.toFixed(2)} م²)
+                                              </span>
+                                            )}
+                                          </span>
+                                          <span className="text-[10px] text-gray-500">
+                                            {stockInfo.source}
+                                          </span>
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
-                                  <div className={`text-xs font-medium ${isFromParentCompany ? 'text-orange-600' : 'text-blue-600'}`}>
+                                  <div className={`text-xs font-medium whitespace-nowrap ${isFromParentCompany ? 'text-orange-600' : 'text-blue-600'}`}>
                                     {product.price?.sellPrice ? `${Number(product.price.sellPrice).toFixed(2)} د.ل` : 'غير محدد'}
                                   </div>
                                 </div>

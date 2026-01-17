@@ -30,6 +30,8 @@ export interface CustomerAccount {
   currentBalance: number;
   totalDebit: number;
   totalCredit: number;
+  totalPayments: number; // المدفوعات فقط
+  totalOtherCredits: number; // المردودات والتسويات
   entries: CustomerAccountEntry[];
 }
 

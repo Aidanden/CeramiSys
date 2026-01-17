@@ -5,8 +5,10 @@ import { treasuryApi } from '../treasuryApi';
 // Types
 export interface PaymentReceipt {
   id: number;
-  supplierId: number;
-  supplier: {
+  supplierId?: number; // Modified to optional
+  customerId?: number; // Added
+  saleReturnId?: number; // Added
+  supplier?: {
     id: number;
     name: string;
     phone?: string;

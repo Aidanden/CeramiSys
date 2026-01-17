@@ -159,10 +159,11 @@ export class SaleReturnService {
         }
       });
 
-      // البحث عن مورد مرتبط بالشركة الأم أو الشركة التي أنشأت المنتج لإنشاء إيصال مردودات
-      // Find a supplier associated with the company that created the products to create a return receipt
+      // إنشاء إيصالات مردودات للمحاسب
+      // Create return receipts for the accountant
+
+      // 1. الجزء الخاص بالشركة الأم
       if (parentCompanyReturnValue > 0) {
-        // البحث عن المورد الذي يمثل الشركة الأم
         const parentSupplier = await tx.supplier.findFirst({
           where: {
             OR: [
@@ -173,44 +174,52 @@ export class SaleReturnService {
           }
         });
 
-        if (parentSupplier) {
-          await tx.supplierPaymentReceipt.create({
-            data: {
-              supplierId: parentSupplier.id,
-              companyId: companyId,
-              amount: new Prisma.Decimal(parentCompanyReturnValue),
-              type: SupplierPaymentType.RETURN,
-              description: `مردود مبيعات: ${newReturn.customer?.name || 'عميل'} - عودة فاتورة #${newReturn.id}`,
-              status: PaymentReceiptStatus.PENDING,
-              currency: Currency.LYD,
-              exchangeRate: new Prisma.Decimal(1),
-              notes: newReturn.customer?.name || 'عميل'
-            }
-          });
-        }
-      } else if (branchCompanyReturnValue > 0 && companyId !== newReturn.companyId) {
-        // إذا كان المردود لشركة أخرى غير الشركة الحالية
-        const branchSupplier = await tx.supplier.findFirst({
-          where: {
-            name: { contains: newReturn.company.name, mode: 'insensitive' }
+        await tx.supplierPaymentReceipt.create({
+          data: {
+            supplierId: parentSupplier?.id, // اختياري الآن
+            saleReturnId: newReturn.id,
+            customerId: newReturn.customerId,
+            companyId: companyId,
+            amount: new Prisma.Decimal(parentCompanyReturnValue),
+            type: SupplierPaymentType.RETURN,
+            description: `مردود مبيعات (تقازي): ${newReturn.customer?.name || 'عميل'} - فاتورة #${newReturn.id}`,
+            status: PaymentReceiptStatus.PENDING,
+            currency: Currency.LYD,
+            exchangeRate: new Prisma.Decimal(1),
+            notes: newReturn.customer?.name || 'عميل'
           }
         });
+      }
 
-        if (branchSupplier) {
-          await tx.supplierPaymentReceipt.create({
-            data: {
-              supplierId: branchSupplier.id,
-              companyId: companyId,
-              amount: new Prisma.Decimal(branchCompanyReturnValue),
-              type: SupplierPaymentType.RETURN,
-              description: `مردود مبيعات: ${newReturn.customer?.name || 'عميل'} - عودة فاتورة #${newReturn.id}`,
-              status: PaymentReceiptStatus.PENDING,
-              currency: Currency.LYD,
-              exchangeRate: new Prisma.Decimal(1),
-              notes: newReturn.customer?.name || 'عميل'
+      // 2. الجزء الخاص بالشركة الفرعية (أو المحلية)
+      if (branchCompanyReturnValue > 0) {
+        // البحث عن مورد يمثل الشركة الفرعية إذا لم تكن هي نفس الشركة الحالية
+        let branchSupplierId: number | undefined;
+
+        if (companyId !== newReturn.companyId) {
+          const branchSupplier = await tx.supplier.findFirst({
+            where: {
+              name: { contains: newReturn.company.name, mode: 'insensitive' }
             }
           });
+          branchSupplierId = branchSupplier?.id;
         }
+
+        await tx.supplierPaymentReceipt.create({
+          data: {
+            supplierId: branchSupplierId, // قد يكون null للمردودات المحلية
+            saleReturnId: newReturn.id,
+            customerId: newReturn.customerId,
+            companyId: companyId,
+            amount: new Prisma.Decimal(branchCompanyReturnValue),
+            type: SupplierPaymentType.RETURN,
+            description: `مردود مبيعات (إمارات): ${newReturn.customer?.name || 'عميل'} - فاتورة #${newReturn.id}`,
+            status: PaymentReceiptStatus.PENDING,
+            currency: Currency.LYD,
+            exchangeRate: new Prisma.Decimal(1),
+            notes: newReturn.customer?.name || 'عميل'
+          }
+        });
       }
 
       return newReturn;
@@ -437,6 +446,27 @@ export class SaleReturnService {
       // 5. تنفيذ التحديثات
       await Promise.all(stockUpdates);
 
+      // 6. تحديث كشف حساب العميل (إضافة رصيد دائن للمردود)
+      if (updatedReturn.customerId) {
+        console.log(`[DEBUG] Creating CustomerAccount entry for Return #${updatedReturn.id}`);
+        try {
+          const CustomerAccountService = (await import('./CustomerAccountService')).default;
+          await CustomerAccountService.createAccountEntry({
+            customerId: updatedReturn.customerId,
+            transactionType: 'CREDIT', // PrismaClient will handle string to enum mapping
+            amount: Number(updatedReturn.total),
+            referenceType: 'RETURN',   // PrismaClient will handle string to enum mapping
+            referenceId: updatedReturn.id,
+            description: `مردود مبيعات - فاتورة #${updatedReturn.sale.invoiceNumber || updatedReturn.sale.id}`,
+            transactionDate: new Date()
+          }, tx);
+          console.log(`[DEBUG] Created Account Entry for Return #${updatedReturn.id}`);
+        } catch (error) {
+          console.error(`[ERROR] Failed to create Account Entry for Return #${updatedReturn.id}:`, error);
+          throw error; // Re-throw to fail the transaction
+        }
+      }
+
       return updatedReturn;
     });
 
@@ -539,6 +569,41 @@ export class SaleReturnService {
           isFullyPaid: isFullyPaid
         }
       });
+
+      // 1. الخصم من الخزينة
+      const treasury = await tx.treasury.findFirst({
+        where: {
+          companyId: companyId,
+          isActive: true
+        }
+      });
+
+      if (treasury) {
+        const { TreasuryController } = await import('../controllers/TreasuryController');
+        await TreasuryController.withdrawFromTreasury(
+          treasury.id,
+          data.amount,
+          'PAYMENT' as any,
+          'ReturnPayment',
+          newPayment.id,
+          `دفع مبلغ مردود مبيعات - رقم المردود #${saleReturn.id}`,
+          undefined // createdBy
+        );
+      }
+
+      // 2. تحديث كشف حساب العميل (إضافة رصيد مدين للمبلغ المصروف)
+      if (saleReturn.customerId) {
+        const CustomerAccountService = (await import('./CustomerAccountService')).default;
+        await CustomerAccountService.createAccountEntry({
+          customerId: saleReturn.customerId,
+          transactionType: 'DEBIT' as any, // DEBIT (عليه) = استلم مالاً منا (تسديد مردود)
+          amount: data.amount,
+          referenceType: 'PAYMENT' as any,
+          referenceId: newPayment.id,
+          description: `تسديد مبلغ مردود - رقم المردود #${saleReturn.id}`,
+          transactionDate: new Date()
+        }, tx);
+      }
 
       return newPayment;
     });

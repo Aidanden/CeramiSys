@@ -79,7 +79,7 @@ export default function PaymentReceiptsPage() {
 
   // جلب الخزائن والحسابات المصرفية
   const { data: treasuries = [] } = useGetTreasuriesQuery({ isActive: true });
-  
+
   // جلب الشركات
   const { data: companiesData } = useGetCompaniesQuery({ limit: 100 });
 
@@ -179,7 +179,7 @@ export default function PaymentReceiptsPage() {
       // إذا كان بالدينار، الدفع مباشرة
       const confirmed = await confirm(
         'تأكيد التسديد',
-        `هل أنت متأكد من تسديد إيصال الدفع للمورد "${receipt.supplier.name}" بمبلغ ${receipt.amount.toFixed(2)} ${receipt.currency}؟`
+        `هل أنت متأكد من تسديد إيصال الدفع للمورد "${receipt.supplier?.name || 'بدون مورد'}" بمبلغ ${receipt.amount.toFixed(2)} ${receipt.currency}؟`
       );
 
       if (confirmed) {
@@ -204,11 +204,11 @@ export default function PaymentReceiptsPage() {
 
     try {
       const exchangeRate = newExchangeRate ? parseFloat(newExchangeRate) : undefined;
-      const result = await payReceipt({ 
+      const result = await payReceipt({
         id: selectedReceipt.id,
-        exchangeRate 
+        exchangeRate
       }).unwrap();
-      
+
       success('تم التسديد', 'تم تسديد إيصال الدفع بنجاح');
       setShowPaymentModal(false);
       setSelectedReceipt(null);
@@ -544,10 +544,10 @@ export default function PaymentReceiptsPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col">
                       <span className="font-medium text-gray-900">
-                        {receipt.type === 'RETURN' && receipt.notes ? receipt.notes : receipt.supplier.name}
+                        {receipt.type === 'RETURN' && receipt.notes ? receipt.notes : receipt.supplier?.name || 'بدون مورد'}
                       </span>
-                      {receipt.supplier.phone && receipt.type !== 'RETURN' && (
-                        <span className="text-sm text-gray-500">{receipt.supplier.phone}</span>
+                      {receipt.supplier?.phone && receipt.type !== 'RETURN' && (
+                        <span className="text-sm text-gray-500">{receipt.supplier?.phone}</span>
                       )}
                     </div>
                   </td>
@@ -577,13 +577,12 @@ export default function PaymentReceiptsPage() {
                   )}
                   {/* المبلغ */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                      receipt.currency === 'LYD' 
-                        ? 'bg-green-100 text-green-800' 
-                        : receipt.currency === 'USD'
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${receipt.currency === 'LYD'
+                      ? 'bg-green-100 text-green-800'
+                      : receipt.currency === 'USD'
                         ? 'bg-blue-100 text-blue-800'
                         : 'bg-purple-100 text-purple-800'
-                    }`}>
+                      }`}>
                       {receipt.amount.toFixed(2)} {receipt.currency}
                     </span>
                   </td>
@@ -718,7 +717,7 @@ export default function PaymentReceiptsPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700">صاحب العملية</label>
                   <p className="mt-1 text-sm text-gray-900">
-                    {selectedReceipt.type === 'RETURN' && selectedReceipt.notes ? selectedReceipt.notes : selectedReceipt.supplier.name}
+                    {selectedReceipt.type === 'RETURN' && selectedReceipt.notes ? selectedReceipt.notes : selectedReceipt.supplier?.name || 'بدون مورد'}
                   </p>
                 </div>
                 <div>
@@ -910,7 +909,7 @@ export default function PaymentReceiptsPage() {
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900">
-                          إيصال #{receipt.id} - {receipt.supplier.name}
+                          إيصال #{receipt.id} - {receipt.supplier?.name || 'بدون مورد'}
                         </h3>
                         <p className="text-sm text-gray-600">
                           المبلغ الإجمالي: {formatLibyanCurrencyArabic(receipt.amount)} |
@@ -980,7 +979,7 @@ export default function PaymentReceiptsPage() {
           <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-900">
-                دفعات إيصال الدفع - {selectedReceipt.supplier.name}
+                دفعات إيصال الدفع - {selectedReceipt.supplier?.name || 'بدون مورد'}
               </h2>
               <button
                 onClick={() => setShowInstallmentsModal(false)}
@@ -1025,7 +1024,7 @@ export default function PaymentReceiptsPage() {
             {/* Add New Installment */}
             <div className="bg-blue-50 p-4 rounded-lg mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">إضافة دفعة جديدة</h3>
-              
+
               {/* معلومات العملة */}
               {selectedReceipt.currency && selectedReceipt.currency !== 'LYD' && (
                 <div className="bg-white p-3 rounded-lg mb-4 border border-blue-200">
@@ -1184,10 +1183,9 @@ export default function PaymentReceiptsPage() {
                       {installmentsData.installments.map((installment) => (
                         <tr key={installment.id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <span className={`font-semibold ${
-                              selectedReceipt.currency === 'LYD' ? 'text-green-600' :
+                            <span className={`font-semibold ${selectedReceipt.currency === 'LYD' ? 'text-green-600' :
                               selectedReceipt.currency === 'USD' ? 'text-blue-600' : 'text-purple-600'
-                            }`}>
+                              }`}>
                               {installment.amount.toFixed(2)} {selectedReceipt.currency}
                             </span>
                           </td>
@@ -1242,10 +1240,10 @@ export default function PaymentReceiptsPage() {
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">💰 تسديد إيصال دفع</h2>
-              
+
               <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-sm text-gray-700 mb-2">
-                  <span className="font-semibold">المورد:</span> {selectedReceipt.supplier.name}
+                  <span className="font-semibold">المورد:</span> {selectedReceipt.supplier?.name || 'بدون مورد'}
                 </p>
                 <div className="border-t border-blue-200 pt-2 mt-2">
                   <p className="text-base font-bold text-blue-900 mb-1">

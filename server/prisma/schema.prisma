@@ -9,24 +9,24 @@ datasource db {
 }
 
 model Company {
-  id                  Int                   @id @default(autoincrement())
+  id                  Int                      @id @default(autoincrement())
   name                String
-  code                String                @unique
-  isParent            Boolean               @default(false)
+  code                String                   @unique
+  isParent            Boolean                  @default(false)
   parentId            Int?
-  parent              Company?              @relation("CompanyChildren", fields: [parentId], references: [id])
-  children            Company[]             @relation("CompanyChildren")
+  parent              Company?                 @relation("CompanyChildren", fields: [parentId], references: [id])
+  children            Company[]                @relation("CompanyChildren")
   prices              CompanyProductPrice[]
   damageReports       DamageReport[]
   dispatchOrders      DispatchOrder[]
-  products            Product[]             @relation("ProductsCreated")
+  products            Product[]                @relation("ProductsCreated")
   provisionalSales    ProvisionalSale[]
   purchases           Purchase[]
-  purchasesFromParent PurchaseFromParent[]  @relation("BranchPurchases")
-  parentSales         PurchaseFromParent[]  @relation("ParentSales")
+  purchasesFromParent PurchaseFromParent[]     @relation("BranchPurchases")
+  parentSales         PurchaseFromParent[]     @relation("ParentSales")
   purchasePayments    PurchasePayment[]
-  branchReceipts      Receipt[]             @relation("BranchCompanyReceipts")
-  receivedPayments    Receipt[]             @relation("CompanyReceipts")
+  branchReceipts      Receipt[]                @relation("BranchCompanyReceipts")
+  receivedPayments    Receipt[]                @relation("CompanyReceipts")
   returnOrders        ReturnOrder[]
   returnPayments      ReturnPayment[]
   sales               Sale[]
@@ -75,16 +75,16 @@ model Product {
 }
 
 model ProductGroup {
-  id                    Int                     @id @default(autoincrement())
-  name                  String                  @unique
-  maxDiscountPercentage Decimal?                @db.Decimal(5, 2)
+  id                    Int                    @id @default(autoincrement())
+  name                  String                 @unique
+  maxDiscountPercentage Decimal?               @db.Decimal(5, 2)
   supplierId            Int?
-  currency              String?                 @default("USD")
+  currency              String?                @default("USD")
   products              Product[]
-  supplier              Supplier?               @relation("PrimarySupplier", fields: [supplierId], references: [id])
+  supplier              Supplier?              @relation("PrimarySupplier", fields: [supplierId], references: [id])
   suppliers             ProductGroupSupplier[]
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime                @updatedAt
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
 
   @@index([supplierId])
 }
@@ -199,19 +199,20 @@ model UserSessions {
 }
 
 model Customer {
-  id               Int               @id @default(autoincrement())
+  id               Int                      @id @default(autoincrement())
   name             String
   phone            String?
   phone2           String?
   address          String?
-  notes            String?           @map("note")
-  createdAt        DateTime          @default(now())
+  notes            String?                  @map("note")
+  createdAt        DateTime                 @default(now())
   accountEntries   CustomerAccount[]
   provisionalSales ProvisionalSale[]
   sales            Sale[]
   saleReturns      SaleReturn[]
   generalReceipts  GeneralReceipt[]
-  externalStores   ExternalStore[]   // المحلات الخارجية المرتبطة بهذا العميل
+  externalStores   ExternalStore[] // المحلات الخارجية المرتبطة بهذا العميل
+  paymentReceipts  SupplierPaymentReceipt[] // Added
 }
 
 model CustomerAccount {
@@ -313,26 +314,27 @@ model SalePayment {
 }
 
 model SaleReturn {
-  id              Int              @id @default(autoincrement())
+  id              Int                      @id @default(autoincrement())
   saleId          Int
   companyId       Int
   customerId      Int?
   returnNumber    String?
-  total           Decimal          @default(0) @db.Decimal(18, 4)
-  paidAmount      Decimal          @default(0) @db.Decimal(18, 4)
-  remainingAmount Decimal          @default(0) @db.Decimal(18, 4)
-  isFullyPaid     Boolean          @default(false)
+  total           Decimal                  @default(0) @db.Decimal(18, 4)
+  paidAmount      Decimal                  @default(0) @db.Decimal(18, 4)
+  remainingAmount Decimal                  @default(0) @db.Decimal(18, 4)
+  isFullyPaid     Boolean                  @default(false)
   refundMethod    PaymentMethod?
-  status          ReturnStatus     @default(PENDING)
+  status          ReturnStatus             @default(PENDING)
   reason          String?
   notes           String?
-  createdAt       DateTime         @default(now())
+  createdAt       DateTime                 @default(now())
   processedAt     DateTime?
   returnOrders    ReturnOrder[]
   payments        ReturnPayment[]
-  company         Company          @relation(fields: [companyId], references: [id])
-  customer        Customer?        @relation(fields: [customerId], references: [id])
-  sale            Sale             @relation(fields: [saleId], references: [id])
+  paymentReceipts SupplierPaymentReceipt[] // Added
+  company         Company                  @relation(fields: [companyId], references: [id])
+  customer        Customer?                @relation(fields: [customerId], references: [id])
+  sale            Sale                     @relation(fields: [saleId], references: [id])
   lines           SaleReturnLine[]
 
   @@index([saleId])
@@ -474,21 +476,21 @@ model PurchasePayment {
 }
 
 model Supplier {
-  id                     Int                       @id @default(autoincrement())
-  name                   String
-  phone                  String?
-  email                  String?
-  address                String?
-  note                   String?
-  createdAt              DateTime                  @default(now())
-  expenseCategories      ExpenseCategorySupplier[]
-  purchases              Purchase[]
-  purchaseExpenses       PurchaseExpense[]
-  accountEntries         SupplierAccount[]
-  paymentReceipts        SupplierPaymentReceipt[]
-  generalReceipts        GeneralReceipt[]
-  primaryProductGroups   ProductGroup[]            @relation("PrimarySupplier")
-  productGroupSuppliers  ProductGroupSupplier[]
+  id                    Int                       @id @default(autoincrement())
+  name                  String
+  phone                 String?
+  email                 String?
+  address               String?
+  note                  String?
+  createdAt             DateTime                  @default(now())
+  expenseCategories     ExpenseCategorySupplier[]
+  purchases             Purchase[]
+  purchaseExpenses      PurchaseExpense[]
+  accountEntries        SupplierAccount[]
+  paymentReceipts       SupplierPaymentReceipt[]
+  generalReceipts       GeneralReceipt[]
+  primaryProductGroups  ProductGroup[]            @relation("PrimarySupplier")
+  productGroupSuppliers ProductGroupSupplier[]
 }
 
 model SupplierAccount {
@@ -623,8 +625,10 @@ model Notification {
 
 model SupplierPaymentReceipt {
   id            Int                         @id @default(autoincrement())
-  supplierId    Int
+  supplierId    Int? // Modified to optional
   purchaseId    Int?
+  saleReturnId  Int? // Added
+  customerId    Int? // Added
   companyId     Int
   amount        Decimal                     @db.Decimal(18, 4)
   type          SupplierPaymentType
@@ -640,10 +644,14 @@ model SupplierPaymentReceipt {
   installments  PaymentReceiptInstallment[]
   company       Company                     @relation(fields: [companyId], references: [id])
   purchase      Purchase?                   @relation(fields: [purchaseId], references: [id])
-  supplier      Supplier                    @relation(fields: [supplierId], references: [id])
+  saleReturn    SaleReturn?                 @relation(fields: [saleReturnId], references: [id]) // Added
+  customer      Customer?                   @relation(fields: [customerId], references: [id]) // Added
+  supplier      Supplier?                   @relation(fields: [supplierId], references: [id]) // Modified to optional
 
   @@index([supplierId])
   @@index([purchaseId])
+  @@index([saleReturnId]) // Added
+  @@index([customerId]) // Added
   @@index([companyId])
   @@index([status])
   @@index([type])
@@ -767,7 +775,7 @@ model ExternalStore {
   phone2             String?
   address            String?
   googleMapsUrl      String?
-  customerId         Int?                   // العميل المرتبط بالمحل
+  customerId         Int? // العميل المرتبط بالمحل
   isActive           Boolean                @default(true)
   showPrices         Boolean                @default(true) // إظهار الأسعار في بوابة المحل
   createdAt          DateTime               @default(now())
@@ -1118,19 +1126,19 @@ model GeneralReceipt {
 
 // الموظف
 model Employee {
-  id              Int              @id @default(autoincrement())
-  name            String
-  jobTitle        String? // المسمى الوظيفي
-  phone           String?
-  email           String?
-  baseSalary      Decimal          @db.Decimal(18, 4) // الراتب الأساسي
-  companyId       Int
-  isActive        Boolean          @default(true)
-  hireDate        DateTime? // تاريخ التعيين
-  notes           String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  company          Company            @relation(fields: [companyId], references: [id])
+  id               Int               @id @default(autoincrement())
+  name             String
+  jobTitle         String? // المسمى الوظيفي
+  phone            String?
+  email            String?
+  baseSalary       Decimal           @db.Decimal(18, 4) // الراتب الأساسي
+  companyId        Int
+  isActive         Boolean           @default(true)
+  hireDate         DateTime? // تاريخ التعيين
+  notes            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  company          Company           @relation(fields: [companyId], references: [id])
   salaryPayments   SalaryPayment[]
   bonuses          EmployeeBonus[]
   generalReceipts  GeneralReceipt[]
@@ -1254,7 +1262,7 @@ enum SalaryPaymentType {
 }
 
 enum EmployeeTransactionType {
-  DEBIT  // مدين (يزيد رصيد الموظف - سلفة)
+  DEBIT // مدين (يزيد رصيد الموظف - سلفة)
   CREDIT // دائن (يخفض رصيد الموظف - دفع راتب)
 }
 

@@ -205,7 +205,7 @@ export class PaymentReceiptService {
     if (receipt.supplierId) {
       await prisma.supplierAccount.deleteMany({
         where: {
-          supplierId: receipt.supplierId,
+          supplierId: receipt.supplierId!,
           OR: [
             { referenceType: 'PURCHASE', referenceId: receipt.id },
             { referenceType: 'RETURN', referenceId: receipt.id },
@@ -216,6 +216,21 @@ export class PaymentReceiptService {
           ],
         },
       });
+    }
+
+    if (receipt.customerId) {
+      const db = prisma as any;
+      if (db.customerAccount) {
+        await db.customerAccount.deleteMany({
+          where: {
+            customerId: receipt.customerId!,
+            OR: [
+              { referenceType: 'PAYMENT', referenceId: receipt.id },
+              { referenceType: 'RETURN', referenceId: receipt.id }
+            ]
+          }
+        });
+      }
     }
 
     return receipt;
@@ -305,6 +320,52 @@ export class PaymentReceiptService {
               currency: receipt.currency || 'LYD',
             },
           });
+        }
+
+        // ب. قيد في حساب العميل (DEBIT) إذا كان مرتبطاً بعميل (في حالة المردودات)
+        if (receipt.customerId) {
+          const CustomerAccountService = (await import('./CustomerAccountService')).default;
+          await CustomerAccountService.createAccountEntry({
+            customerId: receipt.customerId,
+            transactionType: 'DEBIT' as any,
+            amount: amountToPayInLYD,
+            referenceType: 'PAYMENT' as any,
+            referenceId: receipt.id,
+            description: notes || receipt.description || `تسديد إيصال مردود رقم ${receipt.id}`,
+            transactionDate: new Date()
+          }, tx as any);
+        }
+
+        // ج. تحديث حالة المردود إذا كان مرتبطاً بمردود
+        if (receipt.saleReturnId) {
+          const saleReturn = await tx.saleReturn.findUnique({
+            where: { id: receipt.saleReturnId }
+          });
+
+          if (saleReturn) {
+            const newPaidAmount = Number(saleReturn.paidAmount) + amountToPayInLYD;
+            const isFullyPaid = newPaidAmount >= Number(saleReturn.total);
+
+            await tx.saleReturn.update({
+              where: { id: receipt.saleReturnId },
+              data: {
+                paidAmount: newPaidAmount,
+                remainingAmount: Number(saleReturn.total) - newPaidAmount,
+                isFullyPaid
+              }
+            });
+
+            // تسجيل الدفعة في جدول ReturnPayment لتوحيد السجلات
+            await tx.returnPayment.create({
+              data: {
+                saleReturnId: receipt.saleReturnId,
+                companyId: receipt.companyId,
+                amount: amountToPayInLYD,
+                paymentMethod: 'CASH', // افتراضي
+                notes: notes || `دفع من إيصال رقم ${receipt.id}`
+              }
+            });
+          }
         }
 
         // ب. الخصم من الخزينة
@@ -404,25 +465,42 @@ export class PaymentReceiptService {
       },
     });
 
-    await prisma.supplierAccount.deleteMany({
-      where: {
-        supplierId: receipt.supplierId,
-        OR: [
-          { referenceType: 'PURCHASE', referenceId: receipt.id },
-          { referenceType: 'RETURN', referenceId: receipt.id },
-          {
-            referenceType: 'PAYMENT',
-            referenceId: receipt.id,
-          },
-          {
-            referenceType: 'PAYMENT',
-            referenceId: {
-              in: receipt.installments.map((inst) => inst.id),
+    if (receipt.supplierId) {
+      await prisma.supplierAccount.deleteMany({
+        where: {
+          supplierId: receipt.supplierId!,
+          OR: [
+            { referenceType: 'PURCHASE', referenceId: receipt.id },
+            { referenceType: 'RETURN', referenceId: receipt.id },
+            {
+              referenceType: 'PAYMENT',
+              referenceId: receipt.id,
             },
-          },
-        ],
-      },
-    });
+            {
+              referenceType: 'PAYMENT',
+              referenceId: {
+                in: receipt.installments.map((inst) => inst.id),
+              },
+            },
+          ],
+        },
+      });
+    }
+
+    if (receipt.customerId) {
+      const db = prisma as any;
+      if (db.customerAccount) {
+        await db.customerAccount.deleteMany({
+          where: {
+            customerId: receipt.customerId!,
+            OR: [
+              { referenceType: 'PAYMENT', referenceId: receipt.id },
+              { referenceType: 'RETURN', referenceId: receipt.id }
+            ]
+          }
+        });
+      }
+    }
 
     return receipt;
   }

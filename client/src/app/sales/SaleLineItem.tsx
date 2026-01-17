@@ -192,6 +192,32 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
               {selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox && (
                 <span className="text-[9px] font-bold text-slate-400">عبوة: {selectedProduct.unitsPerBox}</span>
               )}
+              {/* عرض معلومات المخزون */}
+              {selectedProduct && selectedProduct.stock && Array.isArray(selectedProduct.stock) && selectedProduct.stock.length > 0 && (() => {
+                // البحث عن مخزون الشركة المستهدفة أولاً
+                let stockInfo = selectedProduct.stock.find((s: any) => s.companyId === currentCompanyId);
+                let source = 'محلي';
+
+                // إذا لم يوجد مخزون في الشركة المستهدفة، نبحث في الشركة الأم (التقازي)
+                if ((!stockInfo || stockInfo.boxes === 0) && currentCompanyId !== 1) {
+                  stockInfo = selectedProduct.stock.find((s: any) => s.companyId === 1);
+                  source = 'التقازي';
+                }
+
+                if (stockInfo && stockInfo.boxes > 0) {
+                  return (
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${stockInfo.boxes > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                      📦 {stockInfo.boxes} {selectedProduct.unit || 'وحدة'}
+                      {selectedProduct.unit === 'صندوق' && selectedProduct.unitsPerBox && (
+                        <span className="text-[8px]"> ({stockInfo.quantity?.toFixed(2)} م²)</span>
+                      )}
+                      <span className="text-[8px] opacity-70"> • {source}</span>
+                    </span>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
         </div>
