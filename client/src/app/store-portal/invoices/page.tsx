@@ -18,8 +18,10 @@ import {
     Package,
     Eye,
     Check,
-    RefreshCw
+    RefreshCw,
+    Printer
 } from 'lucide-react';
+import { StorePrintModal } from '@/components/store-portal/StorePrintModal';
 
 interface InvoiceLine {
     productId: string;
@@ -65,6 +67,9 @@ export default function StoreInvoicesPage() {
 
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [viewingInvoice, setViewingInvoice] = useState<any>(null);
+
+    const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+    const [printingInvoice, setPrintingInvoice] = useState<any>(null);
 
     const filteredProducts = productsData?.filter(p => {
         const matchesSku = skuSearch ? p.product.sku.toLowerCase() === skuSearch.toLowerCase() : true;
@@ -228,6 +233,11 @@ export default function StoreInvoicesPage() {
         setIsViewModalOpen(true);
     };
 
+    const handlePrintInvoice = (invoice: any) => {
+        setPrintingInvoice(invoice);
+        setIsPrintModalOpen(true);
+    };
+
     return (
         <div className="space-y-6">
             <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-6">
@@ -308,13 +318,21 @@ export default function StoreInvoicesPage() {
                                                     invoice.status === 'REJECTED' ? 'مرفوضة' : 'قيد الانتظار'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                                        <td className="px-6 py-4 whitespace-nowrap text-center flex items-center justify-center gap-2">
                                             <button
                                                 onClick={() => handleViewInvoice(invoice)}
                                                 className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors font-bold text-xs"
                                             >
                                                 <Eye size={16} />
                                                 <span>عرض</span>
+                                            </button>
+                                            <button
+                                                onClick={() => handlePrintInvoice(invoice)}
+                                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-bold text-xs"
+                                                title="طباعة"
+                                            >
+                                                <Printer size={16} />
+                                                <span className="hidden sm:inline">طباعة</span>
                                             </button>
                                         </td>
                                     </tr>
@@ -422,10 +440,17 @@ export default function StoreInvoicesPage() {
                                 </table>
                             </div>
                         </div>
-                        <div className="p-6 border-t border-gray-100 flex justify-end bg-gray-50/50">
+                        <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
+                            <button
+                                onClick={() => handlePrintInvoice(viewingInvoice)}
+                                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-bold flex items-center gap-2"
+                            >
+                                <Printer size={18} />
+                                طباعة
+                            </button>
                             <button
                                 onClick={() => setIsViewModalOpen(false)}
-                                className="px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors font-medium"
+                                className="px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-colors font-medium text-sm"
                             >
                                 إغلاق
                             </button>
@@ -489,13 +514,25 @@ export default function StoreInvoicesPage() {
                                                     onClick={() => handleAddProduct(item.productId)}
                                                     className="w-full text-right px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-600 border-b border-gray-100 dark:border-gray-600 last:border-0 flex justify-between items-center"
                                                 >
-                                                    <div>
+                                                    <div className="flex-1">
                                                         <div className="font-medium text-gray-900 dark:text-white">{item.product.name}</div>
-                                                        <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">{item.product.sku}</div>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">{item.product.sku}</span>
+                                                            {item.product.unitsPerBox && (
+                                                                <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded font-bold border border-blue-100">
+                                                                    عبوة: {Number(item.product.unitsPerBox).toLocaleString()}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     {showPrices && (
-                                                        <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                                                            {Number(item.product.prices?.find((p: any) => p.company?.code === 'TAQAZI' || p.company?.code === 'TG')?.sellPrice || item.product.prices?.[0]?.sellPrice || 0).toLocaleString('en-US')} د.ل
+                                                        <div className="text-right">
+                                                            <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                                                                {Number(item.product.prices?.find((p: any) => p.company?.code === 'TAQAZI' || p.company?.code === 'TG')?.sellPrice || item.product.prices?.[0]?.sellPrice || 0).toLocaleString('en-US')} د.ل
+                                                            </div>
+                                                            {item.product.unit === 'صندوق' && (
+                                                                <div className="text-[10px] text-slate-400 font-medium">(سعر المتر)</div>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </button>
@@ -530,7 +567,14 @@ export default function StoreInvoicesPage() {
                                                 <tr key={index} className="hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors">
                                                     <td className="px-4 py-3">
                                                         <div className="text-sm font-medium text-gray-900 dark:text-white">{line.productName}</div>
-                                                        <div className="text-xs text-gray-500 dark:text-gray-400 font-mono">{line.sku}</div>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">{line.sku}</span>
+                                                            {line.unitsPerBox && (
+                                                                <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded font-bold border border-blue-100">
+                                                                    عبوة: {Number(line.unitsPerBox).toLocaleString()}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         <input
@@ -543,8 +587,11 @@ export default function StoreInvoicesPage() {
                                                     </td>
                                                     {showPrices && (
                                                         <>
-                                                            <td className="px-4 py-3 text-center text-gray-700 font-mono">
-                                                                {line.unitPrice.toLocaleString('en-US')}
+                                                            <td className="px-4 py-3 text-center">
+                                                                <div className="text-gray-700 font-mono">{line.unitPrice.toLocaleString('en-US')}</div>
+                                                                {line.unit === 'صندوق' && (
+                                                                    <div className="text-[10px] text-slate-400 font-medium">(سعر المتر)</div>
+                                                                )}
                                                             </td>
                                                             <td className="px-4 py-3 text-center font-bold text-gray-900">
                                                                 {line.subTotal.toLocaleString('en-US')}
@@ -633,6 +680,13 @@ export default function StoreInvoicesPage() {
                     </div>
                 </div>
             )}
+
+            <StorePrintModal
+                invoice={printingInvoice}
+                storeInfo={currentUser?.store}
+                isOpen={isPrintModalOpen}
+                onClose={() => setIsPrintModalOpen(false)}
+            />
         </div>
     );
 }

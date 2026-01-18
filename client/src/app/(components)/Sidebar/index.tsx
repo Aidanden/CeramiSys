@@ -23,6 +23,7 @@ import {
   TrendingDown as Returns,
   FileText as Receipt,
   Shield,
+  Settings,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -178,12 +179,20 @@ const Sidebar = () => {
   //   }
   // }, [isLoadingScreens, authorizedScreens]);
 
-  // إذا كان هناك خطأ في جلب الشاشات، نعرض جميع الشاشات (fallback)
+  // التحقق من صلاحية الوصول لشاشة معينة
   const canAccessScreen = (route: string) => {
-    // إذا كان هناك خطأ أو لا توجد بيانات بعد، نسمح بالوصول (لتجنب sidebar فارغ)
-    if (screensError || (isLoadingScreens && authorizedScreens.length === 0)) {
-      return true; // السماح بالوصول مؤقتاً
+    // إذا كان هناك خطأ، لا نعرض الشاشة (لحماية النظام)
+    if (screensError) {
+      console.warn('خطأ في جلب الصلاحيات:', screensError);
+      return false;
     }
+    
+    // إذا كان جاري التحميل ولا توجد بيانات بعد، ننتظر
+    if (isLoadingScreens && authorizedScreens.length === 0) {
+      return false; // لا نعرض الشاشة حتى يتم تحميل الصلاحيات
+    }
+    
+    // التحقق من الصلاحية
     return hasScreenAccess(authorizedScreens, route);
   };
 
@@ -401,6 +410,8 @@ const Sidebar = () => {
             />
           )}
 
+          {/* ملاحظة: شاشات تكلفة الأصناف وتكلفة الفاتورة لا تحتوي على صلاحيات حالياً */}
+          {/* إذا كانت محمية بـ PermissionGuard في صفحاتها، ستكون محمية تلقائياً */}
           {costCalculationMethod === 'manual' && (
             <SidebarLink
               href="/product-cost"
@@ -463,6 +474,7 @@ const Sidebar = () => {
               الإعدادات
             </h3>
           </div>
+         
           {canAccessScreen('/users') && (
             <SidebarLink
               href="/users"

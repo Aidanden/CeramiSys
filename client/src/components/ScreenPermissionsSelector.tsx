@@ -26,9 +26,19 @@ export const ScreenPermissionsSelector: React.FC<ScreenPermissionsSelectorProps>
   };
 
   const handleSelectAll = () => {
-    const allPermissions = Object.values(screensByCategory)
-      .flat()
-      .map((screen: any) => screen.permission);
+    const allPermissions = Object.entries(screensByCategory)
+      .flatMap(([category, screens]) => {
+        // تصفية شاشة "المبيعات من الشركة الأم" من قسم المبيعات
+        return (screens as any[])
+          .filter((screen) => {
+            // إخفاء شاشة inter_company_sales من قسم المبيعات
+            if (category === 'sales' && screen.id === 'inter_company_sales') {
+              return false;
+            }
+            return true;
+          })
+          .map((screen: any) => screen.permission);
+      });
     onChange(allPermissions);
   };
 
@@ -62,29 +72,45 @@ export const ScreenPermissionsSelector: React.FC<ScreenPermissionsSelectorProps>
         </div>
       </div>
 
-      {Object.entries(screensByCategory).map(([category, screens]) => (
-        <div key={category} className="border rounded-lg p-4 bg-gray-50">
-          <h4 className="font-medium text-gray-900 mb-3">
-            {categories[category]}
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {(screens as any[]).map((screen) => (
-              <label
-                key={screen.id}
-                className="flex items-center gap-2 cursor-pointer hover:bg-white p-2 rounded transition"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedPermissions.includes(screen.permission)}
-                  onChange={() => handleToggle(screen.permission)}
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">{screen.name}</span>
-              </label>
-            ))}
+      {Object.entries(screensByCategory).map(([category, screens]) => {
+        // تصفية شاشة "المبيعات من الشركة الأم" من قسم المبيعات
+        const filteredScreens = (screens as any[]).filter((screen) => {
+          // إخفاء شاشة inter_company_sales من قسم المبيعات
+          if (category === 'sales' && screen.id === 'inter_company_sales') {
+            return false;
+          }
+          return true;
+        });
+
+        // إذا لم تبق أي شاشات بعد التصفية، لا نعرض القسم
+        if (filteredScreens.length === 0) {
+          return null;
+        }
+
+        return (
+          <div key={category} className="border rounded-lg p-4 bg-gray-50">
+            <h4 className="font-medium text-gray-900 mb-3">
+              {categories[category]}
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filteredScreens.map((screen) => (
+                <label
+                  key={screen.id}
+                  className="flex items-center gap-2 cursor-pointer hover:bg-white p-2 rounded transition"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedPermissions.includes(screen.permission)}
+                    onChange={() => handleToggle(screen.permission)}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">{screen.name}</span>
+                </label>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
         <p className="text-sm text-blue-800">

@@ -600,7 +600,7 @@ export class SalesService {
         }
 
         // تنفيذ جميع التحديثات دفعة واحدة
-        if (stockUpdates.length > 0) {
+        if (stockUpdates.length > 0 && existingSale.status === 'APPROVED') {
           await this.prisma.$transaction(stockUpdates);
         }
 
@@ -621,7 +621,7 @@ export class SalesService {
           include: {
             group: true,
             stocks: isSystemUser ? true : {
-              where: { companyId: userCompanyId }
+              where: { companyId: existingSale.companyId }
             }
           }
         });
@@ -645,7 +645,7 @@ export class SalesService {
 
           // للـ System User: نبحث عن المخزون في الشركة المحددة
           const stock = isSystemUser
-            ? product.stocks.find((s: any) => s.companyId === userCompanyId)
+            ? product.stocks.find((s: any) => s.companyId === existingSale.companyId)
             : product.stocks[0];
 
           // حساب الصناديق المطلوبة:
@@ -799,7 +799,7 @@ export class SalesService {
 
         // 🟢 تحسين: جلب المخزون الحالي دفعة واحدة لتجنب N+1
         const stockKeys = data.lines.map(line => ({
-          companyId: userCompanyId,
+          companyId: existingSale.companyId,
           productId: line.productId
         }));
 
@@ -824,7 +824,7 @@ export class SalesService {
           let boxesToDecrement = Number(line.qty);
 
           // الحصول على المخزون الحالي من Map المحملة مسبقاً
-          const stockKey = `${userCompanyId}-${line.productId}`;
+          const stockKey = `${existingSale.companyId}-${line.productId}`;
           const currentStock = stocksMap.get(stockKey);
 
           const currentBoxes = currentStock ? Number(currentStock.boxes) : 0;
@@ -835,7 +835,7 @@ export class SalesService {
             this.prisma.stock.upsert({
               where: {
                 companyId_productId: {
-                  companyId: userCompanyId,
+                  companyId: existingSale.companyId,
                   productId: line.productId
                 }
               },
@@ -843,7 +843,7 @@ export class SalesService {
                 boxes: newBoxes
               },
               create: {
-                companyId: userCompanyId,
+                companyId: existingSale.companyId,
                 productId: line.productId,
                 boxes: 0 // إذا لم يكن موجوداً، نبدأ من 0
               }
@@ -852,7 +852,7 @@ export class SalesService {
         }
 
         // تنفيذ التحديثات دفعة واحدة
-        if (newStockUpdates.length > 0) {
+        if (newStockUpdates.length > 0 && existingSale.status === 'APPROVED') {
           await this.prisma.$transaction(newStockUpdates);
         }
       }
@@ -1167,7 +1167,7 @@ export class SalesService {
       }
 
       // تنفيذ جميع التحديثات دفعة واحدة
-      if (stockUpdates.length > 0) {
+      if (stockUpdates.length > 0 && existingSale.status === 'APPROVED') {
         await this.prisma.$transaction(stockUpdates);
       }
 

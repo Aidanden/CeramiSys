@@ -24,6 +24,7 @@ import {
   type NotificationType
 } from '@/state/notificationsApi';
 import { useAppSelector } from '@/app/redux';
+import PermissionGuard from '@/components/PermissionGuard';
 
 // Helper functions (same as NotificationDropdown)
 const getNotificationIcon = (type: NotificationType) => {
@@ -160,7 +161,8 @@ const NotificationsPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <PermissionGuard requiredPermission="screen.notifications">
+      <div className="p-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -521,6 +523,7 @@ const NotificationsPage: React.FC = () => {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 };
 

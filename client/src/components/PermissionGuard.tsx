@@ -24,8 +24,27 @@ const PermissionGuard = ({
 
   const hasPermission = (permission: string) => {
     if (!user || !user.permissions) return false;
-    return user.permissions.includes(permission) || 
-           user.permissions.includes('*') || 
+    
+    // التأكد من أن permissions هو array
+    let permissionsArray: string[] = [];
+    if (Array.isArray(user.permissions)) {
+      permissionsArray = user.permissions;
+    } else if (typeof user.permissions === 'string') {
+      // إذا كان string، نحاول parse
+      try {
+        const parsed = JSON.parse(user.permissions);
+        permissionsArray = Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        permissionsArray = [user.permissions];
+      }
+    } else if (typeof user.permissions === 'object') {
+      // إذا كان object، نحوله لـ array
+      permissionsArray = Object.values(user.permissions).filter(p => typeof p === 'string') as string[];
+    }
+    
+    return permissionsArray.includes(permission) || 
+           permissionsArray.includes('*') || 
+           permissionsArray.includes('screen.all') ||
            user.role === 'admin';
   };
 

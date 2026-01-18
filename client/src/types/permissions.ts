@@ -2,7 +2,7 @@
  * Types for Screen-Based Permissions System
  */
 
-export type ScreenCategory = 'main' | 'sales' | 'purchases' | 'inventory' | 'accounting' | 'reports' | 'settings';
+export type ScreenCategory = 'main' | 'sales' | 'purchases' | 'inventory' | 'accounting' | 'reports' | 'settings' | 'system_management';
 
 export interface ScreenPermission {
   id: string;

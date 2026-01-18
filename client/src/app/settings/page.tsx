@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useGetExchangeRatesQuery, useUpdateSettingMutation, useGetAllSettingsQuery } from '@/state/settingsApi';
 import { useGetCompaniesQuery } from '@/state/companyApi';
 import { DEFAULT_PROFIT_MARGIN } from '@/constants/defaults';
+import PermissionGuard from '@/components/PermissionGuard';
 
 export default function SettingsPage() {
   const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -208,7 +209,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <PermissionGuard requiredPermission="screen.system_settings">
+      <div className="p-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
@@ -745,5 +747,6 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+    </PermissionGuard>
   );
 }
