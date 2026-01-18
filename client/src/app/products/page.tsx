@@ -731,13 +731,16 @@ const ProductsPage = () => {
             )}
 
 
-            <button
-              onClick={() => router.push('/product-groups')}
-              className="flex items-center gap-2 bg-slate-600 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              <Shield className="w-5 h-5" />
-              مجموعات الأصناف
-            </button>
+            {(currentUser?.permissions?.includes('screen.product_groups') ||
+              currentUser?.permissions?.includes('screen.all')) && (
+                <button
+                  onClick={() => router.push('/product-groups')}
+                  className="flex items-center gap-2 bg-slate-600 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  <Shield className="w-5 h-5" />
+                  مجموعات الأصناف
+                </button>
+              )}
 
             <button
               onClick={() => setIsCreateModalOpen(true)}

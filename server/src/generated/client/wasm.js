@@ -667,7 +667,9 @@ exports.Prisma.ExternalStoreInvoiceScalarFieldEnum = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   reviewedAt: 'reviewedAt',
-  reviewedBy: 'reviewedBy'
+  reviewedBy: 'reviewedBy',
+  saleId: 'saleId',
+  dispatchOrderId: 'dispatchOrderId'
 };
 
 exports.Prisma.ExternalStoreInvoiceLineScalarFieldEnum = {

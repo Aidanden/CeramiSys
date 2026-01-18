@@ -192,6 +192,8 @@ export class ExternalStoreController {
 
             // استخدام transaction لإنشاء العميل والمحل معاً
             const result = await prisma.$transaction(async (tx) => {
+                console.log('🔄 Starting transaction for store:', name);
+
                 // 1. إنشاء عميل أولاً
                 const customer = await tx.customer.create({
                     data: {
@@ -202,6 +204,8 @@ export class ExternalStoreController {
                         notes: `عميل تابع لمحل خارجي: ${name}`,
                     },
                 });
+
+                console.log(`✅ Customer created: ${customer.id}`);
 
                 // 2. إنشاء المحل وربطه بالعميل
                 const store = await tx.externalStore.create({
@@ -217,19 +221,35 @@ export class ExternalStoreController {
                     },
                 });
 
-                console.log(`✅ تم إنشاء محل "${name}" وعميل مرتبط به - Customer ID: ${customer.id}`);
+                console.log(`✅ External store created: ${store.id}`);
 
                 return { store, customer };
             });
 
+            console.log('✨ Transaction completed successfully');
+
             return res.status(201).json({
-                ...result.store,
+                id: result.store.id,
+                name: result.store.name,
+                ownerName: result.store.ownerName,
+                phone1: result.store.phone1,
+                phone2: result.store.phone2,
+                address: result.store.address,
+                googleMapsUrl: result.store.googleMapsUrl,
+                isActive: result.store.isActive,
+                showPrices: result.store.showPrices,
+                createdAt: result.store.createdAt,
+                updatedAt: result.store.updatedAt,
                 customerId: result.customer.id,
                 customerName: result.customer.name,
             });
         } catch (error: any) {
-            console.error('Error creating store:', error);
-            return res.status(500).json({ error: 'Failed to create store', details: error.message });
+            console.error('❌ Error creating store:', error);
+            return res.status(500).json({
+                error: 'Failed to create store',
+                message: error.message,
+                details: error.stack
+            });
         }
     }
 
@@ -389,6 +409,15 @@ export class ExternalStoreController {
         try {
             const { id } = req.params;
 
+            // 1. Get the configured company ID for external stores from settings
+            const externalStoreCompanyIdStr = await prisma.globalSettings.findUnique({
+                where: { key: 'EXTERNAL_STORE_COMPANY_ID' }
+            });
+
+            // Default to company 1 (Al-Taqazi) if not set
+            const targetCompanyId = externalStoreCompanyIdStr ? parseInt(externalStoreCompanyIdStr.value) : 1;
+            console.log(`📍 Fetching store products using company ID: ${targetCompanyId}`);
+
             const products = await prisma.externalStoreProduct.findMany({
                 where: { storeId: Number(id) },
                 include: {
@@ -396,16 +425,12 @@ export class ExternalStoreController {
                         include: {
                             stocks: {
                                 where: {
-                                    company: {
-                                        code: 'TAQAZI', // شركة التقازي
-                                    },
+                                    companyId: targetCompanyId,
                                 },
                             },
                             prices: {
                                 where: {
-                                    company: {
-                                        code: 'TAQAZI',
-                                    },
+                                    companyId: targetCompanyId,
                                 },
                             },
                         },

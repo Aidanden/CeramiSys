@@ -88,7 +88,11 @@ export const externalStoreInvoicesApi = createApi({
         }),
 
         // Approve invoice
-        approveInvoice: builder.mutation<ExternalStoreInvoice, number>({
+        approveInvoice: builder.mutation<{
+            invoice: ExternalStoreInvoice;
+            sale: any;
+            dispatchOrder: any;
+        }, number>({
             query: (id) => ({
                 url: `/external-store-invoices/${id}/approve`,
                 method: 'POST',
@@ -114,6 +118,19 @@ export const externalStoreInvoicesApi = createApi({
             ],
         }),
 
+        // Update invoice (admin)
+        updateInvoice: builder.mutation<ExternalStoreInvoice, { id: number; data: CreateInvoiceRequest }>({
+            query: ({ id, data }) => ({
+                url: `/external-store-invoices/${id}`,
+                method: 'PUT',
+                body: data,
+            }),
+            invalidatesTags: (result, error, { id }) => [
+                'ExternalStoreInvoices',
+                { type: 'ExternalStoreInvoices', id },
+            ],
+        }),
+
         // Get invoice stats
         getInvoiceStats: builder.query<InvoiceStats, void>({
             query: () => '/external-store-invoices/stats',
@@ -127,5 +144,6 @@ export const {
     useGetInvoiceByIdQuery,
     useApproveInvoiceMutation,
     useRejectInvoiceMutation,
+    useUpdateInvoiceMutation,
     useGetInvoiceStatsQuery,
 } = externalStoreInvoicesApi;

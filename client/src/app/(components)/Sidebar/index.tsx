@@ -308,12 +308,14 @@ const Sidebar = () => {
               isCollapsed={isSidebarCollapsed}
             />
           )}
-          <SidebarLink
-            href="/general-receipts"
-            icon={ArrowRightLeft}
-            label="إيصالات خارجية"
-            isCollapsed={isSidebarCollapsed}
-          />
+          {canAccessScreen('/general-receipts') && (
+            <SidebarLink
+              href="/general-receipts"
+              icon={ArrowRightLeft}
+              label="إيصالات خارجية"
+              isCollapsed={isSidebarCollapsed}
+            />
+          )}
           {canAccessScreen('/payroll') && (
             <SidebarLink
               href="/payroll"

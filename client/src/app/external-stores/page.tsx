@@ -37,12 +37,15 @@ export default function ExternalStoresPage() {
             refetch();
         } catch (error: any) {
             console.error('❌ Failed to create store:', error);
+            console.log('🔍 Error keys:', Object.keys(error || {}));
+            console.log('🔍 Full Error JSON:', JSON.stringify(error, null, 2));
+
             console.error('❌ Error details:', {
                 status: error?.status,
                 data: error?.data,
                 message: error?.message,
             });
-            
+
             const errorMessage = error?.data?.error || error?.data?.message || error?.message || 'فشل في إنشاء المحل';
             alert(`❌ خطأ: ${errorMessage}`);
         }
@@ -122,8 +125,8 @@ export default function ExternalStoresPage() {
                                 </div>
                                 <span
                                     className={`px-3 py-1 rounded-full text-xs font-medium ${store.isActive
-                                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                                         }`}
                                 >
                                     {store.isActive ? 'نشط' : 'غير نشط'}

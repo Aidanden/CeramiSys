@@ -26,6 +26,7 @@ export class ProductController {
         companyId: req.query.companyId ? parseInt(req.query.companyId as string) : undefined,
         unit: req.query.unit as string,
         groupId: req.query.groupId !== undefined ? (req.query.groupId === '0' ? 0 : parseInt(req.query.groupId as string)) : undefined,
+        strict: req.query.strict === 'true',
       };
 
       // Debug logging
@@ -40,6 +41,7 @@ export class ProductController {
 
       const userCompanyId = (req as any).user?.companyId;
       const isSystemUser = (req as any).user?.isSystemUser;
+      const userPermissions = (req as any).user?.permissions || [];
 
       if (!userCompanyId) {
         console.log('ProductController Error: userCompanyId is null or undefined');
@@ -50,7 +52,7 @@ export class ProductController {
         return;
       }
 
-      const result = await this.productService.getProducts(query, userCompanyId, isSystemUser);
+      const result = await this.productService.getProducts(query, userCompanyId, isSystemUser, userPermissions);
       res.status(200).json(result);
     } catch (error: any) {
       console.error('خطأ في جلب الأصناف:', error);

@@ -12,6 +12,7 @@ import {
     useAssignProductsMutation,
 } from '@/state/externalStoresApi';
 import { useGetProductsQuery } from '@/state/productsApi';
+import { useGetAllSettingsQuery } from '@/state/settingsApi';
 import { useToast } from '@/components/ui/Toast';
 
 export default function ExternalStoreDetailsPage() {
@@ -55,8 +56,20 @@ export default function ExternalStoreDetailsPage() {
     const [updateStoreUser, { isLoading: isUpdatingUser }] = useUpdateStoreUserMutation();
     const [assignProducts, { isLoading: isAssigningProducts }] = useAssignProductsMutation();
 
+    // Get company ID from settings for product filtering
+    const { data: allSettings } = useGetAllSettingsQuery();
+    const externalStoreCompanyId = useMemo(() => {
+        const setting = allSettings?.find(s => s.key === 'EXTERNAL_STORE_COMPANY_ID');
+        return setting ? parseInt(setting.value) : 1;
+    }, [allSettings]);
+
     const { data: productsResponse, isLoading: isLoadingProducts } = useGetProductsQuery(
-        { limit: 10000, page: 1 },
+        {
+            limit: 10000,
+            page: 1,
+            companyId: externalStoreCompanyId,
+            strict: true
+        },
         { skip: !storeId }
     );
     const availableProducts = productsResponse?.data?.products ?? [];

@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/Toast';
 import Link from 'next/link';
-import { useGetExchangeRatesQuery, useUpdateSettingMutation } from '@/state/settingsApi';
+import { useGetExchangeRatesQuery, useUpdateSettingMutation, useGetAllSettingsQuery } from '@/state/settingsApi';
+import { useGetCompaniesQuery } from '@/state/companyApi';
 import { DEFAULT_PROFIT_MARGIN } from '@/constants/defaults';
 
 export default function SettingsPage() {
@@ -26,8 +27,22 @@ export default function SettingsPage() {
   const [isSavingInventory, setIsSavingInventory] = useState(false);
   const [isSavingDiscounts, setIsSavingDiscounts] = useState(false);
   const [isSavingCostMethod, setIsSavingCostMethod] = useState(false);
+  const [isSavingExternalStore, setIsSavingExternalStore] = useState(false);
+
+  // إعدادات المحلات الخارجية
+  const { data: allSettings, isLoading: isLoadingSettings } = useGetAllSettingsQuery();
+  const { data: companiesResponse } = useGetCompaniesQuery({ limit: 100 });
+  const [externalStoreCompanyId, setExternalStoreCompanyId] = useState('1');
 
   // تحديث الحقول عند تحميل البيانات
+  useEffect(() => {
+    if (allSettings) {
+      const extStoreCompSetting = allSettings.find(s => s.key === 'EXTERNAL_STORE_COMPANY_ID');
+      if (extStoreCompSetting) {
+        setExternalStoreCompanyId(extStoreCompSetting.value);
+      }
+    }
+  }, [allSettings]);
   useEffect(() => {
     if (exchangeRates) {
       setUsdRate(exchangeRates.USD_EXCHANGE_RATE.toString());
@@ -173,6 +188,22 @@ export default function SettingsPage() {
       error('حدث خطأ أثناء حفظ إعدادات حساب التكلفة');
     } finally {
       setIsSavingCostMethod(false);
+    }
+  };
+
+  // حفظ إعدادات المحلات الخارجية
+  const handleSaveExternalStoreSettings = async () => {
+    setIsSavingExternalStore(true);
+    try {
+      await updateSetting({
+        key: 'EXTERNAL_STORE_COMPANY_ID',
+        value: externalStoreCompanyId
+      }).unwrap();
+      success('تم حفظ إعدادات المحلات الخارجية بنجاح');
+    } catch (err) {
+      error('حدث خطأ أثناء حفظ إعدادات المحلات الخارجية');
+    } finally {
+      setIsSavingExternalStore(false);
     }
   };
 
@@ -333,12 +364,11 @@ export default function SettingsPage() {
         </div>
 
         <div className="space-y-4">
-          <div 
-            className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
-              costCalculationMethod === 'manual' 
-                ? 'border-teal-500 bg-teal-50' 
-                : 'border-gray-200 bg-white hover:border-gray-300'
-            }`}
+          <div
+            className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${costCalculationMethod === 'manual'
+              ? 'border-teal-500 bg-teal-50'
+              : 'border-gray-200 bg-white hover:border-gray-300'
+              }`}
             onClick={() => setCostCalculationMethod('manual')}
           >
             <div className="flex items-start justify-between">
@@ -372,12 +402,11 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div 
-            className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
-              costCalculationMethod === 'invoice' 
-                ? 'border-teal-500 bg-teal-50' 
-                : 'border-gray-200 bg-white hover:border-gray-300'
-            }`}
+          <div
+            className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${costCalculationMethod === 'invoice'
+              ? 'border-teal-500 bg-teal-50'
+              : 'border-gray-200 bg-white hover:border-gray-300'
+              }`}
             onClick={() => setCostCalculationMethod('invoice')}
           >
             <div className="flex items-start justify-between">
@@ -496,6 +525,55 @@ export default function SettingsPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
             {isSavingDiscounts ? 'جاري الحفظ...' : 'حفظ إعدادات الخصومات'}
+          </button>
+        </div>
+      </div>
+
+      {/* External Stores Settings Card */}
+      <div className="bg-white rounded-lg shadow-sm border border-border-primary p-6 mb-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
+            <svg className="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-text-primary">إعدادات المحلات الخارجية</h2>
+            <p className="text-sm text-text-secondary">التحكم في مصادر بيانات المحلات الخارجية</p>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              الشركة المسؤولة عن أصناف المحلات الخارجية
+            </label>
+            <select
+              value={externalStoreCompanyId}
+              onChange={(e) => setExternalStoreCompanyId(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-lg"
+            >
+              <option value="">اختر الشركة...</option>
+              {companiesResponse?.data?.companies.map(company => (
+                <option key={company.id} value={company.id.toString()}>
+                  {company.name} ({company.code})
+                </option>
+              ))}
+            </select>
+            <p className="mt-2 text-sm text-gray-500" dir="rtl">
+              📌 سيتم عرض أصناف وأسعار ومخزون هذه الشركة فقط في بوابة المحلات الخارجية وعند ربط الأصناف الجديدة.
+            </p>
+          </div>
+
+          <button
+            onClick={handleSaveExternalStoreSettings}
+            disabled={isSavingExternalStore}
+            className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-cyan-600 hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 disabled:opacity-50 transition-colors"
+          >
+            <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            {isSavingExternalStore ? 'جاري الحفظ...' : 'حفظ إعدادات المحلات الخارجية'}
           </button>
         </div>
       </div>

@@ -43,4 +43,11 @@ router.post('/:id/approve', controller.approveInvoice.bind(controller));
  */
 router.post('/:id/reject', controller.rejectInvoice.bind(controller));
 
+/**
+ * @route   PUT /api/external-store-invoices/:id
+ * @desc    تحديث فاتورة (للمسؤول)
+ * @access  Private (Accountant)
+ */
+router.put('/:id', controller.adminUpdateInvoice.bind(controller));
+
 export default router;

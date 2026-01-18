@@ -15,6 +15,7 @@ export const SCREEN_PERMISSIONS = {
   SALES: 'screen.sales',
   SALE_RETURNS: 'screen.sale_returns',
   INTER_COMPANY_SALES: 'screen.inter_company_sales',
+  SELL_PARENT_COMPANY_ITEMS: 'screen.sell_parent_items',
 
   // المشتريات
   PURCHASES: 'screen.purchases',
@@ -31,6 +32,7 @@ export const SCREEN_PERMISSIONS = {
   TREASURY: 'screen.treasury',
   PAYROLL: 'screen.payroll',
   BAD_DEBTS: 'screen.bad_debts',
+  GENERAL_RECEIPTS: 'screen.general_receipts',
 
   // التقارير
   REPORTS: 'screen.reports',
@@ -134,6 +136,15 @@ export const SCREEN_METADATA: ScreenMetadata[] = [
     description: 'المبيعات بين الشركات',
     icon: 'ArrowRightLeft'
   },
+  {
+    id: 'sell_parent_items',
+    name: 'بيع أصناف الشركة الأم',
+    route: '#action-sell-parent-items',
+    permission: SCREEN_PERMISSIONS.SELL_PARENT_COMPANY_ITEMS,
+    category: 'sales',
+    description: 'السماح ببيع أصناف تابعة للشركة الأم من الشركات الفرعية',
+    icon: 'Building'
+  },
 
   // شاشات المشتريات
   {
@@ -229,6 +240,15 @@ export const SCREEN_METADATA: ScreenMetadata[] = [
     category: 'accounting',
     description: 'إدارة بنود المصروفات المعدومة وصرفها',
     icon: 'Receipt'
+  },
+  {
+    id: 'general_receipts',
+    name: 'إيصالات خارجية',
+    route: '/general-receipts',
+    permission: SCREEN_PERMISSIONS.GENERAL_RECEIPTS,
+    category: 'accounting',
+    description: 'إدارة الإيصالات الخارجية',
+    icon: 'FileText'
   },
 
   // شاشات المحلات الخارجية

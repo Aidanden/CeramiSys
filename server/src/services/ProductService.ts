@@ -23,7 +23,7 @@ export class ProductService {
   /**
    * الحصول على جميع الأصناف مع التصفية والبحث
    */
-  async getProducts(query: GetProductsQueryDto, userCompanyId: number, isSystemUser?: boolean): Promise<ProductsResponseDto> {
+  async getProducts(query: GetProductsQueryDto, userCompanyId: number, isSystemUser?: boolean, userPermissions: string[] = []): Promise<ProductsResponseDto> {
     try {
       const { page = 1, limit = 10, search, sku, companyId, unit, groupId } = query;
       const skip = (page - 1) * limit;
@@ -37,17 +37,23 @@ export class ProductService {
       // منطق جلب الأصناف:
       // - إذا تم تمرير companyId=1 (التقازي): أصناف التقازي فقط
       // - إذا لم يتم تمرير companyId: جميع الأصناف (لجميع المستخدمين)
-      // - إذا تم تمرير companyId آخر: أصناف تلك الشركة + التقازي
+      // - إذا تم تمرير companyId آخر: أصناف تلك الشركة + التقازي (إذا كان لديه صلاحية)
       if (companyId) {
         if (companyId === 1 || query.strict) {
           // شركة واحدة فقط (التقازي فقط أو طلب فلترة دقيقة)
           companyConditions = [{ createdByCompanyId: companyId }];
         } else {
-          // شركة أخرى + التقازي (الوضع الافتراضي للمبيعات)
-          companyConditions = [
-            { createdByCompanyId: companyId },
-            { createdByCompanyId: 1 }
-          ];
+          // شركة أخرى + التقازي (بناءً على الصلاحية)
+          companyConditions = [{ createdByCompanyId: companyId }];
+
+          // التحقق من صلاحية بيع أصناف الشركة الأم
+          // أو إذا كان المستخدم مدير (لديه صلاحية الكل)
+          const hasParentAccess = userPermissions.includes('screen.sell_parent_items') ||
+            userPermissions.includes('screen.all');
+
+          if (hasParentAccess) {
+            companyConditions.push({ createdByCompanyId: 1 });
+          }
         }
       }
       // إذا لم يتم تمرير companyId، لا نضيف شروط (جميع الأصناف)

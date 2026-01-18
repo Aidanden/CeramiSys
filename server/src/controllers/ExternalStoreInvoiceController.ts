@@ -1,5 +1,14 @@
 import { Request, Response } from 'express';
 import prisma from '../models/prismaClient';
+import CustomerAccountService from '../services/CustomerAccountService';
+import { TreasuryController } from './TreasuryController';
+
+interface InvoiceLineInput {
+    productId: number;
+    qty: number;
+    unitPrice: number;
+    subTotal?: number;
+}
 
 // تعريف نوع المستخدم للـ Request
 interface StoreAuthRequest extends Request {
@@ -149,14 +158,14 @@ export class ExternalStoreInvoiceController {
                 return res.status(401).json({ error: 'Not authenticated' });
             }
 
-            const { lines, notes } = req.body;
+            const { lines, notes } = req.body as { lines: InvoiceLineInput[]; notes?: string };
 
             if (!Array.isArray(lines) || lines.length === 0) {
                 return res.status(400).json({ error: 'Invoice lines are required' });
             }
 
             // التحقق من أن جميع المنتجات مربوطة بالمحل
-            const productIds = lines.map((line: any) => line.productId);
+            const productIds = lines.map(line => line.productId);
             const assignedProducts = await prisma.externalStoreProduct.findMany({
                 where: {
                     storeId: req.storeUser.storeId,
@@ -172,7 +181,7 @@ export class ExternalStoreInvoiceController {
             // ملاحظة: للأصناف التي وحدتها "صندوق"، يتم إرسال subTotal محسوب من الـ frontend
             // (الكمية × عدد الأمتار × سعر المتر)
             let total = 0;
-            const invoiceLines = lines.map((line: any) => {
+            const invoiceLines = lines.map((line) => {
                 // استخدام subTotal المُرسل من الـ frontend إذا كان موجوداً
                 // وإلا حساب الإجمالي بالطريقة العادية
                 const subTotal = line.subTotal
@@ -231,7 +240,7 @@ export class ExternalStoreInvoiceController {
             }
 
             const { id } = req.params;
-            const { lines, notes } = req.body;
+            const { lines, notes } = req.body as { lines: InvoiceLineInput[]; notes?: string };
 
             // التحقق من وجود الفاتورة وأنها معلقة
             const existingInvoice = await prisma.externalStoreInvoice.findUnique({
@@ -251,10 +260,8 @@ export class ExternalStoreInvoiceController {
             }
 
             // حساب الإجمالي الجديد
-            // ملاحظة: للأصناف التي وحدتها "صندوق"، يتم إرسال subTotal محسوب من الـ frontend
             let total = 0;
-            const invoiceLines = lines.map((line: any) => {
-                // استخدام subTotal المُرسل من الـ frontend إذا كان موجوداً
+            const invoiceLines = lines.map((line) => {
                 const subTotal = line.subTotal
                     ? Number(line.subTotal)
                     : Number(line.qty) * Number(line.unitPrice);
@@ -293,6 +300,73 @@ export class ExternalStoreInvoiceController {
             return res.json(invoice);
         } catch (error: any) {
             console.error('Error updating invoice:', error);
+            return res.status(500).json({ error: 'Failed to update invoice', details: error.message });
+        }
+    }
+
+    /**
+     * تحديث الفاتورة من قبل المسؤول (قبل الموافقة)
+     */
+    async adminUpdateInvoice(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { lines, notes } = req.body as { lines: InvoiceLineInput[]; notes?: string };
+
+            // التحقق من وجود الفاتورة وأنها معلقة
+            const existingInvoice = await prisma.externalStoreInvoice.findUnique({
+                where: { id: Number(id) },
+            });
+
+            if (!existingInvoice) {
+                return res.status(404).json({ error: 'Invoice not found' });
+            }
+
+            if (existingInvoice.status !== 'PENDING') {
+                return res.status(400).json({ error: 'Can only update pending invoices' });
+            }
+
+            // حساب الإجمالي الجديد
+            let total = 0;
+            const invoiceLines = lines.map((line) => {
+                const subTotal = line.subTotal
+                    ? Number(line.subTotal)
+                    : Number(line.qty) * Number(line.unitPrice);
+                total += subTotal;
+                return {
+                    productId: line.productId,
+                    qty: line.qty,
+                    unitPrice: line.unitPrice,
+                    subTotal,
+                };
+            });
+
+            // حذف الأسطر القديمة وإنشاء الجديدة
+            await prisma.externalStoreInvoiceLine.deleteMany({
+                where: { invoiceId: Number(id) },
+            });
+
+            const invoice = await prisma.externalStoreInvoice.update({
+                where: { id: Number(id) },
+                data: {
+                    total,
+                    notes,
+                    lines: {
+                        create: invoiceLines,
+                    },
+                },
+                include: {
+                    store: true,
+                    lines: {
+                        include: {
+                            product: true,
+                        },
+                    },
+                },
+            });
+
+            return res.json(invoice);
+        } catch (error: any) {
+            console.error('Error admin updating invoice:', error);
             return res.status(500).json({ error: 'Failed to update invoice', details: error.message });
         }
     }
@@ -365,15 +439,81 @@ export class ExternalStoreInvoiceController {
             }
 
             // استخدام transaction للتأكد من تنفيذ جميع العمليات
-            const result = await prisma.$transaction(async (tx) => {
-                // 1. تحديث حالة الفاتورة إلى معتمدة
+            const result = await prisma.$transaction(async (tx: any) => {
+                // 1. إنشاء فاتورة مبيعات آجلة للعميل المرتبط بالمحل
+                const sale = await tx.sale.create({
+                    data: {
+                        companyId: userCompanyId || 1, // شركة التقازي الرئيسية
+                        customerId: invoice.store.customerId, // العميل المرتبط بالمحل
+                        invoiceNumber: `EXT-${invoice.store.id}-${invoice.id}`,
+                        saleType: 'CREDIT', // آجلة
+                        paymentMethod: null,
+                        total: invoice.total,
+                        paidAmount: 0,
+                        remainingAmount: invoice.total,
+                        isFullyPaid: false,
+                        status: 'APPROVED', // معتمدة تلقائياً
+                        notes: `فاتورة محل خارجي: ${invoice.store.name} - رقم الفاتورة: ${invoice.invoiceNumber || invoice.id}`,
+                        approvedBy: userId,
+                        approvedAt: new Date(),
+                    },
+                });
+
+                // 2. إنشاء بنود فاتورة المبيعات وخصم المخزون
+                for (const line of invoice.lines) {
+                    // أ. إنشاء بند الفاتورة
+                    await tx.saleLine.create({
+                        data: {
+                            saleId: sale.id,
+                            productId: line.productId,
+                            qty: line.qty,
+                            unitPrice: line.unitPrice,
+                            subTotal: line.subTotal,
+                        },
+                    });
+
+                    // ب. خصم الكمية من المخزون
+                    const stockCompanyId = userCompanyId || 1;
+                    const qtyToDecrement = Number(line.qty);
+
+                    await tx.stock.upsert({
+                        where: {
+                            companyId_productId: {
+                                companyId: stockCompanyId,
+                                productId: line.productId,
+                            }
+                        },
+                        update: {
+                            boxes: { decrement: qtyToDecrement }
+                        },
+                        create: {
+                            companyId: stockCompanyId,
+                            productId: line.productId,
+                            boxes: -qtyToDecrement
+                        }
+                    });
+                }
+
+                // 3. إنشاء أمر صرف مرتبط بالفاتورة
+                const dispatchOrder = await tx.dispatchOrder.create({
+                    data: {
+                        saleId: sale.id,
+                        companyId: userCompanyId || 1,
+                        status: 'PENDING',
+                        notes: `أمر صرف تلقائي - محل: ${invoice.store.name} - فاتورة: ${invoice.invoiceNumber || invoice.id}`,
+                    },
+                });
+
+                // 4. تحديث حالة فاتورة المحل وربطها بالبيانات المنشأة
                 const updatedInvoice = await tx.externalStoreInvoice.update({
                     where: { id: Number(id) },
                     data: {
                         status: 'APPROVED',
                         reviewedAt: new Date(),
                         reviewedBy: userId,
-                    },
+                        saleId: sale.id,
+                        dispatchOrderId: dispatchOrder.id
+                    } as any, // Cast to any because Prisma types might not be updated yet
                     include: {
                         store: true,
                         lines: {
@@ -384,51 +524,29 @@ export class ExternalStoreInvoiceController {
                     },
                 });
 
-                // 2. إنشاء فاتورة مبيعات آجلة للعميل المرتبط بالمحل
-                const sale = await tx.sale.create({
-                    data: {
-                        companyId: userCompanyId || 1, // شركة التقازي الرئيسية
-                        customerId: invoice.store.customerId, // العميل المرتبط بالمحل
-                        invoiceNumber: `EXT-${invoice.store.id}-${invoice.id}`,
-                        saleType: 'CREDIT', // آجلة
-                        paymentMethod: null,
-                        total: invoice.total,
-                        status: 'APPROVED', // معتمدة تلقائياً
-                        notes: `فاتورة محل خارجي: ${invoice.store.name} - رقم الفاتورة: ${invoice.invoiceNumber || invoice.id}`,
-                        approvedBy: userId,
-                        approvedAt: new Date(),
-                    },
-                });
-
-                // 3. إنشاء بنود فاتورة المبيعات
-                for (const line of invoice.lines) {
-                    await tx.saleLine.create({
-                        data: {
-                            saleId: sale.id,
-                            productId: line.productId,
-                            qty: line.qty,
-                            unitPrice: line.unitPrice,
-                            subTotal: line.subTotal,
-                        },
-                    });
-                }
-
-                // 4. إنشاء أمر صرف مرتبط بالفاتورة
-                const dispatchOrder = await tx.dispatchOrder.create({
-                    data: {
-                        saleId: sale.id,
-                        companyId: userCompanyId || 1,
-                        status: 'PENDING',
-                        notes: `أمر صرف تلقائي - محل: ${invoice.store.name} - فاتورة: ${invoice.invoiceNumber || invoice.id}`,
-                    },
-                });
-
                 return {
                     invoice: updatedInvoice,
                     sale,
                     dispatchOrder,
                 };
             });
+
+            // 5. تسجيل قيد محاسبي في حساب العميل (خارج الـ transaction لتجنب التعليق)
+            if (result.invoice.store.customerId) {
+                try {
+                    await CustomerAccountService.createAccountEntry({
+                        customerId: result.invoice.store.customerId,
+                        transactionType: 'DEBIT', // عليه - زيادة في دين العميل
+                        amount: Number(result.invoice.total),
+                        referenceType: 'SALE',
+                        referenceId: result.sale.id,
+                        description: `فاتورة مبيعات آجلة (محل خارجي) رقم ${result.sale.invoiceNumber || result.sale.id}`,
+                        transactionDate: new Date()
+                    });
+                } catch (accError) {
+                    console.error('Error creating customer account entry for external invoice:', accError);
+                }
+            }
 
             return res.json({
                 ...result.invoice,
@@ -448,7 +566,7 @@ export class ExternalStoreInvoiceController {
     async rejectInvoice(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const { reason } = req.body;
+            const { reason } = req.body as { reason?: string };
             const userId = (req as any).user?.UserID;
 
             const invoice = await prisma.externalStoreInvoice.findUnique({
@@ -497,7 +615,7 @@ export class ExternalStoreInvoiceController {
             const where: any = {};
 
             if (isStoreUser) {
-                where.storeId = req.storeUser!.storeId;
+                where.storeId = (req as StoreAuthRequest).storeUser!.storeId;
             }
 
             const [
@@ -580,27 +698,38 @@ export class ExternalStoreInvoiceController {
             }
 
             const storeId = req.storeUser.storeId;
+            console.log(`🔍 Fetching available products for store: ${storeId}`);
 
-            // الحصول على قائمة المنتجات المخصصة للمحل
+            // 1. Get the configured company ID for external stores from settings
+            const externalStoreCompanyIdStr = await prisma.globalSettings.findUnique({
+                where: { key: 'EXTERNAL_STORE_COMPANY_ID' }
+            });
+
+            // Default to company 1 (Al-Taqazi) if not set
+            const targetCompanyId = externalStoreCompanyIdStr ? parseInt(externalStoreCompanyIdStr.value) : 1;
+            console.log(`📍 Using company ID for filtering: ${targetCompanyId}`);
+
+            // 2. Get the list of products assigned to this store
             const storeProducts = await prisma.externalStoreProduct.findMany({
                 where: { storeId: storeId },
                 select: { productId: true }
             });
 
             const productIds = storeProducts.map(sp => sp.productId);
+            console.log(`📦 Assigned product IDs count: ${productIds.length}`);
 
             if (productIds.length === 0) {
                 return res.json([]);
             }
 
-            // جلب المنتجات مع البيانات المحدثة من الجداول الأساسية
-            // إرجاع جميع الأسعار والمخزون للفلترة في الـ Frontend
+            // 3. Fetch products with updated data, specifically for the target company
             const products = await prisma.product.findMany({
                 where: {
                     id: { in: productIds }
                 },
                 include: {
                     stocks: {
+                        where: { companyId: targetCompanyId },
                         include: {
                             company: {
                                 select: {
@@ -612,6 +741,7 @@ export class ExternalStoreInvoiceController {
                         }
                     },
                     prices: {
+                        where: { companyId: targetCompanyId },
                         include: {
                             company: {
                                 select: {
@@ -625,24 +755,36 @@ export class ExternalStoreInvoiceController {
                 },
             });
 
-            // تنسيق البيانات بنفس الشكل المتوقع في الـ Frontend
-            const formattedProducts = products.map(product => ({
-                productId: product.id,
-                storeId: req.storeUser!.storeId,
-                product: {
-                    id: product.id,
-                    sku: product.sku,
-                    name: product.name,
-                    unit: product.unit,
-                    unitsPerBox: product.unitsPerBox,
-                    stocks: product.stocks,
-                    prices: product.prices
-                }
-            }));
+            console.log(`✨ Successfully fetched ${products.length} products`);
+
+            // 4. Format the data for the frontend
+            const formattedProducts = products.map(product => {
+                // Determine stock and price for the target company
+                const stock = product.stocks[0];
+                const price = product.prices[0];
+
+                return {
+                    productId: product.id,
+                    storeId: storeId,
+                    product: {
+                        id: product.id,
+                        sku: product.sku,
+                        name: product.name,
+                        unit: product.unit,
+                        unitsPerBox: product.unitsPerBox,
+                        // Provide current stock and price based on configured company
+                        currentStock: stock ? Number(stock.boxes) : 0,
+                        sellPrice: price ? Number(price.sellPrice) : 0,
+                        // Keep original arrays for flexibility if needed
+                        stocks: product.stocks,
+                        prices: product.prices
+                    }
+                };
+            });
 
             return res.json(formattedProducts);
         } catch (error: any) {
-            console.error('Error fetching available products:', error);
+            console.error('❌ Error fetching available products:', error);
             return res.status(500).json({ error: 'Failed to fetch products', details: error.message });
         }
     }

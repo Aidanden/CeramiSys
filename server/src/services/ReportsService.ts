@@ -557,7 +557,7 @@ export class ReportsService {
     // 3. توحيد الحركات في قائمة واحدة
     const allMovements: any[] = [
       ...sales.map(s => {
-        const isInternal = s.sale.companyId !== companyId;
+        const isInternal = s.sale.company.id !== companyId;
         return {
           date: s.sale.createdAt,
           type: 'SALE',
