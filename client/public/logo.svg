@@ -1,0 +1,41 @@
+<svg width="500" height="500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="500" height="500" fill="#E6F3FF"/>
+<g transform="translate(150, 80)">
+  <!-- Head silhouette -->
+  <path d="M120 180C140 180 160 165 170 145C175 135 180 120 180 100C180 80 175 65 170 55C165 45 155 35 140 30C125 25 105 25 90 30C75 35 65 45 60 55C55 65 50 80 50 100C50 120 55 135 60 145C70 165 90 180 120 180Z" fill="#1E40AF"/>
+  
+  <!-- Brain/circuit pattern -->
+  <g transform="translate(60, 40)">
+    <!-- Main brain curves -->
+    <path d="M20 40C30 35 40 30 50 35C60 40 65 50 60 60C55 70 45 75 35 70C25 65 20 55 20 40Z" fill="#3B82F6" opacity="0.8"/>
+    <path d="M40 20C50 15 60 20 70 25C80 30 85 40 80 50C75 60 65 65 55 60C45 55 40 45 40 35C40 30 40 25 40 20Z" fill="#60A5FA" opacity="0.7"/>
+    
+    <!-- Circuit dots and connections -->
+    <circle cx="25" cy="45" r="3" fill="#DBEAFE"/>
+    <circle cx="45" cy="35" r="2" fill="#DBEAFE"/>
+    <circle cx="35" cy="55" r="2" fill="#DBEAFE"/>
+    <circle cx="55" cy="25" r="3" fill="#DBEAFE"/>
+    <circle cx="65" cy="45" r="2" fill="#DBEAFE"/>
+    
+    <!-- Connecting lines -->
+    <line x1="25" y1="45" x2="35" y2="55" stroke="#DBEAFE" stroke-width="1"/>
+    <line x1="45" y1="35" x2="55" y2="25" stroke="#DBEAFE" stroke-width="1"/>
+    <line x1="35" y1="55" x2="45" y2="35" stroke="#DBEAFE" stroke-width="1"/>
+    <line x1="55" y1="25" x2="65" y2="45" stroke="#DBEAFE" stroke-width="1"/>
+  </g>
+  
+  <!-- Floating particles -->
+  <g transform="translate(20, 60)">
+    <circle cx="0" cy="0" r="2" fill="#3B82F6"/>
+    <circle cx="5" cy="10" r="1.5" fill="#60A5FA"/>
+    <circle cx="10" cy="5" r="1" fill="#93C5FD"/>
+    <circle cx="15" cy="15" r="2" fill="#3B82F6"/>
+    <circle cx="8" cy="20" r="1" fill="#60A5FA"/>
+    <circle cx="3" cy="25" r="1.5" fill="#93C5FD"/>
+  </g>
+</g>
+
+<!-- Company name -->
+<text x="250" y="350" text-anchor="middle" fill="#3B82F6" font-family="Arial, sans-serif" font-size="36" font-weight="bold">AL-MANJER</text>
+<text x="250" y="380" text-anchor="middle" fill="#1F2937" font-family="Arial, sans-serif" font-size="16" font-weight="normal" letter-spacing="2px">TELECOM AND TECHNOLOGY</text>
+</svg>
