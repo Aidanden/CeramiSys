@@ -1942,7 +1942,7 @@ const ProductsPage = () => {
                 <div className="text-sm text-gray-600 space-y-2">
                   <div className="flex justify-between">
                     <span>{selectedProduct.unit === 'صندوق' ? 'الصناديق الحالية:' : `الكمية الحالية (${selectedProduct.unit || 'وحدة'}):`}</span>
-                    <span className="font-medium">{formatArabicQuantity(selectedProduct.stock?.boxes || 0)} {selectedProduct.unit === 'صندوق' ? 'صندوق' : (selectedProduct.unit || 'وحدة')}</span>
+                    <span className="font-medium">{formatArabicQuantity(selectedProduct.stock?.[0]?.boxes || 0)} {selectedProduct.unit === 'صندوق' ? 'صندوق' : (selectedProduct.unit || 'وحدة')}</span>
                   </div>
                   {selectedProduct.unit === 'صندوق' && selectedProduct.unitsPerBox && (
                     <>
@@ -1953,7 +1953,7 @@ const ProductsPage = () => {
                       <div className="flex justify-between border-t pt-2">
                         <span className="font-medium text-blue-600">إجمالي المساحة:</span>
                         <span className="font-bold text-blue-600">
-                          {formatArabicArea(Number(selectedProduct.stock?.boxes || 0) * Number(selectedProduct.unitsPerBox))} م²
+                          {formatArabicArea(Number(selectedProduct.stock?.[0]?.boxes || 0) * Number(selectedProduct.unitsPerBox))} م²
                         </span>
                       </div>
                     </>
@@ -1979,7 +1979,7 @@ const ProductsPage = () => {
                     required
                     min="0"
                     step="0.01"
-                    defaultValue={selectedProduct.stock?.boxes || 0}
+                    defaultValue={selectedProduct.stock?.[0]?.boxes || 0}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                     placeholder={selectedProduct.unit === 'صندوق' ? 'أدخل عدد الصناديق الجديد' : `أدخل الكمية الجديدة بال${selectedProduct.unit || 'وحدة'}`}
                   />

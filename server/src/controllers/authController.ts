@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../models/prismaClient';
 import { AuthRequest } from '../middleware/auth';
+import { normalizePermissions } from '../utils/permissionUtils';
 
 // تسجيل الدخول
 export const login = async (req: Request, res: Response): Promise<void> => {
@@ -157,7 +158,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           fullName: user.FullName,
           email: user.Email,
           role: user.Role?.RoleName || 'user',
-          permissions: ((user as any).Permissions || user.Role?.Permissions || []) as string[],
+          permissions: (user as any).Permissions !== null && (user as any).Permissions !== undefined
+            ? normalizePermissions((user as any).Permissions)
+            : normalizePermissions(user.Role?.Permissions),
           companyId: user.CompanyID,
           isSystemUser: user.IsSystemUser
         }
@@ -235,35 +238,13 @@ export const getCurrentUser = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    // تحويل Permissions من JSON إلى array (نفس الطريقة المستخدمة في authenticateToken)
-    let permissions: string[] = [];
-    const userPermissions = (user as any).Permissions;
-    const rolePermissions = user.Role?.Permissions;
+    // تحويل Permissions من JSON إلى array
+    const userPermissionsRaw = (user as any).Permissions;
+    const rolePermissionsRaw = user.Role?.Permissions;
 
-    // استخدام permissions المستخدم إذا كانت موجودة، وإلا استخدم permissions الـ Role
-    const permissionsSource = userPermissions || rolePermissions;
-
-    if (permissionsSource) {
-      if (Array.isArray(permissionsSource)) {
-        permissions = (permissionsSource as any[]).filter(p => typeof p === 'string') as string[];
-      } else if (typeof permissionsSource === 'string') {
-        // إذا كان JSON string، نحاول parse
-        try {
-          const parsed = JSON.parse(permissionsSource);
-          if (Array.isArray(parsed)) {
-            permissions = parsed.filter(p => typeof p === 'string') as string[];
-          } else if (typeof parsed === 'object') {
-            permissions = Object.values(parsed).filter(p => typeof p === 'string') as string[];
-          }
-        } catch {
-          // إذا فشل parse، نعتبره string واحد
-          permissions = [permissionsSource];
-        }
-      } else if (typeof permissionsSource === 'object') {
-        // إذا كان JSON object، نحوله لـ array
-        permissions = Object.values(permissionsSource as any).filter(p => typeof p === 'string') as string[];
-      }
-    }
+    const permissions = userPermissionsRaw !== null && userPermissionsRaw !== undefined
+      ? normalizePermissions(userPermissionsRaw)
+      : normalizePermissions(rolePermissionsRaw);
 
     res.json({
       success: true,

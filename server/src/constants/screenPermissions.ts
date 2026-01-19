@@ -23,6 +23,7 @@ export const SCREEN_PERMISSIONS = {
 
   // المخزون
   WAREHOUSE_DISPATCH: 'screen.warehouse_dispatch',
+  WAREHOUSE_RETURNS: 'screen.warehouse_returns',
   DAMAGE_REPORTS: 'screen.damage_reports',
 
   // المحاسبة
@@ -34,6 +35,10 @@ export const SCREEN_PERMISSIONS = {
   BAD_DEBTS: 'screen.bad_debts',
   GENERAL_RECEIPTS: 'screen.general_receipts',
 
+  // التكاليف
+  PRODUCT_COST: 'screen.product_cost',
+  INVOICE_COST: 'screen.invoice_cost',
+
   // التقارير
   REPORTS: 'screen.reports',
 
@@ -41,7 +46,7 @@ export const SCREEN_PERMISSIONS = {
   USERS: 'screen.users',
   PERMISSION_GROUPS: 'screen.permission_groups',
   NOTIFICATIONS: 'screen.notifications',
-  
+
   // إدارة النظام
   SYSTEM_SETTINGS: 'screen.system_settings',
   EXPENSE_CATEGORIES: 'screen.expense_categories',
@@ -105,7 +110,7 @@ export const SCREEN_METADATA: ScreenMetadata[] = [
   {
     id: 'product-groups',
     name: 'مجموعات الأصناف',
-    route: '/products/groups',
+    route: '/product-groups',
     permission: SCREEN_PERMISSIONS.PRODUCT_GROUPS,
     category: 'inventory',
     description: 'إدارة مجموعات الأصناف والخصومات المسموح بها',
@@ -179,6 +184,15 @@ export const SCREEN_METADATA: ScreenMetadata[] = [
     category: 'inventory',
     description: 'إدارة أوامر صرف المخزن',
     icon: 'Layout'
+  },
+  {
+    id: 'warehouse_returns',
+    name: 'استلام المردودات',
+    route: '/warehouse-returns',
+    permission: SCREEN_PERMISSIONS.WAREHOUSE_RETURNS,
+    category: 'inventory',
+    description: 'إدارة استلام مردودات المبيعات للمخزن',
+    icon: 'TrendingDown'
   },
   {
     id: 'damage_reports',
@@ -272,6 +286,26 @@ export const SCREEN_METADATA: ScreenMetadata[] = [
     permission: SCREEN_PERMISSIONS.EXTERNAL_STORE_INVOICES,
     category: 'accounting',
     description: 'إدارة فواتير المحلات الخارجية',
+    icon: 'FileText'
+  },
+
+  // التكاليف
+  {
+    id: 'product_cost',
+    name: 'تكلفة الأصناف',
+    route: '/product-cost',
+    permission: SCREEN_PERMISSIONS.PRODUCT_COST,
+    category: 'accounting',
+    description: 'إدارة وتعديل تكلفة الأصناف يدوياً',
+    icon: 'BarChart3'
+  },
+  {
+    id: 'invoice_cost',
+    name: 'تكلفة الفاتورة',
+    route: '/invoice-cost',
+    permission: SCREEN_PERMISSIONS.INVOICE_COST,
+    category: 'accounting',
+    description: 'عرض تكلفة فاتورة الشراء وتوزيع المصروفات',
     icon: 'FileText'
   },
 

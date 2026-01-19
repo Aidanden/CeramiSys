@@ -6,12 +6,15 @@
 import { Router } from 'express';
 import { ProductController } from '../controllers/ProductController';
 import { authenticateToken } from '../middleware/auth';
+import { authorizePermissions } from '../middleware/authorization';
+import { SCREEN_PERMISSIONS } from '../constants/screenPermissions';
 
 const router = Router();
 const productController = new ProductController();
 
-// تطبيق middleware المصادقة على جميع المسارات
+// تطبيق middleware المصادقة والصلاحيات على جميع المسارات
 router.use(authenticateToken);
+router.use(authorizePermissions([SCREEN_PERMISSIONS.PRODUCTS, SCREEN_PERMISSIONS.ALL]));
 
 /**
  * @route GET /api/products

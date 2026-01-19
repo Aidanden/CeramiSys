@@ -1,8 +1,15 @@
 import { Router } from 'express';
 import { ProductGroupController } from '../controllers/ProductGroupController';
+import { authenticateToken } from '../middleware/auth';
+import { authorizePermissions } from '../middleware/authorization';
+import { SCREEN_PERMISSIONS } from '../constants/screenPermissions';
 
 const router = Router();
 const productGroupController = new ProductGroupController();
+
+// تطبيق المصادقة والصلاحيات على جميع المسارات
+router.use(authenticateToken);
+router.use(authorizePermissions([SCREEN_PERMISSIONS.PRODUCT_GROUPS, SCREEN_PERMISSIONS.ALL]));
 
 // البحث في مجموعات الأصناف (يجب أن يكون قبل /:id)
 router.get('/search', productGroupController.searchProductGroups.bind(productGroupController));

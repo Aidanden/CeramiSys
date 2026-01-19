@@ -1,12 +1,15 @@
 import { Router } from 'express';
 import { ExternalStoreInvoiceController } from '../controllers/ExternalStoreInvoiceController';
 import { authenticateToken } from '../middleware/auth';
+import { authorizePermissions } from '../middleware/authorization';
+import { SCREEN_PERMISSIONS } from '../constants/screenPermissions';
 
 const router = Router();
 const controller = new ExternalStoreInvoiceController();
 
 // تطبيق middleware المصادقة على جميع المسارات
 router.use(authenticateToken);
+router.use(authorizePermissions([SCREEN_PERMISSIONS.EXTERNAL_STORE_INVOICES, SCREEN_PERMISSIONS.ALL]));
 
 /**
  * @route   GET /api/external-store-invoices

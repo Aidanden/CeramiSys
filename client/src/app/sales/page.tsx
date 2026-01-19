@@ -29,6 +29,8 @@ import { RootState } from '@/app/redux';
 import useNotifications from '@/hooks/useNotifications';
 import { useToast } from '@/components/ui/Toast';
 import SaleLineItem from './SaleLineItem';
+import { SCREEN_PERMISSIONS } from '@/constants/screenPermissions';
+import { hasScreenAccess } from '@/types/permissions';
 
 // نوع محلي للسطر مع الحقول الإضافية
 interface LocalSaleLine {
@@ -533,6 +535,15 @@ const SalesPage = () => {
       // 2. الشركة الحالية ليست التقازي (targetCompanyId !== 1)
       const isFromParentCompany = product.createdByCompanyId === 1 && targetCompanyId !== 1;
 
+      // التحقق من صلاحية بيع أصناف الشركة الأم
+      const hasParentSellPermission = user?.permissions?.includes(SCREEN_PERMISSIONS.SELL_PARENT_COMPANY_ITEMS) ||
+        user?.permissions?.includes(SCREEN_PERMISSIONS.ALL);
+
+      if (isFromParentCompany && !hasParentSellPermission) {
+        notifications.custom.error('خطأ في الصلاحية', 'ليس لديك صلاحية لبيع أصناف من مخزن الشركة الأم (التقازي)');
+        return;
+      }
+
       console.log('🏢 التحقق من الشركة:', {
         targetCompanyId,
         productCompanyId: product.createdByCompanyId,
@@ -687,9 +698,8 @@ const SalesPage = () => {
   const targetCompanyIdForProducts = user?.isSystemUser ? selectedCompanyId : user?.companyId;
   const { data: productsData, isLoading: productsLoading } = useGetProductsQuery({
     limit: 10000, // زيادة الـ limit لجلب جميع الأصناف (يوجد أكثر من 2600 صنف)
-    // إذا كانت الشركة المختارة هي التقازي (1)، نمرر companyId=1 لجلب أصنافها فقط
-    // إذا كانت شركة أخرى، لا نمرر companyId لجلب جميع الأصناف
-    companyId: targetCompanyIdForProducts === 1 ? 1 : undefined
+    // نمرر الـ targetCompanyIdForProducts دائماً ليقوم الخادم بالفلترة بناءً على صلاحية "بيع أصناف الشركة الأم"
+    companyId: targetCompanyIdForProducts || undefined
   });
 
   const [createSale, { isLoading: isCreating }] = useCreateSaleMutation();

@@ -53,34 +53,14 @@ export const getUserScreens = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    // التعامل مع permissions سواء كان JSON object أو array أو string
-    let userPermissions: string[] = [];
-    if (req.user.permissions) {
-      if (Array.isArray(req.user.permissions)) {
-        userPermissions = (req.user.permissions as any[]).filter(p => typeof p === 'string') as string[];
-      } else if (typeof req.user.permissions === 'string') {
-        // إذا كان JSON string، نحاول parse
-        try {
-          const parsed = JSON.parse(req.user.permissions);
-          if (Array.isArray(parsed)) {
-            userPermissions = parsed.filter(p => typeof p === 'string') as string[];
-          } else if (typeof parsed === 'object') {
-            userPermissions = Object.values(parsed).filter(p => typeof p === 'string') as string[];
-          } else {
-            userPermissions = [parsed];
-          }
-        } catch {
-          // إذا فشل parse، نعتبره string واحد
-          userPermissions = [req.user.permissions];
-        }
-      } else if (typeof req.user.permissions === 'object') {
-        // إذا كان JSON object من Prisma
-        userPermissions = Object.values(req.user.permissions as any).filter(p => typeof p === 'string') as string[];
-      }
-    }
+    // التعامل مع permissions من req.user مباشرة لأن الـ middleware قام بتطبيعها بالفعل
+    // ولكن للتأكيد الإضافي، نستخدم normalizePermissions (مع أن auth.ts يضمن أنها مصفوفة)
+    const userPermissions = req.user.permissions || [];
 
-    console.log('User permissions:', userPermissions); // للتشخيص
-    
+    console.log('User permissions (normalized):', userPermissions); // للتشخيص
+
+
+
     const authorizedScreens = getAuthorizedScreens(userPermissions);
 
     // تجميع الشاشات المصرح بها حسب الفئة

@@ -1,12 +1,15 @@
 import { Router } from 'express';
 import { ExternalStoreController } from '../controllers/ExternalStoreController';
 import { authenticateToken } from '../middleware/auth';
+import { authorizePermissions } from '../middleware/authorization';
+import { SCREEN_PERMISSIONS } from '../constants/screenPermissions';
 
 const router = Router();
 const controller = new ExternalStoreController();
 
 // تطبيق middleware المصادقة على جميع المسارات
 router.use(authenticateToken);
+router.use(authorizePermissions([SCREEN_PERMISSIONS.EXTERNAL_STORES, SCREEN_PERMISSIONS.ALL]));
 
 /**
  * @route   GET /api/external-stores

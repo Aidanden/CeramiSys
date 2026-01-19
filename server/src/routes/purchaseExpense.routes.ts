@@ -2,6 +2,8 @@ import { Router } from 'express';
 import purchaseExpenseController from '../controllers/purchaseExpense.controller';
 import addExpensesToApprovedPurchaseController from '../controllers/addExpensesToApprovedPurchase.controller';
 import { authenticateToken } from '../middleware/auth';
+import { authorizePermissions } from '../middleware/authorization';
+import { SCREEN_PERMISSIONS } from '../constants/screenPermissions';
 
 const router = Router();
 
@@ -9,11 +11,26 @@ const router = Router();
 router.use(authenticateToken);
 
 // ==================== فئات المصروفات ====================
-router.get('/categories', purchaseExpenseController.getAllExpenseCategories.bind(purchaseExpenseController));
-router.get('/categories/:id', purchaseExpenseController.getExpenseCategoryById.bind(purchaseExpenseController));
-router.post('/categories', purchaseExpenseController.createExpenseCategory.bind(purchaseExpenseController));
-router.put('/categories/:id', purchaseExpenseController.updateExpenseCategory.bind(purchaseExpenseController));
-router.delete('/categories/:id', purchaseExpenseController.deleteExpenseCategory.bind(purchaseExpenseController));
+router.get('/categories',
+    authorizePermissions([SCREEN_PERMISSIONS.EXPENSE_CATEGORIES, SCREEN_PERMISSIONS.PURCHASES, SCREEN_PERMISSIONS.ALL]),
+    purchaseExpenseController.getAllExpenseCategories.bind(purchaseExpenseController)
+);
+router.get('/categories/:id',
+    authorizePermissions([SCREEN_PERMISSIONS.EXPENSE_CATEGORIES, SCREEN_PERMISSIONS.ALL]),
+    purchaseExpenseController.getExpenseCategoryById.bind(purchaseExpenseController)
+);
+router.post('/categories',
+    authorizePermissions([SCREEN_PERMISSIONS.EXPENSE_CATEGORIES, SCREEN_PERMISSIONS.ALL]),
+    purchaseExpenseController.createExpenseCategory.bind(purchaseExpenseController)
+);
+router.put('/categories/:id',
+    authorizePermissions([SCREEN_PERMISSIONS.EXPENSE_CATEGORIES, SCREEN_PERMISSIONS.ALL]),
+    purchaseExpenseController.updateExpenseCategory.bind(purchaseExpenseController)
+);
+router.delete('/categories/:id',
+    authorizePermissions([SCREEN_PERMISSIONS.EXPENSE_CATEGORIES, SCREEN_PERMISSIONS.ALL]),
+    purchaseExpenseController.deleteExpenseCategory.bind(purchaseExpenseController)
+);
 
 // ==================== اعتماد الفاتورة والمصروفات ====================
 router.post('/approve', purchaseExpenseController.approvePurchase.bind(purchaseExpenseController));

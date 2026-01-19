@@ -4,17 +4,9 @@ import { Prisma } from '@prisma/client';
 import prisma from '../models/prismaClient';
 import { AuthRequest } from '../middleware/auth';
 
+import { normalizePermissions } from '../utils/permissionUtils';
+
 // الحصول على جميع المستخدمين
-const normalizePermissions = (permissions: any): string[] => {
-  if (!permissions) return [];
-  if (Array.isArray(permissions)) {
-    return permissions.filter(p => typeof p === 'string' && p.trim().length > 0);
-  }
-  if (typeof permissions === 'object') {
-    return Object.values(permissions).filter(p => typeof p === 'string' && p.trim().length > 0) as string[];
-  }
-  return [];
-};
 
 export const getUsers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {

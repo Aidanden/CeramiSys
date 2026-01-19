@@ -1,11 +1,11 @@
 "use client";
 import React, { useState } from "react";
-import { 
-  Menu, 
-  Settings, 
-  Sun, 
-  Moon, 
-  LogOut, 
+import {
+  Menu,
+  Settings,
+  Sun,
+  Moon,
+  LogOut,
   Search,
   User
 } from "lucide-react";
@@ -13,8 +13,10 @@ import { useAppDispatch, useAppSelector } from "@/app/redux";
 import { setIsDarkMode, setIsSidebarCollapsed } from "@/state";
 import { logout } from "@/state/authSlice";
 import { useLogoutMutation } from "@/state/authApi";
+import { useGetUserScreensQuery } from "@/state/permissionsApi";
 import Link from "next/link";
 import NotificationDropdown from "@/components/NotificationDropdown";
+import { hasScreenAccess } from "@/types/permissions";
 
 const Navbar = () => {
   const dispatch = useAppDispatch();
@@ -26,6 +28,12 @@ const Navbar = () => {
   );
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
   const { user } = useAppSelector((state) => state.auth);
+  const { data: userScreensData } = useGetUserScreensQuery();
+
+  const canAccessScreen = (route: string) => {
+    if (!userScreensData?.screens) return false;
+    return hasScreenAccess(userScreensData.screens, route);
+  };
 
   const toggleSidebar = () => {
     dispatch(setIsSidebarCollapsed(!isSidebarCollapsed));
@@ -44,7 +52,7 @@ const Navbar = () => {
     } finally {
       // تنظيف حالة المصادقة
       dispatch(logout());
-      
+
       // التأكد من التوجه لصفحة تسجيل الدخول
       window.location.href = '/login';
     }
@@ -103,15 +111,17 @@ const Navbar = () => {
             <NotificationDropdown />
 
             {/* Settings */}
-            <Link href="/settings">
-              <button className="p-2 rounded-lg hover:bg-background-hover transition-all duration-200 group">
-                <Settings className="w-5 h-5 text-text-secondary group-hover:text-text-primary transition-colors duration-200" />
-                {/* Tooltip */}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-text-inverse bg-surface-elevated rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-                  الإعدادات
-                </div>
-              </button>
-            </Link>
+            {canAccessScreen('/settings') && (
+              <Link href="/settings">
+                <button className="p-2 rounded-lg hover:bg-background-hover transition-all duration-200 group">
+                  <Settings className="w-5 h-5 text-text-secondary group-hover:text-text-primary transition-colors duration-200" />
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-text-inverse bg-surface-elevated rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+                    الإعدادات
+                  </div>
+                </button>
+              </Link>
+            )}
 
             {/* Divider */}
             <div className="w-px h-6 bg-border-secondary"></div>
@@ -149,12 +159,14 @@ const Navbar = () => {
                       الملف الشخصي
                     </div>
                   </Link>
-                  <Link href="/settings">
-                    <div className="flex items-center gap-3 px-4 py-2 text-sm text-text-secondary hover:bg-background-hover hover:text-text-primary transition-all duration-200">
-                      <Settings className="w-4 h-4" />
-                      الإعدادات
-                    </div>
-                  </Link>
+                  {canAccessScreen('/settings') && (
+                    <Link href="/settings">
+                      <div className="flex items-center gap-3 px-4 py-2 text-sm text-text-secondary hover:bg-background-hover hover:text-text-primary transition-all duration-200">
+                        <Settings className="w-4 h-4" />
+                        الإعدادات
+                      </div>
+                    </Link>
+                  )}
                   <div className="border-t border-border-primary my-1"></div>
                   <button
                     onClick={handleLogout}

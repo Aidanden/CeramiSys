@@ -20,6 +20,7 @@ import {
   BarChart3,
   Bell,
   Wallet,
+  TrendingDown,
   TrendingDown as Returns,
   FileText as Receipt,
   Shield,
@@ -186,12 +187,12 @@ const Sidebar = () => {
       console.warn('خطأ في جلب الصلاحيات:', screensError);
       return false;
     }
-    
+
     // إذا كان جاري التحميل ولا توجد بيانات بعد، ننتظر
     if (isLoadingScreens && authorizedScreens.length === 0) {
       return false; // لا نعرض الشاشة حتى يتم تحميل الصلاحيات
     }
-    
+
     // التحقق من الصلاحية
     return hasScreenAccess(authorizedScreens, route);
   };
@@ -283,15 +284,6 @@ const Sidebar = () => {
             />
           )}
 
-          {canAccessScreen('/product-groups') && (
-            <SidebarLink
-              href="/product-groups"
-              icon={Shield}
-              label="مجموعات الأصناف"
-              isCollapsed={isSidebarCollapsed}
-            />
-          )}
-
           {canAccessScreen('/sales') && (
             <SidebarLink
               href="/sales"
@@ -369,7 +361,7 @@ const Sidebar = () => {
           {canAccessScreen('/warehouse-returns') && (
             <SidebarLink
               href="/warehouse-returns"
-              icon={Returns}
+              icon={TrendingDown}
               label="استلام المردودات"
               isCollapsed={isSidebarCollapsed}
             />
@@ -410,9 +402,7 @@ const Sidebar = () => {
             />
           )}
 
-          {/* ملاحظة: شاشات تكلفة الأصناف وتكلفة الفاتورة لا تحتوي على صلاحيات حالياً */}
-          {/* إذا كانت محمية بـ PermissionGuard في صفحاتها، ستكون محمية تلقائياً */}
-          {costCalculationMethod === 'manual' && (
+          {costCalculationMethod === 'manual' && canAccessScreen('/product-cost') && (
             <SidebarLink
               href="/product-cost"
               icon={BarChart3}
@@ -420,7 +410,7 @@ const Sidebar = () => {
               isCollapsed={isSidebarCollapsed}
             />
           )}
-          {costCalculationMethod === 'invoice' && (
+          {costCalculationMethod === 'invoice' && canAccessScreen('/invoice-cost') && (
             <SidebarLink
               href="/invoice-cost"
               icon={FileText}
@@ -474,7 +464,9 @@ const Sidebar = () => {
               الإعدادات
             </h3>
           </div>
-         
+
+
+
           {canAccessScreen('/users') && (
             <SidebarLink
               href="/users"

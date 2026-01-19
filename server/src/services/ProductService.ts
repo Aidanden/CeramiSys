@@ -35,28 +35,52 @@ export class ProductService {
       let companyConditions: Prisma.ProductWhereInput[] = [];
 
       // منطق جلب الأصناف:
-      // - إذا تم تمرير companyId=1 (التقازي): أصناف التقازي فقط
-      // - إذا لم يتم تمرير companyId: جميع الأصناف (لجميع المستخدمين)
-      // - إذا تم تمرير companyId آخر: أصناف تلك الشركة + التقازي (إذا كان لديه صلاحية)
-      if (companyId) {
-        if (companyId === 1 || query.strict) {
-          // شركة واحدة فقط (التقازي فقط أو طلب فلترة دقيقة)
-          companyConditions = [{ createdByCompanyId: companyId }];
+      // - إذا كان المستخدم (نظام): يمكنه جلب أي شركة أو الكل
+      // - إذا كان المستخدم (عادي): 
+      //    1. إذا لم يرسل companyId: نجلب (شركته) + (الشركة الأم إذا لديه صلاحية)
+      //    2. إذا أرسل companyId:
+      //       - إذا أرسل (شركته): نجلب (شركته) + (الشركة الأم إذا لديه صلاحية)
+      //       - إذا أرسل (1): نجلب (1) فقط بشرط لديه صلاحية، وإلا نجلب شركته فقط
+      //       - إذا أرسل (شركة أخرى): نجلب شركته فقط (حماية)
+
+      let targetCompanyId = companyId;
+
+      // حماية للمستخدمين العاديين
+      if (!isSystemUser) {
+        if (!targetCompanyId || targetCompanyId !== userCompanyId) {
+          if (targetCompanyId === 1) {
+            // محاولة الوصول للشركة الأم - سنترك الكود التالي يتحقق من الصلاحية
+          } else {
+            // أي محاولة أخرى (شركة أخرى أو لم يرسل) -> نثبتها على شركته
+            targetCompanyId = userCompanyId;
+          }
+        }
+      }
+
+      if (targetCompanyId) {
+        const hasParentAccess = userPermissions.includes('screen.sell_parent_items') ||
+          userPermissions.includes('screen.all');
+
+        if (targetCompanyId === 1) {
+          // طلب أصناف الشركة الأم فقط
+          if (isSystemUser || userCompanyId === 1 || hasParentAccess) {
+            companyConditions = [{ createdByCompanyId: 1 }];
+          } else {
+            // ليس لديه صلاحية -> إرجاع أصناف شركته فقط
+            companyConditions = [{ createdByCompanyId: userCompanyId }];
+          }
+        } else if (query.strict) {
+          // طلب شركة واحدة فقط (ليست 1)
+          companyConditions = [{ createdByCompanyId: targetCompanyId }];
         } else {
-          // شركة أخرى + التقازي (بناءً على الصلاحية)
-          companyConditions = [{ createdByCompanyId: companyId }];
-
-          // التحقق من صلاحية بيع أصناف الشركة الأم
-          // أو إذا كان المستخدم مدير (لديه صلاحية الكل)
-          const hasParentAccess = userPermissions.includes('screen.sell_parent_items') ||
-            userPermissions.includes('screen.all');
-
+          // شركة أخرى + التقازي (إذا كان لديه صلاحية)
+          companyConditions = [{ createdByCompanyId: targetCompanyId }];
           if (hasParentAccess) {
             companyConditions.push({ createdByCompanyId: 1 });
           }
         }
       }
-      // إذا لم يتم تمرير companyId، لا نضيف شروط (جميع الأصناف)
+      // إذا لم يتم تمرير companyId وكان المستخدم نظام، لا نضيف شروط (جميع الأصناف)
 
       // بناء شروط البحث
       const searchConditions: Prisma.ProductWhereInput[] = [];

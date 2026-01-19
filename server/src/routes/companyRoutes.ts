@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { CompanyController } from '../controllers/CompanyController';
 import { authenticateToken } from '../middleware/auth';
-import { authorizeRoles } from '../middleware/authorization';
+import { authorizePermissions } from '../middleware/authorization';
+import { SCREEN_PERMISSIONS } from '../constants/screenPermissions';
 
 const router = Router();
 const companyController = new CompanyController();
@@ -20,7 +21,7 @@ router.use('/companies*', authenticateToken); // تم تفعيل المصادق�
  */
 router.post(
   '/companies',
-   authorizeRoles(['admin', 'manager']), // معطل مؤقتاً للاختبار
+  authorizePermissions([SCREEN_PERMISSIONS.COMPANIES]),
   companyController.createCompany
 );
 
@@ -32,7 +33,7 @@ router.post(
  */
 router.get(
   '/companies',
-   authorizeRoles(['admin', 'manager', 'cashier', 'accountant']), // معطل مؤقتاً للاختبار
+  authorizePermissions([SCREEN_PERMISSIONS.COMPANIES]),
   companyController.getCompanies
 );
 
@@ -43,7 +44,7 @@ router.get(
  */
 router.get(
   '/companies/hierarchy',
-   authorizeRoles(['admin', 'manager', 'cashier', 'accountant']), // معطل مؤقتاً للاختبار
+  authorizePermissions([SCREEN_PERMISSIONS.COMPANIES]),
   companyController.getCompanyHierarchy
 );
 
@@ -54,7 +55,7 @@ router.get(
  */
 router.get(
   '/companies/stats',
-   authorizeRoles(['admin', 'manager', 'cashier', 'accountant']), // توسيع الصلاحيات لتشمل جميع المستخدمين
+  authorizePermissions([SCREEN_PERMISSIONS.COMPANIES]),
   companyController.getCompanyStats
 );
 
@@ -65,7 +66,7 @@ router.get(
  */
 router.get(
   '/companies/:parentId/branches',
-   authorizeRoles(['admin', 'manager', 'cashier', 'accountant']), // معطل مؤقتاً للاختبار
+  authorizePermissions([SCREEN_PERMISSIONS.COMPANIES]),
   companyController.getBranchCompanies
 );
 
@@ -76,7 +77,7 @@ router.get(
  */
 router.get(
   '/companies/:id',
-   authorizeRoles(['admin', 'manager', 'cashier', 'accountant']), // معطل مؤقتاً للاختبار
+  authorizePermissions([SCREEN_PERMISSIONS.COMPANIES]), // using COMPANIES
   companyController.getCompanyById
 );
 
@@ -87,7 +88,7 @@ router.get(
  */
 router.put(
   '/companies/:id',
-   authorizeRoles(['admin', 'manager']), // معطل مؤقتاً للاختبار
+  authorizePermissions([SCREEN_PERMISSIONS.COMPANIES]),
   companyController.updateCompany
 );
 
@@ -98,7 +99,7 @@ router.put(
  */
 router.delete(
   '/companies/:id',
-   authorizeRoles(['admin']), // معطل مؤقتاً للاختبار
+  authorizePermissions([SCREEN_PERMISSIONS.COMPANIES]),
   companyController.deleteCompany
 );
 

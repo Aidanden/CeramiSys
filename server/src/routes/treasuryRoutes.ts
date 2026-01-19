@@ -1,11 +1,14 @@
 import { Router } from 'express';
 import TreasuryController from '../controllers/TreasuryController';
 import { authenticateToken } from '../middleware/auth';
+import { authorizePermissions } from '../middleware/authorization';
+import { SCREEN_PERMISSIONS } from '../constants/screenPermissions';
 
 const router = Router();
 
-// تطبيق middleware المصادقة على جميع المسارات
+// تطبيق middleware المصادقة والصلاحيات على جميع المسارات
 router.use(authenticateToken);
+router.use(authorizePermissions([SCREEN_PERMISSIONS.TREASURY, SCREEN_PERMISSIONS.ALL]));
 
 // ============== مسارات الخزائن ==============
 

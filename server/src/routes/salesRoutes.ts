@@ -6,12 +6,15 @@
 import { Router } from 'express';
 import { SalesController } from '../controllers/SalesController';
 import { authenticateToken } from '../middleware/auth';
+import { authorizePermissions } from '../middleware/authorization';
+import { SCREEN_PERMISSIONS } from '../constants/screenPermissions';
 
 const router = Router();
 const salesController = new SalesController();
 
-// تطبيق middleware المصادقة على جميع المسارات
+// تطبيق middleware المصادقة والصلاحيات على جميع المسارات
 router.use(authenticateToken);
+router.use(authorizePermissions([SCREEN_PERMISSIONS.SALES, SCREEN_PERMISSIONS.ALL]));
 
 // ============== مسارات المبيعات ==============
 
