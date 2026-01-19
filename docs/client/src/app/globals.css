@@ -1,0 +1,828 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .card {
+    @apply bg-white dark:bg-surface-primary rounded-lg border border-slate-200 dark:border-border-primary shadow-sm dark:shadow-lg;
+  }
+  .card-body {
+    @apply p-6;
+  }
+  .card-header {
+    @apply px-6 pt-6 pb-3 border-b border-slate-200 dark:border-border-primary;
+  }
+  .card-title {
+    @apply text-lg font-semibold text-slate-800 dark:text-text-primary;
+  }
+
+  .input {
+    @apply w-full rounded-md border border-slate-300 dark:border-border-primary bg-white dark:bg-surface-secondary px-3 py-2 text-sm text-slate-900 dark:text-text-primary placeholder-slate-400 dark:placeholder-text-tertiary outline-none focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply btn bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-slate-700 dark:text-text-secondary hover:bg-slate-100 dark:hover:bg-surface-hover focus:ring-slate-300 dark:focus:ring-gray-600;
+  }
+}
+
+/* Custom Color Variables for Better Contrast - Light Mode */
+:root {
+  --primary-bg: #e2e8f0;
+  --secondary-bg: #ffffff;
+  --card-bg: #f8fafc;
+  --accent-bg: #cbd5e1;
+  --primary-text: #0f172a;
+  --secondary-text: #334155;
+  --muted-text: #64748b;
+  --inverse-text: #ffffff;
+  --border-color: #94a3b8;
+  --hover-bg: #f1f5f9;
+  --active-bg: #e2e8f0;
+  --success-color: #059669;
+  --success-bg: #d1fae5;
+  --warning-color: #d97706;
+  --warning-bg: #fef3c7;
+  --error-color: #dc2626;
+  --error-bg: #fee2e2;
+  --info-color: #2563eb;
+  --info-bg: #dbeafe;
+  --shadow-light: rgba(0, 0, 0, 0.1);
+  --shadow-medium: rgba(0, 0, 0, 0.15);
+  --shadow-heavy: rgba(0, 0, 0, 0.25);
+}
+
+/* Dark Mode Variables */
+.dark {
+  --primary-bg: #0a0e1a;
+  --secondary-bg: #111827;
+  --card-bg: #1f2937;
+  --accent-bg: #374151;
+  --primary-text: #f9fafb;
+  --secondary-text: #d1d5db;
+  --muted-text: #9ca3af;
+  --inverse-text: #0f172a;
+  --border-color: #374151;
+  --hover-bg: #1f2937;
+  --active-bg: #374151;
+  --success-color: #34d399;
+  --success-bg: #064e3b;
+  --warning-color: #f59e0b;
+  --warning-bg: #451a03;
+  --error-color: #ef4444;
+  --error-bg: #450a0a;
+  --info-color: #3b82f6;
+  --info-bg: #0c1426;
+  --shadow-light: rgba(0, 0, 0, 0.3);
+  --shadow-medium: rgba(0, 0, 0, 0.4);
+  --shadow-heavy: rgba(0, 0, 0, 0.5);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root,
+.app {
+  font-size: 16px;
+  font-family: var(--font-tajawal), "Tajawal", sans-serif;
+  background-color: var(--primary-bg);
+  color: var(--primary-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Responsive Base Font Size */
+@media (max-width: 639px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+@font-face {
+  font-family: 'Tajawal';
+  src: url('./fonts/Tajawal-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@media (min-width:768px) {
+  .custom-grid-rows {
+    grid-template-rows: repeat(8,20vh);
+  }
+}
+
+@media (min-width: 1280px){
+  .custom-grid-rows {
+    grid-template-rows: repeat(8,7.5vh);
+  }
+}
+
+/* Enhanced Modal Styles with Better Contrast */
+.modal-overlay {
+  @apply fixed inset-0 bg-black bg-opacity-60 dark:bg-opacity-80 flex items-center justify-center z-[3];
+  transition: background-color 0.3s ease;
+}
+
+.modal-container {
+  background-color: var(--secondary-bg);
+  @apply rounded-lg shadow-2xl w-full mx-4 max-h-[90vh] overflow-y-auto;
+  border: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.modal-header {
+  @apply flex justify-between items-start p-6;
+  border-bottom: 2px solid var(--accent-bg);
+  background-color: var(--primary-bg);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.modal-content {
+  background-color: var(--secondary-bg);
+  color: var(--primary-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.modal-footer {
+  @apply p-6;
+  border-top: 2px solid var(--accent-bg);
+  background-color: var(--primary-bg);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Enhanced Modal Form Elements */
+.modal-input {
+  @apply w-full p-3 rounded-lg transition-all duration-200;
+  background-color: var(--secondary-bg);
+  border: 2px solid var(--border-color);
+  color: var(--primary-text);
+}
+
+.modal-input:focus {
+  border-color: var(--info-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: none;
+}
+
+.modal-select {
+  @apply w-full p-3 rounded-lg transition-all duration-200;
+  background-color: var(--secondary-bg);
+  border: 2px solid var(--border-color);
+  color: var(--primary-text);
+}
+
+.modal-select:focus {
+  border-color: var(--info-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: none;
+}
+
+.modal-button {
+  @apply px-6 py-3 rounded-lg font-medium transition-all duration-200;
+  background-color: var(--muted-text);
+  color: white;
+}
+
+.modal-button:hover {
+  background-color: var(--secondary-text);
+  transform: translateY(-1px);
+}
+
+.modal-button-primary {
+  @apply px-6 py-3 rounded-lg font-medium transition-all duration-200;
+  background-color: var(--info-color);
+  color: white;
+}
+
+.modal-button-primary:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+/* Enhanced Modal Table Styles */
+.modal-table-header {
+  background-color: var(--accent-bg);
+}
+
+.modal-table-header th {
+  @apply px-6 py-4 text-right text-sm font-semibold uppercase tracking-wider;
+  color: var(--primary-text);
+}
+
+.modal-table-body {
+  background-color: var(--secondary-bg);
+}
+
+.modal-table-row {
+  @apply transition-colors duration-150;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-table-row:hover {
+  background-color: var(--hover-bg);
+  color: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+.modal-table-cell {
+  @apply px-6 py-4 whitespace-nowrap text-sm;
+  color: var(--primary-text);
+}
+
+/* Enhanced Button Styles */
+.btn-primary {
+  @apply px-6 py-3 rounded-lg font-medium transition-all duration-200;
+  background-color: var(--info-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.btn-success {
+  @apply px-6 py-3 rounded-lg font-medium transition-all duration-200;
+  background-color: var(--success-color);
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+}
+
+.btn-warning {
+  @apply px-6 py-3 rounded-lg font-medium transition-all duration-200;
+  background-color: var(--warning-color);
+  color: white;
+}
+
+.btn-warning:hover {
+  background-color: #b45309;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+}
+
+.btn-danger {
+  @apply px-6 py-3 rounded-lg font-medium transition-all duration-200;
+  background-color: var(--error-color);
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* Enhanced Card Styles */
+.card {
+  background-color: var(--card-bg);
+  border: 2px solid var(--border-color);
+  @apply rounded-xl transition-all duration-200;
+  box-shadow: 0 4px 12px var(--shadow-light);
+}
+
+.card:hover {
+  box-shadow: 0 8px 20px var(--shadow-medium);
+  transform: translateY(-2px);
+  border-color: var(--accent-bg);
+}
+
+.card-header {
+  background-color: var(--secondary-bg);
+  border-bottom: 2px solid var(--border-color);
+  @apply p-6 rounded-t-xl;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.card-body {
+  @apply p-6;
+  color: var(--primary-text);
+  background-color: var(--card-bg);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Enhanced Input Styles */
+.form-input {
+  @apply w-full p-4 rounded-lg transition-all duration-200;
+  background-color: var(--secondary-bg);
+  border: 2px solid var(--border-color);
+  color: var(--primary-text);
+  font-size: 16px;
+}
+
+.form-input:focus {
+  border-color: var(--info-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: none;
+}
+
+.form-input::placeholder {
+  color: var(--muted-text);
+}
+
+/* Enhanced Table Styles */
+.table-container {
+  background-color: var(--card-bg);
+  border: 2px solid var(--border-color);
+  @apply rounded-xl overflow-hidden;
+  box-shadow: 0 4px 12px var(--shadow-light);
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.table-header {
+  background-color: var(--accent-bg);
+  border-bottom: 2px solid var(--border-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.table-header th {
+  @apply px-6 py-4 text-right text-sm font-semibold uppercase tracking-wider;
+  color: var(--primary-text);
+  transition: color 0.3s ease;
+}
+
+.table-row {
+  @apply transition-colors duration-150;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.table-row:hover {
+  background-color: var(--hover-bg);
+}
+
+.table-cell {
+  @apply px-6 py-4 text-sm;
+  color: var(--primary-text);
+  transition: color 0.3s ease;
+}
+
+/* Print Styles */
+/* ========================================
+   RESPONSIVE DESIGN - ALL DEVICES
+   ======================================== */
+
+/* Mobile First Approach */
+/* Base styles for mobile (< 640px) */
+
+/* Responsive Container */
+.container-responsive {
+  @apply w-full px-3 mx-auto;
+}
+
+@media (min-width: 640px) {
+  .container-responsive {
+    @apply px-4 max-w-screen-sm;
+  }
+}
+
+@media (min-width: 768px) {
+  .container-responsive {
+    @apply px-6 max-w-screen-md;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-responsive {
+    @apply px-8 max-w-screen-lg;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container-responsive {
+    @apply px-10 max-w-screen-xl;
+  }
+}
+
+/* Responsive Tables */
+.table-responsive {
+  @apply w-full overflow-x-auto -mx-3 px-3;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 768px) {
+  .table-responsive {
+    @apply mx-0 px-0 overflow-x-visible;
+  }
+}
+
+.table-responsive table {
+  @apply min-w-full;
+}
+
+/* Mobile: Smaller text and padding */
+@media (max-width: 639px) {
+  .table-responsive th,
+  .table-responsive td {
+    @apply px-2 py-2 text-xs;
+  }
+  
+  .table-responsive th {
+    @apply font-semibold;
+  }
+}
+
+/* Tablet: Medium text and padding */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .table-responsive th,
+  .table-responsive td {
+    @apply px-4 py-3 text-sm;
+  }
+}
+
+/* Desktop: Full text and padding */
+@media (min-width: 1024px) {
+  .table-responsive th,
+  .table-responsive td {
+    @apply px-6 py-4 text-base;
+  }
+}
+
+/* Responsive Cards */
+.card-responsive {
+  @apply rounded-lg p-3 mb-3;
+}
+
+@media (min-width: 640px) {
+  .card-responsive {
+    @apply p-4 mb-4;
+  }
+}
+
+@media (min-width: 768px) {
+  .card-responsive {
+    @apply p-6 mb-6 rounded-xl;
+  }
+}
+
+/* Responsive Grid */
+.grid-responsive {
+  @apply grid gap-3;
+  grid-template-columns: repeat(1, 1fr);
+}
+
+@media (min-width: 640px) {
+  .grid-responsive {
+    @apply gap-4;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-responsive {
+    @apply gap-6;
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .grid-responsive {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Responsive Buttons */
+.btn-responsive {
+  @apply px-3 py-2 text-xs rounded-md;
+}
+
+@media (min-width: 640px) {
+  .btn-responsive {
+    @apply px-4 py-2 text-sm;
+  }
+}
+
+@media (min-width: 768px) {
+  .btn-responsive {
+    @apply px-6 py-3 text-base rounded-lg;
+  }
+}
+
+/* Responsive Modal */
+@media (max-width: 639px) {
+  .modal-container {
+    @apply mx-2 max-w-full rounded-lg;
+    max-height: 95vh;
+  }
+  
+  .modal-header,
+  .modal-content,
+  .modal-footer {
+    @apply p-3;
+  }
+  
+  .modal-input,
+  .modal-select {
+    @apply p-2 text-sm;
+  }
+  
+  .modal-button,
+  .modal-button-primary {
+    @apply px-4 py-2 text-sm;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+  .modal-container {
+    @apply mx-4 max-w-lg;
+  }
+  
+  .modal-header,
+  .modal-content,
+  .modal-footer {
+    @apply p-4;
+  }
+}
+
+@media (min-width: 768px) {
+  .modal-container {
+    @apply max-w-2xl;
+  }
+}
+
+@media (min-width: 1024px) {
+  .modal-container {
+    @apply max-w-4xl;
+  }
+}
+
+@media (min-width: 1280px) {
+  .modal-container {
+    @apply max-w-5xl;
+  }
+}
+
+/* Responsive Typography */
+@media (max-width: 639px) {
+  h1 { @apply text-xl font-bold; }
+  h2 { @apply text-lg font-semibold; }
+  h3 { @apply text-base font-semibold; }
+  h4 { @apply text-sm font-medium; }
+  p { @apply text-sm; }
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+  h1 { @apply text-2xl font-bold; }
+  h2 { @apply text-xl font-semibold; }
+  h3 { @apply text-lg font-semibold; }
+  h4 { @apply text-base font-medium; }
+  p { @apply text-sm; }
+}
+
+@media (min-width: 768px) {
+  h1 { @apply text-3xl font-bold; }
+  h2 { @apply text-2xl font-semibold; }
+  h3 { @apply text-xl font-semibold; }
+  h4 { @apply text-lg font-medium; }
+  p { @apply text-base; }
+}
+
+/* Responsive Form Inputs */
+.form-input-responsive {
+  @apply w-full p-2 text-sm rounded-md;
+}
+
+@media (min-width: 640px) {
+  .form-input-responsive {
+    @apply p-3 text-base;
+  }
+}
+
+@media (min-width: 768px) {
+  .form-input-responsive {
+    @apply p-4 text-base rounded-lg;
+  }
+}
+
+/* Responsive Spacing */
+.spacing-responsive {
+  @apply space-y-3;
+}
+
+@media (min-width: 640px) {
+  .spacing-responsive {
+    @apply space-y-4;
+  }
+}
+
+@media (min-width: 768px) {
+  .spacing-responsive {
+    @apply space-y-6;
+  }
+}
+
+/* Hide/Show Elements Based on Screen Size */
+.mobile-only {
+  @apply block;
+}
+
+@media (min-width: 768px) {
+  .mobile-only {
+    @apply hidden;
+  }
+}
+
+.tablet-up {
+  @apply hidden;
+}
+
+@media (min-width: 768px) {
+  .tablet-up {
+    @apply block;
+  }
+}
+
+.desktop-only {
+  @apply hidden;
+}
+
+@media (min-width: 1024px) {
+  .desktop-only {
+    @apply block;
+  }
+}
+
+/* Touch-Friendly Targets (44px minimum) */
+@media (max-width: 1023px) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    @apply flex items-center justify-center;
+  }
+}
+
+/* Responsive Stats Cards */
+.stat-card-responsive {
+  @apply p-3 rounded-lg;
+}
+
+@media (min-width: 640px) {
+  .stat-card-responsive {
+    @apply p-4;
+  }
+}
+
+@media (min-width: 768px) {
+  .stat-card-responsive {
+    @apply p-6 rounded-xl;
+  }
+}
+
+/* Responsive Sidebar Offset */
+.main-content {
+  @apply transition-all duration-300;
+}
+
+@media (min-width: 768px) {
+  .main-content {
+    margin-right: 256px; /* w-64 */
+  }
+  
+  .main-content.sidebar-collapsed {
+    margin-right: 64px; /* w-16 */
+  }
+}
+
+/* Responsive Images */
+.img-responsive {
+  @apply w-full h-auto;
+  max-width: 100%;
+}
+
+/* Prevent Horizontal Scroll */
+body {
+  overflow-x: hidden;
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ========================================
+   PRINT STYLES
+   ======================================== */
+
+@media print {
+  /* Hide non-printable elements */
+  .no-print,
+  nav,
+  aside,
+  button:not(.print-button),
+  .sidebar,
+  header,
+  footer {
+    display: none !important;
+  }
+
+  /* Show print-only elements */
+  .print\:block {
+    display: block !important;
+  }
+
+  /* Page setup */
+  @page {
+    size: A4;
+    margin: 1cm;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+  }
+
+  /* Remove shadows and borders for print */
+  .shadow,
+  .shadow-lg,
+  .shadow-xl,
+  .rounded-lg,
+  .rounded-xl {
+    box-shadow: none !important;
+  }
+
+  /* Table styles for print */
+  table {
+    page-break-inside: auto;
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  /* Ensure text is black for print */
+  * {
+    color: black !important;
+    background: white !important;
+  }
+
+  /* Keep table borders */
+  table,
+  th,
+  td {
+    border: 1px solid #000 !important;
+  }
+
+  /* Remove hover effects */
+  .hover\:bg-gray-50:hover,
+  .print\:hover\:bg-white:hover {
+    background: white !important;
+  }
+
+  /* Stats cards in print */
+  .grid {
+    display: grid !important;
+  }
+
+  /* Ensure proper spacing */
+  .space-y-6 > * + * {
+    margin-top: 1.5rem !important;
+  }
+
+  /* Page breaks */
+  .page-break {
+    page-break-after: always;
+  }
+
+  .avoid-break {
+    page-break-inside: avoid;
+  }
+}

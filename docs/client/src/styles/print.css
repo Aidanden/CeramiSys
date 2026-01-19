@@ -1,0 +1,84 @@
+/**
+ * أنماط الطباعة
+ * Print Styles
+ */
+
+@media print {
+  /* إخفاء كل شيء ما عدا محتوى الطباعة */
+  body * {
+    visibility: hidden;
+  }
+
+  /* إظهار محتوى الطباعة فقط */
+  .print-invoice,
+  .print-invoice *,
+  .print-receipt,
+  .print-receipt * {
+    visibility: visible;
+  }
+
+  /* تموضع محتوى الطباعة */
+  .print-invoice,
+  .print-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 210mm !important;
+    margin: 0 !important;
+    padding: 20mm !important;
+    transform: none !important;
+  }
+
+  /* وضع إيصال القبض في صفحة منفصلة */
+  .print-receipt {
+    page-break-before: always;
+  }
+
+  /* إخفاء عناصر الواجهة */
+  header,
+  nav,
+  .no-print,
+  button,
+  .fixed,
+  .sticky {
+    display: none !important;
+  }
+
+  /* تحسين الطباعة */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  /* ألوان الطباعة */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* الجداول */
+  table {
+    page-break-inside: avoid;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  /* الحدود */
+  table,
+  th,
+  td {
+    border: 1px solid #000 !important;
+  }
+}
+
+/* أنماط المعاينة */
+@media screen {
+  .print-invoice,
+  .print-receipt {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+}

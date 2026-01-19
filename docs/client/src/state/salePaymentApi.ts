@@ -1,0 +1,217 @@
+/**
+ * Sale Payment API
+ * API لدفعات المبيعات الآجلة
+ */
+
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQueryWithAuthInterceptor } from "./apiUtils";
+import { API_CACHE_CONFIG } from "@/lib/config";
+import { treasuryApi } from "./treasuryApi";
+
+// Types للمبيعات الآجلة والدفعات
+export interface CreditSale {
+  id: number;
+  companyId: number;
+  company: {
+    id: number;
+    name: string;
+    code: string;
+  };
+  customerId?: number;
+  customer?: {
+    id: number;
+    name: string;
+    phone?: string;
+  };
+  invoiceNumber?: string;
+  total: number;
+  paidAmount: number;
+  remainingAmount: number;
+  saleType: "CREDIT";
+  paymentMethod?: "CASH" | "BANK" | "CARD";
+  isFullyPaid: boolean;
+  createdAt: string;
+  payments: SalePayment[];
+  lines: {
+    id: number;
+    productId: number;
+    product: {
+      id: number;
+      sku: string;
+      name: string;
+      unit?: string;
+      unitsPerBox?: number;
+    };
+    qty: number;
+    unitPrice: number;
+    subTotal: number;
+  }[];
+}
+
+export interface SalePayment {
+  id: number;
+  saleId: number;
+  companyId: number;
+  company?: {
+    id: number;
+    name: string;
+    code: string;
+  };
+  sale?: {
+    id: number;
+    invoiceNumber?: string;
+    customer?: {
+      id: number;
+      name: string;
+    };
+  };
+  receiptNumber?: string;
+  amount: number;
+  paymentMethod: "CASH" | "BANK" | "CARD";
+  paymentDate: string;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface CreatePaymentRequest {
+  saleId: number;
+  amount: number;
+  paymentMethod: "CASH" | "BANK" | "CARD";
+  paymentDate?: string;
+  notes?: string;
+  bankAccountId?: number;
+}
+
+export interface CreditSalesQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  customerId?: number;
+  isFullyPaid?: boolean;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface PaymentsQueryParams {
+  page?: number;
+  limit?: number;
+  saleId?: number;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface CreditSalesStats {
+  totalCreditSales: number;
+  fullyPaidSales: number;
+  partiallyPaidSales: number;
+  unpaidSales: number;
+  totalAmount: number;
+  totalPaid: number;
+  totalRemaining: number;
+}
+
+export const salePaymentApi = createApi({
+  reducerPath: "salePaymentApi",
+  baseQuery: baseQueryWithAuthInterceptor,
+  tagTypes: ["CreditSales", "CreditSale", "SalePayments", "CustomerAccountSummary", "Sales", "Treasury", "TreasuryTransaction", "TreasuryStats"],
+  // تطبيق إعدادات عدم الكاش
+  keepUnusedDataFor: API_CACHE_CONFIG.sales.keepUnusedDataFor,
+  refetchOnMountOrArgChange: API_CACHE_CONFIG.sales.refetchOnMountOrArgChange,
+  refetchOnFocus: API_CACHE_CONFIG.sales.refetchOnFocus,
+  refetchOnReconnect: API_CACHE_CONFIG.sales.refetchOnReconnect,
+  endpoints: (builder) => ({
+    // الحصول على المبيعات الآجلة
+    getCreditSales: builder.query<any, CreditSalesQueryParams>({
+      query: (params) => ({
+        url: "/sale-payments/credit-sales",
+        method: "GET",
+        params
+      }),
+      providesTags: ["CreditSales"]
+    }),
+
+    // الحصول على فاتورة آجلة واحدة
+    getCreditSaleById: builder.query<any, number>({
+      query: (id) => ({
+        url: `/sale-payments/credit-sales/${id}`,
+        method: "GET"
+      }),
+      providesTags: (_result, _error, id) => [{ type: "CreditSale", id }]
+    }),
+
+    // الحصول على إحصائيات المبيعات الآجلة
+    getCreditSalesStats: builder.query<any, void>({
+      query: () => ({
+        url: "/sale-payments/credit-sales/stats",
+        method: "GET"
+      })
+    }),
+
+    // إنشاء دفعة جديدة
+    createPayment: builder.mutation<any, CreatePaymentRequest>({
+      query: (data) => ({
+        url: "/sale-payments/payments",
+        method: "POST",
+        body: data
+      }),
+      invalidatesTags: (_result, _error, { saleId }) => [
+        "CreditSales",
+        { type: "CreditSale", id: saleId },
+        "SalePayments",
+        { type: "CustomerAccountSummary", id: "LIST" }, // تحديث حسابات العملاء
+        { type: "Sales", id: "LIST" }, // تحديث قائمة المبيعات الرئيسية
+        "Treasury",
+        "TreasuryTransaction",
+        "TreasuryStats"
+      ],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+        } catch { }
+      },
+    }),
+
+    // الحصول على دفعات فاتورة
+    getSalePayments: builder.query<any, PaymentsQueryParams>({
+      query: (params) => ({
+        url: "/sale-payments/payments",
+        method: "GET",
+        params
+      }),
+      providesTags: ["SalePayments"]
+    }),
+
+    // حذف دفعة
+    deletePayment: builder.mutation<any, number>({
+      query: (id) => ({
+        url: `/sale-payments/payments/${id}`,
+        method: "DELETE"
+      }),
+      invalidatesTags: [
+        "CreditSales",
+        "SalePayments",
+        { type: "CustomerAccountSummary", id: "LIST" },
+        { type: "Sales", id: "LIST" },
+        "Treasury",
+        "TreasuryTransaction",
+        "TreasuryStats"
+      ],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+        } catch { }
+      },
+    })
+  })
+});
+
+export const {
+  useGetCreditSalesQuery,
+  useGetCreditSaleByIdQuery,
+  useGetCreditSalesStatsQuery,
+  useCreatePaymentMutation,
+  useGetSalePaymentsQuery,
+  useDeletePaymentMutation
+} = salePaymentApi;
