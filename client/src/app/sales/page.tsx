@@ -1625,32 +1625,32 @@ const SalesPage = () => {
 
       {/* Sales Table */}
       <div className="bg-white dark:bg-surface-primary rounded-lg shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full min-w-full">
             <thead className="bg-slate-50 dark:bg-surface-secondary">
               <tr>
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase tracking-wider w-32">
                   رقم الفاتورة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider w-40">
                   الشركة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider w-48">
                   العميل
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider w-32">
                   المجموع
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider w-28">
                   الحالة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider min-w-[200px]">
                   الملاحظات
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider w-32">
                   التاريخ
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase tracking-wider w-40">
                   الإجراءات
                 </th>
               </tr>
@@ -1685,24 +1685,24 @@ const SalesPage = () => {
                   })
                   ?.map((sale) => (
                     <tr key={sale.id} className="hover:bg-slate-50 dark:hover:bg-surface-hover transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-800 dark:text-text-primary">
+                      <td className="px-6 py-4 text-sm font-medium text-slate-800 dark:text-text-primary">
                         {sale.invoiceNumber || `#${sale.id}`}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800 dark:text-text-primary">
+                      <td className="px-6 py-4 text-sm text-slate-800 dark:text-text-primary">
                         <div className="flex flex-col">
                           <span className="font-medium text-blue-600 dark:text-blue-400">{sale.company?.name}</span>
                           <span className="text-xs text-slate-500 dark:text-text-tertiary">{sale.company?.code}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800 dark:text-text-primary">
+                      <td className="px-6 py-4 text-sm text-slate-800 dark:text-text-primary">
                         {sale.customer?.name || 'غير محدد'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800 dark:text-text-primary">
-                        <span className="font-semibold text-green-600">
+                      <td className="px-6 py-4 text-sm text-slate-800 dark:text-text-primary">
+                        <span className="font-semibold text-green-600 dark:text-green-400">
                           {formatArabicCurrency(sale.total)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${sale.status === 'DRAFT'
                           ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400'
                           : sale.status === 'APPROVED'
@@ -1713,10 +1713,10 @@ const SalesPage = () => {
                             sale.status === 'APPROVED' ? 'معتمدة' : 'ملغية'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800 dark:text-text-primary">
+                      <td className="px-6 py-4 text-sm text-slate-800 dark:text-text-primary break-words">
                         {sale.notes || <span className="text-slate-400 dark:text-text-tertiary">-</span>}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-800 dark:text-text-primary">
+                      <td className="px-6 py-4 text-sm text-slate-800 dark:text-text-primary">
                         {new Date(sale.createdAt).toLocaleDateString('en-US')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

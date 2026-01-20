@@ -276,36 +276,36 @@ const ProductGroupsPage = () => {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      <div className="bg-white dark:bg-surface-primary border-b border-gray-200 dark:border-border-primary px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push("/products")}
-              className="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-text-secondary hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
               title="العودة إلى الأصناف والمخزن"
             >
               <ArrowLeft className="w-5 h-5" />
               <span className="text-sm font-medium">العودة إلى الأصناف</span>
             </button>
-            <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <div className="w-px h-6 bg-gray-300 dark:bg-border-primary"></div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-text-primary">
               إدارة مجموعات الأصناف
             </h1>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-6 bg-gray-50 dark:bg-gray-900">
+      <div className="flex-1 overflow-auto p-6 bg-gray-50 dark:bg-surface-secondary">
         {/* Search and Actions Bar */}
         <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-text-tertiary w-5 h-5" />
             <input
               type="text"
               placeholder="البحث عن مجموعة أو مورد..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pr-10 pl-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+              className="w-full pr-10 pl-4 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
             />
           </div>
 
@@ -324,68 +324,68 @@ const ProductGroupsPage = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : filteredGroups.length === 0 ? (
-          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
-            <Package className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400 text-lg">
+          <div className="text-center py-12 bg-white dark:bg-surface-primary rounded-lg shadow">
+            <Package className="w-16 h-16 mx-auto text-gray-400 dark:text-text-tertiary mb-4" />
+            <p className="text-gray-500 dark:text-text-tertiary text-lg">
               {searchTerm ? "لا توجد نتائج للبحث" : "لا توجد مجموعات أصناف"}
             </p>
           </div>
         ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+          <div className="bg-white dark:bg-surface-primary rounded-lg shadow overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-700">
+                <thead className="bg-gray-50 dark:bg-surface-secondary">
                   <tr>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider">
                       اسم المجموعة
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider">
                       المورد
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider">
                       العملة
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider">
                       عدد الأصناف
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider">
                       الخصم الأقصى
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider">
                       الإجراءات
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="divide-y divide-gray-200 dark:divide-border-primary">
                   {filteredGroups.map((group) => (
                     <tr
                       key={group.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      className="hover:bg-gray-50 dark:hover:bg-surface-hover transition-colors"
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <Package className="w-5 h-5 text-blue-600" />
-                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          <Package className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                          <span className="text-sm font-medium text-gray-900 dark:text-text-primary">
                             {group.name}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-start gap-2">
-                          <Building2 className="w-4 h-4 text-gray-400 mt-0.5" />
+                          <Building2 className="w-4 h-4 text-gray-400 dark:text-text-tertiary mt-0.5" />
                           <div className="flex flex-col gap-1">
                             {group.suppliers && group.suppliers.length > 0 ? (
                               group.suppliers.map((supplier, index) => (
                                 <span
                                   key={supplier.id}
-                                  className="text-sm text-gray-700 dark:text-gray-300"
+                                  className="text-sm text-gray-700 dark:text-text-secondary"
                                 >
                                   {supplier.name}
                                   {index < group.suppliers!.length - 1 && ","}
                                 </span>
                               ))
                             ) : (
-                              <span className="text-sm text-gray-500 dark:text-gray-400">
+                              <span className="text-sm text-gray-500 dark:text-text-tertiary">
                                 غير محدد
                               </span>
                             )}
@@ -394,8 +394,8 @@ const ProductGroupsPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <DollarSign className="w-4 h-4 text-green-600" />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                          <DollarSign className="w-4 h-4 text-green-600 dark:text-green-400" />
+                          <span className="text-sm text-gray-700 dark:text-text-secondary">
                             {group.currency || "USD"}
                           </span>
                         </div>
@@ -406,7 +406,7 @@ const ProductGroupsPage = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                        <span className="text-sm text-gray-700 dark:text-text-secondary">
                           {group.maxDiscountPercentage
                             ? `${group.maxDiscountPercentage}%`
                             : "غير محدد"}
@@ -416,21 +416,21 @@ const ProductGroupsPage = () => {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleManageProducts(group.id)}
-                            className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+                            className="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
                             title="إدارة الأصناف"
                           >
                             <Link className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleViewGroup(group.id)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                             title="عرض التفاصيل"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleOpenModal(group)}
-                            className="p-2 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-lg transition-colors"
+                            className="p-2 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-lg transition-colors"
                             title="تعديل"
                           >
                             <Edit className="w-4 h-4" />
@@ -438,7 +438,7 @@ const ProductGroupsPage = () => {
                           <button
                             onClick={() => handleDelete(group.id, group.name)}
                             disabled={isDeleting}
-                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
+                            className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
                             title="حذف"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -457,14 +457,14 @@ const ProductGroupsPage = () => {
       {/* Create/Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+          <div className="bg-white dark:bg-surface-primary rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-surface-primary border-b border-gray-200 dark:border-border-primary px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-text-primary">
                 {selectedGroupId ? "تعديل مجموعة الأصناف" : "إضافة مجموعة جديدة"}
               </h2>
               <button
                 onClick={handleCloseModal}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-surface-hover rounded-lg transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -473,7 +473,7 @@ const ProductGroupsPage = () => {
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               {/* Group Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
                   اسم المجموعة <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -481,31 +481,31 @@ const ProductGroupsPage = () => {
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                   placeholder="مثال: STN"
                 />
               </div>
 
               {/* Multiple Suppliers */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  الموردين <span className="text-blue-600">(يمكن اختيار أكثر من مورد)</span>
+                <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
+                  الموردين <span className="text-blue-600 dark:text-blue-400">(يمكن اختيار أكثر من مورد)</span>
                 </label>
-                <div className="border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 max-h-48 overflow-y-auto">
+                <div className="border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary max-h-48 overflow-y-auto">
                   {isLoadingSuppliers ? (
                     <div className="flex items-center justify-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                      <span className="mr-3 text-gray-600 dark:text-gray-400">جاري تحميل الموردين...</span>
+                      <span className="mr-3 text-gray-600 dark:text-text-tertiary">جاري تحميل الموردين...</span>
                     </div>
                   ) : suppliers.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <div className="text-center py-8 text-gray-500 dark:text-text-tertiary">
                       لا توجد موردين في النظام
                     </div>
                   ) : (
                     suppliers.map((supplier: any) => (
                       <label
                         key={supplier.id}
-                        className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer transition-colors"
+                        className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-surface-hover cursor-pointer transition-colors"
                       >
                         <input
                           type="checkbox"
@@ -519,13 +519,13 @@ const ProductGroupsPage = () => {
                               );
                             }
                           }}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          className="w-4 h-4 text-blue-600 border-slate-300 dark:border-border-primary rounded focus:ring-blue-500"
                         />
-                        <span className="text-sm text-gray-900 dark:text-gray-100">
+                        <span className="text-sm text-gray-900 dark:text-text-primary">
                           {supplier.name}
                         </span>
                         {supplier.phone && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400 mr-auto">
+                          <span className="text-xs text-gray-500 dark:text-text-tertiary mr-auto">
                             {supplier.phone}
                           </span>
                         )}
@@ -533,7 +533,7 @@ const ProductGroupsPage = () => {
                     ))
                   )}
                 </div>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-1 text-xs text-gray-500 dark:text-text-tertiary">
                   يمكنك اختيار عدة موردين لنفس المجموعة (مثال: موردين في مدن مختلفة يقدمون نفس البضاعة)
                 </p>
                 {selectedSupplierIds.length > 0 && (
@@ -566,13 +566,13 @@ const ProductGroupsPage = () => {
 
               {/* Currency */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
                   العملة
                 </label>
                 <select
                   value={formData.currency || "USD"}
                   onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                 >
                   <option value="LYD">دينار ليبي (LYD)</option>
                   <option value="USD">دولار أمريكي (USD)</option>
@@ -582,7 +582,7 @@ const ProductGroupsPage = () => {
 
               {/* Max Discount Percentage */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">
                   نسبة الخصم الأقصى (اختياري)
                 </label>
                 <div className="relative">
@@ -600,20 +600,20 @@ const ProductGroupsPage = () => {
                           : undefined,
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                     placeholder="0.00"
                   />
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-text-tertiary">
                     %
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-1 text-xs text-gray-500 dark:text-text-tertiary">
                   الحد الأقصى للخصم المسموح به على منتجات هذه المجموعة
                 </p>
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-border-primary">
                 <button
                   type="submit"
                   disabled={isCreating || isUpdating}
@@ -625,7 +625,7 @@ const ProductGroupsPage = () => {
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="px-6 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+                  className="px-6 py-2 border border-slate-200 dark:border-border-primary hover:bg-gray-50 dark:hover:bg-surface-hover text-gray-700 dark:text-text-secondary rounded-lg transition-colors"
                 >
                   إلغاء
                 </button>
@@ -638,9 +638,9 @@ const ProductGroupsPage = () => {
       {/* View Details Modal */}
       {isViewModalOpen && selectedGroup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+          <div className="bg-white dark:bg-surface-primary rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-surface-primary border-b border-gray-200 dark:border-border-primary px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-text-primary">
                 تفاصيل مجموعة: {selectedGroup.name}
               </h2>
               <div className="flex items-center gap-2">
@@ -656,7 +656,7 @@ const ProductGroupsPage = () => {
                 </button>
                 <button
                   onClick={handleCloseViewModal}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-surface-hover rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -668,8 +668,8 @@ const ProductGroupsPage = () => {
               {selectedGroup.suppliers && selectedGroup.suppliers.length > 0 && (
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <div className="flex items-center gap-2 mb-3">
-                    <Building2 className="w-5 h-5 text-blue-600" />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-text-secondary">
                       الموردين المرتبطين بالمجموعة ({selectedGroup.suppliers.length})
                     </span>
                   </div>
@@ -677,15 +677,15 @@ const ProductGroupsPage = () => {
                     {selectedGroup.suppliers.map((supplier) => (
                       <div
                         key={supplier.id}
-                        className="flex items-start gap-2 p-3 bg-white dark:bg-gray-800 rounded-lg"
+                        className="flex items-start gap-2 p-3 bg-white dark:bg-surface-primary rounded-lg"
                       >
                         <Building2 className="w-4 h-4 text-gray-400 mt-0.5" />
                         <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          <p className="text-sm font-medium text-gray-900 dark:text-text-primary">
                             {supplier.name}
                           </p>
                           {supplier.phone && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                            <p className="text-xs text-gray-500 dark:text-text-tertiary">
                               {supplier.phone}
                             </p>
                           )}
@@ -699,38 +699,38 @@ const ProductGroupsPage = () => {
               {/* Group Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="p-4 bg-gray-50 dark:bg-surface-secondary rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <DollarSign className="w-5 h-5 text-green-600" />
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    <span className="text-sm font-medium text-gray-500 dark:text-text-tertiary">
                       العملة
                     </span>
                   </div>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <p className="text-lg font-semibold text-gray-900 dark:text-text-primary">
                     {selectedGroup.currency || "USD"}
                   </p>
                 </div>
 
-                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="p-4 bg-gray-50 dark:bg-surface-secondary rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <Package className="w-5 h-5 text-purple-600" />
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <Package className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    <span className="text-sm font-medium text-gray-500 dark:text-text-tertiary">
                       عدد الأصناف
                     </span>
                   </div>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <p className="text-lg font-semibold text-gray-900 dark:text-text-primary">
                     {selectedGroup.productsCount || 0} صنف
                   </p>
                 </div>
 
-                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="p-4 bg-gray-50 dark:bg-surface-secondary rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="w-5 h-5 text-orange-600" />
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <TrendingUp className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                    <span className="text-sm font-medium text-gray-500 dark:text-text-tertiary">
                       الخصم الأقصى
                     </span>
                   </div>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <p className="text-lg font-semibold text-gray-900 dark:text-text-primary">
                     {selectedGroup.maxDiscountPercentage
                       ? `${selectedGroup.maxDiscountPercentage}%`
                       : "غير محدد"}
@@ -741,41 +741,41 @@ const ProductGroupsPage = () => {
               {/* Products List */}
               {selectedGroup.products && selectedGroup.products.length > 0 && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-text-primary mb-4">
                     الأصناف التابعة للمجموعة
                   </h3>
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden">
+                  <div className="bg-gray-50 dark:bg-surface-secondary rounded-lg overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full">
-                        <thead className="bg-gray-100 dark:bg-gray-600">
+                        <thead className="bg-gray-100 dark:bg-surface-elevated">
                           <tr>
-                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">
+                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-text-secondary">
                               SKU
                             </th>
-                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">
+                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-text-secondary">
                               اسم الصنف
                             </th>
-                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">
+                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-text-secondary">
                               الوحدة
                             </th>
-                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">
+                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-text-secondary">
                               التكلفة
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                        <tbody className="divide-y divide-gray-200 dark:divide-border-primary">
                           {selectedGroup.products.map((product: any) => (
                             <tr key={product.id}>
-                              <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">
+                              <td className="px-4 py-2 text-sm text-gray-900 dark:text-text-primary">
                                 {product.sku}
                               </td>
-                              <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">
+                              <td className="px-4 py-2 text-sm text-gray-900 dark:text-text-primary">
                                 {product.name}
                               </td>
-                              <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                              <td className="px-4 py-2 text-sm text-gray-700 dark:text-text-secondary">
                                 {product.unit || "-"}
                               </td>
-                              <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                              <td className="px-4 py-2 text-sm text-gray-700 dark:text-text-secondary">
                                 {product.cost
                                   ? `${Number(product.cost).toFixed(2)} ${selectedGroup.currency}`
                                   : "-"}
@@ -796,30 +796,30 @@ const ProductGroupsPage = () => {
       {/* Manage Products Modal */}
       {isManageProductsModalOpen && selectedGroup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
-            <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+          <div className="bg-white dark:bg-surface-primary rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            <div className="bg-white dark:bg-surface-primary border-b border-gray-200 dark:border-border-primary px-6 py-4 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-text-primary">
                   إدارة أصناف المجموعة: {selectedGroup.name}
                 </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-sm text-gray-500 dark:text-text-tertiary mt-1">
                   اختر الأصناف التي تريد إضافتها أو إزالتها من المجموعة
                 </p>
               </div>
               <button
                 onClick={handleCloseManageProductsModal}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-surface-hover rounded-lg transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Search */}
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-border-primary bg-gray-50 dark:bg-surface-secondary">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* البحث بالكود */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  <label className="block text-xs font-medium text-gray-600 dark:text-text-tertiary mb-1">
                     البحث بالكود (مطابقة تامة)
                   </label>
                   <div className="relative">
@@ -833,14 +833,14 @@ const ProductGroupsPage = () => {
                         setProductPage(1);
                         setLoadedProducts([]);
                       }}
-                      className="w-full pr-10 pl-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                      className="w-full pr-10 pl-4 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                     />
                   </div>
                 </div>
 
                 {/* البحث بالاسم */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  <label className="block text-xs font-medium text-gray-600 dark:text-text-tertiary mb-1">
                     البحث بالاسم (مطابقة جزئية)
                   </label>
                   <div className="relative">
@@ -854,7 +854,7 @@ const ProductGroupsPage = () => {
                         setProductPage(1);
                         setLoadedProducts([]);
                       }}
-                      className="w-full pr-10 pl-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                      className="w-full pr-10 pl-4 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                     />
                   </div>
                 </div>
@@ -863,7 +863,7 @@ const ProductGroupsPage = () => {
               {/* مؤشر البحث النشط */}
               {(productSearchSKU || productSearchName) && (
                 <div className="mt-3 flex items-center gap-2 text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">
+                  <span className="text-gray-600 dark:text-text-secondary">
                     البحث النشط:
                   </span>
                   {productSearchSKU && (
@@ -912,7 +912,7 @@ const ProductGroupsPage = () => {
             </div>
 
             {/* Select All Bar */}
-            <div className="px-6 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
+            <div className="px-6 py-3 border-b border-gray-100 dark:border-border-primary bg-gray-50/50 dark:bg-surface-secondary">
               <label
                 className="flex items-center gap-2 cursor-pointer w-fit group"
                 onClick={(e) => {
@@ -920,7 +920,7 @@ const ProductGroupsPage = () => {
                   handleSelectAll();
                 }}
               >
-                <div className="flex items-center justify-center w-5 h-5 border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 group-hover:border-blue-500 transition-colors">
+                <div className="flex items-center justify-center w-5 h-5 border-2 border-gray-300 dark:border-border-primary rounded bg-white dark:bg-surface-primary group-hover:border-blue-500 transition-colors">
                   {filteredProducts.length > 0 && filteredProducts.every(p => {
                     const isPending = pendingAssignments[p.id];
                     return isPending !== undefined ? isPending : p.groupId === selectedGroupId;
@@ -933,13 +933,13 @@ const ProductGroupsPage = () => {
                     <div className="w-3 h-0.5 bg-blue-600 rounded-sm"></div>
                   ) : null}
                 </div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 select-none">
+                <span className="text-sm font-medium text-gray-700 dark:text-text-secondary select-none">
                   {filteredProducts.every(p => {
                     const isPending = pendingAssignments[p.id];
                     return isPending !== undefined ? isPending : p.groupId === selectedGroupId;
                   }) ? "إلغاء تحديد الكل" : "تحديد الكل في هذه الصفحة"}
                   {" "}
-                  <span className="text-gray-400 font-normal">({filteredProducts.length} صنف)</span>
+                  <span className="text-gray-400 dark:text-text-muted font-normal">({filteredProducts.length} صنف)</span>
                 </span>
               </label>
             </div>
@@ -951,7 +951,7 @@ const ProductGroupsPage = () => {
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                 </div>
               ) : filteredProducts.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                <div className="text-center py-12 text-gray-500 dark:text-text-tertiary">
                   {(productSearchSKU || productSearchName) ? (
                     <div>
                       <p className="text-lg font-medium mb-2">لا توجد نتائج للبحث</p>
@@ -975,7 +975,7 @@ const ProductGroupsPage = () => {
                         onClick={() => handleToggleProduct(product.id, product.groupId)}
                         className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${isChecked
                           ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                          : "border-gray-200 dark:border-border-primary hover:border-gray-300 dark:hover:border-blue-800/30"
                           } ${hasChanged ? "ring-2 ring-amber-400 ring-offset-1" : ""}`}
                       >
                         <div className="relative flex-shrink-0 flex items-center justify-center w-5 h-5">
@@ -983,17 +983,17 @@ const ProductGroupsPage = () => {
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => { }} // Managed by div onClick
-                            className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 pointer-events-none"
+                            className="w-5 h-5 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-border-primary rounded focus:ring-blue-500 pointer-events-none"
                           />
                         </div>
 
                         <div className="flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <Package className="w-4 h-4 text-gray-400" />
-                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                            <Package className="w-4 h-4 text-gray-400 dark:text-text-tertiary" />
+                            <span className="font-medium text-gray-900 dark:text-text-primary">
                               {product.name}
                             </span>
-                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                            <span className="text-sm text-gray-500 dark:text-text-tertiary">
                               ({product.sku})
                             </span>
                             {hasChanged && (
@@ -1004,7 +1004,7 @@ const ProductGroupsPage = () => {
                           </div>
                           <div className="flex items-center gap-3 mt-1 flex-wrap">
                             {product.unit && (
-                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                              <span className="text-xs text-gray-500 dark:text-text-tertiary">
                                 الوحدة: {product.unit}
                               </span>
                             )}
@@ -1035,7 +1035,7 @@ const ProductGroupsPage = () => {
                       <button
                         onClick={() => setProductPage(prev => prev + 1)}
                         disabled={isFetchingProducts}
-                        className="flex items-center gap-2 px-8 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 transition-all disabled:opacity-50"
+                        className="flex items-center gap-2 px-8 py-2 border-2 border-gray-200 dark:border-border-primary rounded-lg text-gray-600 dark:text-text-secondary hover:bg-gray-50 dark:hover:bg-surface-hover hover:border-gray-300 dark:hover:border-blue-800/30 transition-all disabled:opacity-50"
                       >
                         {isFetchingProducts ? (
                           <>
@@ -1060,10 +1060,10 @@ const ProductGroupsPage = () => {
             </div>
 
             {/* Footer */}
-            <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-900">
+            <div className="border-t border-gray-200 dark:border-border-primary px-6 py-4 bg-gray-50 dark:bg-surface-secondary">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4 text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">
+                  <span className="text-gray-600 dark:text-text-secondary">
                     <span className="font-semibold text-blue-600 dark:text-blue-400">
                       {/* Count based on visible products + pending assignments */}
                       {filteredProducts.filter((p: any) => {
@@ -1075,14 +1075,14 @@ const ProductGroupsPage = () => {
                   </span>
                   {(productSearchSKU || productSearchName) && (
                     <>
-                      <span className="text-gray-400">•</span>
-                      <span className="text-gray-600 dark:text-gray-400">
+                      <span className="text-gray-400 dark:text-text-muted">•</span>
+                      <span className="text-gray-600 dark:text-text-secondary">
                         عرض {filteredProducts.length} نتيجة
                       </span>
                     </>
                   )}
                   {Object.keys(pendingAssignments).length > 0 && (
-                    <span className="text-xs text-amber-600 font-medium bg-amber-50 px-2 py-1 rounded-full">
+                    <span className="text-xs text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-full">
                       يوجد {Object.keys(pendingAssignments).length} تغييرات غير محفوظة
                     </span>
                   )}
@@ -1090,7 +1090,7 @@ const ProductGroupsPage = () => {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={handleCloseManageProductsModal}
-                    className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    className="px-4 py-2 text-gray-700 dark:text-text-secondary hover:bg-gray-100 dark:hover:bg-surface-hover rounded-lg transition-colors"
                   >
                     إلغاء
                   </button>

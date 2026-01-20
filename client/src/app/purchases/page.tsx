@@ -906,8 +906,8 @@ const PurchasesPage = () => {
               </svg>
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">إدارة المشتريات</h1>
-              <p className="text-gray-600">إدارة فواتير المشتريات والموردين</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-text-primary">إدارة المشتريات</h1>
+              <p className="text-gray-600 dark:text-text-secondary">إدارة فواتير المشتريات والموردين</p>
             </div>
           </div>
           <button
@@ -924,8 +924,8 @@ const PurchasesPage = () => {
       </div>
 
       {/* Company Selection */}
-      <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-200 relative z-40">
-        <label className="block text-sm font-bold text-blue-900 mb-2">
+      <div className="mb-6 bg-gradient-to-r from-blue-50 dark:from-blue-900/20 to-indigo-50 dark:to-indigo-900/20 p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800/30 relative z-40">
+        <label className="block text-sm font-bold text-blue-900 dark:text-blue-400 mb-2">
           🏢 اختر الشركة للعمل عليها *
         </label>
         <select
@@ -941,7 +941,7 @@ const PurchasesPage = () => {
               lines: []
             });
           }}
-          className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-lg font-medium relative z-50"
+          className="w-full px-4 py-3 border-2 border-blue-300 dark:border-blue-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-surface-secondary text-lg font-medium text-slate-800 dark:text-text-primary relative z-50 outline-none transition-all"
         >
           <option value="">-- اختر الشركة أولاً --</option>
           {companiesLoading ? (
@@ -955,16 +955,16 @@ const PurchasesPage = () => {
           )}
         </select>
         {!selectedCompanyId && (
-          <p className="text-sm text-blue-700 mt-2 font-medium">
+          <p className="text-sm text-blue-700 dark:text-blue-400 mt-2 font-medium">
             ⚠️ يجب اختيار الشركة أولاً لتتمكن من إنشاء فاتورة جديدة
           </p>
         )}
         {selectedCompanyId && (
           <div className="mt-2 space-y-1">
-            <p className="text-sm text-green-700 font-medium">
+            <p className="text-sm text-green-700 dark:text-green-400 font-medium">
               ✅ تم اختيار الشركة - يمكنك الآن إنشاء فاتورة جديدة
             </p>
-            <p className="text-xs text-blue-600">
+            <p className="text-xs text-blue-600 dark:text-blue-400">
               💡 ملاحظة: سيتم عرض الأصناف الخاصة بهذه الشركة فقط، ولا يمكن إضافة أصناف من شركات أخرى
             </p>
           </div>
@@ -972,12 +972,12 @@ const PurchasesPage = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
+      <div className="bg-white dark:bg-surface-primary p-6 rounded-lg shadow-sm border border-slate-200 dark:border-border-primary mb-6">
         <div className="flex flex-col gap-4">
           {/* عنوان الفلاتر وزر المسح */}
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-text-primary flex items-center gap-2">
+              <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
               فلترة المشتريات
@@ -994,7 +994,7 @@ const PurchasesPage = () => {
                   setFilterDateTo('');
                   setCurrentPage(1);
                 }}
-                className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors flex items-center gap-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1008,7 +1008,7 @@ const PurchasesPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* اسم المورد */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                 اسم المورد
               </label>
               <input
@@ -1019,13 +1019,13 @@ const PurchasesPage = () => {
                   setFilterSupplierName(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 dark:focus:border-blue-400 transition-all"
               />
             </div>
 
             {/* رقم هاتف المورد */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                 رقم هاتف المورد
               </label>
               <input
@@ -1036,13 +1036,13 @@ const PurchasesPage = () => {
                   setFilterSupplierPhone(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 dark:focus:border-blue-400 transition-all"
               />
             </div>
 
             {/* رقم الفاتورة */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                 رقم الفاتورة
               </label>
               <input
@@ -1053,13 +1053,13 @@ const PurchasesPage = () => {
                   setFilterInvoiceNumber(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 dark:focus:border-blue-400 transition-all"
               />
             </div>
 
             {/* تاريخ من */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                 من تاريخ
               </label>
               <input
@@ -1069,13 +1069,13 @@ const PurchasesPage = () => {
                   setFilterDateFrom(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 dark:focus:border-blue-400 transition-all"
               />
             </div>
 
             {/* تاريخ إلى */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                 إلى تاريخ
               </label>
               <input
@@ -1085,7 +1085,7 @@ const PurchasesPage = () => {
                   setFilterDateTo(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 dark:focus:border-blue-400 transition-all"
               />
             </div>
           </div>
@@ -1132,71 +1132,71 @@ const PurchasesPage = () => {
       </div>
 
       {/* Purchases Table */}
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+      <div className="bg-white dark:bg-surface-primary rounded-lg shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
+          <table className="w-full min-w-full">
+            <thead className="bg-gray-50 dark:bg-surface-secondary">
               <tr>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider w-32">
                   رقم الفاتورة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider w-40">
                   الشركة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider min-w-[200px]">
                   المورد
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider w-32">
                   المجموع
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider w-32">
                   المصروفات
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider w-32">
                   التاريخ
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider min-w-[200px]">
                   الإجراءات
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-surface-primary divide-y divide-gray-200 dark:divide-border-primary">
               {purchasesLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-10 text-center text-gray-500 dark:text-text-tertiary">
                     <div className="flex flex-col items-center gap-2">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
                       <span>جاري تحميل المشتريات...</span>
                     </div>
                   </td>
                 </tr>
               ) : purchasesData?.purchases?.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-10 text-center text-gray-500 dark:text-text-tertiary">
                     لا توجد فواتير مشتريات مطابقة للبحث
                   </td>
                 </tr>
               ) : (
                 purchasesData?.purchases?.map((purchase) => (
-                  <tr key={purchase.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <tr key={purchase.id} className="hover:bg-gray-50 dark:hover:bg-surface-hover">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-text-primary">
                       {purchase.invoiceNumber || `#${purchase.id}`}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-text-primary">
                       <div className="flex flex-col">
-                        <span className="font-medium text-blue-600">{purchase.company?.name}</span>
-                        <span className="text-xs text-gray-500">{purchase.company?.code}</span>
+                        <span className="font-medium text-blue-600 dark:text-blue-400">{purchase.company?.name}</span>
+                        <span className="text-xs text-gray-500 dark:text-text-tertiary">{purchase.company?.code}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-text-primary break-words">
                       {purchase.supplier?.name || 'غير محدد'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <span className="font-semibold text-green-600">
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-text-primary">
+                      <span className="font-semibold text-green-600 dark:text-green-400">
                         {Number(purchase.total).toFixed(2)} {purchase.currency}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-text-primary">
                       {(purchase as any).expenses && (purchase as any).expenses.length > 0 ? (
                         <div className="flex flex-col gap-1">
                           {(() => {
@@ -1208,26 +1208,26 @@ const PurchasesPage = () => {
                             });
                             
                             return Object.entries(expensesByCurrency).map(([currency, total]) => (
-                              <span key={currency} className="text-xs text-orange-600 font-semibold">
+                              <span key={currency} className="text-xs text-orange-600 dark:text-orange-400 font-semibold">
                                 {total.toFixed(2)} {currency}
                               </span>
                             ));
                           })()}
                         </div>
                       ) : (
-                        <span className="text-xs text-gray-400">لا يوجد</span>
+                        <span className="text-xs text-gray-400 dark:text-text-tertiary">لا يوجد</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-text-primary">
                       {new Date(purchase.createdAt).toLocaleDateString('en-US')}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center gap-2">
+                    <td className="px-6 py-4 text-sm font-medium">
+                      <div className="flex flex-wrap items-center gap-2">
                         {/* زر الاعتماد - يظهر فقط للفواتير غير المعتمدة */}
                         {!(purchase as any).isApproved && (
                           <button
                             onClick={() => handleOpenApprovalModal(purchase)}
-                            className="text-green-600 hover:text-green-900 p-1 rounded"
+                            className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 p-1 rounded"
                             title="اعتماد الفاتورة"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1242,7 +1242,7 @@ const PurchasesPage = () => {
                             setSelectedPurchase(purchase);
                             setShowPurchaseDetailsModal(true);
                           }}
-                          className="text-blue-600 hover:text-blue-900 p-1 rounded"
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 p-1 rounded"
                           title="عرض التفاصيل"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1254,7 +1254,7 @@ const PurchasesPage = () => {
                         {/* زر طباعة الفاتورة */}
                         <button
                           onClick={() => handlePrintInvoice(purchase)}
-                          className="text-purple-600 hover:text-purple-900 p-1 rounded"
+                          className="text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300 p-1 rounded"
                           title="طباعة الفاتورة"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1266,7 +1266,7 @@ const PurchasesPage = () => {
                         {canEditPurchase(purchase) && (
                           <button
                             onClick={() => handleEditPurchase(purchase)}
-                            className="text-orange-600 hover:text-orange-900 p-1 rounded"
+                            className="text-orange-600 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-300 p-1 rounded"
                             title="تعديل الفاتورة"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1278,7 +1278,7 @@ const PurchasesPage = () => {
                         {/* زر إضافة مصروفات */}
                         <button
                           onClick={() => handleAddExpenses(purchase)}
-                          className="text-indigo-600 hover:text-indigo-900 p-1 rounded"
+                          className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 p-1 rounded"
                           title="إضافة مصروفات"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1290,7 +1290,7 @@ const PurchasesPage = () => {
                         {canDeletePurchase(purchase) && (
                           <button
                             onClick={() => handleDeletePurchaseWithValidation(purchase)}
-                            className="text-red-600 hover:text-red-900 p-1 rounded"
+                            className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 p-1 rounded"
                             title="حذف الفاتورة"
                             disabled={isDeleting}
                           >
@@ -1302,7 +1302,7 @@ const PurchasesPage = () => {
 
                         {/* إشارة الاعتماد */}
                         {(purchase as any).isApproved && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
                             ✓ معتمد
                           </span>
                         )}
@@ -1317,26 +1317,26 @@ const PurchasesPage = () => {
 
         {/* Pagination */}
         {purchasesData?.pagination && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+          <div className="bg-white dark:bg-surface-primary px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-border-primary sm:px-6">
             <div className="flex-1 flex justify-between sm:hidden">
               <button
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-border-primary text-sm font-medium rounded-md text-gray-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-gray-50 dark:hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 السابق
               </button>
               <button
                 onClick={() => setCurrentPage(prev => prev + 1)}
                 disabled={currentPage >= purchasesData.pagination.pages}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-border-primary text-sm font-medium rounded-md text-gray-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-gray-50 dark:hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 التالي
               </button>
             </div>
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-gray-700 dark:text-text-secondary">
                   عرض{' '}
                   <span className="font-medium">
                     {((currentPage - 1) * 10) + 1}
@@ -1357,8 +1357,8 @@ const PurchasesPage = () => {
                       key={i + 1}
                       onClick={() => setCurrentPage(i + 1)}
                       className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === i + 1
-                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                        ? 'z-10 bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400'
+                        : 'bg-white dark:bg-surface-secondary border-gray-300 dark:border-border-primary text-gray-500 dark:text-text-tertiary hover:bg-gray-50 dark:hover:bg-surface-hover'
                         }`}
                     >
                       {i + 1}
@@ -1373,16 +1373,16 @@ const PurchasesPage = () => {
 
       {/* Create Purchase Modal */}
       {showCreatePurchaseModal && selectedCompanyId && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-6 border w-11/12 max-w-7xl shadow-lg rounded-md bg-white min-h-[90vh]">
+        <div className="fixed inset-0 bg-gray-600 dark:bg-black/50 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-10 mx-auto p-6 border border-slate-200 dark:border-border-primary w-11/12 max-w-7xl shadow-lg rounded-md bg-white dark:bg-surface-primary min-h-[90vh]">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-text-primary">
                   {isEditMode ? 'تعديل فاتورة المشتريات' : 'فاتورة مشتريات جديدة'}
                 </h2>
                 <button
                   onClick={handleClosePurchaseModal}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 dark:text-text-tertiary hover:text-gray-600 dark:hover:text-text-primary"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1390,14 +1390,14 @@ const PurchasesPage = () => {
                 </button>
               </div>
 
-              <div className="mb-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800/30">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">🏢</span>
                   <div>
-                    <p className="text-sm font-bold text-blue-900">
+                    <p className="text-sm font-bold text-blue-900 dark:text-blue-400">
                       الشركة المختارة: {companiesData?.data?.companies?.find(c => c.id === selectedCompanyId)?.name}
                     </p>
-                    <p className="text-xs text-blue-700 mt-1">
+                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
                       💡 سيتم الشراء لمخزون هذه الشركة فقط
                     </p>
                   </div>
@@ -1405,14 +1405,14 @@ const PurchasesPage = () => {
 
                 {/* تنبيه إذا لم تكن هناك أصناف */}
                 {selectedCompanyId && filteredProducts.length === 0 && (
-                  <div className="mb-4 bg-red-50 p-4 rounded-lg border-2 border-red-300">
+                  <div className="mb-4 bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border-2 border-red-300 dark:border-red-800/30">
                     <div className="flex items-start gap-3">
                       <span className="text-2xl">⚠️</span>
                       <div>
-                        <p className="text-sm text-red-800 font-bold mb-1">
+                        <p className="text-sm text-red-800 dark:text-red-400 font-bold mb-1">
                           لا توجد أصناف متاحة لهذه الشركة!
                         </p>
-                        <p className="text-xs text-red-700">
+                        <p className="text-xs text-red-700 dark:text-red-300">
                           لا يمكن إنشاء فاتورة بدون أصناف. يرجى إضافة أصناف أولاً من صفحة "الأصناف والمخزن" للشركة المختارة.
                         </p>
                       </div>
@@ -1421,8 +1421,8 @@ const PurchasesPage = () => {
                 )}
 
                 {productsLoading && (
-                  <div className="mb-4 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                    <p className="text-sm text-blue-800 font-medium">
+                  <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800/30">
+                    <p className="text-sm text-blue-800 dark:text-blue-400 font-medium">
                       ⏳ جاري تحميل الأصناف...
                     </p>
                   </div>
@@ -1488,7 +1488,7 @@ const PurchasesPage = () => {
                 }} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div className="relative" ref={supplierSearchRef}>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                         المورد *
                       </label>
                       <div className="flex gap-2">
@@ -1505,7 +1505,7 @@ const PurchasesPage = () => {
                             }}
                             onFocus={() => setShowSupplierSuggestions(true)}
                             placeholder="ابحث عن المورد بالاسم أو الهاتف..."
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 dark:focus:border-blue-400 transition-all"
                             required={!purchaseForm.supplierId}
                           />
                           {suppliersLoading && (
@@ -1516,7 +1516,7 @@ const PurchasesPage = () => {
 
                           {/* Supplier Suggestions Dropdown */}
                           {showSupplierSuggestions && !suppliersLoading && (
-                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            <div className="absolute z-50 w-full mt-1 bg-white dark:bg-surface-elevated border border-gray-300 dark:border-border-primary rounded-md shadow-lg max-h-60 overflow-y-auto">
                               {suppliersData?.data?.suppliers
                                 ?.filter((supplier) =>
                                   supplier.name.toLowerCase().includes(supplierSearchTerm.toLowerCase()) ||
@@ -1531,14 +1531,14 @@ const PurchasesPage = () => {
                                       setSupplierSearchTerm('');
                                       setShowSupplierSuggestions(false);
                                     }}
-                                    className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                    className="px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-100 dark:border-border-primary last:border-b-0"
                                   >
-                                    <div className="font-medium text-gray-900">{supplier.name}</div>
+                                    <div className="font-medium text-gray-900 dark:text-text-primary">{supplier.name}</div>
                                     {supplier.phone && (
-                                      <div className="text-xs text-gray-500">📱 {supplier.phone}</div>
+                                      <div className="text-xs text-gray-500 dark:text-text-tertiary">📱 {supplier.phone}</div>
                                     )}
                                     {supplier.address && (
-                                      <div className="text-xs text-gray-400">📍 {supplier.address}</div>
+                                      <div className="text-xs text-gray-400 dark:text-text-muted">📍 {supplier.address}</div>
                                     )}
                                   </div>
                                 ))}
@@ -1547,7 +1547,7 @@ const PurchasesPage = () => {
                                   supplier.name.toLowerCase().includes(supplierSearchTerm.toLowerCase()) ||
                                   supplier.phone?.includes(supplierSearchTerm)
                                 )?.length === 0 && (
-                                  <div className="px-3 py-2 text-gray-500 text-sm">
+                                  <div className="px-3 py-2 text-gray-500 dark:text-text-tertiary text-sm">
                                     لا توجد نتائج
                                   </div>
                                 )}
@@ -1567,35 +1567,35 @@ const PurchasesPage = () => {
                         </button>
                       </div>
                       {purchaseForm.supplierId && selectedSupplierName && (
-                        <p className="text-xs text-green-600 mt-1 font-medium">
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
                           ✓ تم اختيار: {selectedSupplierName}
                         </p>
                       )}
                       {!purchaseForm.supplierId && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-text-tertiary mt-1">
                           مطلوب - ابحث واختر مورد للمتابعة
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                         رقم الفاتورة
                       </label>
                       <input
                         type="text"
                         value="سيتم توليده تلقائياً"
                         readOnly
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600 cursor-not-allowed"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-border-primary rounded-md bg-gray-50 dark:bg-surface-secondary text-gray-600 dark:text-text-tertiary cursor-not-allowed"
                       />
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-text-tertiary mt-1">
                         سيتم توليد رقم الفاتورة تلقائياً عند الحفظ
                       </p>
                     </div>
 
                     {/* Currency */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                         العملة *
                       </label>
                       <select
@@ -1606,13 +1606,13 @@ const PurchasesPage = () => {
                             currency: e.target.value as 'LYD' | 'USD' | 'EUR'
                           }));
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 dark:focus:border-blue-400 transition-all"
                       >
                         <option value="LYD">دينار ليبي (LYD)</option>
                         <option value="USD">دولار أمريكي (USD)</option>
                         <option value="EUR">يورو (EUR)</option>
                       </select>
-                      <p className="text-xs text-blue-600 mt-1">
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                         💡 سعر الصرف يُدخل عند الدفع الفعلي فقط
                       </p>
                     </div>
@@ -1622,7 +1622,7 @@ const PurchasesPage = () => {
                   {/* Purchase Lines */}
                   <div>
                     <div className="flex justify-between items-center mb-3">
-                      <label className="block text-base font-bold text-gray-800">
+                      <label className="block text-base font-bold text-gray-800 dark:text-text-primary">
                         📋 بنود الفاتورة *
                       </label>
                       <div className="flex items-center gap-2">
@@ -1645,14 +1645,14 @@ const PurchasesPage = () => {
                     </div>
 
                     {/* Product Search Filters */}
-                    <div className="mb-4 p-4 bg-gradient-to-r from-gray-50 to-blue-50 border-2 border-gray-200 rounded-lg">
+                    <div className="mb-4 p-4 bg-gradient-to-r from-gray-50 dark:from-surface-secondary to-blue-50 dark:to-blue-900/20 border-2 border-gray-200 dark:border-border-primary rounded-lg">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <span className="text-lg">🔍</span>
-                          <h4 className="text-sm font-bold text-gray-700">البحث عن المنتجات</h4>
+                          <h4 className="text-sm font-bold text-gray-700 dark:text-text-primary">البحث عن المنتجات</h4>
                         </div>
                         {selectedCompanyId && (
-                          <span className="text-xs text-blue-700 font-medium bg-blue-100 px-2 py-1 rounded">
+                          <span className="text-xs text-blue-700 dark:text-blue-400 font-medium bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded">
                             أصناف {companiesData?.data?.companies?.find(c => c.id === selectedCompanyId)?.name} ({filteredProducts.length} صنف)
                           </span>
                         )}
@@ -1660,7 +1660,7 @@ const PurchasesPage = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative product-dropdown-container">
                         {/* البحث بالكود */}
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                          <label className="block text-xs font-medium text-gray-700 dark:text-text-secondary mb-1">
                             🔢 البحث بالكود
                           </label>
                           <input
@@ -1677,12 +1677,12 @@ const PurchasesPage = () => {
                               }
                             }}
                             placeholder="ابحث بالكود..."
-                            className="w-full px-3 py-2 border-2 border-blue-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono"
+                            className="w-full px-3 py-2 border-2 border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary text-sm focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 dark:focus:border-blue-400 transition-all font-mono outline-none"
                           />
                         </div>
                         {/* البحث بالاسم */}
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                          <label className="block text-xs font-medium text-gray-700 dark:text-text-secondary mb-1">
                             🔍 البحث بالاسم
                           </label>
                           <input
@@ -1699,13 +1699,13 @@ const PurchasesPage = () => {
                               }
                             }}
                             placeholder="ابحث بجزء من الاسم..."
-                            className="w-full px-3 py-2 border-2 border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                            className="w-full px-3 py-2 border-2 border-gray-300 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary text-sm focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 dark:focus:border-blue-400 transition-all outline-none"
                           />
                         </div>
 
                         {/* القائمة المنسدلة للأصناف - تظهر تحت كلا الخانتين */}
                         {showProductDropdown && (productNameSearch || productCodeSearch) && (
-                          <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                          <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-surface-elevated border border-gray-300 dark:border-border-primary rounded-md shadow-lg max-h-60 overflow-y-auto">
                             {searchFilteredProducts.length > 0 ? (
                               searchFilteredProducts.slice(0, 10).map((product: any) => (
                                 <button
@@ -1713,18 +1713,18 @@ const PurchasesPage = () => {
                                   type="button"
                                   onMouseDown={(e) => e.preventDefault()}
                                   onClick={() => handleSelectProductFromDropdown(product)}
-                                  className="w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 last:border-b-0 transition-colors hover:bg-blue-50"
+                                  className="w-full px-3 py-2 text-right focus:outline-none border-b border-gray-100 dark:border-border-primary last:border-b-0 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20"
                                 >
                                   <div className="flex justify-between items-center gap-3">
                                     <div className="text-sm flex-1">
-                                      <div className="font-medium text-gray-900">
+                                      <div className="font-medium text-gray-900 dark:text-text-primary">
                                         {product.name}
                                       </div>
-                                      <div className="text-xs text-gray-500 flex items-center gap-2">
+                                      <div className="text-xs text-gray-500 dark:text-text-tertiary flex items-center gap-2">
                                         <span>كود: {product.sku}</span>
                                         {/* عرض الكمية في المخزون */}
                                         {product.stock && product.stock.length > 0 && (
-                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">
+                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full font-medium">
                                             📦 {(() => {
                                               const stock = product.stock.find((s: any) => s.companyId === selectedCompanyId);
                                               return stock?.boxes || 0;
@@ -1733,7 +1733,7 @@ const PurchasesPage = () => {
                                         )}
                                       </div>
                                     </div>
-                                    <div className="text-xs font-medium whitespace-nowrap text-blue-600">
+                                    <div className="text-xs font-medium whitespace-nowrap text-blue-600 dark:text-blue-400">
                                       {product.latestPricing?.purchasePrice
                                         ? formatArabicCurrency(Number(product.latestPricing.purchasePrice))
                                         : 'غير محدد'}
@@ -1742,7 +1742,7 @@ const PurchasesPage = () => {
                                 </button>
                               ))
                             ) : (
-                              <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                              <div className="px-3 py-2 text-sm text-gray-500 dark:text-text-tertiary text-center">
                                 لا توجد أصناف مطابقة
                               </div>
                             )}
@@ -1750,11 +1750,11 @@ const PurchasesPage = () => {
                         )}
                       </div>
                       {(productCodeSearch || productNameSearch) && (
-                        <div className="mt-3 flex justify-between items-center p-2 bg-white rounded-md border border-blue-200">
-                          <div className="text-xs font-medium text-gray-600">
+                        <div className="mt-3 flex justify-between items-center p-2 bg-white dark:bg-surface-primary rounded-md border border-blue-200 dark:border-blue-800/30">
+                          <div className="text-xs font-medium text-gray-600 dark:text-text-secondary">
                             📊 عرض {searchFilteredProducts.length} منتج من أصل {filteredProducts.length}
-                            {productCodeSearch && <span className="text-blue-600 mr-2">| كود: {productCodeSearch}</span>}
-                            {productNameSearch && <span className="text-green-600 mr-2">| اسم: {productNameSearch}</span>}
+                            {productCodeSearch && <span className="text-blue-600 dark:text-blue-400 mr-2">| كود: {productCodeSearch}</span>}
+                            {productNameSearch && <span className="text-green-600 dark:text-green-400 mr-2">| اسم: {productNameSearch}</span>}
                           </div>
                           <button
                             type="button"
@@ -1763,7 +1763,7 @@ const PurchasesPage = () => {
                               setProductNameSearch('');
                               setShowProductDropdown(false);
                             }}
-                            className="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 hover:bg-blue-50 rounded transition-colors"
+                            className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium px-2 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
                           >
                             ✖️ مسح البحث
                           </button>
@@ -1771,12 +1771,12 @@ const PurchasesPage = () => {
                       )}
                     </div>
 
-                    <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                    <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-border-primary scrollbar-track-gray-100 dark:scrollbar-track-surface-secondary">
                       {purchaseForm.lines.length === 0 ? (
-                        <div className="text-center py-12 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg">
+                        <div className="text-center py-12 bg-gray-50 dark:bg-surface-secondary border-2 border-dashed border-gray-300 dark:border-border-primary rounded-lg">
                           <div className="text-6xl mb-3">📝</div>
-                          <p className="text-gray-600 font-medium mb-2">لا توجد بنود في الفاتورة</p>
-                          <p className="text-sm text-gray-500">اضغط على "إضافة بند" لبدء إنشاء الفاتورة</p>
+                          <p className="text-gray-600 dark:text-text-secondary font-medium mb-2">لا توجد بنود في الفاتورة</p>
+                          <p className="text-sm text-gray-500 dark:text-text-tertiary">اضغط على "إضافة بند" لبدء إنشاء الفاتورة</p>
                         </div>
                       ) : (
                         purchaseForm.lines.map((line, index) => (
@@ -1808,14 +1808,14 @@ const PurchasesPage = () => {
                     {purchaseForm.lines.length > 0 && (
                       <>
                         {/* المجموع الإجمالي */}
-                        <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-300 rounded-lg">
+                        <div className="mt-4 p-4 bg-gradient-to-r from-green-50 dark:from-green-900/20 to-blue-50 dark:to-blue-900/20 border-2 border-green-300 dark:border-green-800/30 rounded-lg">
                           <div className="flex justify-between items-center">
-                            <span className="text-lg font-bold text-gray-700">المجموع الإجمالي ({purchaseForm.currency}):</span>
+                            <span className="text-lg font-bold text-gray-700 dark:text-text-primary">المجموع الإجمالي ({purchaseForm.currency}):</span>
                             <div className="text-right">
-                              <span className="text-2xl font-bold text-green-600">
+                              <span className="text-2xl font-bold text-green-600 dark:text-green-400">
                                 {Number(calculateGrandTotal()).toFixed(2)} {purchaseForm.currency}
                               </span>
-                              <div className="text-xs text-gray-500 mt-1">
+                              <div className="text-xs text-gray-500 dark:text-text-tertiary mt-1">
                                 💡 يتم حساب القيمة بالدينار عند الدفع الفعلي
                               </div>
                             </div>
@@ -1825,14 +1825,14 @@ const PurchasesPage = () => {
                     )}
                   </div>
 
-                  <div className="flex justify-end gap-4 pt-8 border-t-2 border-gray-200 mt-6">
+                  <div className="flex justify-end gap-4 pt-8 border-t-2 border-gray-200 dark:border-border-primary mt-6">
                     <button
                       type="button"
                       onClick={() => {
                         setShowCreatePurchaseModal(false);
                         setProductCodeSearch('');
                       }}
-                      className="flex items-center gap-2 px-8 py-3 border-2 border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 font-medium text-base"
+                      className="flex items-center gap-2 px-8 py-3 border-2 border-gray-300 dark:border-border-primary rounded-lg text-gray-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-gray-100 dark:hover:bg-surface-hover hover:border-gray-400 dark:hover:border-border-primary transition-all duration-200 font-medium text-base"
                     >
                       <span>❌</span>
                       <span>إلغاء</span>
@@ -1865,14 +1865,14 @@ const PurchasesPage = () => {
 
       {/* Purchase Details Modal */}
       {showPurchaseDetailsModal && selectedPurchase && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black dark:bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-surface-primary rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-border-primary">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">تفاصيل فاتورة المشتريات</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-text-primary">تفاصيل فاتورة المشتريات</h2>
                 <button
                   onClick={() => setShowPurchaseDetailsModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 dark:text-text-tertiary hover:text-gray-600 dark:hover:text-text-primary"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1883,19 +1883,19 @@ const PurchasesPage = () => {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">رقم الفاتورة</label>
-                    <p className="text-lg font-semibold">{selectedPurchase.invoiceNumber || `#${selectedPurchase.id}`}</p>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary">رقم الفاتورة</label>
+                    <p className="text-lg font-semibold dark:text-text-primary">{selectedPurchase.invoiceNumber || `#${selectedPurchase.id}`}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">المورد</label>
-                    <p className="text-lg font-semibold">{selectedPurchase.supplier?.name || 'غير محدد'}</p>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary">المورد</label>
+                    <p className="text-lg font-semibold dark:text-text-primary">{selectedPurchase.supplier?.name || 'غير محدد'}</p>
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">إجماليات الفاتورة</label>
-                    <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">إجماليات الفاتورة</label>
+                    <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800/30">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-green-700">مجموع الأصناف:</span>
-                        <span className="text-xl font-bold text-green-700">
+                        <span className="text-sm text-green-700 dark:text-green-400">مجموع الأصناف:</span>
+                        <span className="text-xl font-bold text-green-700 dark:text-green-400">
                           {Number(selectedPurchase.total).toFixed(2)} {selectedPurchase.currency}
                         </span>
                       </div>
@@ -2118,7 +2118,7 @@ const PurchasesPage = () => {
                   }
                 }} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                       اسم المورد *
                     </label>
                     <input
@@ -2132,7 +2132,7 @@ const PurchasesPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                       رقم الهاتف
                     </label>
                     <input
@@ -2145,7 +2145,7 @@ const PurchasesPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                       العنوان
                     </label>
                     <textarea
@@ -2373,7 +2373,7 @@ const PurchasesPage = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">فئة المصروف *</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">فئة المصروف *</label>
                       <ExpenseCategorySelector
                         categories={expenseCategories}
                         selectedCategoryId={newExpense.categoryId}
@@ -2389,7 +2389,7 @@ const PurchasesPage = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                         المورد {newExpense.isActualExpense !== false && <span className="text-red-500">*</span>}
                       </label>
                       <SupplierSelector
@@ -2408,7 +2408,7 @@ const PurchasesPage = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">المبلغ *</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">المبلغ *</label>
                       <div className="flex gap-1">
                         <input
                           type="number"
@@ -2438,7 +2438,7 @@ const PurchasesPage = () => {
                       </p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">ملاحظات</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">ملاحظات</label>
                       <input
                         type="text"
                         value={newExpense.notes || ''}

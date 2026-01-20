@@ -163,7 +163,7 @@ const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                 <select
                   value={formData.supplierId}
                   onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                 >
                   <option value="">اختر المورد</option>
                   {suppliersData?.data?.suppliers?.map((supplier) => (
@@ -182,7 +182,7 @@ const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                   type="text"
                   value={formData.invoiceNumber}
                   onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                   placeholder="رقم الفاتورة (اختياري)"
                 />
               </div>
@@ -194,7 +194,7 @@ const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                 <select
                   value={formData.purchaseType}
                   onChange={(e) => setFormData({ ...formData, purchaseType: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                 >
                   <option value="CASH">نقدي</option>
                   <option value="CREDIT">آجل</option>
@@ -209,7 +209,7 @@ const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                   <select
                     value={formData.paymentMethod}
                     onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                   >
                     <option value="CASH">نقد</option>
                     <option value="BANK">بنك</option>
@@ -245,7 +245,7 @@ const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                       <select
                         value={line.productId}
                         onChange={(e) => updateLine(index, 'productId', Number(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                       >
                         <option value={0}>اختر الصنف</option>
                         {productsData?.products?.map((product) => (
@@ -266,7 +266,7 @@ const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                         step="0.01"
                         value={line.qty}
                         onChange={(e) => updateLine(index, 'qty', Number(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                       />
                     </div>
 
@@ -280,7 +280,7 @@ const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                         step="0.01"
                         value={line.unitPrice}
                         onChange={(e) => updateLine(index, 'unitPrice', Number(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                       />
                     </div>
 
@@ -292,7 +292,7 @@ const CreatePurchaseModal: React.FC<CreatePurchaseModalProps> = ({
                         type="number"
                         value={line.subTotal}
                         readOnly
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                        className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-gray-50 dark:bg-surface-elevated text-slate-800 dark:text-text-primary outline-none"
                       />
                     </div>
 

@@ -126,7 +126,7 @@ export default function SupplierSelector({
 
       {/* القائمة المنسدلة */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-surface-primary border border-slate-200 dark:border-border-primary rounded-lg shadow-lg max-h-60 overflow-hidden">
           {/* حقل البحث */}
           <div className="p-2 border-b border-gray-200">
             <div className="relative">
@@ -144,7 +144,7 @@ export default function SupplierSelector({
                 placeholder="البحث في الموردين..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pr-9 pl-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pr-9 pl-3 py-2 text-sm border border-slate-200 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
               />
             </div>
           </div>

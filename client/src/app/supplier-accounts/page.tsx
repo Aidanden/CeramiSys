@@ -86,8 +86,8 @@ const SupplierAccountsPage = () => {
   const formatStatsNumber = (value: number) => statsNumberFormatter.format(value);
   const formatCurrency = formatLibyanCurrencyEnglish;
   const getBalanceColor = (balance: number) => {
-    if (balance > 0) return 'text-red-600';
-    if (balance < 0) return 'text-green-600';
+    if (balance > 0) return 'text-red-600 dark:text-red-400';
+    if (balance < 0) return 'text-green-600 dark:text-green-400';
     return 'text-slate-600 dark:text-text-secondary';
   };
   const getBalanceText = (balance: number) => {
@@ -232,7 +232,7 @@ const SupplierAccountsPage = () => {
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="text-lg text-red-500">حدث خطأ في تحميل البيانات</div>
+        <div className="text-lg text-red-500 dark:text-red-400">حدث خطأ في تحميل البيانات</div>
       </div>
     );
   }
@@ -241,7 +241,7 @@ const SupplierAccountsPage = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-surface-secondary p-6" dir="rtl">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-text-primary mb-2">
             {viewMode === 'summary' && 'إدارة حسابات الموردين'}
             {viewMode === 'account' && `كشف حساب: ${selectedSupplier?.name || ''}`}
             {viewMode === 'purchases' && `المشتريات المفتوحة: ${selectedSupplier?.name || ''}`}
@@ -252,16 +252,16 @@ const SupplierAccountsPage = () => {
             {viewMode === 'purchases' && 'مراجعة فواتير المشتريات غير المسددة بالكامل'}
           </p>
           {viewMode === 'summary' && (
-            <div className="bg-blue-50 border-r-4 border-blue-500 p-4 rounded-xl">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border-r-4 border-blue-500 dark:border-blue-400 p-4 rounded-xl">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                   </svg>
                 </div>
                 <div className="mr-3">
-                  <h3 className="text-sm font-semibold text-blue-900">💱 نظام الحسابات متعدد العملات</h3>
-                  <p className="text-xs text-blue-800 mt-1">
+                  <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-400">💱 نظام الحسابات متعدد العملات</h3>
+                  <p className="text-xs text-blue-800 dark:text-blue-300 mt-1">
                     كل مورد له حسابات منفصلة لكل عملة (LYD, USD, EUR). يتم تسجيل كل فاتورة بعملتها الأصلية دون أي تحويل. سعر الصرف يُستخدم فقط عند السداد الفعلي.
                   </p>
                 </div>
@@ -272,39 +272,39 @@ const SupplierAccountsPage = () => {
 
         {viewMode === 'summary' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow p-6">
+            <div className="bg-white dark:bg-surface-primary rounded-xl shadow p-6 border border-slate-200 dark:border-border-primary">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-600 dark:text-text-secondary mb-2">إجمالي الموردين</p>
-                  <p className="text-3xl font-bold text-blue-600">{formatStatsNumber(suppliers.length)}</p>
+                  <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{formatStatsNumber(suppliers.length)}</p>
                   <p className="text-xs text-slate-500 dark:text-text-tertiary mt-1">مورد نشط</p>
                 </div>
-                <div className="bg-blue-100 p-3 rounded-full">
-                  <User className="w-6 h-6 text-blue-600" />
+                <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
+                  <User className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-xl shadow p-6">
+            <div className="bg-white dark:bg-surface-primary rounded-xl shadow p-6 border border-slate-200 dark:border-border-primary">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-600 dark:text-text-secondary mb-2">موردين لديهم ديون</p>
-                  <p className="text-3xl font-bold text-red-600">{formatStatsNumber(totalCreditors)}</p>
-                  <p className="text-xs text-red-500 mt-1">مستحقات علينا</p>
+                  <p className="text-3xl font-bold text-red-600 dark:text-red-400">{formatStatsNumber(totalCreditors)}</p>
+                  <p className="text-xs text-red-500 dark:text-red-400 mt-1">مستحقات علينا</p>
                 </div>
-                <div className="bg-red-100 p-3 rounded-full">
-                  <TrendingUp className="w-6 h-6 text-red-600" />
+                <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded-full">
+                  <TrendingUp className="w-6 h-6 text-red-600 dark:text-red-400" />
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-xl shadow p-6">
+            <div className="bg-white dark:bg-surface-primary rounded-xl shadow p-6 border border-slate-200 dark:border-border-primary">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-600 dark:text-text-secondary mb-2">موردين مدينين</p>
-                  <p className="text-3xl font-bold text-green-600">{formatStatsNumber(totalDebtors)}</p>
-                  <p className="text-xs text-green-500 mt-1">لهم ديون لنا</p>
+                  <p className="text-3xl font-bold text-green-600 dark:text-green-400">{formatStatsNumber(totalDebtors)}</p>
+                  <p className="text-xs text-green-500 dark:text-green-400 mt-1">لهم ديون لنا</p>
                 </div>
-                <div className="bg-green-100 p-3 rounded-full">
-                  <TrendingDown className="w-6 h-6 text-green-600" />
+                <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-full">
+                  <TrendingDown className="w-6 h-6 text-green-600 dark:text-green-400" />
                 </div>
               </div>
             </div>
@@ -315,7 +315,7 @@ const SupplierAccountsPage = () => {
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <button
               onClick={handleBackToSummary}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-gray-200 dark:bg-surface-secondary text-gray-700 dark:text-text-primary rounded-md hover:bg-gray-300 dark:hover:bg-surface-hover transition-colors flex items-center gap-2"
             >
               <span>←</span>
               <span>العودة للقائمة</span>
@@ -334,20 +334,20 @@ const SupplierAccountsPage = () => {
 
         {viewMode === 'summary' && (
           <>
-            <div className="bg-white rounded-xl shadow mb-6 p-4">
+            <div className="bg-white dark:bg-surface-primary rounded-xl shadow mb-6 p-4 border border-slate-200 dark:border-border-primary">
               <div className="relative">
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-text-tertiary w-5 h-5" />
                 <input
                   type="text"
                   placeholder="بحث عن مورد (الاسم أو الهاتف)..."
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="w-full pr-10 pl-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pr-10 pl-4 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                 />
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow overflow-hidden">
+            <div className="bg-white dark:bg-surface-primary rounded-xl shadow overflow-hidden border border-slate-200 dark:border-border-primary">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-slate-50 dark:bg-surface-secondary border-b border-slate-200 dark:border-border-primary">
@@ -359,32 +359,32 @@ const SupplierAccountsPage = () => {
                       <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">الإجراءات</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-surface-primary divide-y divide-gray-200 dark:divide-border-primary">
                     {paginatedSuppliers.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-6 py-8 text-center text-slate-500 dark:text-text-tertiary">لا توجد نتائج</td>
                       </tr>
                     ) : (
                       paginatedSuppliers.map((supplier, index) => (
-                        <tr key={supplier.id} className="hover:bg-slate-50 dark:bg-surface-secondary transition-colors">
+                        <tr key={supplier.id} className="hover:bg-slate-50 dark:hover:bg-surface-hover transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-text-tertiary">
                             {(currentPage - 1) * itemsPerPage + index + 1}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${supplier.currentBalance > 0 ? 'bg-red-100' : supplier.currentBalance < 0 ? 'bg-green-100' : 'bg-slate-100 dark:bg-surface-hover'
+                              <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${supplier.currentBalance > 0 ? 'bg-red-100 dark:bg-red-900/30' : supplier.currentBalance < 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-slate-100 dark:bg-surface-hover'
                                 }`}>
-                                <User className={`w-5 h-5 ${supplier.currentBalance > 0 ? 'text-red-600' : supplier.currentBalance < 0 ? 'text-green-600' : 'text-slate-600 dark:text-text-secondary'
+                                <User className={`w-5 h-5 ${supplier.currentBalance > 0 ? 'text-red-600 dark:text-red-400' : supplier.currentBalance < 0 ? 'text-green-600 dark:text-green-400' : 'text-slate-600 dark:text-text-secondary'
                                   }`} />
                               </div>
                               <div className="mr-4">
-                                <div className="text-sm font-medium text-gray-900">{supplier.name}</div>
+                                <div className="text-sm font-medium text-gray-900 dark:text-text-primary">{supplier.name}</div>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{supplier.phone || '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">{supplier.phone || '-'}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${supplier.currentBalance > 0 ? 'bg-red-100 text-red-800' : supplier.currentBalance < 0 ? 'bg-green-100 text-green-800' : 'bg-slate-100 dark:bg-surface-hover text-gray-800'
+                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${supplier.currentBalance > 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400' : supplier.currentBalance < 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' : 'bg-slate-100 dark:bg-surface-hover text-gray-800 dark:text-text-primary'
                               }`}>
                               {getBalanceText(supplier.currentBalance)}
                             </span>
@@ -407,12 +407,12 @@ const SupplierAccountsPage = () => {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-slate-200 dark:border-border-primary sm:px-6">
+                <div className="bg-white dark:bg-surface-primary px-4 py-3 flex items-center justify-between border-t border-slate-200 dark:border-border-primary sm:px-6">
                   <div className="flex-1 flex justify-between sm:hidden">
                     <button
                       onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                       disabled={currentPage === 1}
-                      className="relative inline-flex items-center px-4 py-2 border border-slate-300 dark:border-border-primary text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-slate-50 dark:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="relative inline-flex items-center px-4 py-2 border border-slate-300 dark:border-border-primary text-sm font-medium rounded-md text-gray-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 dark:hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       السابق
                     </button>
@@ -426,7 +426,7 @@ const SupplierAccountsPage = () => {
                   </div>
                   <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-sm text-gray-700">
+                      <p className="text-sm text-gray-700 dark:text-text-secondary">
                         عرض{' '}
                         <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span>
                         {' '}إلى{' '}
@@ -443,7 +443,7 @@ const SupplierAccountsPage = () => {
                         <button
                           onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                           disabled={currentPage === 1}
-                          className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 dark:border-border-primary bg-white text-sm font-medium text-slate-500 dark:text-text-tertiary hover:bg-slate-50 dark:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 dark:border-border-primary bg-white dark:bg-surface-secondary text-sm font-medium text-slate-500 dark:text-text-tertiary hover:bg-slate-50 dark:hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <span className="sr-only">السابق</span>
                           <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -475,7 +475,7 @@ const SupplierAccountsPage = () => {
 
                           return pages.map((page, idx) => (
                             page === '...' ? (
-                              <span key={`ellipsis-${idx}`} className="relative inline-flex items-center px-4 py-2 border border-slate-300 dark:border-border-primary bg-white text-sm font-medium text-gray-700">
+                              <span key={`ellipsis-${idx}`} className="relative inline-flex items-center px-4 py-2 border border-slate-300 dark:border-border-primary bg-white dark:bg-surface-secondary text-sm font-medium text-gray-700 dark:text-text-primary">
                                 ...
                               </span>
                             ) : (
@@ -483,8 +483,8 @@ const SupplierAccountsPage = () => {
                                 key={page}
                                 onClick={() => setCurrentPage(page as number)}
                                 className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === page
-                                  ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                                  : 'bg-white border-slate-300 dark:border-border-primary text-slate-500 dark:text-text-tertiary hover:bg-gray-50'
+                                  ? 'z-10 bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400'
+                                  : 'bg-white dark:bg-surface-secondary border-slate-300 dark:border-border-primary text-slate-500 dark:text-text-tertiary hover:bg-gray-50 dark:hover:bg-surface-hover'
                                   }`}
                               >
                                 {page}
@@ -495,7 +495,7 @@ const SupplierAccountsPage = () => {
                         <button
                           onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                           disabled={currentPage === totalPages}
-                          className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 dark:border-border-primary bg-white text-sm font-medium text-slate-500 dark:text-text-tertiary hover:bg-slate-50 dark:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 dark:border-border-primary bg-white dark:bg-surface-secondary text-sm font-medium text-slate-500 dark:text-text-tertiary hover:bg-slate-50 dark:hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <span className="sr-only">التالي</span>
                           <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -514,33 +514,33 @@ const SupplierAccountsPage = () => {
         {viewMode === 'account' && (
           <div className="space-y-6">
             {isLoadingAccount ? (
-              <div className="bg-white rounded-xl shadow p-8 text-center text-slate-600 dark:text-text-secondary">جاري تحميل كشف الحساب...</div>
+              <div className="bg-white dark:bg-surface-primary rounded-xl shadow p-8 text-center text-slate-600 dark:text-text-secondary border border-slate-200 dark:border-border-primary">جاري تحميل كشف الحساب...</div>
             ) : !account ? (
-              <div className="bg-white rounded-xl shadow p-8 text-center text-slate-500 dark:text-text-tertiary">لا تتوفر بيانات لهذا المورد.</div>
+              <div className="bg-white dark:bg-surface-primary rounded-xl shadow p-8 text-center text-slate-500 dark:text-text-tertiary border border-slate-200 dark:border-border-primary">لا تتوفر بيانات لهذا المورد.</div>
             ) : (
               <>
-                <div className="bg-white rounded-xl shadow p-6">
-                  <h2 className="text-xl font-semibold text-gray-800 mb-4">معلومات المورد</h2>
+                <div className="bg-white dark:bg-surface-primary rounded-xl shadow p-6 border border-slate-200 dark:border-border-primary">
+                  <h2 className="text-xl font-semibold text-gray-800 dark:text-text-primary mb-4">معلومات المورد</h2>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex items-center">
                       <User className="w-5 h-5 text-slate-500 dark:text-text-tertiary ml-2" />
                       <div>
                         <p className="text-sm text-slate-600 dark:text-text-secondary">الاسم</p>
-                        <p className="text-base font-semibold text-gray-800">{account.supplier.name}</p>
+                        <p className="text-base font-semibold text-gray-800 dark:text-text-primary">{account.supplier.name}</p>
                       </div>
                     </div>
                     <div className="flex items-center">
                       <Phone className="w-5 h-5 text-slate-500 dark:text-text-tertiary ml-2" />
                       <div>
                         <p className="text-sm text-slate-600 dark:text-text-secondary">رقم الهاتف</p>
-                        <p className="text-base font-semibold text-gray-800">{account.supplier.phone || '-'}</p>
+                        <p className="text-base font-semibold text-gray-800 dark:text-text-primary">{account.supplier.phone || '-'}</p>
                       </div>
                     </div>
                     <div className="flex items-center">
                       <Calendar className="w-5 h-5 text-slate-500 dark:text-text-tertiary ml-2" />
                       <div>
                         <p className="text-sm text-slate-600 dark:text-text-secondary">تاريخ التسجيل</p>
-                        <p className="text-base font-semibold text-gray-800">{formatEnglishDate(account.supplier.createdAt)}</p>
+                        <p className="text-base font-semibold text-gray-800 dark:text-text-primary">{formatEnglishDate(account.supplier.createdAt)}</p>
                       </div>
                     </div>
                   </div>
@@ -549,14 +549,14 @@ const SupplierAccountsPage = () => {
                       <Home className="w-5 h-5 text-slate-500 dark:text-text-tertiary ml-2 mt-0.5" />
                       <div>
                         <p className="text-sm text-slate-600 dark:text-text-secondary">العنوان</p>
-                        <p className="text-base font-semibold text-gray-800">{account.supplier.address}</p>
+                        <p className="text-base font-semibold text-gray-800 dark:text-text-primary">{account.supplier.address}</p>
                       </div>
                     </div>
                   )}
                 </div>
 
                 {/* الأرصدة حسب العملة */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow p-6 mb-6">
+                <div className="bg-gradient-to-r from-blue-50 dark:from-blue-900/20 to-indigo-50 dark:to-indigo-900/20 rounded-xl shadow p-6 mb-6 border border-slate-200 dark:border-border-primary">
                   <h3 className="text-2xl font-bold text-slate-900 dark:text-text-primary mb-6 flex items-center">
                     <span className="text-3xl mr-3">💱</span>
                     أرصدة الحسابات حسب العملة
@@ -566,19 +566,19 @@ const SupplierAccountsPage = () => {
                       .filter(([_, totals]) => Math.abs(totals.balance) > 0.01 || totals.credit > 0 || totals.debit > 0)
                       .map(([currency, totals]) => {
                         const getCurrencyColor = (curr: string) => {
-                          if (curr === 'LYD') return 'border-green-500 bg-gradient-to-br from-green-50 to-green-100';
-                          if (curr === 'USD') return 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100';
-                          if (curr === 'EUR') return 'border-purple-500 bg-gradient-to-br from-purple-50 to-purple-100';
-                          return 'border-gray-500 bg-gradient-to-br from-gray-50 to-gray-100';
+                          if (curr === 'LYD') return 'border-green-500 dark:border-green-400 bg-gradient-to-br from-green-50 dark:from-green-900/20 to-green-100 dark:to-green-900/30';
+                          if (curr === 'USD') return 'border-blue-500 dark:border-blue-400 bg-gradient-to-br from-blue-50 dark:from-blue-900/20 to-blue-100 dark:to-blue-900/30';
+                          if (curr === 'EUR') return 'border-purple-500 dark:border-purple-400 bg-gradient-to-br from-purple-50 dark:from-purple-900/20 to-purple-100 dark:to-purple-900/30';
+                          return 'border-gray-500 dark:border-gray-400 bg-gradient-to-br from-gray-50 dark:from-gray-800/20 to-gray-100 dark:to-gray-800/30';
                         };
 
                         return (
                           <div key={currency} className={`rounded-xl p-5 shadow-md border-l-4 ${getCurrencyColor(currency)}`}>
                             <div className="flex items-center justify-between mb-4">
-                              <p className="text-sm font-bold text-gray-700">حساب {currency}</p>
-                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${currency === 'LYD' ? 'bg-green-200 text-green-800' :
-                                currency === 'USD' ? 'bg-blue-200 text-blue-800' :
-                                  'bg-purple-200 text-purple-800'
+                              <p className="text-sm font-bold text-gray-700 dark:text-text-primary">حساب {currency}</p>
+                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${currency === 'LYD' ? 'bg-green-200 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
+                                currency === 'USD' ? 'bg-blue-200 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                                  'bg-purple-200 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400'
                                 }`}>
                                 {currency}
                               </span>
@@ -587,23 +587,23 @@ const SupplierAccountsPage = () => {
                             {/* الرصيد */}
                             <div className="mb-4 pb-3 border-b-2 border-slate-200 dark:border-border-primary">
                               <p className="text-xs text-slate-600 dark:text-text-secondary mb-1">الرصيد الحالي</p>
-                              <p className={`text-3xl font-extrabold ${totals.balance > 0 ? 'text-red-700' : totals.balance < 0 ? 'text-green-700' : 'text-gray-700'}`}>
+                              <p className={`text-3xl font-extrabold ${totals.balance > 0 ? 'text-red-700 dark:text-red-400' : totals.balance < 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-700 dark:text-text-primary'}`}>
                                 {Math.abs(totals.balance).toFixed(2)} {currency}
                               </p>
-                              <p className={`text-xs font-semibold mt-1 ${totals.balance > 0 ? 'text-red-600' : totals.balance < 0 ? 'text-green-600' : 'text-slate-600 dark:text-text-secondary'}`}>
+                              <p className={`text-xs font-semibold mt-1 ${totals.balance > 0 ? 'text-red-600 dark:text-red-400' : totals.balance < 0 ? 'text-green-600 dark:text-green-400' : 'text-slate-600 dark:text-text-secondary'}`}>
                                 {totals.balance > 0 ? '🔴 مستحق عليك' : totals.balance < 0 ? '🟢 مدين لك' : '⚪ متوازن'}
                               </p>
                             </div>
 
                             {/* الديون والمدفوعات */}
                             <div className="grid grid-cols-2 gap-3">
-                              <div className="bg-white bg-opacity-60 rounded-md p-2">
+                              <div className="bg-white dark:bg-surface-secondary bg-opacity-60 rounded-md p-2">
                                 <p className="text-[10px] text-slate-600 dark:text-text-secondary mb-0.5">إجمالي الديون</p>
-                                <p className="text-base font-bold text-red-700">{totals.credit.toFixed(2)}</p>
+                                <p className="text-base font-bold text-red-700 dark:text-red-400">{totals.credit.toFixed(2)}</p>
                               </div>
-                              <div className="bg-white bg-opacity-60 rounded-md p-2">
+                              <div className="bg-white dark:bg-surface-secondary bg-opacity-60 rounded-md p-2">
                                 <p className="text-[10px] text-slate-600 dark:text-text-secondary mb-0.5">إجمالي المدفوع</p>
-                                <p className="text-base font-bold text-green-700">{totals.debit.toFixed(2)}</p>
+                                <p className="text-base font-bold text-green-700 dark:text-green-400">{totals.debit.toFixed(2)}</p>
                               </div>
                             </div>
                           </div>
@@ -617,9 +617,9 @@ const SupplierAccountsPage = () => {
                   )}
                 </div>
 
-                <div className="bg-white rounded-xl shadow overflow-hidden">
+                <div className="bg-white dark:bg-surface-primary rounded-xl shadow overflow-hidden border border-slate-200 dark:border-border-primary">
                   <div className="p-6 border-b border-slate-200 dark:border-border-primary">
-                    <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-text-primary flex items-center">
                       <FileText className="w-5 h-5 ml-2" />
                       كشف الحساب التفصيلي
                     </h2>
@@ -629,7 +629,7 @@ const SupplierAccountsPage = () => {
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full">
-                      <thead className="bg-gray-50">
+                      <thead className="bg-gray-50 dark:bg-surface-secondary">
                         <tr>
                           <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">التاريخ</th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">البيان</th>
@@ -638,41 +638,41 @@ const SupplierAccountsPage = () => {
                           <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">العملية</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-white dark:bg-surface-primary divide-y divide-gray-200 dark:divide-border-primary">
                         {account.entries.length === 0 ? (
                           <tr>
                             <td colSpan={5} className="px-6 py-8 text-center text-slate-500 dark:text-text-tertiary">لا توجد معاملات</td>
                           </tr>
                         ) : (
                           account.entries.map((entry) => (
-                            <tr key={entry.id} className="hover:bg-gray-50">
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <tr key={entry.id} className="hover:bg-gray-50 dark:hover:bg-surface-hover">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
                                 {formatEnglishDate(entry.transactionDate)}
                               </td>
-                              <td className="px-6 py-4 text-sm text-gray-900">
+                              <td className="px-6 py-4 text-sm text-gray-900 dark:text-text-primary">
                                 {entry.description || `${entry.referenceType} #${entry.referenceId}`}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${entry.transactionType === 'DEBIT' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${entry.transactionType === 'DEBIT' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
                                   }`}>
                                   {entry.transactionType === 'DEBIT' ? 'دفعة' : 'دين'}
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center gap-2">
-                                  <span className={`text-base font-bold ${entry.transactionType === 'DEBIT' ? 'text-green-700' : 'text-red-700'
+                                  <span className={`text-base font-bold ${entry.transactionType === 'DEBIT' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
                                     }`}>
                                     {entry.amount.toFixed(2)}
                                   </span>
-                                  <span className={`px-2 py-0.5 text-xs font-bold rounded ${entry.currency === 'LYD' ? 'bg-green-100 text-green-800' :
-                                      entry.currency === 'USD' ? 'bg-blue-100 text-blue-800' :
-                                        'bg-purple-100 text-purple-800'
+                                  <span className={`px-2 py-0.5 text-xs font-bold rounded ${entry.currency === 'LYD' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
+                                      entry.currency === 'USD' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                                        'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400'
                                     }`}>
                                     {entry.currency || 'LYD'}
                                   </span>
                                 </div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-text-secondary">
                                 {getOperationDescription(entry.transactionType)}
                               </td>
                             </tr>
@@ -690,13 +690,13 @@ const SupplierAccountsPage = () => {
         {viewMode === 'purchases' && (
           <div className="space-y-4">
             {isLoadingPurchases ? (
-              <div className="bg-white rounded-xl shadow p-8 text-center text-slate-600 dark:text-text-secondary">جاري تحميل المشتريات...</div>
+              <div className="bg-white dark:bg-surface-primary rounded-xl shadow p-8 text-center text-slate-600 dark:text-text-secondary border border-slate-200 dark:border-border-primary">جاري تحميل المشتريات...</div>
             ) : openPurchases.length === 0 ? (
-              <div className="bg-white rounded-xl shadow p-8 text-center text-slate-500 dark:text-text-tertiary">لا توجد مشتريات مفتوحة لهذا المورد</div>
+              <div className="bg-white dark:bg-surface-primary rounded-xl shadow p-8 text-center text-slate-500 dark:text-text-tertiary border border-slate-200 dark:border-border-primary">لا توجد مشتريات مفتوحة لهذا المورد</div>
             ) : (
               <>
                 {openPurchases.map((purchase) => (
-                  <div key={purchase.id} className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow">
+                  <div key={purchase.id} className="bg-white dark:bg-surface-primary rounded-xl shadow p-6 hover:shadow-lg transition-shadow border border-slate-200 dark:border-border-primary">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <span className="text-sm font-medium text-slate-600 dark:text-text-secondary">رقم الفاتورة:</span>

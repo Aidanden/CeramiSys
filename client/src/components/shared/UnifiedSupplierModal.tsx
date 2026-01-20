@@ -138,7 +138,7 @@ const UnifiedSupplierModal: React.FC<UnifiedSupplierModalProps> = ({
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                 placeholder="أدخل اسم المورد"
                 required
                 disabled={isLoading}
@@ -154,7 +154,7 @@ const UnifiedSupplierModal: React.FC<UnifiedSupplierModalProps> = ({
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                 placeholder="رقم الهاتف"
                 disabled={isLoading}
               />
@@ -169,7 +169,7 @@ const UnifiedSupplierModal: React.FC<UnifiedSupplierModalProps> = ({
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                 placeholder="البريد الإلكتروني"
                 disabled={isLoading}
               />

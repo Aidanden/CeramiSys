@@ -392,7 +392,7 @@ const CustomerAccountsPage = () => {
         </p>`
       : '';
 
-    const totalRemaining = openInvoices.reduce((sum, inv) => sum + inv.remainingAmount, 0);
+    const totalRemaining = openInvoices.reduce((sum, inv) => sum + Number(inv.remainingAmount || 0), 0);
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -511,11 +511,11 @@ const CustomerAccountsPage = () => {
                 <tr>
                   <td>${index + 1}</td>
                   <td>${invoice.invoiceNumber || '#' + invoice.id}</td>
-                  <td>${invoice.company.name}</td>
+                  <td>${invoice.company?.name || 'غير محدد'}</td>
                   <td>${formatEnglishDate(invoice.createdAt)}</td>
-                  <td>${invoice.total.toFixed(2)} د.ل</td>
-                  <td class="paid">${invoice.paidAmount.toFixed(2)} د.ل</td>
-                  <td class="remaining">${invoice.remainingAmount.toFixed(2)} د.ل</td>
+                  <td>${Number(invoice.total || 0).toFixed(2)} د.ل</td>
+                  <td class="paid">${Number(invoice.paidAmount || 0).toFixed(2)} د.ل</td>
+                  <td class="remaining">${Number(invoice.remainingAmount || 0).toFixed(2)} د.ل</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -560,7 +560,7 @@ const CustomerAccountsPage = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-text-primary mb-2">
             {viewMode === 'summary' && 'إدارة حسابات العملاء'}
             {viewMode === 'account' && `كشف حساب: ${selectedCustomer?.name}`}
             {viewMode === 'invoices' && `الفواتير المفتوحة: ${selectedCustomer?.name}`}
@@ -574,49 +574,49 @@ const CustomerAccountsPage = () => {
 
         {/* إحصائيات - تظهر في جميع الأوضاع */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-xl shadow p-4">
+          <div className="bg-white dark:bg-surface-primary rounded-xl shadow p-4 border border-slate-200 dark:border-border-primary">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-slate-600 dark:text-text-secondary mb-1">إجمالي العملاء</p>
-                <p className="text-2xl font-bold text-blue-600">{formatStatsNumber(customers.length)}</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{formatStatsNumber(customers.length)}</p>
               </div>
-              <div className="bg-blue-100 p-2 rounded-full">
-                <User className="w-5 h-5 text-blue-600" />
+              <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full">
+                <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow p-4">
+          <div className="bg-white dark:bg-surface-primary rounded-xl shadow p-4 border border-slate-200 dark:border-border-primary">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-slate-600 dark:text-text-secondary mb-1">إجمالي المتبقي لنا (الديون)</p>
-                <p className="text-2xl font-bold text-red-600">{formatStatsNumber(totalDebtors)}</p>
-                <p className="text-xs text-red-600 font-semibold">{formatStatsCurrency(totalDebt)}</p>
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{formatStatsNumber(totalDebtors)}</p>
+                <p className="text-xs text-red-600 dark:text-red-400 font-semibold">{formatStatsCurrency(totalDebt)}</p>
               </div>
-              <div className="bg-red-100 p-2 rounded-full">
-                <TrendingUp className="w-5 h-5 text-red-600" />
+              <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-full">
+                <TrendingUp className="w-5 h-5 text-red-600 dark:text-red-400" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow p-4">
+          <div className="bg-white dark:bg-surface-primary rounded-xl shadow p-4 border border-slate-200 dark:border-border-primary">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-slate-600 dark:text-text-secondary mb-1">إجمالي له (أرصدة العملاء)</p>
-                <p className="text-2xl font-bold text-green-600">{formatStatsNumber(totalCreditors)}</p>
-                <p className="text-xs text-green-600 font-semibold">{formatStatsCurrency(totalCredit)}</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{formatStatsNumber(totalCreditors)}</p>
+                <p className="text-xs text-green-600 dark:text-green-400 font-semibold">{formatStatsCurrency(totalCredit)}</p>
               </div>
-              <div className="bg-green-100 p-2 rounded-full">
-                <TrendingDown className="w-5 h-5 text-green-600" />
+              <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-full">
+                <TrendingDown className="w-5 h-5 text-green-600 dark:text-green-400" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow p-4">
+          <div className="bg-white dark:bg-surface-primary rounded-xl shadow p-4 border border-slate-200 dark:border-border-primary">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-slate-600 dark:text-text-secondary mb-1">صافي ديون السوق</p>
-                <p className={`text-2xl font-bold ${netBalance > 0 ? 'text-red-600' : netBalance < 0 ? 'text-green-600' : 'text-gray-700'}`}>
+                <p className={`text-2xl font-bold ${netBalance > 0 ? 'text-red-600 dark:text-red-400' : netBalance < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-700 dark:text-text-primary'}`}>
                   {formatStatsCurrency(netBalance)}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-text-tertiary font-semibold">
@@ -634,7 +634,7 @@ const CustomerAccountsPage = () => {
         {viewMode !== 'summary' && (
           <button
             onClick={handleBackToSummary}
-            className="mb-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+            className="mb-4 px-4 py-2 bg-gray-200 dark:bg-surface-secondary text-gray-700 dark:text-text-primary rounded-md hover:bg-gray-300 dark:hover:bg-surface-hover transition-colors"
           >
             ← العودة للقائمة
           </button>
@@ -644,55 +644,55 @@ const CustomerAccountsPage = () => {
         {viewMode === 'summary' && (
           <>
             {/* شريط البحث */}
-            <div className="bg-white rounded-xl shadow mb-6 p-4">
+            <div className="bg-white dark:bg-surface-primary rounded-xl shadow mb-6 p-4 border border-slate-200 dark:border-border-primary">
               <div className="relative">
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-text-tertiary w-5 h-5" />
                 <input
                   type="text"
                   placeholder="بحث عن عميل (الاسم أو الهاتف)..."
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="w-full pr-10 pl-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pr-10 pl-4 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                 />
               </div>
             </div>
 
             {/* جدول العملاء */}
-            <div className="bg-white rounded-xl shadow overflow-hidden">
+            <div className="bg-white dark:bg-surface-primary rounded-xl shadow overflow-hidden border border-slate-200 dark:border-border-primary">
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-full">
                   <thead className="bg-slate-50 dark:bg-surface-secondary border-b border-slate-200 dark:border-border-primary">
                     <tr>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase w-12">
                         #
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase min-w-[200px]">
                         العميل
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase w-32">
                         إجمالي العليه
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase w-36">
                         إجمالي المدفوعات
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase text-blue-600">
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase text-blue-600 dark:text-blue-400 w-32">
                         إجمالي المردودات
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase font-bold text-red-600">
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase font-bold text-red-600 dark:text-red-400 w-32">
                         المتبقي عليه
                       </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase w-32">
                         صافي الرصيد
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase w-32">
                         الحالة
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase min-w-[200px]">
                         الإجراءات
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-surface-primary divide-y divide-gray-200 dark:divide-border-primary">
                     {paginatedCustomers.length === 0 ? (
                       <tr>
                         <td colSpan={9} className="px-6 py-8 text-center text-slate-500 dark:text-text-tertiary">
@@ -701,21 +701,21 @@ const CustomerAccountsPage = () => {
                       </tr>
                     ) : (
                       paginatedCustomers.map((customer, index) => (
-                        <tr key={customer.id} className="hover:bg-slate-50 dark:bg-surface-secondary transition-colors">
+                        <tr key={customer.id} className="hover:bg-slate-50 dark:hover:bg-surface-hover transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-text-tertiary">
                             {(currentPage - 1) * itemsPerPage + index + 1}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4">
                             <div className="flex items-center">
-                              <div className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${customer.currentBalance > 0 ? 'bg-red-100' :
-                                customer.currentBalance < 0 ? 'bg-green-100' : 'bg-slate-100 dark:bg-surface-hover'
+                              <div className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${customer.currentBalance > 0 ? 'bg-red-100 dark:bg-red-900/30' :
+                                customer.currentBalance < 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-slate-100 dark:bg-surface-hover'
                                 }`}>
-                                <User className={`w-4 h-4 ${customer.currentBalance > 0 ? 'text-red-600' :
-                                  customer.currentBalance < 0 ? 'text-green-600' : 'text-slate-600 dark:text-text-secondary'
+                                <User className={`w-4 h-4 ${customer.currentBalance > 0 ? 'text-red-600 dark:text-red-400' :
+                                  customer.currentBalance < 0 ? 'text-green-600 dark:text-green-400' : 'text-slate-600 dark:text-text-secondary'
                                   }`} />
                               </div>
                               <div className="mr-3">
-                                <div className="text-sm font-medium text-gray-900">{customer.name}</div>
+                                <div className="text-sm font-medium text-gray-900 dark:text-text-primary break-words">{customer.name}</div>
                                 {customer.phone && <div className="text-xs text-slate-500 dark:text-text-tertiary">{customer.phone}</div>}
                               </div>
                             </div>
@@ -736,49 +736,51 @@ const CustomerAccountsPage = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className={`text-sm font-bold ${customer.remainingDebt > 0 ? 'text-red-700' : 'text-gray-400'}`}>
+                            <div className={`text-sm font-bold ${customer.remainingDebt > 0 ? 'text-red-700 dark:text-red-400' : 'text-gray-400 dark:text-text-tertiary'}`}>
                               {customer.remainingDebt.toFixed(2)} د.ل
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className={`text-sm font-bold ${customer.currentBalance > 0 ? 'text-red-600' :
-                              customer.currentBalance < 0 ? 'text-green-600' : 'text-gray-900'
+                            <div className={`text-sm font-bold ${customer.currentBalance > 0 ? 'text-red-600 dark:text-red-400' :
+                              customer.currentBalance < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-text-primary'
                               }`}>
                               {customer.currentBalance.toFixed(2)} د.ل
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             {customer.currentBalance > 0 ? (
-                              <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                              <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400">
                                 عليه ديون
                               </span>
                             ) : customer.currentBalance < 0 ? (
-                              <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                              <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
                                 له رصيد (دائن)
                               </span>
                             ) : (
-                              <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 dark:bg-surface-hover text-gray-800">
+                              <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 dark:bg-surface-hover text-gray-800 dark:text-text-primary">
                                 متوازن
                               </span>
                             )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2 space-x-reverse">
-                            <button
-                              onClick={() => handleShowAccount(customer.id)}
-                              className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors ml-2"
-                            >
-                              <FileText className="w-4 h-4 ml-1" />
-                              كشف الحساب
-                            </button>
-                            {customer.currentBalance > 0 && (
+                          <td className="px-6 py-4 text-sm space-x-2 space-x-reverse">
+                            <div className="flex flex-wrap gap-2">
                               <button
-                                onClick={() => handleShowInvoices(customer.id)}
-                                className="inline-flex items-center px-3 py-1.5 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
+                                onClick={() => handleShowAccount(customer.id)}
+                                className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                               >
                                 <FileText className="w-4 h-4 ml-1" />
-                                الفواتير المفتوحة
+                                كشف الحساب
                               </button>
-                            )}
+                              {customer.currentBalance > 0 && (
+                                <button
+                                  onClick={() => handleShowInvoices(customer.id)}
+                                  className="inline-flex items-center px-3 py-1.5 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
+                                >
+                                  <FileText className="w-4 h-4 ml-1" />
+                                  الفواتير المفتوحة
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -789,26 +791,26 @@ const CustomerAccountsPage = () => {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-slate-200 dark:border-border-primary sm:px-6">
+                <div className="bg-white dark:bg-surface-primary px-4 py-3 flex items-center justify-between border-t border-slate-200 dark:border-border-primary sm:px-6">
                   <div className="flex-1 flex justify-between sm:hidden">
                     <button
                       onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                       disabled={currentPage === 1}
-                      className="relative inline-flex items-center px-4 py-2 border border-slate-300 dark:border-border-primary text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-slate-50 dark:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="relative inline-flex items-center px-4 py-2 border border-slate-300 dark:border-border-primary text-sm font-medium rounded-md text-gray-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 dark:hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       السابق
                     </button>
                     <button
                       onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                       disabled={currentPage === totalPages}
-                      className="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-300 dark:border-border-primary text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-slate-50 dark:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-300 dark:border-border-primary text-sm font-medium rounded-md text-gray-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 dark:hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       التالي
                     </button>
                   </div>
                   <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-sm text-gray-700">
+                      <p className="text-sm text-gray-700 dark:text-text-secondary">
                         عرض{' '}
                         <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span>
                         {' '}إلى{' '}
@@ -825,7 +827,7 @@ const CustomerAccountsPage = () => {
                         <button
                           onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                           disabled={currentPage === 1}
-                          className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 dark:border-border-primary bg-white text-sm font-medium text-slate-500 dark:text-text-tertiary hover:bg-slate-50 dark:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 dark:border-border-primary bg-white dark:bg-surface-secondary text-sm font-medium text-slate-500 dark:text-text-tertiary hover:bg-slate-50 dark:hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <span className="sr-only">السابق</span>
                           <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -857,7 +859,7 @@ const CustomerAccountsPage = () => {
 
                           return pages.map((page, idx) => (
                             page === '...' ? (
-                              <span key={`ellipsis-${idx}`} className="relative inline-flex items-center px-4 py-2 border border-slate-300 dark:border-border-primary bg-white text-sm font-medium text-gray-700">
+                              <span key={`ellipsis-${idx}`} className="relative inline-flex items-center px-4 py-2 border border-slate-300 dark:border-border-primary bg-white dark:bg-surface-secondary text-sm font-medium text-gray-700 dark:text-text-primary">
                                 ...
                               </span>
                             ) : (
@@ -866,7 +868,7 @@ const CustomerAccountsPage = () => {
                                 onClick={() => setCurrentPage(page as number)}
                                 className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === page
                                   ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                                  : 'bg-white border-slate-300 dark:border-border-primary text-slate-500 dark:text-text-tertiary hover:bg-gray-50'
+                                  : 'bg-white dark:bg-surface-secondary border-slate-300 dark:border-border-primary text-slate-500 dark:text-text-tertiary hover:bg-gray-50 dark:hover:bg-surface-hover'
                                   }`}
                               >
                                 {page}
@@ -877,7 +879,7 @@ const CustomerAccountsPage = () => {
                         <button
                           onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                           disabled={currentPage === totalPages}
-                          className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 dark:border-border-primary bg-white text-sm font-medium text-slate-500 dark:text-text-tertiary hover:bg-slate-50 dark:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 dark:border-border-primary bg-white dark:bg-surface-secondary text-sm font-medium text-slate-500 dark:text-text-tertiary hover:bg-slate-50 dark:hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <span className="sr-only">التالي</span>
                           <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -897,7 +899,7 @@ const CustomerAccountsPage = () => {
         {viewMode === 'account' && account && (
           <div className="space-y-6">
             {/* شريط الفلاتر والطباعة */}
-            <div className="bg-white rounded-xl shadow-lg p-4">
+            <div className="bg-white dark:bg-surface-primary rounded-xl shadow-lg p-4 border border-slate-200 dark:border-border-primary">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 {/* فلاتر التاريخ */}
                 <div className="flex flex-wrap items-center gap-3">
@@ -911,7 +913,7 @@ const CustomerAccountsPage = () => {
                       type="date"
                       value={accountStartDate}
                       onChange={(e) => setAccountStartDate(e.target.value)}
-                      className="border border-slate-300 dark:border-border-primary rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="border border-slate-200 dark:border-border-primary rounded-xl px-3 py-1.5 text-sm bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                     />
                   </div>
                   <div className="flex items-center gap-2">
@@ -920,7 +922,7 @@ const CustomerAccountsPage = () => {
                       type="date"
                       value={accountEndDate}
                       onChange={(e) => setAccountEndDate(e.target.value)}
-                      className="border border-slate-300 dark:border-border-primary rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="border border-slate-200 dark:border-border-primary rounded-xl px-3 py-1.5 text-sm bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                     />
                   </div>
                   {(accountStartDate || accountEndDate) && (
@@ -948,28 +950,28 @@ const CustomerAccountsPage = () => {
             </div>
 
             {/* معلومات العميل */}
-            <div className="bg-white rounded-xl shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">معلومات العميل</h2>
+            <div className="bg-white dark:bg-surface-primary rounded-xl shadow p-6 border border-slate-200 dark:border-border-primary">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-text-primary mb-4">معلومات العميل</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex items-center">
                   <User className="w-5 h-5 text-slate-500 dark:text-text-tertiary ml-2" />
                   <div>
                     <p className="text-sm text-slate-600 dark:text-text-secondary">الاسم</p>
-                    <p className="text-base font-semibold text-gray-800">{account.customer.name}</p>
+                    <p className="text-base font-semibold text-gray-800 dark:text-text-primary">{account.customer.name}</p>
                   </div>
                 </div>
                 <div className="flex items-center">
                   <Phone className="w-5 h-5 text-slate-500 dark:text-text-tertiary ml-2" />
                   <div>
                     <p className="text-sm text-slate-600 dark:text-text-secondary">رقم الهاتف</p>
-                    <p className="text-base font-semibold text-gray-800">{account.customer.phone || "-"}</p>
+                    <p className="text-base font-semibold text-gray-800 dark:text-text-primary">{account.customer.phone || "-"}</p>
                   </div>
                 </div>
                 <div className="flex items-center">
                   <Calendar className="w-5 h-5 text-slate-500 dark:text-text-tertiary ml-2" />
                   <div>
                     <p className="text-sm text-slate-600 dark:text-text-secondary">تاريخ التسجيل</p>
-                    <p className="text-base font-semibold text-gray-800">
+                    <p className="text-base font-semibold text-gray-800 dark:text-text-primary">
                       {formatEnglishDate(account.customer.createdAt)}
                     </p>
                   </div>
@@ -979,53 +981,53 @@ const CustomerAccountsPage = () => {
 
             {/* ملخص الحساب */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white rounded-xl shadow p-6">
+              <div className="bg-white dark:bg-surface-primary rounded-xl shadow p-6 border border-slate-200 dark:border-border-primary">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-slate-600 dark:text-text-secondary mb-1">المتبقي عليه</p>
-                    <p className={`text-2xl font-bold ${account.currentBalance > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                    <p className={`text-2xl font-bold ${account.currentBalance > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-text-tertiary'}`}>
                       {Math.max(0, account.currentBalance).toFixed(2)} د.ل
                     </p>
                     <p className="text-xs text-slate-500 dark:text-text-tertiary mt-1">الديون المستحقة</p>
                   </div>
-                  <div className="bg-red-100 p-3 rounded-full">
-                    <TrendingUp className="w-6 h-6 text-red-600" />
+                  <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded-full">
+                    <TrendingUp className="w-6 h-6 text-red-600 dark:text-red-400" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow p-6">
+              <div className="bg-white dark:bg-surface-primary rounded-xl shadow p-6 border border-slate-200 dark:border-border-primary">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-slate-600 dark:text-text-secondary mb-1">إجمالي المدفوعات</p>
-                    <p className="text-2xl font-bold text-blue-600">{account.totalPayments.toFixed(2)} د.ل</p>
+                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{account.totalPayments.toFixed(2)} د.ل</p>
                     <p className="text-xs text-slate-500 dark:text-text-tertiary mt-1">المبالغ المسددة</p>
                   </div>
-                  <div className="bg-blue-100 p-3 rounded-full">
-                    <DollarSign className="w-6 h-6 text-blue-600" />
+                  <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
+                    <DollarSign className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow p-6">
+              <div className="bg-white dark:bg-surface-primary rounded-xl shadow p-6 border border-slate-200 dark:border-border-primary">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-slate-600 dark:text-text-secondary mb-1">إجمالي له</p>
-                    <p className="text-2xl font-bold text-green-600">{account.totalOtherCredits.toFixed(2)} د.ل</p>
+                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">{account.totalOtherCredits.toFixed(2)} د.ل</p>
                     <p className="text-xs text-slate-500 dark:text-text-tertiary mt-1">مردودات وتصحيحات</p>
                   </div>
-                  <div className="bg-green-100 p-3 rounded-full">
-                    <TrendingDown className="w-6 h-6 text-green-600" />
+                  <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-full">
+                    <TrendingDown className="w-6 h-6 text-green-600 dark:text-green-400" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow p-6">
+              <div className="bg-white dark:bg-surface-primary rounded-xl shadow p-6 border border-slate-200 dark:border-border-primary">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-slate-600 dark:text-text-secondary mb-1">صافي الرصيد</p>
-                    <p className={`text-2xl font-bold ${account.currentBalance > 0 ? 'text-red-600' :
-                      account.currentBalance < 0 ? 'text-green-600' : 'text-slate-600 dark:text-text-secondary'
+                    <p className={`text-2xl font-bold ${account.currentBalance > 0 ? 'text-red-600 dark:text-red-400' :
+                      account.currentBalance < 0 ? 'text-green-600 dark:text-green-400' : 'text-slate-600 dark:text-text-secondary'
                       }`}>
                       {account.currentBalance.toFixed(2)} د.ل
                     </p>
@@ -1034,11 +1036,11 @@ const CustomerAccountsPage = () => {
                         account.currentBalance < 0 ? '(دائن) - له رصيد' : 'متوازن'}
                     </p>
                   </div>
-                  <div className={`p-3 rounded-full ${account.currentBalance > 0 ? 'bg-red-100' :
-                    account.currentBalance < 0 ? 'bg-green-100' : 'bg-slate-100 dark:bg-surface-hover'
+                  <div className={`p-3 rounded-full ${account.currentBalance > 0 ? 'bg-red-100 dark:bg-red-900/30' :
+                    account.currentBalance < 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-slate-100 dark:bg-surface-hover'
                     }`}>
-                    <FileText className={`w-6 h-6 ${account.currentBalance > 0 ? 'text-red-600' :
-                      account.currentBalance < 0 ? 'text-green-600' : 'text-slate-600 dark:text-text-secondary'
+                    <FileText className={`w-6 h-6 ${account.currentBalance > 0 ? 'text-red-600 dark:text-red-400' :
+                      account.currentBalance < 0 ? 'text-green-600 dark:text-green-400' : 'text-slate-600 dark:text-text-secondary'
                       }`} />
                   </div>
                 </div>
@@ -1046,13 +1048,13 @@ const CustomerAccountsPage = () => {
             </div>
 
             {/* جدول المعاملات */}
-            <div className="bg-white rounded-xl shadow overflow-hidden">
+            <div className="bg-white dark:bg-surface-primary rounded-xl shadow overflow-hidden border border-slate-200 dark:border-border-primary">
               <div className="p-6 border-b border-slate-200 dark:border-border-primary">
-                <h2 className="text-xl font-semibold text-gray-800">كشف الحساب التفصيلي</h2>
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-text-primary">كشف الحساب التفصيلي</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gray-50 dark:bg-surface-secondary">
                     <tr>
                       <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">التاريخ</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">البيان</th>
@@ -1061,18 +1063,18 @@ const CustomerAccountsPage = () => {
                       <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">الرصيد</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-surface-primary divide-y divide-gray-200 dark:divide-border-primary">
                     {account.entries.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-6 py-8 text-center text-slate-500 dark:text-text-tertiary">لا توجد معاملات</td>
                       </tr>
                     ) : (
                       account.entries.map((entry) => (
-                        <tr key={entry.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <tr key={entry.id} className="hover:bg-gray-50 dark:hover:bg-surface-hover">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
                             {formatEnglishDate(entry.transactionDate)}
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-900">{entry.description}</td>
+                          <td className="px-6 py-4 text-sm text-gray-900 dark:text-text-primary">{entry.description}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             {entry.transactionType === 'DEBIT' ? (
                               <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
@@ -1111,13 +1113,13 @@ const CustomerAccountsPage = () => {
         {viewMode === 'invoices' && (
           <div className="space-y-4">
             {/* شريط الفلاتر والطباعة */}
-            <div className="bg-white rounded-xl shadow-lg p-4">
+            <div className="bg-white dark:bg-surface-primary rounded-xl shadow-lg p-4 border border-slate-200 dark:border-border-primary">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 {/* فلاتر التاريخ */}
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-2 bg-orange-50 px-3 py-2 rounded-xl">
-                    <Filter className="w-4 h-4 text-orange-500" />
-                    <span className="text-sm text-orange-700 font-medium">فلترة:</span>
+                  <div className="flex items-center gap-2 bg-orange-50 dark:bg-orange-900/20 px-3 py-2 rounded-xl">
+                    <Filter className="w-4 h-4 text-orange-500 dark:text-orange-400" />
+                    <span className="text-sm text-orange-700 dark:text-orange-400 font-medium">فلترة:</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <label className="text-sm text-slate-600 dark:text-text-secondary">من:</label>
@@ -1125,7 +1127,7 @@ const CustomerAccountsPage = () => {
                       type="date"
                       value={invoicesStartDate}
                       onChange={(e) => setInvoicesStartDate(e.target.value)}
-                      className="border border-slate-300 dark:border-border-primary rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="border border-slate-200 dark:border-border-primary rounded-xl px-3 py-1.5 text-sm bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900/50 transition-all"
                     />
                   </div>
                   <div className="flex items-center gap-2">
@@ -1134,7 +1136,7 @@ const CustomerAccountsPage = () => {
                       type="date"
                       value={invoicesEndDate}
                       onChange={(e) => setInvoicesEndDate(e.target.value)}
-                      className="border border-slate-300 dark:border-border-primary rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="border border-slate-200 dark:border-border-primary rounded-xl px-3 py-1.5 text-sm bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900/50 transition-all"
                     />
                   </div>
                   {(invoicesStartDate || invoicesEndDate) && (
@@ -1166,14 +1168,14 @@ const CustomerAccountsPage = () => {
                 <div className="text-slate-600 dark:text-text-secondary">جاري تحميل الفواتير...</div>
               </div>
             ) : openInvoices.length === 0 ? (
-              <div className="bg-white rounded-xl shadow p-8 text-center">
-                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+              <div className="bg-white dark:bg-surface-primary rounded-xl shadow p-8 text-center border border-slate-200 dark:border-border-primary">
+                <FileText className="w-12 h-12 text-gray-400 dark:text-text-tertiary mx-auto mb-3" />
                 <p className="text-slate-600 dark:text-text-secondary">لا توجد فواتير مفتوحة لهذا العميل</p>
               </div>
             ) : (
               <>
                 {openInvoices.map((invoice) => (
-                  <div key={invoice.id} className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition-shadow">
+                  <div key={invoice.id} className="bg-white dark:bg-surface-primary rounded-xl shadow p-6 hover:shadow-lg transition-shadow border border-slate-200 dark:border-border-primary">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <span className="text-sm font-medium text-slate-600 dark:text-text-secondary">رقم الفاتورة:</span>
@@ -1189,28 +1191,28 @@ const CustomerAccountsPage = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                       <div>
                         <p className="text-xs text-slate-600 dark:text-text-secondary">الشركة</p>
-                        <p className="text-sm font-semibold text-gray-900">{invoice.company.name}</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-text-primary">{invoice.company?.name || 'غير محدد'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-slate-600 dark:text-text-secondary">التاريخ</p>
-                        <p className="text-sm font-semibold text-gray-900">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-text-primary">
                           {formatEnglishDate(invoice.createdAt)}
                         </p>
                       </div>
                       <div>
                         <p className="text-xs text-slate-600 dark:text-text-secondary">إجمالي الفاتورة</p>
-                        <p className="text-sm font-semibold text-gray-900">{invoice.total.toFixed(2)} د.ل</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-text-primary">{Number(invoice.total || 0).toFixed(2)} د.ل</p>
                       </div>
                       <div>
                         <p className="text-xs text-slate-600 dark:text-text-secondary">المدفوع</p>
-                        <p className="text-sm font-semibold text-green-600">{invoice.paidAmount.toFixed(2)} د.ل</p>
+                        <p className="text-sm font-semibold text-green-600">{Number(invoice.paidAmount || 0).toFixed(2)} د.ل</p>
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-border-primary">
                       <div>
                         <p className="text-xs text-slate-600 dark:text-text-secondary mb-1">المبلغ المتبقي</p>
-                        <p className="text-xl font-bold text-red-600">{invoice.remainingAmount.toFixed(2)} د.ل</p>
+                        <p className="text-xl font-bold text-red-600">{Number(invoice.remainingAmount || 0).toFixed(2)} د.ل</p>
                       </div>
                       <button
                         onClick={() => window.location.href = `/accountant`}
@@ -1220,7 +1222,7 @@ const CustomerAccountsPage = () => {
                       </button>
                     </div>
 
-                    {invoice.payments.length > 0 && (
+                    {invoice.payments && invoice.payments.length > 0 && (
                       <div className="mt-4 pt-4 border-t border-slate-200 dark:border-border-primary">
                         <p className="text-xs text-slate-600 dark:text-text-secondary mb-2 font-semibold">الدفعات السابقة:</p>
                         <div className="space-y-1">
@@ -1230,7 +1232,7 @@ const CustomerAccountsPage = () => {
                                 {formatEnglishDate(payment.paymentDate)}
                                 {payment.receiptNumber && ` - ${payment.receiptNumber}`}
                               </span>
-                              <span className="font-semibold text-green-600">{payment.amount.toFixed(2)} د.ل</span>
+                              <span className="font-semibold text-green-600">{Number(payment.amount || 0).toFixed(2)} د.ل</span>
                             </div>
                           ))}
                         </div>
@@ -1240,16 +1242,16 @@ const CustomerAccountsPage = () => {
                 ))}
 
                 {/* ملخص الفواتير المفتوحة */}
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 rounded-xl p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-blue-800 mb-1">إجمالي الديون المستحقة على هذا العميل</p>
-                      <p className="text-3xl font-bold text-blue-900">
-                        {openInvoices.reduce((sum, inv) => sum + inv.remainingAmount, 0).toFixed(2)} د.ل
+                      <p className="text-sm text-blue-800 dark:text-blue-400 mb-1">إجمالي الديون المستحقة على هذا العميل</p>
+                      <p className="text-3xl font-bold text-blue-900 dark:text-blue-400">
+                        {openInvoices.reduce((sum, inv) => sum + Number(inv.remainingAmount || 0), 0).toFixed(2)} د.ل
                       </p>
                     </div>
-                    <div className="bg-blue-200 p-3 rounded-full">
-                      <DollarSign className="w-8 h-8 text-blue-800" />
+                    <div className="bg-blue-200 dark:bg-blue-900/30 p-3 rounded-full">
+                      <DollarSign className="w-8 h-8 text-blue-800 dark:text-blue-400" />
                     </div>
                   </div>
                 </div>

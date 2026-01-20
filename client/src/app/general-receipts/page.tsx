@@ -535,7 +535,7 @@ export default function GeneralReceiptsPage() {
                                 <select
                                     value={filters.type}
                                     onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-                                    className="w-full px-3 py-2 bg-white border border-border-primary rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                    className="w-full px-3 py-2 bg-white dark:bg-surface-secondary border border-border-primary rounded-lg text-sm text-slate-800 dark:text-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-blue-900/50 outline-none transition-all"
                                 >
                                     <option value="">الكل</option>
                                     <option value="DEPOSIT">قبض (وارد +)</option>
@@ -547,7 +547,7 @@ export default function GeneralReceiptsPage() {
                                 <select
                                     value={filters.entityType}
                                     onChange={(e) => setFilters({ ...filters, entityType: e.target.value })}
-                                    className="w-full px-3 py-2 bg-white border border-border-primary rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                    className="w-full px-3 py-2 bg-white dark:bg-surface-secondary border border-border-primary rounded-lg text-sm text-slate-800 dark:text-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-blue-900/50 outline-none transition-all"
                                 >
                                     <option value="">الكل</option>
                                     <option value="contact">جهة اتصال</option>
@@ -561,7 +561,7 @@ export default function GeneralReceiptsPage() {
                                 <select
                                     value={filters.companyId}
                                     onChange={(e) => setFilters({ ...filters, companyId: e.target.value })}
-                                    className="w-full px-3 py-2 bg-white border border-border-primary rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                    className="w-full px-3 py-2 bg-white dark:bg-surface-secondary border border-border-primary rounded-lg text-sm text-slate-800 dark:text-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-blue-900/50 outline-none transition-all"
                                 >
                                     <option value="">الكل</option>
                                     {companiesData?.data?.companies?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -572,7 +572,7 @@ export default function GeneralReceiptsPage() {
                                 <select
                                     value={filters.treasuryId}
                                     onChange={(e) => setFilters({ ...filters, treasuryId: e.target.value })}
-                                    className="w-full px-3 py-2 bg-white border border-border-primary rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                    className="w-full px-3 py-2 bg-white dark:bg-surface-secondary border border-border-primary rounded-lg text-sm text-slate-800 dark:text-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-blue-900/50 outline-none transition-all"
                                 >
                                     <option value="">الكل</option>
                                     {treasuries?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -584,7 +584,7 @@ export default function GeneralReceiptsPage() {
                                     type="date"
                                     value={filters.startDate}
                                     onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-                                    className="w-full px-3 py-2 bg-white border border-border-primary rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                    className="w-full px-3 py-2 bg-white dark:bg-surface-secondary border border-border-primary rounded-lg text-sm text-slate-800 dark:text-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-blue-900/50 outline-none transition-all"
                                 />
                             </div>
                             <div>
@@ -593,7 +593,7 @@ export default function GeneralReceiptsPage() {
                                     type="date"
                                     value={filters.endDate}
                                     onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-                                    className="w-full px-3 py-2 bg-white border border-border-primary rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                    className="w-full px-3 py-2 bg-white dark:bg-surface-secondary border border-border-primary rounded-lg text-sm text-slate-800 dark:text-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-blue-900/50 outline-none transition-all"
                                 />
                             </div>
                             <div>
@@ -603,7 +603,7 @@ export default function GeneralReceiptsPage() {
                                     value={filters.minAmount}
                                     onChange={(e) => setFilters({ ...filters, minAmount: e.target.value })}
                                     placeholder="0"
-                                    className="w-full px-3 py-2 bg-white border border-border-primary rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                    className="w-full px-3 py-2 bg-white dark:bg-surface-secondary border border-border-primary rounded-lg text-sm text-slate-800 dark:text-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-blue-900/50 outline-none transition-all"
                                 />
                             </div>
                             <div>
@@ -613,7 +613,7 @@ export default function GeneralReceiptsPage() {
                                     value={filters.maxAmount}
                                     onChange={(e) => setFilters({ ...filters, maxAmount: e.target.value })}
                                     placeholder="999999"
-                                    className="w-full px-3 py-2 bg-white border border-border-primary rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                                    className="w-full px-3 py-2 bg-white dark:bg-surface-secondary border border-border-primary rounded-lg text-sm text-slate-800 dark:text-text-primary focus:ring-2 focus:ring-primary-500 dark:focus:ring-blue-900/50 outline-none transition-all"
                                 />
                             </div>
                         </div>
@@ -660,7 +660,7 @@ export default function GeneralReceiptsPage() {
                                 </thead>
                                 <tbody className="divide-y divide-border-primary">
                                     {paginatedReceipts?.map((r) => (
-                                        <tr key={r.id} className="hover:bg-slate-50 transition-colors group">
+                                        <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-surface-hover transition-colors group">
                                             <td className="p-4 text-sm text-text-secondary">
                                                 <div className="flex items-center gap-2">
                                                     <Calendar className="w-4 h-4 text-text-muted" />
@@ -689,14 +689,14 @@ export default function GeneralReceiptsPage() {
                                                 <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={() => handleReceiptPreview(r)}
-                                                        className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors group/btn"
+                                                        className="p-2 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors group/btn"
                                                         title="معاينة الإيصال"
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDirectPrint(r)}
-                                                        className="p-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors group/btn"
+                                                        className="p-2 text-slate-600 dark:text-text-secondary hover:bg-slate-50 dark:hover:bg-surface-hover rounded-lg transition-colors group/btn"
                                                         title="طباعة الإيصال مباشرة"
                                                     >
                                                         <Printer className="w-4 h-4" />
@@ -840,8 +840,8 @@ export default function GeneralReceiptsPage() {
             {/* Modal: Add Contact (Standard Project Styled) */}
             {showContactModal && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="px-6 py-4 border-b border-border-primary flex items-center justify-between bg-white">
+                    <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="px-6 py-4 border-b border-border-primary flex items-center justify-between bg-white dark:bg-surface-primary">
                             <h2 className="text-xl font-bold text-text-primary">إضافة جهة اتصال جديدة</h2>
                             <button
                                 onClick={() => setShowContactModal(false)}
@@ -858,7 +858,7 @@ export default function GeneralReceiptsPage() {
                                     type="text"
                                     value={contactForm.name}
                                     onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                                    className="w-full px-4 py-2 bg-white border border-border-primary rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-text-primary font-medium outline-none"
+                                    className="w-full px-4 py-2 bg-white dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-xl focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-primary-500 transition-all text-slate-800 dark:text-text-primary font-medium outline-none"
                                     placeholder="أدخل الاسم بالكامل"
                                 />
                             </div>
@@ -869,7 +869,7 @@ export default function GeneralReceiptsPage() {
                                         type="text"
                                         value={contactForm.phone}
                                         onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
-                                        className="w-full px-4 py-2 bg-white border border-border-primary rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-text-primary font-medium outline-none ltr text-left"
+                                        className="w-full px-4 py-2 bg-white dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-xl focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-primary-500 transition-all text-slate-800 dark:text-text-primary font-medium outline-none ltr text-left"
                                         placeholder="09x-xxxxxxx"
                                     />
                                     <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-disabled pointer-events-none" />
@@ -880,7 +880,7 @@ export default function GeneralReceiptsPage() {
                                 <textarea
                                     value={contactForm.note}
                                     onChange={(e) => setContactForm({ ...contactForm, note: e.target.value })}
-                                    className="w-full px-4 py-2 bg-white border border-border-primary rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-text-primary font-medium outline-none min-h-[100px]"
+                                    className="w-full px-4 py-2 bg-white dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-xl focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-primary-500 transition-all text-slate-800 dark:text-text-primary font-medium outline-none min-h-[100px]"
                                     placeholder="أي ملاحظات إضافية..."
                                 />
                             </div>
@@ -908,10 +908,10 @@ export default function GeneralReceiptsPage() {
             {/* Modal: New Receipt (Standard Project Styled) */}
             {showReceiptModal && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="px-6 py-4 border-b border-border-primary flex items-center justify-between bg-white text-text-primary">
+                    <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="px-6 py-4 border-b border-border-primary flex items-center justify-between bg-white dark:bg-surface-primary text-text-primary">
                             <h2 className="text-xl font-bold flex items-center gap-2">
-                                {receiptType === 'DEPOSIT' ? <TrendingUp className="w-6 h-6 text-success-600" /> : <TrendingDown className="w-6 h-6 text-error-600" />}
+                                {receiptType === 'DEPOSIT' ? <TrendingUp className="w-6 h-6 text-success-600 dark:text-success-400" /> : <TrendingDown className="w-6 h-6 text-error-600 dark:text-error-400" />}
                                 {receiptType === 'DEPOSIT' ? 'تسجيل إيصال قبض' : 'تسجيل إيصال صرف'}
                             </h2>
                             <button
@@ -943,7 +943,7 @@ export default function GeneralReceiptsPage() {
                                         className={`py-2 px-3 rounded-lg font-bold transition-all ${
                                             entityType === 'contact' 
                                                 ? 'bg-primary-600 text-white' 
-                                                : 'bg-background-secondary text-text-secondary hover:bg-primary-100'
+                                                : 'bg-background-secondary dark:bg-surface-secondary text-text-secondary dark:text-text-primary hover:bg-primary-100 dark:hover:bg-primary-900/20'
                                         }`}
                                     >
                                         جهة اتصال
@@ -965,7 +965,7 @@ export default function GeneralReceiptsPage() {
                                         className={`py-2 px-3 rounded-lg font-bold transition-all ${
                                             entityType === 'customer' 
                                                 ? 'bg-success-600 text-white' 
-                                                : 'bg-background-secondary text-text-secondary hover:bg-success-100'
+                                                : 'bg-background-secondary dark:bg-surface-secondary text-text-secondary dark:text-text-primary hover:bg-success-100 dark:hover:bg-success-900/20'
                                         }`}
                                     >
                                         عميل
@@ -987,7 +987,7 @@ export default function GeneralReceiptsPage() {
                                         className={`py-2 px-3 rounded-lg font-bold transition-all ${
                                             entityType === 'supplier' 
                                                 ? 'bg-warning-600 text-white' 
-                                                : 'bg-background-secondary text-text-secondary hover:bg-warning-100'
+                                                : 'bg-background-secondary dark:bg-surface-secondary text-text-secondary dark:text-text-primary hover:bg-warning-100 dark:hover:bg-warning-900/20'
                                         }`}
                                     >
                                         مورد
@@ -1009,7 +1009,7 @@ export default function GeneralReceiptsPage() {
                                         className={`py-2 px-3 rounded-lg font-bold transition-all ${
                                             entityType === 'employee' 
                                                 ? 'bg-purple-600 text-white' 
-                                                : 'bg-background-secondary text-text-secondary hover:bg-purple-100'
+                                                : 'bg-background-secondary dark:bg-surface-secondary text-text-secondary dark:text-text-primary hover:bg-purple-100 dark:hover:bg-purple-900/20'
                                         }`}
                                     >
                                         موظف
@@ -1041,7 +1041,7 @@ export default function GeneralReceiptsPage() {
                                                 }}
                                                 onFocus={() => setShowContactSuggestions(true)}
                                                 placeholder="ابحث عن جهة الاتصال بالاسم أو الهاتف..."
-                                                className="w-full px-4 py-2 bg-white border border-border-primary rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium outline-none text-text-primary"
+                                                className="w-full px-4 py-2 bg-white dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-xl focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-primary-500 transition-all font-medium outline-none text-slate-800 dark:text-text-primary"
                                                 required={!receiptForm.contactId}
                                             />
                                             {contactsLoading && (
@@ -1050,7 +1050,7 @@ export default function GeneralReceiptsPage() {
                                                 </div>
                                             )}
                                             {showContactSuggestions && !contactsLoading && (
-                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-surface-elevated border border-gray-300 dark:border-border-primary rounded-md shadow-lg max-h-60 overflow-y-auto">
                                                     {contacts
                                                         ?.filter((c: any) =>
                                                             c.name.toLowerCase().includes(contactSearchTerm.toLowerCase()) ||
@@ -1065,22 +1065,22 @@ export default function GeneralReceiptsPage() {
                                                                     setContactSearchTerm('');
                                                                     setShowContactSuggestions(false);
                                                                 }}
-                                                                className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                                                className="px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-100 dark:border-border-primary last:border-b-0 transition-colors"
                                                             >
-                                                                <div className="font-medium text-gray-900">{c.name}</div>
-                                                                {c.phone && <div className="text-xs text-gray-500">📱 {c.phone}</div>}
+                                                                <div className="font-medium text-gray-900 dark:text-text-primary">{c.name}</div>
+                                                                {c.phone && <div className="text-xs text-gray-500 dark:text-text-tertiary">📱 {c.phone}</div>}
                                                             </div>
                                                         ))}
                                                     {contacts?.filter((c: any) =>
                                                         c.name.toLowerCase().includes(contactSearchTerm.toLowerCase()) ||
                                                         c.phone?.includes(contactSearchTerm)
                                                     )?.length === 0 && (
-                                                        <div className="px-3 py-2 text-gray-500 text-sm">لا توجد نتائج</div>
+                                                        <div className="px-3 py-2 text-gray-500 dark:text-text-tertiary text-sm">لا توجد نتائج</div>
                                                     )}
                                                 </div>
                                             )}
                                             {receiptForm.contactId && selectedContactName && (
-                                                <p className="text-xs text-green-600 mt-1 font-medium">
+                                                <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
                                                     ✓ تم اختيار: {selectedContactName}
                                                 </p>
                                             )}
@@ -1102,7 +1102,7 @@ export default function GeneralReceiptsPage() {
                                                 }}
                                                 onFocus={() => setShowCustomerSuggestions(true)}
                                                 placeholder="ابحث عن العميل بالاسم أو الهاتف..."
-                                                className="w-full px-4 py-2 bg-white border border-border-primary rounded-xl focus:ring-2 focus:ring-success-500 focus:border-success-500 transition-all font-medium outline-none text-text-primary"
+                                                className="w-full px-4 py-2 bg-white dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-xl focus:ring-2 focus:ring-green-100 dark:focus:ring-green-900/50 focus:border-success-500 transition-all font-medium outline-none text-slate-800 dark:text-text-primary"
                                                 required={!receiptForm.customerId}
                                             />
                                             {customersLoading && (
@@ -1111,9 +1111,9 @@ export default function GeneralReceiptsPage() {
                                                 </div>
                                             )}
                                             {showCustomerSuggestions && (
-                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-surface-elevated border border-gray-300 dark:border-border-primary rounded-md shadow-lg max-h-60 overflow-y-auto">
                                                     {customersLoading ? (
-                                                        <div className="px-3 py-2 text-gray-500 text-sm text-center">
+                                                        <div className="px-3 py-2 text-gray-500 dark:text-text-tertiary text-sm text-center">
                                                             جاري البحث...
                                                         </div>
                                                     ) : customers.length > 0 ? (
@@ -1126,14 +1126,14 @@ export default function GeneralReceiptsPage() {
                                                                     setCustomerSearchTerm('');
                                                                     setShowCustomerSuggestions(false);
                                                                 }}
-                                                                className="px-3 py-2 hover:bg-green-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                                                className="px-3 py-2 hover:bg-green-50 dark:hover:bg-green-900/20 cursor-pointer border-b border-gray-100 dark:border-border-primary last:border-b-0 transition-colors"
                                                             >
-                                                                <div className="font-medium text-gray-900">{c.name}</div>
-                                                                {c.phone && <div className="text-xs text-gray-500">📱 {c.phone}</div>}
+                                                                <div className="font-medium text-gray-900 dark:text-text-primary">{c.name}</div>
+                                                                {c.phone && <div className="text-xs text-gray-500 dark:text-text-tertiary">📱 {c.phone}</div>}
                                                             </div>
                                                         ))
                                                     ) : (
-                                                        <div className="px-3 py-2 text-gray-500 text-sm">
+                                                        <div className="px-3 py-2 text-gray-500 dark:text-text-tertiary text-sm">
                                                             {customerSearchTerm ? 'لا توجد نتائج للبحث' : 'اكتب للبحث عن العميل...'}
                                                         </div>
                                                     )}
@@ -1162,7 +1162,7 @@ export default function GeneralReceiptsPage() {
                                                 }}
                                                 onFocus={() => setShowSupplierSuggestions(true)}
                                                 placeholder="ابحث عن المورد بالاسم أو الهاتف..."
-                                                className="w-full px-4 py-2 bg-white border border-border-primary rounded-xl focus:ring-2 focus:ring-warning-500 focus:border-warning-500 transition-all font-medium outline-none text-text-primary"
+                                                className="w-full px-4 py-2 bg-white dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-xl focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900/50 focus:border-warning-500 transition-all font-medium outline-none text-slate-800 dark:text-text-primary"
                                                 required={!receiptForm.supplierId}
                                             />
                                             {suppliersLoading && (
@@ -1171,9 +1171,9 @@ export default function GeneralReceiptsPage() {
                                                 </div>
                                             )}
                                             {showSupplierSuggestions && (
-                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-surface-elevated border border-gray-300 dark:border-border-primary rounded-md shadow-lg max-h-60 overflow-y-auto">
                                                     {suppliersLoading ? (
-                                                        <div className="px-3 py-2 text-gray-500 text-sm text-center">
+                                                        <div className="px-3 py-2 text-gray-500 dark:text-text-tertiary text-sm text-center">
                                                             جاري البحث...
                                                         </div>
                                                     ) : suppliers.length > 0 ? (
@@ -1186,14 +1186,14 @@ export default function GeneralReceiptsPage() {
                                                                     setSupplierSearchTerm('');
                                                                     setShowSupplierSuggestions(false);
                                                                 }}
-                                                                className="px-3 py-2 hover:bg-orange-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                                                className="px-3 py-2 hover:bg-orange-50 dark:hover:bg-orange-900/20 cursor-pointer border-b border-gray-100 dark:border-border-primary last:border-b-0 transition-colors"
                                                             >
-                                                                <div className="font-medium text-gray-900">{s.name}</div>
-                                                                {s.phone && <div className="text-xs text-gray-500">📱 {s.phone}</div>}
+                                                                <div className="font-medium text-gray-900 dark:text-text-primary">{s.name}</div>
+                                                                {s.phone && <div className="text-xs text-gray-500 dark:text-text-tertiary">📱 {s.phone}</div>}
                                                             </div>
                                                         ))
                                                     ) : (
-                                                        <div className="px-3 py-2 text-gray-500 text-sm">
+                                                        <div className="px-3 py-2 text-gray-500 dark:text-text-tertiary text-sm">
                                                             {supplierSearchTerm ? 'لا توجد نتائج للبحث' : 'اكتب للبحث عن المورد...'}
                                                         </div>
                                                     )}
@@ -1222,7 +1222,7 @@ export default function GeneralReceiptsPage() {
                                                 }}
                                                 onFocus={() => setShowEmployeeSuggestions(true)}
                                                 placeholder="ابحث عن الموظف بالاسم أو الهاتف..."
-                                                className="w-full px-4 py-2 bg-white border border-border-primary rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium outline-none text-text-primary"
+                                                className="w-full px-4 py-2 bg-white dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-xl focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-900/50 focus:border-purple-500 transition-all font-medium outline-none text-slate-800 dark:text-text-primary"
                                                 required={!receiptForm.employeeId}
                                             />
                                             {employeesLoading && (
@@ -1231,9 +1231,9 @@ export default function GeneralReceiptsPage() {
                                                 </div>
                                             )}
                                             {showEmployeeSuggestions && (
-                                                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-surface-elevated border border-gray-300 dark:border-border-primary rounded-md shadow-lg max-h-60 overflow-y-auto">
                                                     {employeesLoading ? (
-                                                        <div className="px-3 py-2 text-gray-500 text-sm text-center">
+                                                        <div className="px-3 py-2 text-gray-500 dark:text-text-tertiary text-sm text-center">
                                                             جاري البحث...
                                                         </div>
                                                     ) : employees.length > 0 ? (
@@ -1246,15 +1246,15 @@ export default function GeneralReceiptsPage() {
                                                                     setEmployeeSearchTerm('');
                                                                     setShowEmployeeSuggestions(false);
                                                                 }}
-                                                                className="px-3 py-2 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                                                className="px-3 py-2 hover:bg-purple-50 dark:hover:bg-purple-900/20 cursor-pointer border-b border-gray-100 dark:border-border-primary last:border-b-0 transition-colors"
                                                             >
-                                                                <div className="font-medium text-gray-900">{e.name}</div>
-                                                                {e.phone && <div className="text-xs text-gray-500">📱 {e.phone}</div>}
-                                                                {e.jobTitle && <div className="text-xs text-gray-400">💼 {e.jobTitle}</div>}
+                                                                <div className="font-medium text-gray-900 dark:text-text-primary">{e.name}</div>
+                                                                {e.phone && <div className="text-xs text-gray-500 dark:text-text-tertiary">📱 {e.phone}</div>}
+                                                                {e.jobTitle && <div className="text-xs text-gray-400 dark:text-text-muted">💼 {e.jobTitle}</div>}
                                                             </div>
                                                         ))
                                                     ) : (
-                                                        <div className="px-3 py-2 text-gray-500 text-sm">
+                                                        <div className="px-3 py-2 text-gray-500 dark:text-text-tertiary text-sm">
                                                             {employeeSearchTerm ? 'لا توجد نتائج للبحث' : 'اكتب للبحث عن الموظف...'}
                                                         </div>
                                                     )}
@@ -1274,7 +1274,7 @@ export default function GeneralReceiptsPage() {
                                         required
                                         value={receiptForm.treasuryId}
                                         onChange={(e) => setReceiptForm({ ...receiptForm, treasuryId: e.target.value })}
-                                        className="w-full px-4 py-2 bg-white border border-border-primary rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium outline-none text-text-primary"
+                                        className="w-full px-4 py-2 bg-white dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-xl focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-primary-500 transition-all font-medium outline-none text-slate-800 dark:text-text-primary"
                                     >
                                         <option value="">اختر الخزينة...</option>
                                         {treasuries?.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -1291,7 +1291,7 @@ export default function GeneralReceiptsPage() {
                                         step="0.01"
                                         value={receiptForm.amount}
                                         onChange={(e) => setReceiptForm({ ...receiptForm, amount: e.target.value })}
-                                        className="w-full px-4 py-3 bg-white border border-border-primary rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-2xl font-bold text-text-primary outline-none ltr text-left"
+                                        className="w-full px-4 py-3 bg-white dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-xl focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-primary-500 transition-all text-2xl font-bold text-slate-800 dark:text-text-primary outline-none ltr text-left"
                                         placeholder="0.00"
                                     />
                                     <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-text-disabled pointer-events-none">LYD</div>
@@ -1304,7 +1304,7 @@ export default function GeneralReceiptsPage() {
                                     required
                                     value={receiptForm.description}
                                     onChange={(e) => setReceiptForm({ ...receiptForm, description: e.target.value })}
-                                    className="w-full px-4 py-2 bg-white border border-border-primary rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all font-medium outline-none text-text-primary min-h-[80px]"
+                                    className="w-full px-4 py-2 bg-white dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-xl focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-primary-500 transition-all font-medium outline-none text-slate-800 dark:text-text-primary min-h-[80px]"
                                     placeholder="اكتب وصفاً مختصراً للعملية"
                                 />
                             </div>
@@ -1313,7 +1313,7 @@ export default function GeneralReceiptsPage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowReceiptModal(false)}
-                                    className="flex-1 py-3 border border-border-primary text-text-secondary rounded-xl font-bold hover:bg-background-secondary transition-all"
+                                    className="flex-1 py-3 border border-slate-200 dark:border-border-primary text-text-secondary dark:text-text-primary rounded-xl font-bold hover:bg-background-secondary dark:hover:bg-surface-hover transition-all"
                                 >
                                     إلغاء
                                 </button>
@@ -1333,8 +1333,8 @@ export default function GeneralReceiptsPage() {
             {/* Modal: Contact Statement (Standard Project Styled) */}
             {showStatementModal && (
                 <div id="printable-modal-root" className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
-                        <div className="px-8 py-6 border-b border-border-primary flex items-center justify-between bg-white relative print-hide">
+                    <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                        <div className="px-8 py-6 border-b border-border-primary flex items-center justify-between bg-white dark:bg-surface-primary relative print-hide">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-primary-600/20">
                                     {contacts?.find(c => c.id === selectedContactId)?.name.charAt(0)}
@@ -1349,7 +1349,7 @@ export default function GeneralReceiptsPage() {
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={handlePrint}
-                                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-all font-bold text-sm"
+                                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-surface-secondary text-slate-700 dark:text-text-primary rounded-lg hover:bg-slate-200 dark:hover:bg-surface-hover transition-all font-bold text-sm"
                                 >
                                     <FileText className="w-4 h-4" />
                                     طباعة الكشف
@@ -1705,7 +1705,7 @@ export default function GeneralReceiptsPage() {
                                 </button>
                                 <button
                                     onClick={() => setShowReceiptPreview(false)}
-                                    className="p-2 hover:bg-slate-100 rounded-lg"
+                                    className="p-2 hover:bg-slate-100 dark:hover:bg-surface-hover rounded-lg"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>

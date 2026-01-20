@@ -657,7 +657,7 @@ export default function TreasuryPage() {
                             <select
                                 value={selectedTreasury || ''}
                                 onChange={(e) => setSelectedTreasury(e.target.value ? Number(e.target.value) : null)}
-                                className="px-3 py-2 border border-slate-300 dark:border-border-primary dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-slate-900 dark:text-text-primary dark:text-white"
+                                className="px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                             >
                                 <option value="">جميع الخزائن</option>
                                 {treasuries?.map((t: Treasury) => (
@@ -667,7 +667,7 @@ export default function TreasuryPage() {
                             <select
                                 value={transactionTypeFilter}
                                 onChange={(e) => setTransactionTypeFilter(e.target.value)}
-                                className="px-3 py-2 border border-slate-300 dark:border-border-primary dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-slate-900 dark:text-text-primary dark:text-white"
+                                className="px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                             >
                                 <option value="">جميع الأنواع</option>
                                 <option value="DEPOSIT">إيداع</option>
@@ -678,14 +678,14 @@ export default function TreasuryPage() {
                                 type="date"
                                 value={dateFrom}
                                 onChange={(e) => setDateFrom(e.target.value)}
-                                className="px-3 py-2 border border-slate-300 dark:border-border-primary dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-slate-900 dark:text-text-primary dark:text-white"
+                                className="px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                                 placeholder="من تاريخ"
                             />
                             <input
                                 type="date"
                                 value={dateTo}
                                 onChange={(e) => setDateTo(e.target.value)}
-                                className="px-3 py-2 border border-slate-300 dark:border-border-primary dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-slate-900 dark:text-text-primary dark:text-white"
+                                className="px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                                 placeholder="إلى تاريخ"
                             />
                             <button
@@ -840,7 +840,7 @@ export default function TreasuryPage() {
                                     type="text"
                                     value={treasuryForm.name}
                                     onChange={(e) => setTreasuryForm({ ...treasuryForm, name: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-slate-900 dark:text-text-primary dark:text-white"
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                                     required
                                 />
                             </div>
@@ -851,7 +851,7 @@ export default function TreasuryPage() {
                                 <select
                                     value={treasuryForm.type}
                                     onChange={(e) => setTreasuryForm({ ...treasuryForm, type: e.target.value as any })}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-slate-900 dark:text-text-primary dark:text-white"
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                                 >
                                     <option value="GENERAL">خزينة عامة</option>
                                     <option value="COMPANY">خزينة شركة</option>
@@ -866,7 +866,7 @@ export default function TreasuryPage() {
                                     <select
                                         value={treasuryForm.companyId}
                                         onChange={(e) => setTreasuryForm({ ...treasuryForm, companyId: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-slate-900 dark:text-text-primary dark:text-white"
+                                        className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                                         required
                                     >
                                         <option value="">اختر الشركة</option>
@@ -886,7 +886,7 @@ export default function TreasuryPage() {
                                             type="text"
                                             value={treasuryForm.bankName}
                                             onChange={(e) => setTreasuryForm({ ...treasuryForm, bankName: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-slate-900 dark:text-text-primary dark:text-white"
+                                            className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                                             required
                                         />
                                     </div>
@@ -898,7 +898,7 @@ export default function TreasuryPage() {
                                             type="text"
                                             value={treasuryForm.accountNumber}
                                             onChange={(e) => setTreasuryForm({ ...treasuryForm, accountNumber: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-slate-900 dark:text-text-primary dark:text-white"
+                                            className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                                         />
                                     </div>
                                 </>
@@ -912,14 +912,14 @@ export default function TreasuryPage() {
                                     step="0.01"
                                     value={treasuryForm.openingBalance}
                                     onChange={(e) => setTreasuryForm({ ...treasuryForm, openingBalance: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-slate-900 dark:text-text-primary dark:text-white"
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                                 />
                             </div>
                             <div className="flex gap-3 pt-4">
                                 <button
                                     type="button"
                                     onClick={() => setShowCreateTreasuryModal(false)}
-                                    className="flex-1 px-4 py-2 border border-slate-300 dark:border-border-primary text-gray-700 rounded-xl hover:bg-gray-50"
+                                    className="flex-1 px-4 py-2 border border-slate-200 dark:border-border-primary text-gray-700 dark:text-text-secondary rounded-xl hover:bg-gray-50 dark:hover:bg-surface-hover outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                                 >
                                     إلغاء
                                 </button>
@@ -956,7 +956,7 @@ export default function TreasuryPage() {
                                 <select
                                     value={transactionForm.treasuryId}
                                     onChange={(e) => setTransactionForm({ ...transactionForm, treasuryId: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-slate-900 dark:text-text-primary dark:text-white"
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                                     required
                                 >
                                     <option value="">اختر الخزينة</option>
@@ -975,7 +975,7 @@ export default function TreasuryPage() {
                                     min="0.01"
                                     value={transactionForm.amount}
                                     onChange={(e) => setTransactionForm({ ...transactionForm, amount: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-slate-900 dark:text-text-primary dark:text-white"
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                                     required
                                 />
                             </div>
@@ -986,7 +986,7 @@ export default function TreasuryPage() {
                                 <textarea
                                     value={transactionForm.description}
                                     onChange={(e) => setTransactionForm({ ...transactionForm, description: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-slate-900 dark:text-text-primary dark:text-white"
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                                     rows={3}
                                 />
                             </div>
@@ -994,7 +994,7 @@ export default function TreasuryPage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowTransactionModal(false)}
-                                    className="flex-1 px-4 py-2 border border-slate-300 dark:border-border-primary text-gray-700 rounded-xl hover:bg-gray-50"
+                                    className="flex-1 px-4 py-2 border border-slate-200 dark:border-border-primary text-gray-700 dark:text-text-secondary rounded-xl hover:bg-gray-50 dark:hover:bg-surface-hover outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                                 >
                                     إلغاء
                                 </button>
@@ -1032,7 +1032,7 @@ export default function TreasuryPage() {
                                 <select
                                     value={transferForm.fromTreasuryId}
                                     onChange={(e) => setTransferForm({ ...transferForm, fromTreasuryId: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-slate-900 dark:text-text-primary dark:text-white"
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                                     required
                                 >
                                     <option value="">اختر الخزينة</option>
@@ -1048,7 +1048,7 @@ export default function TreasuryPage() {
                                 <select
                                     value={transferForm.toTreasuryId}
                                     onChange={(e) => setTransferForm({ ...transferForm, toTreasuryId: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-slate-900 dark:text-text-primary dark:text-white"
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                                     required
                                 >
                                     <option value="">اختر الخزينة</option>
@@ -1067,7 +1067,7 @@ export default function TreasuryPage() {
                                     min="0.01"
                                     value={transferForm.amount}
                                     onChange={(e) => setTransferForm({ ...transferForm, amount: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-slate-900 dark:text-text-primary dark:text-white"
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                                     required
                                 />
                             </div>
@@ -1078,7 +1078,7 @@ export default function TreasuryPage() {
                                 <textarea
                                     value={transferForm.description}
                                     onChange={(e) => setTransferForm({ ...transferForm, description: e.target.value })}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-slate-900 dark:text-text-primary dark:text-white"
+                                    className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                                     rows={3}
                                 />
                             </div>
@@ -1086,7 +1086,7 @@ export default function TreasuryPage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowTransferModal(false)}
-                                    className="flex-1 px-4 py-2 border border-slate-300 dark:border-border-primary text-gray-700 rounded-xl hover:bg-gray-50"
+                                    className="flex-1 px-4 py-2 border border-slate-200 dark:border-border-primary text-gray-700 dark:text-text-secondary rounded-xl hover:bg-gray-50 dark:hover:bg-surface-hover outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                                 >
                                     إلغاء
                                 </button>
@@ -1103,6 +1103,5 @@ export default function TreasuryPage() {
                 </div>
             )}
         </div>
-        </div >
     );
 }

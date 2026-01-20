@@ -227,13 +227,13 @@ export default function PaymentReceiptsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400';
       case 'PAID':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400';
       case 'CANCELLED':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-surface-secondary text-gray-800 dark:text-text-primary';
     }
   };
 
@@ -277,12 +277,12 @@ export default function PaymentReceiptsPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">إيصالات الدفع</h1>
-            <p className="text-gray-600 mt-1">إدارة ومتابعة إيصالات الدفع للموردين والمردودات</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-text-primary">إيصالات الدفع</h1>
+            <p className="text-gray-600 dark:text-text-secondary mt-1">إدارة ومتابعة إيصالات الدفع للموردين والمردودات</p>
           </div>
           <button
             onClick={() => setShowPrintModal(true)}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-border-primary rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-gray-50 dark:hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400"
           >
             <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -294,13 +294,13 @@ export default function PaymentReceiptsPage() {
 
       {/* Tabs */}
       <div className="mb-6">
-        <div className="border-b border-gray-200">
+        <div className="border-b border-gray-200 dark:border-border-primary">
           <nav className="-mb-px flex space-x-8" aria-label="Tabs">
             <button
               onClick={() => handleTabChange('all')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'all'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-gray-500 dark:text-text-tertiary hover:text-gray-700 dark:hover:text-text-primary hover:border-gray-300 dark:hover:border-border-primary'
                 }`}
             >
               <div className="flex items-center gap-2">
@@ -309,7 +309,7 @@ export default function PaymentReceiptsPage() {
                 </svg>
                 <span>جميع الإيصالات</span>
                 {receiptsData?.pagination?.total && activeTab === 'all' && (
-                  <span className="bg-gray-100 text-gray-600 py-1 px-2 rounded-full text-xs">
+                  <span className="bg-gray-100 dark:bg-surface-secondary text-gray-600 dark:text-text-tertiary py-1 px-2 rounded-full text-xs">
                     {receiptsData.pagination.total}
                   </span>
                 )}
@@ -319,8 +319,8 @@ export default function PaymentReceiptsPage() {
             <button
               onClick={() => handleTabChange('purchases')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'purchases'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-gray-500 dark:text-text-tertiary hover:text-gray-700 dark:hover:text-text-primary hover:border-gray-300 dark:hover:border-border-primary'
                 }`}
             >
               <div className="flex items-center gap-2">
@@ -329,7 +329,7 @@ export default function PaymentReceiptsPage() {
                 </svg>
                 <span>إيصالات المشتريات</span>
                 {receiptsData?.pagination?.total && activeTab === 'purchases' && (
-                  <span className="bg-blue-100 text-blue-600 py-1 px-2 rounded-full text-xs">
+                  <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 py-1 px-2 rounded-full text-xs">
                     {receiptsData.pagination.total}
                   </span>
                 )}
@@ -339,8 +339,8 @@ export default function PaymentReceiptsPage() {
             <button
               onClick={() => handleTabChange('returns')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'returns'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-gray-500 dark:text-text-tertiary hover:text-gray-700 dark:hover:text-text-primary hover:border-gray-300 dark:hover:border-border-primary'
                 }`}
             >
               <div className="flex items-center gap-2">
@@ -349,7 +349,7 @@ export default function PaymentReceiptsPage() {
                 </svg>
                 <span>إيصالات المردودات</span>
                 {receiptsData?.pagination?.total && activeTab === 'returns' && (
-                  <span className="bg-red-100 text-red-600 py-1 px-2 rounded-full text-xs">
+                  <span className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 py-1 px-2 rounded-full text-xs">
                     {receiptsData.pagination.total}
                   </span>
                 )}
@@ -362,60 +362,60 @@ export default function PaymentReceiptsPage() {
       {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/30 rounded-lg p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                  <span className="text-yellow-600 text-sm">⏳</span>
+                <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
+                  <span className="text-yellow-600 dark:text-yellow-400 text-sm">⏳</span>
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-yellow-800">معلقة</p>
-                <p className="text-2xl font-bold text-yellow-900">{formatEnglishNumber(stats.totalPending)}</p>
-                <p className="text-xs text-yellow-700">{formatLibyanCurrencyArabic(stats.pendingAmount)}</p>
+                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-400">معلقة</p>
+                <p className="text-2xl font-bold text-yellow-900 dark:text-yellow-300">{formatEnglishNumber(stats.totalPending)}</p>
+                <p className="text-xs text-yellow-700 dark:text-yellow-400">{formatLibyanCurrencyArabic(stats.pendingAmount)}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30 rounded-lg p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <span className="text-green-600 text-sm">✅</span>
+                <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                  <span className="text-green-600 dark:text-green-400 text-sm">✅</span>
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-green-800">مسددة</p>
-                <p className="text-2xl font-bold text-green-900">{formatEnglishNumber(stats.totalPaid)}</p>
-                <p className="text-xs text-green-700">{formatLibyanCurrencyArabic(stats.paidAmount)}</p>
+                <p className="text-sm font-medium text-green-800 dark:text-green-400">مسددة</p>
+                <p className="text-2xl font-bold text-green-900 dark:text-green-300">{formatEnglishNumber(stats.totalPaid)}</p>
+                <p className="text-xs text-green-700 dark:text-green-400">{formatLibyanCurrencyArabic(stats.paidAmount)}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-lg p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                  <span className="text-red-600 text-sm">❌</span>
+                <div className="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                  <span className="text-red-600 dark:text-red-400 text-sm">❌</span>
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-red-800">ملغية</p>
-                <p className="text-2xl font-bold text-red-900">{stats.totalCancelled}</p>
+                <p className="text-sm font-medium text-red-800 dark:text-red-400">ملغية</p>
+                <p className="text-2xl font-bold text-red-900 dark:text-red-300">{stats.totalCancelled}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 rounded-lg p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-blue-600 text-sm">💰</span>
+                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                  <span className="text-blue-600 dark:text-blue-400 text-sm">💰</span>
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-blue-800">الإجمالي</p>
-                <p className="text-2xl font-bold text-blue-900">{formatLibyanCurrencyArabic(stats.totalAmount)}</p>
+                <p className="text-sm font-medium text-blue-800 dark:text-blue-400">الإجمالي</p>
+                <p className="text-2xl font-bold text-blue-900 dark:text-blue-300">{formatLibyanCurrencyArabic(stats.totalAmount)}</p>
               </div>
             </div>
           </div>
@@ -423,27 +423,27 @@ export default function PaymentReceiptsPage() {
       )}
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div className="bg-white dark:bg-surface-primary rounded-lg shadow-md border border-slate-200 dark:border-border-primary p-4 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {/* Search */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">البحث</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">البحث</label>
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="البحث في الموردين أو الوصف..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 dark:focus:border-blue-400 transition-all"
             />
           </div>
 
           {/* Status Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">الحالة</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">الحالة</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 dark:focus:border-blue-400 transition-all"
             >
               <option value="ALL">جميع الحالات</option>
               <option value="PENDING">معلقة</option>
@@ -454,11 +454,11 @@ export default function PaymentReceiptsPage() {
 
           {/* Type Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">النوع</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">النوع</label>
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as any)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 dark:focus:border-blue-400 transition-all"
             >
               <option value="ALL">جميع الأنواع</option>
               <option value="MAIN_PURCHASE">فاتورة رئيسية</option>
@@ -468,11 +468,11 @@ export default function PaymentReceiptsPage() {
 
           {/* Company Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">الشركة</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">الشركة</label>
             <select
               value={companyFilter}
               onChange={(e) => setCompanyFilter(e.target.value ? parseInt(e.target.value) : '')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 dark:focus:border-blue-400 transition-all"
             >
               <option value="">جميع الشركات</option>
               {companiesData?.data?.companies?.map((company: any) => (
@@ -493,7 +493,7 @@ export default function PaymentReceiptsPage() {
                 setCompanyFilter('');
                 setCurrentPage(1);
               }}
-              className="w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+              className="w-full px-4 py-2 bg-gray-500 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-600 dark:hover:bg-gray-700 transition-colors"
             >
               إعادة تعيين
             </button>
@@ -502,112 +502,112 @@ export default function PaymentReceiptsPage() {
       </div>
 
       {/* Receipts Table */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="bg-white dark:bg-surface-primary rounded-lg shadow-md border border-slate-200 dark:border-border-primary overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-border-primary">
+            <thead className="bg-gray-50 dark:bg-surface-secondary">
               <tr>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider min-w-[200px]">
                   صاحب العملية
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider w-32">
                   النوع
                 </th>
                 {activeTab === 'purchases' && (
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider w-40">
                     فاتورة المشتريات
                   </th>
                 )}
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider w-32">
                   المبلغ
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider w-32">
                   المبلغ المدفوع
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider w-32">
                   المبلغ المتبقي
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider w-32">
                   الحالة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider w-32">
                   تاريخ الإنشاء
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider min-w-[150px]">
                   الإجراءات
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-surface-primary divide-y divide-gray-200 dark:divide-border-primary">
               {receiptsData?.receipts?.map((receipt) => (
-                <tr key={receipt.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                <tr key={receipt.id} className="hover:bg-gray-50 dark:hover:bg-surface-hover">
+                  <td className="px-6 py-4">
                     <div className="flex flex-col">
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-gray-900 dark:text-text-primary break-words">
                         {receipt.type === 'RETURN' && receipt.notes ? receipt.notes : receipt.supplier?.name || 'بدون مورد'}
                       </span>
                       {receipt.supplier?.phone && receipt.type !== 'RETURN' && (
-                        <span className="text-sm text-gray-500">{receipt.supplier?.phone}</span>
+                        <span className="text-sm text-gray-500 dark:text-text-tertiary">{receipt.supplier?.phone}</span>
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${receipt.type === 'MAIN_PURCHASE'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-orange-100 text-orange-800'
+                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
+                      : 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-400'
                       }`}>
                       {getTypeText(receipt.type)}
                     </span>
                   </td>
                   {activeTab === 'purchases' && (
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4">
                       {receipt.purchase ? (
                         <div className="flex flex-col">
-                          <span className="font-medium text-blue-600">
+                          <span className="font-medium text-blue-600 dark:text-blue-400">
                             {receipt.purchase.invoiceNumber || `#${receipt.purchase.id}`}
                           </span>
                           {receipt.categoryName && (
-                            <span className="text-xs text-gray-500">{receipt.categoryName}</span>
+                            <span className="text-xs text-gray-500 dark:text-text-tertiary">{receipt.categoryName}</span>
                           )}
                         </div>
                       ) : (
-                        <span className="text-gray-400 text-sm">غير مرتبط</span>
+                        <span className="text-gray-400 dark:text-text-tertiary text-sm">غير مرتبط</span>
                       )}
                     </td>
                   )}
                   {/* المبلغ */}
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <td className="px-6 py-4 text-sm font-medium">
                     <span className={`px-2 py-1 rounded text-xs font-semibold ${receipt.currency === 'LYD'
-                      ? 'bg-green-100 text-green-800'
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
                       : receipt.currency === 'USD'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-purple-100 text-purple-800'
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
+                        : 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400'
                       }`}>
                       {receipt.amount.toFixed(2)} {receipt.currency}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                  <td className="px-6 py-4 text-sm font-semibold text-green-600 dark:text-green-400">
                     {(receipt.paidAmount ?? 0).toFixed(2)} {receipt.currency}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-red-600">
+                  <td className="px-6 py-4 text-sm font-semibold text-red-600 dark:text-red-400">
                     {(receipt.remainingAmount ?? 0).toFixed(2)} {receipt.currency}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(receipt.status)}`}>
                       {getStatusText(receipt.status)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 text-sm text-gray-900 dark:text-text-primary">
                     {formatEnglishDate(receipt.createdAt)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center gap-2">
+                  <td className="px-6 py-4 text-sm font-medium">
+                    <div className="flex flex-wrap items-center gap-2">
                       {/* Installments Button - only for PENDING */}
                       {receipt.status === 'PENDING' && (
                         <button
                           onClick={() => handleOpenInstallmentsModal(receipt)}
                           disabled={isAddingInstallment}
-                          className="text-green-600 hover:text-green-900 p-1 rounded"
+                          className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 p-1 rounded"
                           title="دفعات جزئية"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -622,7 +622,7 @@ export default function PaymentReceiptsPage() {
                           setSelectedReceipt(receipt);
                           setShowDetailsModal(true);
                         }}
-                        className="text-blue-600 hover:text-blue-900 p-1 rounded"
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 p-1 rounded"
                         title="عرض التفاصيل"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -640,26 +640,26 @@ export default function PaymentReceiptsPage() {
 
         {/* Pagination */}
         {receiptsData?.pagination && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+          <div className="bg-white dark:bg-surface-primary px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-border-primary sm:px-6">
             <div className="flex-1 flex justify-between sm:hidden">
               <button
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-border-primary text-sm font-medium rounded-md text-gray-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-gray-50 dark:hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 السابق
               </button>
               <button
                 onClick={() => setCurrentPage(prev => prev + 1)}
                 disabled={currentPage >= receiptsData.pagination.pages}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-border-primary text-sm font-medium rounded-md text-gray-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-gray-50 dark:hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 التالي
               </button>
             </div>
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-gray-700 dark:text-text-secondary">
                   عرض{' '}
                   <span className="font-medium">
                     {(currentPage - 1) * 10 + 1}
@@ -680,8 +680,8 @@ export default function PaymentReceiptsPage() {
                       key={i + 1}
                       onClick={() => setCurrentPage(i + 1)}
                       className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === i + 1
-                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                        ? 'z-10 bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400'
+                        : 'bg-white dark:bg-surface-secondary border-gray-300 dark:border-border-primary text-gray-500 dark:text-text-tertiary hover:bg-gray-50 dark:hover:bg-surface-hover'
                         }`}
                     >
                       {i + 1}
@@ -696,14 +696,14 @@ export default function PaymentReceiptsPage() {
 
       {/* Details Modal */}
       {showDetailsModal && selectedReceipt && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
+        <div className="fixed inset-0 bg-black dark:bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-surface-primary rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-border-primary">
+            <div className="p-6 border-b border-gray-200 dark:border-border-primary">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">تفاصيل إيصال الدفع</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-text-primary">تفاصيل إيصال الدفع</h2>
                 <button
                   onClick={() => setShowDetailsModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-gray-400 dark:text-text-tertiary hover:text-gray-600 dark:hover:text-text-primary transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -715,50 +715,50 @@ export default function PaymentReceiptsPage() {
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">صاحب العملية</label>
-                  <p className="mt-1 text-sm text-gray-900">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary">صاحب العملية</label>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-text-primary">
                     {selectedReceipt.type === 'RETURN' && selectedReceipt.notes ? selectedReceipt.notes : selectedReceipt.supplier?.name || 'بدون مورد'}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">النوع</label>
-                  <p className="mt-1 text-sm text-gray-900">{getTypeText(selectedReceipt.type)}</p>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary">النوع</label>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-text-primary">{getTypeText(selectedReceipt.type)}</p>
                 </div>
 
                 {/* معلومات المبلغ */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">المبلغ</label>
-                  <p className="mt-1 text-base font-semibold text-gray-900">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary">المبلغ</label>
+                  <p className="mt-1 text-base font-semibold text-gray-900 dark:text-text-primary">
                     {selectedReceipt.amount.toFixed(2)} {selectedReceipt.currency}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">المبلغ المدفوع</label>
-                  <p className="mt-1 text-base font-semibold text-green-600">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary">المبلغ المدفوع</label>
+                  <p className="mt-1 text-base font-semibold text-green-600 dark:text-green-400">
                     {(selectedReceipt.paidAmount ?? 0).toFixed(2)} {selectedReceipt.currency}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">المبلغ المتبقي</label>
-                  <p className="mt-1 text-base font-semibold text-red-600">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary">المبلغ المتبقي</label>
+                  <p className="mt-1 text-base font-semibold text-red-600 dark:text-red-400">
                     {(selectedReceipt.remainingAmount ?? 0).toFixed(2)} {selectedReceipt.currency}
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">الحالة</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary">الحالة</label>
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedReceipt.status)}`}>
                     {getStatusText(selectedReceipt.status)}
                   </span>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">تاريخ الإنشاء</label>
-                  <p className="mt-1 text-sm text-gray-900">{new Date(selectedReceipt.createdAt).toLocaleString('en-GB')}</p>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary">تاريخ الإنشاء</label>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-text-primary">{new Date(selectedReceipt.createdAt).toLocaleString('en-GB')}</p>
                 </div>
                 {selectedReceipt.paidAt && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">تاريخ التسديد</label>
-                    <p className="mt-1 text-sm text-gray-900">{new Date(selectedReceipt.paidAt).toLocaleString('en-GB')}</p>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary">تاريخ التسديد</label>
+                    <p className="mt-1 text-sm text-gray-900 dark:text-text-primary">{new Date(selectedReceipt.paidAt).toLocaleString('en-GB')}</p>
                   </div>
                 )}
               </div>

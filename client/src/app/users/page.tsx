@@ -318,7 +318,7 @@ const UsersPage = () => {
                   placeholder="البحث عن مستخدم..."
                   value={searchTerm}
                   onChange={(e) => dispatch(setSearchTerm(e.target.value))}
-                  className="w-full pr-10 pl-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pr-10 pl-4 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                 />
               </div>
 
@@ -328,7 +328,7 @@ const UsersPage = () => {
                 <select
                   value={currentFilter}
                   onChange={(e) => dispatch(setCurrentFilter(e.target.value as any))}
-                  className="pr-10 pl-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="pr-10 pl-4 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                 >
                   <option value="all">جميع الأدوار</option>
                   {roles.map(role => (
@@ -509,7 +509,7 @@ const UsersPage = () => {
                       type="text"
                       value={newUser.username}
                       onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                       placeholder="أدخل اسم المستخدم"
                     />
                   </div>
@@ -520,7 +520,7 @@ const UsersPage = () => {
                       type="text"
                       value={newUser.fullName}
                       onChange={(e) => setNewUser({ ...newUser, fullName: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                       placeholder="أدخل الاسم الكامل"
                     />
                   </div>
@@ -533,7 +533,7 @@ const UsersPage = () => {
                       type="email"
                       value={newUser.email}
                       onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                       placeholder="أدخل البريد الإلكتروني (اختياري)"
                     />
                   </div>
@@ -544,7 +544,7 @@ const UsersPage = () => {
                       type="tel"
                       value={newUser.phone}
                       onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                       placeholder="أدخل رقم الهاتف"
                     />
                   </div>
@@ -555,7 +555,7 @@ const UsersPage = () => {
                       type="password"
                       value={newUser.password}
                       onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                       placeholder="أدخل كلمة المرور"
                     />
                   </div>
@@ -565,7 +565,7 @@ const UsersPage = () => {
                     <select
                       value={newUser.roleId}
                       onChange={(e) => handleAddRoleChange(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                     >
                       <option value="">اختر الدور (اختياري)</option>
                       {roles.map(role => (
@@ -698,7 +698,7 @@ const UsersPage = () => {
                       type="text"
                       value={editUser.username}
                       onChange={(e) => setEditUser({ ...editUser, username: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                       placeholder="أدخل اسم المستخدم"
                     />
                   </div>
@@ -709,7 +709,7 @@ const UsersPage = () => {
                       type="text"
                       value={editUser.fullName}
                       onChange={(e) => setEditUser({ ...editUser, fullName: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                       placeholder="أدخل الاسم الكامل"
                     />
                   </div>
@@ -722,7 +722,7 @@ const UsersPage = () => {
                       type="email"
                       value={editUser.email || ""}
                       onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                       placeholder="أدخل البريد الإلكتروني (اختياري)"
                     />
                   </div>
@@ -733,7 +733,7 @@ const UsersPage = () => {
                       type="tel"
                       value={editUser.phone || ""}
                       onChange={(e) => setEditUser({ ...editUser, phone: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                       placeholder="أدخل رقم الهاتف"
                     />
                   </div>
@@ -743,7 +743,7 @@ const UsersPage = () => {
                     <select
                       value={editUser.roleId}
                       onChange={(e) => handleEditRoleChange(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                     >
                       <option value="">بدون دور</option>
                       {roles.map(role => (

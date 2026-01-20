@@ -65,12 +65,12 @@ interface MainStatCardProps {
 
 const MainStatCard = ({ title, value, subtitle, icon: Icon, iconBgColor }: MainStatCardProps) => {
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-red-100 p-6 hover:shadow-md hover:border-red-200 transition-all duration-300">
+        <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-red-100 dark:border-border-primary p-6 hover:shadow-md hover:border-red-200 dark:hover:border-red-800/30 transition-all duration-300">
             <div className="flex items-start justify-between">
                 <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
-                    <p className="text-2xl font-bold text-slate-800">{value}</p>
-                    {subtitle && <p className="text-xs text-slate-400 mt-1">{subtitle}</p>}
+                    <p className="text-sm font-medium text-slate-500 dark:text-text-tertiary mb-1">{title}</p>
+                    <p className="text-2xl font-bold text-slate-800 dark:text-text-primary">{value}</p>
+                    {subtitle && <p className="text-xs text-slate-400 dark:text-text-muted mt-1">{subtitle}</p>}
                 </div>
                 <div className={`w-14 h-14 ${iconBgColor} rounded-xl flex items-center justify-center shadow-sm`}>
                     <Icon className="w-7 h-7 text-white" />
@@ -393,11 +393,11 @@ export default function BadDebtsPage() {
             {/* Company Filter */}
             <div className="mb-6 flex flex-wrap gap-4 items-center">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">الشركة</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">الشركة</label>
                     <select
                         value={selectedCompanyId || ''}
                         onChange={(e) => setSelectedCompanyId(e.target.value ? parseInt(e.target.value) : undefined)}
-                        className="px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:ring-2 focus:ring-red-500"
+                        className="px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary focus:ring-2 focus:ring-red-500 dark:focus:ring-red-900/50 outline-none transition-all"
                     >
                         <option value="">جميع الشركات</option>
                         {companies.map(company => (
@@ -441,27 +441,25 @@ export default function BadDebtsPage() {
             )}
 
             {/* Tabs */}
-            <div className="bg-white dark:bg-surface-primary rounded-3xl shadow-sm border border-slate-200 dark:border-border-primary mb-6">
-                <div className="border-b border-slate-200 dark:border-border-primary">
-                    <div className="flex">
-                        {[
-                            { key: 'categories', label: '📁 بنود المصروفات' },
-                            { key: 'expenses', label: '💸 سجل المصروفات' },
-                            { key: 'stats', label: '📊 الإحصائيات' }
-                        ].map(tab => (
-                            <button
-                                key={tab.key}
-                                onClick={() => setActiveTab(tab.key as any)}
-                                className={`px-6 py-4 font-medium transition-colors ${activeTab === tab.key
-                                    ? 'text-red-600 border-b-2 border-red-600 bg-red-50'
-                                    : 'text-slate-500 dark:text-text-tertiary hover:text-gray-700 hover:bg-gray-50'
-                                    }`}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
+            <div className="bg-white dark:bg-surface-primary rounded-3xl shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden">
+                <nav className="flex gap-2 p-2 border-b border-slate-100 dark:border-border-primary">
+                    {[
+                        { key: 'categories', label: '📁 بنود المصروفات', icon: '📁' },
+                        { key: 'expenses', label: '💸 سجل المصروفات', icon: '💸' },
+                        { key: 'stats', label: '📊 الإحصائيات', icon: '📊' }
+                    ].map(tab => (
+                        <button
+                            key={tab.key}
+                            onClick={() => setActiveTab(tab.key as any)}
+                            className={`flex-1 py-3 px-6 rounded-xl font-bold text-sm transition-all ${activeTab === tab.key
+                                ? 'bg-red-600 text-white shadow-md shadow-red-200 dark:shadow-none'
+                                : 'text-slate-600 dark:text-text-secondary hover:bg-slate-50 dark:hover:bg-surface-hover hover:text-red-600 dark:hover:text-red-400'
+                                }`}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
+                </nav>
 
                 {/* Tab Content */}
                 <div className="p-6">
@@ -476,7 +474,7 @@ export default function BadDebtsPage() {
                                         placeholder="🔍 بحث عن بند..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl w-64"
+                                        className="px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl w-64 bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
                                     />
                                 </div>
                                 <button
@@ -494,9 +492,9 @@ export default function BadDebtsPage() {
 
                             {/* Categories Table */}
                             {categoriesLoading ? (
-                                <div className="text-center py-10">جاري التحميل...</div>
+                                <div className="text-center py-10 bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary text-slate-600 dark:text-text-secondary">جاري التحميل...</div>
                             ) : categories.length === 0 ? (
-                                <div className="text-center py-10 text-slate-500 dark:text-text-tertiary">لا يوجد بنود مصروفات</div>
+                                <div className="text-center py-10 text-slate-500 dark:text-text-tertiary bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary">لا يوجد بنود مصروفات</div>
                             ) : (
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
@@ -513,10 +511,10 @@ export default function BadDebtsPage() {
                                             {categories.map(category => (
                                                 <tr key={category.id} className="hover:bg-slate-50 dark:hover:bg-surface-hover transition-colors">
                                                     <td className="px-4 py-3">
-                                                        <p className="font-medium text-gray-900">{category.name}</p>
+                                                        <p className="font-medium text-gray-900 dark:text-text-primary">{category.name}</p>
                                                     </td>
                                                     <td className="px-4 py-3 text-slate-600 dark:text-text-secondary text-sm">{category.description || '-'}</td>
-                                                    <td className="px-4 py-3 font-semibold text-red-600">
+                                                    <td className="px-4 py-3 font-semibold text-red-600 dark:text-red-400">
                                                         {formatCurrency(category.totalExpenses || 0)}
                                                     </td>
                                                     <td className="px-4 py-3 text-slate-600 dark:text-text-secondary">{category.expensesCount || 0}</td>
@@ -524,21 +522,21 @@ export default function BadDebtsPage() {
                                                         <div className="flex gap-2">
                                                             <button
                                                                 onClick={() => openPayModal(category)}
-                                                                className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
+                                                                className="p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-600 dark:hover:bg-red-700 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
                                                                 title="صرف مصروف"
                                                             >
                                                                 <CircleDollarSign className="w-5 h-5" />
                                                             </button>
                                                             <button
                                                                 onClick={() => openEditModal(category)}
-                                                                className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
+                                                                className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-600 dark:hover:bg-blue-700 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
                                                                 title="تعديل"
                                                             >
                                                                 <Edit className="w-5 h-5" />
                                                             </button>
                                                             <button
                                                                 onClick={() => handleDeleteCategory(category)}
-                                                                className="p-2 bg-slate-50 dark:bg-surface-secondary text-slate-600 dark:text-text-secondary rounded-xl hover:bg-gray-600 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
+                                                                className="p-2 bg-slate-50 dark:bg-surface-secondary text-slate-600 dark:text-text-secondary rounded-xl hover:bg-gray-600 dark:hover:bg-gray-700 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
                                                                 title="حذف"
                                                             >
                                                                 <Trash2 className="w-5 h-5" />
@@ -560,14 +558,14 @@ export default function BadDebtsPage() {
                             {/* Filters */}
                             <div className="flex flex-wrap gap-4 mb-6 items-end">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">البند</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">البند</label>
                                     <select
                                         value={expensesCategoryId || ''}
                                         onChange={(e) => {
                                             setExpensesCategoryId(e.target.value ? parseInt(e.target.value) : undefined);
                                             setExpensesPage(1);
                                         }}
-                                        className="px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:ring-2 focus:ring-red-500"
+                                        className="px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary focus:ring-2 focus:ring-red-500 dark:focus:ring-red-900/50 outline-none transition-all"
                                     >
                                         <option value="">جميع البنود</option>
                                         {categories.map(cat => (
@@ -576,7 +574,7 @@ export default function BadDebtsPage() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">من تاريخ</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">من تاريخ</label>
                                     <input
                                         type="date"
                                         value={expensesStartDate}
@@ -584,11 +582,11 @@ export default function BadDebtsPage() {
                                             setExpensesStartDate(e.target.value);
                                             setExpensesPage(1);
                                         }}
-                                        className="px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:ring-2 focus:ring-red-500"
+                                        className="px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary focus:ring-2 focus:ring-red-500 dark:focus:ring-red-900/50 outline-none transition-all"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">إلى تاريخ</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">إلى تاريخ</label>
                                     <input
                                         type="date"
                                         value={expensesEndDate}
@@ -596,13 +594,13 @@ export default function BadDebtsPage() {
                                             setExpensesEndDate(e.target.value);
                                             setExpensesPage(1);
                                         }}
-                                        className="px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:ring-2 focus:ring-red-500"
+                                        className="px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary focus:ring-2 focus:ring-red-500 dark:focus:ring-red-900/50 outline-none transition-all"
                                     />
                                 </div>
                                 {(expensesCategoryId || expensesStartDate || expensesEndDate) && (
                                     <button
                                         onClick={resetExpensesFilters}
-                                        className="px-4 py-2 text-slate-600 dark:text-text-secondary hover:text-gray-800 flex items-center gap-1"
+                                        className="px-4 py-2 text-slate-600 dark:text-text-secondary hover:text-gray-800 dark:hover:text-text-primary flex items-center gap-1"
                                     >
                                         <X className="w-4 h-4" />
                                         إزالة الفلاتر
@@ -613,7 +611,7 @@ export default function BadDebtsPage() {
                                 <button
                                     onClick={() => setShowPreviewModal(true)}
                                     disabled={expenses.length === 0}
-                                    className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white flex items-center gap-2 disabled:opacity-50 transition-all duration-200 shadow-sm hover:shadow-md"
+                                    className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-600 dark:hover:bg-blue-700 hover:text-white flex items-center gap-2 disabled:opacity-50 transition-all duration-200 shadow-sm hover:shadow-md"
                                 >
                                     <Eye className="w-5 h-5" />
                                     معاينة
@@ -630,20 +628,20 @@ export default function BadDebtsPage() {
 
                             {/* Summary Bar */}
                             {expenses.length > 0 && (
-                                <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 flex justify-between items-center">
+                                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-xl p-4 mb-4 flex justify-between items-center">
                                     <div className="flex items-center gap-4">
-                                        <span className="text-sm text-red-700">
+                                        <span className="text-sm text-red-700 dark:text-red-400">
                                             <strong>{pagination?.total || expenses.length}</strong> عملية
                                         </span>
                                         {(expensesStartDate || expensesEndDate) && (
-                                            <span className="text-xs text-red-600 bg-red-100 px-2 py-1 rounded">
+                                            <span className="text-xs text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded">
                                                 {expensesStartDate && `من: ${expensesStartDate}`}
                                                 {expensesStartDate && expensesEndDate && ' - '}
                                                 {expensesEndDate && `إلى: ${expensesEndDate}`}
                                             </span>
                                         )}
                                     </div>
-                                    <div className="text-lg font-bold text-red-700">
+                                    <div className="text-lg font-bold text-red-700 dark:text-red-400">
                                         إجمالي الصفحة: {formatCurrency(totalDisplayedExpenses)}
                                     </div>
                                 </div>
@@ -651,9 +649,9 @@ export default function BadDebtsPage() {
 
                             {/* Expenses Table */}
                             {expensesLoading ? (
-                                <div className="text-center py-10">جاري التحميل...</div>
+                                <div className="text-center py-10 bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary text-slate-600 dark:text-text-secondary">جاري التحميل...</div>
                             ) : expenses.length === 0 ? (
-                                <div className="text-center py-10 text-slate-500 dark:text-text-tertiary">لا يوجد مصروفات</div>
+                                <div className="text-center py-10 text-slate-500 dark:text-text-tertiary bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary">لا يوجد مصروفات</div>
                             ) : (
                                 <>
                                     <div className="overflow-x-auto">
@@ -671,8 +669,8 @@ export default function BadDebtsPage() {
                                                 {expenses.map(expense => (
                                                     <tr key={expense.id} className="hover:bg-slate-50 dark:hover:bg-surface-hover transition-colors">
                                                         <td className="px-4 py-3 font-mono text-sm text-slate-600 dark:text-text-secondary">{expense.receiptNumber}</td>
-                                                        <td className="px-4 py-3 font-medium text-gray-900">{expense.category?.name}</td>
-                                                        <td className="px-4 py-3 font-semibold text-red-600">{formatCurrency(expense.amount)}</td>
+                                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-text-primary">{expense.category?.name}</td>
+                                                        <td className="px-4 py-3 font-semibold text-red-600 dark:text-red-400">{formatCurrency(expense.amount)}</td>
                                                         <td className="px-4 py-3 text-slate-600 dark:text-text-secondary text-sm">{expense.description || '-'}</td>
                                                         <td className="px-4 py-3 text-slate-600 dark:text-text-secondary">
                                                             {new Date(expense.paymentDate).toLocaleDateString('ar-LY')}
@@ -689,7 +687,7 @@ export default function BadDebtsPage() {
                                             <button
                                                 onClick={() => setExpensesPage(p => Math.max(1, p - 1))}
                                                 disabled={expensesPage === 1}
-                                                className="px-4 py-2 border rounded-xl disabled:opacity-50"
+                                                className="px-4 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary hover:bg-slate-50 dark:hover:bg-surface-hover disabled:opacity-50 transition-all"
                                             >
                                                 السابق
                                             </button>
@@ -699,7 +697,7 @@ export default function BadDebtsPage() {
                                             <button
                                                 onClick={() => setExpensesPage(p => Math.min(pagination.pages, p + 1))}
                                                 disabled={expensesPage === pagination.pages}
-                                                className="px-4 py-2 border rounded-xl disabled:opacity-50"
+                                                className="px-4 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary hover:bg-slate-50 dark:hover:bg-surface-hover disabled:opacity-50 transition-all"
                                             >
                                                 التالي
                                             </button>
@@ -716,11 +714,11 @@ export default function BadDebtsPage() {
                             {/* Year Filter */}
                             <div className="flex flex-wrap gap-4 items-center mb-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">السنة</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">السنة</label>
                                     <select
                                         value={statsYear}
                                         onChange={(e) => setStatsYear(parseInt(e.target.value))}
-                                        className="px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl focus:ring-2 focus:ring-red-500"
+                                        className="px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary focus:ring-2 focus:ring-red-500 dark:focus:ring-red-900/50 outline-none transition-all"
                                     >
                                         {[2024, 2025, 2026, 2027].map(year => (
                                             <option key={year} value={year}>{year}</option>
@@ -754,23 +752,23 @@ export default function BadDebtsPage() {
                                 </div>
 
                                 {/* Distribution by Category */}
-                                <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                                <div className="bg-white dark:bg-surface-primary border border-slate-100 dark:border-border-primary rounded-2xl p-6 shadow-sm">
                                     <div className="flex items-center gap-3 mb-4">
-                                        <div className="bg-red-100 p-2 rounded-xl">
-                                            <PieChartIcon className="w-5 h-5 text-red-600" />
+                                        <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-xl">
+                                            <PieChartIcon className="w-5 h-5 text-red-600 dark:text-red-400" />
                                         </div>
-                                        <h4 className="font-bold text-slate-800">توزيع المصروفات</h4>
+                                        <h4 className="font-bold text-slate-800 dark:text-text-primary">توزيع المصروفات</h4>
                                     </div>
                                     <div className="space-y-3">
                                         {stats?.topCategories.slice(0, 4).map((cat, idx) => (
                                             <div key={cat.categoryId}>
                                                 <div className="flex justify-between text-sm mb-1">
-                                                    <span className="text-slate-500">{cat.categoryName}</span>
-                                                    <span className="font-bold text-slate-700">
+                                                    <span className="text-slate-500 dark:text-text-tertiary">{cat.categoryName}</span>
+                                                    <span className="font-bold text-slate-700 dark:text-text-primary">
                                                         {Math.round((cat.totalAmount / (stats?.thisYear.totalAmount || 1)) * 100)}%
                                                     </span>
                                                 </div>
-                                                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                <div className="h-2 bg-slate-100 dark:bg-surface-elevated rounded-full overflow-hidden">
                                                     <div 
                                                         className="h-full rounded-full" 
                                                         style={{ 
@@ -782,31 +780,31 @@ export default function BadDebtsPage() {
                                             </div>
                                         ))}
                                         {(!stats?.topCategories || stats.topCategories.length === 0) && (
-                                            <p className="text-slate-400 text-xs text-center py-4 italic">لا توجد بيانات</p>
+                                            <p className="text-slate-400 dark:text-text-muted text-xs text-center py-4 italic">لا توجد بيانات</p>
                                         )}
                                     </div>
                                 </div>
 
                                 {/* Top Categories List */}
-                                <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                                <div className="bg-white dark:bg-surface-primary border border-slate-100 dark:border-border-primary rounded-2xl p-6 shadow-sm">
                                     <div className="flex items-center gap-3 mb-4">
-                                        <div className="bg-orange-100 p-2 rounded-xl">
-                                            <Layout className="w-5 h-5 text-orange-600" />
+                                        <div className="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-xl">
+                                            <Layout className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                                         </div>
-                                        <h4 className="font-bold text-slate-800">أعلى البنود</h4>
+                                        <h4 className="font-bold text-slate-800 dark:text-text-primary">أعلى البنود</h4>
                                     </div>
                                     <div className="space-y-3">
                                         {stats?.topCategories.map((cat, idx) => (
                                             <div key={cat.categoryId} className="flex justify-between items-center text-sm">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-lg font-bold text-gray-400">{idx + 1}</span>
-                                                    <span className="text-slate-600">{cat.categoryName}</span>
+                                                    <span className="text-lg font-bold text-gray-400 dark:text-text-muted">{idx + 1}</span>
+                                                    <span className="text-slate-600 dark:text-text-secondary">{cat.categoryName}</span>
                                                 </div>
-                                                <span className="font-bold text-red-600">{formatCurrency(cat.totalAmount)}</span>
+                                                <span className="font-bold text-red-600 dark:text-red-400">{formatCurrency(cat.totalAmount)}</span>
                                             </div>
                                         ))}
                                         {(!stats?.topCategories || stats.topCategories.length === 0) && (
-                                            <p className="text-slate-400 text-xs text-center py-4 italic">لا توجد بيانات</p>
+                                            <p className="text-slate-400 dark:text-text-muted text-xs text-center py-4 italic">لا توجد بيانات</p>
                                         )}
                                     </div>
                                 </div>
@@ -815,41 +813,43 @@ export default function BadDebtsPage() {
                             {/* Charts Section */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 {/* Monthly Bar Chart */}
-                                <div className="bg-white border border-slate-100 rounded-2xl p-8 shadow-sm">
+                                <div className="bg-white dark:bg-surface-primary border border-slate-100 dark:border-border-primary rounded-2xl p-8 shadow-sm">
                                     <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
                                         <div>
-                                            <h4 className="text-xl font-bold text-slate-800">التحليل الشهري</h4>
-                                            <p className="text-sm text-slate-500">المصروفات المعدومة لكل شهر</p>
+                                            <h4 className="text-xl font-bold text-slate-800 dark:text-text-primary">التحليل الشهري</h4>
+                                            <p className="text-sm text-slate-500 dark:text-text-tertiary">المصروفات المعدومة لكل شهر</p>
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+                                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-text-tertiary">
                                             <span className="w-3 h-3 bg-red-500 rounded-full"></span>
                                             المصروفات
                                         </div>
                                     </div>
                                     <div className="h-[300px] w-full" dir="ltr">
                                         {(monthlyReportLoading || monthlyReportFetching) ? (
-                                            <div className="h-full flex items-center justify-center text-gray-400">
+                                            <div className="h-full flex items-center justify-center text-gray-400 dark:text-text-tertiary">
                                                 جاري التحميل...
                                             </div>
                                         ) : monthlyReportError ? (
-                                            <div className="h-full flex items-center justify-center text-red-400">
+                                            <div className="h-full flex items-center justify-center text-red-400 dark:text-red-500">
                                                 حدث خطأ في جلب البيانات
                                             </div>
                                         ) : monthlyReport && monthlyReport.length > 0 ? (
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <BarChart data={monthlyReport} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-slate-200 dark:stroke-slate-700" />
                                                     <XAxis
                                                         dataKey="monthName"
                                                         axisLine={false}
                                                         tickLine={false}
                                                         tick={{ fill: '#64748b', fontSize: 10, fontWeight: 600 }}
+                                                        className="dark:[&_text]:fill-slate-400"
                                                         dy={10}
                                                     />
                                                     <YAxis
                                                         axisLine={false}
                                                         tickLine={false}
                                                         tick={{ fill: '#64748b', fontSize: 10, fontWeight: 600 }}
+                                                        className="dark:[&_text]:fill-slate-400"
                                                         tickFormatter={(value) => `${value}`}
                                                     />
                                                     <Tooltip
@@ -861,7 +861,7 @@ export default function BadDebtsPage() {
                                                 </BarChart>
                                             </ResponsiveContainer>
                                         ) : (
-                                            <div className="h-full flex items-center justify-center text-gray-400">
+                                            <div className="h-full flex items-center justify-center text-gray-400 dark:text-text-tertiary">
                                                 لا توجد بيانات للعرض
                                             </div>
                                         )}
@@ -869,11 +869,11 @@ export default function BadDebtsPage() {
                                 </div>
 
                                 {/* Pie Chart */}
-                                <div className="bg-white border border-slate-100 rounded-2xl p-8 shadow-sm">
+                                <div className="bg-white dark:bg-surface-primary border border-slate-100 dark:border-border-primary rounded-2xl p-8 shadow-sm">
                                     <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
                                         <div>
-                                            <h4 className="text-xl font-bold text-slate-800">توزيع البنود</h4>
-                                            <p className="text-sm text-slate-500">نسبة كل بند من إجمالي المصروفات</p>
+                                            <h4 className="text-xl font-bold text-slate-800 dark:text-text-primary">توزيع البنود</h4>
+                                            <p className="text-sm text-slate-500 dark:text-text-tertiary">نسبة كل بند من إجمالي المصروفات</p>
                                         </div>
                                     </div>
                                     <div className="h-[300px] w-full" dir="ltr">
@@ -898,7 +898,7 @@ export default function BadDebtsPage() {
                                                 </PieChart>
                                             </ResponsiveContainer>
                                         ) : (
-                                            <div className="h-full flex items-center justify-center text-gray-400">
+                                            <div className="h-full flex items-center justify-center text-gray-400 dark:text-text-tertiary">
                                                 لا توجد بيانات للعرض
                                             </div>
                                         )}
@@ -908,23 +908,23 @@ export default function BadDebtsPage() {
 
                             {/* Monthly Grid - like Payroll */}
                             <div className="mt-8">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4">📊 المصروفات الشهرية لعام {statsYear}</h3>
+                                <h3 className="text-lg font-bold text-gray-800 dark:text-text-primary mb-4">📊 المصروفات الشهرية لعام {statsYear}</h3>
                                 {(monthlyReportLoading || monthlyReportFetching) ? (
-                                    <div className="text-center py-10 text-gray-400">جاري التحميل...</div>
+                                    <div className="text-center py-10 text-gray-400 dark:text-text-tertiary">جاري التحميل...</div>
                                 ) : monthlyReportError ? (
-                                    <div className="text-center py-10 text-red-400">حدث خطأ في جلب البيانات</div>
+                                    <div className="text-center py-10 text-red-400 dark:text-red-500">حدث خطأ في جلب البيانات</div>
                                 ) : monthlyReport && monthlyReport.length > 0 ? (
                                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                         {monthlyReport.map(month => (
-                                            <div key={month.month} className="bg-slate-50 dark:bg-surface-secondary rounded-xl p-4 text-center hover:bg-red-50 transition-all duration-200 shadow-sm hover:shadow-md">
+                                            <div key={month.month} className="bg-slate-50 dark:bg-surface-secondary rounded-xl p-4 text-center hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 shadow-sm hover:shadow-md">
                                                 <p className="text-sm text-slate-500 dark:text-text-tertiary mb-1">{month.monthName}</p>
                                                 <p className="text-lg font-bold text-red-600">{formatCurrency(month.totalAmount)}</p>
-                                                <p className="text-xs text-gray-400">{month.count} عملية</p>
+                                                <p className="text-xs text-gray-400 dark:text-text-muted">{month.count} عملية</p>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="text-center py-10 text-gray-400">لا توجد بيانات لعام {statsYear}</div>
+                                    <div className="text-center py-10 text-gray-400 dark:text-text-tertiary">لا توجد بيانات لعام {statsYear}</div>
                                 )}
                             </div>
                         </div>
@@ -935,29 +935,29 @@ export default function BadDebtsPage() {
             {/* Category Modal */}
             {showCategoryModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+                    <div className="bg-white dark:bg-surface-primary rounded-xl shadow-xl max-w-md w-full">
                         <div className="bg-red-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h3 className="text-lg font-bold">{editingCategory ? 'تعديل بند' : 'إضافة بند جديد'}</h3>
-                            <button onClick={() => { setShowCategoryModal(false); setEditingCategory(null); }} className="text-white hover:text-gray-200">✕</button>
+                            <button onClick={() => { setShowCategoryModal(false); setEditingCategory(null); }} className="text-white hover:text-gray-200 dark:hover:text-gray-300">✕</button>
                         </div>
                         <div className="p-6 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">اسم البند *</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">اسم البند *</label>
                                 <input
                                     type="text"
                                     value={categoryForm.name}
                                     onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl"
+                                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
                                     placeholder="مثال: مصاريف الصيانة"
                                     required
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">الوصف</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">الوصف</label>
                                 <textarea
                                     value={categoryForm.description}
                                     onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl"
+                                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
                                     rows={3}
                                     placeholder="وصف اختياري للبند..."
                                 />
@@ -966,7 +966,7 @@ export default function BadDebtsPage() {
                         <div className="px-6 py-4 bg-slate-50 dark:bg-surface-secondary rounded-b-xl flex justify-end gap-3">
                             <button
                                 onClick={() => { setShowCategoryModal(false); setEditingCategory(null); }}
-                                className="px-4 py-2 text-slate-600 dark:text-text-secondary hover:text-gray-800"
+                                className="px-4 py-2 text-slate-600 dark:text-text-secondary hover:text-gray-800 dark:hover:text-text-primary"
                             >
                                 إلغاء
                             </button>
@@ -985,39 +985,39 @@ export default function BadDebtsPage() {
             {/* Pay Modal */}
             {showPayModal && selectedCategory && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+                    <div className="bg-white dark:bg-surface-primary rounded-xl shadow-xl max-w-md w-full">
                         <div className="bg-red-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h3 className="text-lg font-bold">💸 صرف مصروف - {selectedCategory.name}</h3>
-                            <button onClick={() => { setShowPayModal(false); setSelectedCategory(null); }} className="text-white hover:text-gray-200">✕</button>
+                            <button onClick={() => { setShowPayModal(false); setSelectedCategory(null); }} className="text-white hover:text-gray-200 dark:hover:text-gray-300">✕</button>
                         </div>
                         <div className="p-6 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">المبلغ *</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">المبلغ *</label>
                                 <input
                                     type="number"
                                     value={payForm.amount}
                                     onChange={(e) => setPayForm({ ...payForm, amount: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl"
+                                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
                                     placeholder="أدخل المبلغ"
                                     required
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">الوصف</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">الوصف</label>
                                 <input
                                     type="text"
                                     value={payForm.description}
                                     onChange={(e) => setPayForm({ ...payForm, description: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl"
+                                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
                                     placeholder="وصف المصروف..."
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">الخزينة *</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">الخزينة *</label>
                                 <select
                                     value={payForm.treasuryId}
                                     onChange={(e) => setPayForm({ ...payForm, treasuryId: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl"
+                                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
                                     required
                                 >
                                     <option value="">اختر الخزينة</option>
@@ -1029,11 +1029,11 @@ export default function BadDebtsPage() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">ملاحظات</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">ملاحظات</label>
                                 <textarea
                                     value={payForm.notes}
                                     onChange={(e) => setPayForm({ ...payForm, notes: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl"
+                                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
                                     rows={2}
                                 />
                             </div>
@@ -1041,7 +1041,7 @@ export default function BadDebtsPage() {
                         <div className="px-6 py-4 bg-slate-50 dark:bg-surface-secondary rounded-b-xl flex justify-end gap-3">
                             <button
                                 onClick={() => { setShowPayModal(false); setSelectedCategory(null); }}
-                                className="px-4 py-2 text-slate-600 dark:text-text-secondary hover:text-gray-800"
+                                className="px-4 py-2 text-slate-600 dark:text-text-secondary hover:text-gray-800 dark:hover:text-text-primary"
                             >
                                 إلغاء
                             </button>
@@ -1060,7 +1060,7 @@ export default function BadDebtsPage() {
             {/* Preview Modal */}
             {showPreviewModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                    <div className="bg-white dark:bg-surface-primary rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                         <div className="bg-red-600 text-white px-6 py-4 flex justify-between items-center">
                             <h3 className="text-lg font-bold flex items-center gap-2">
                                 <FileText className="w-5 h-5" />
@@ -1074,12 +1074,12 @@ export default function BadDebtsPage() {
                                     <Printer className="w-5 h-5" />
                                     طباعة
                                 </button>
-                                <button onClick={() => setShowPreviewModal(false)} className="text-white hover:text-gray-200">
+                                <button onClick={() => setShowPreviewModal(false)} className="text-white hover:text-gray-200 dark:hover:text-gray-300">
                                     <X className="w-6 h-6" />
                                 </button>
                             </div>
                         </div>
-                        <div className="overflow-auto flex-1 p-4 bg-slate-100 dark:bg-surface-hover">
+                        <div className="overflow-auto flex-1 p-4 bg-slate-100 dark:bg-surface-secondary">
                             <div className="transform scale-75 origin-top">
                                 <BadDebtMonthlyReport
                                     expenses={expenses}

@@ -82,7 +82,7 @@ export default function WarehouseDispatchPage() {
       case 'STOCK':
         return <Package className="w-5 h-5 text-purple-600" />;
       default:
-        return <Bell className="w-5 h-5 text-gray-600" />;
+        return <Bell className="w-5 h-5 text-gray-600 dark:text-text-secondary" />;
     }
   };
 
@@ -251,15 +251,15 @@ export default function WarehouseDispatchPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400';
       case 'IN_PROGRESS':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400';
       case 'COMPLETED':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400';
       case 'CANCELLED':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-surface-secondary text-gray-800 dark:text-text-primary';
     }
   };
 
@@ -326,7 +326,7 @@ export default function WarehouseDispatchPage() {
           <div className="relative">
             <button
               onClick={() => setShowNotificationPanel(!showNotificationPanel)}
-              className="relative p-3 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md hover:border-orange-300 transition-all duration-200"
+              className="relative p-3 bg-white dark:bg-surface-primary rounded-xl shadow-sm border border-gray-200 dark:border-border-primary hover:shadow-md hover:border-orange-300 dark:hover:border-orange-500 transition-all duration-200"
               aria-label="الإشعارات"
             >
               <Bell className="w-6 h-6 text-orange-600" />
@@ -339,7 +339,7 @@ export default function WarehouseDispatchPage() {
 
             {/* Notification Panel */}
             {showNotificationPanel && (
-              <div className="absolute left-0 top-14 w-96 bg-white rounded-2xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+              <div className="absolute left-0 top-14 w-96 bg-white dark:bg-surface-primary rounded-2xl shadow-xl border border-gray-200 dark:border-border-primary z-50 overflow-hidden">
                 {/* Panel Header */}
                 <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-4 text-white">
                   <div className="flex items-center justify-between mb-3">
@@ -382,7 +382,7 @@ export default function WarehouseDispatchPage() {
 
                 {/* Mark All As Read */}
                 {stockNotificationsCount > 0 && (
-                  <div className="p-2 border-b border-gray-100 bg-gray-50">
+                  <div className="p-2 border-b border-gray-100 dark:border-border-primary bg-gray-50 dark:bg-surface-secondary">
                     <button
                       onClick={handleMarkAllAsRead}
                       className="w-full px-3 py-2 text-sm text-orange-600 hover:bg-orange-50 rounded-lg flex items-center justify-center gap-2 transition-colors"
@@ -396,51 +396,51 @@ export default function WarehouseDispatchPage() {
                 {/* Notifications List */}
                 <div className="max-h-80 overflow-y-auto">
                   {isLoadingNotifications ? (
-                    <div className="p-6 text-center text-gray-500">
+                    <div className="p-6 text-center text-gray-500 dark:text-text-tertiary">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
                       <p className="mt-3">جاري التحميل...</p>
                     </div>
                   ) : notifications.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500">
-                      <Package className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                    <div className="p-8 text-center text-gray-500 dark:text-text-tertiary">
+                      <Package className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-text-tertiary" />
                       <p className="font-medium">لا توجد إشعارات</p>
-                      <p className="text-sm text-gray-400 mt-1">ستظهر هنا إشعارات المخزن الجديدة</p>
+                      <p className="text-sm text-gray-400 dark:text-text-muted mt-1">ستظهر هنا إشعارات المخزن الجديدة</p>
                     </div>
                   ) : (
-                    <div className="divide-y divide-gray-100">
+                    <div className="divide-y divide-gray-100 dark:divide-border-primary">
                       {notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
-                            !notification.isRead ? 'bg-orange-50 border-r-4 border-orange-500' : ''
+                          className={`p-4 hover:bg-gray-50 dark:hover:bg-surface-hover transition-colors cursor-pointer ${
+                            !notification.isRead ? 'bg-orange-50 dark:bg-orange-900/20 border-r-4 border-orange-500 dark:border-orange-400' : ''
                           }`}
                           onClick={() => handleNotificationClick(notification)}
                         >
                           <div className="flex items-start gap-3">
                             <div className={`p-2 rounded-xl ${
-                              !notification.isRead ? 'bg-orange-100' : 'bg-gray-100'
+                              !notification.isRead ? 'bg-orange-100 dark:bg-orange-900/30' : 'bg-gray-100 dark:bg-surface-secondary'
                             }`}>
                               {getNotificationIcon(notification.type)}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
                                 <h4 className={`text-sm font-medium truncate ${
-                                  !notification.isRead ? 'text-gray-900' : 'text-gray-700'
+                                  !notification.isRead ? 'text-gray-900 dark:text-text-primary' : 'text-gray-700 dark:text-text-secondary'
                                 }`}>
                                   {notification.title}
                                 </h4>
                                 {!notification.isRead && (
-                                  <div className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0"></div>
+                                  <div className="w-2 h-2 bg-orange-500 dark:bg-orange-400 rounded-full flex-shrink-0"></div>
                                 )}
                               </div>
                               
                               {notification.message && (
-                                <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                                <p className="text-sm text-gray-600 dark:text-text-secondary mb-2 line-clamp-2">
                                   {notification.message}
                                 </p>
                               )}
                               
-                              <span className="text-xs text-gray-400">
+                              <span className="text-xs text-gray-400 dark:text-text-tertiary">
                                 {formatNotificationTime(notification.createdAt)}
                               </span>
                             </div>
@@ -453,7 +453,7 @@ export default function WarehouseDispatchPage() {
                                     e.stopPropagation();
                                     handleMarkAsRead(notification.id);
                                   }}
-                                  className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                                  className="p-1.5 text-gray-400 dark:text-text-tertiary hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors"
                                   title="تمييز كمقروء"
                                 >
                                   <Check className="w-4 h-4" />
@@ -464,7 +464,7 @@ export default function WarehouseDispatchPage() {
                                   e.stopPropagation();
                                   handleDeleteNotification(notification.id);
                                 }}
-                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                className="p-1.5 text-gray-400 dark:text-text-tertiary hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                 title="حذف"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -478,10 +478,10 @@ export default function WarehouseDispatchPage() {
                 </div>
 
                 {/* Footer */}
-                <div className="p-3 border-t border-gray-200 bg-gray-50 text-center">
+                <div className="p-3 border-t border-gray-200 dark:border-border-primary bg-gray-50 dark:bg-surface-secondary text-center">
                   <a
                     href="/notifications"
-                    className="text-sm text-orange-600 hover:text-orange-800 font-medium"
+                    className="text-sm text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300 font-medium"
                   >
                     عرض جميع الإشعارات
                   </a>
@@ -589,7 +589,7 @@ export default function WarehouseDispatchPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
+      <div className="bg-white dark:bg-surface-primary p-6 rounded-lg shadow-sm border border-slate-200 dark:border-border-primary mb-6">
         <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
           <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -600,11 +600,11 @@ export default function WarehouseDispatchPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Search by Invoice Number */}
           <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
               البحث برقم الفاتورة
             </label>
             <svg
-              className="absolute right-3 top-9 text-gray-400 w-5 h-5"
+              className="absolute right-3 top-9 text-gray-400 dark:text-text-tertiary w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -621,17 +621,17 @@ export default function WarehouseDispatchPage() {
               placeholder="رقم الفاتورة..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              className="w-full pr-10 pl-4 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900/50 transition-all"
             />
           </div>
 
           {/* Search by Customer Name */}
           <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
               البحث باسم العميل
             </label>
             <svg
-              className="absolute right-3 top-9 text-gray-400 w-5 h-5"
+              className="absolute right-3 top-9 text-gray-400 dark:text-text-tertiary w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -648,17 +648,17 @@ export default function WarehouseDispatchPage() {
               placeholder="اسم العميل..."
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
-              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              className="w-full pr-10 pl-4 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900/50 transition-all"
             />
           </div>
 
           {/* Search by Phone */}
           <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
               البحث برقم الهاتف
             </label>
             <svg
-              className="absolute right-3 top-9 text-gray-400 w-5 h-5"
+              className="absolute right-3 top-9 text-gray-400 dark:text-text-tertiary w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -675,19 +675,19 @@ export default function WarehouseDispatchPage() {
               placeholder="رقم الهاتف..."
               value={customerPhone}
               onChange={(e) => setCustomerPhone(e.target.value)}
-              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              className="w-full pr-10 pl-4 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900/50 transition-all"
             />
           </div>
 
           {/* Status Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
               الحالة
             </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              className="w-full px-4 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900/50 transition-all"
             >
               <option value="">جميع الحالات</option>
               <option value="PENDING">معلقة</option>
@@ -698,27 +698,27 @@ export default function WarehouseDispatchPage() {
 
           {/* Start Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
               من تاريخ
             </label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              className="w-full px-4 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900/50 transition-all"
             />
           </div>
 
           {/* End Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
               إلى تاريخ
             </label>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              className="w-full px-4 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900/50 transition-all"
             />
           </div>
         </div>
@@ -736,7 +736,7 @@ export default function WarehouseDispatchPage() {
                 setEndDate('');
                 setCurrentPage(1);
               }}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center gap-2"
+              className="px-4 py-2 text-sm text-gray-600 dark:text-text-secondary hover:text-gray-900 dark:hover:text-text-primary bg-gray-100 dark:bg-surface-secondary hover:bg-gray-200 dark:hover:bg-surface-hover rounded-lg transition-colors flex items-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -748,38 +748,38 @@ export default function WarehouseDispatchPage() {
       </div>
 
       {/* Orders Table */}
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+      <div className="bg-white dark:bg-surface-primary rounded-lg shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-surface-secondary">
               <tr>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
                   رقم الأمر
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
                   رقم الفاتورة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
                   العميل
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
                   الشركة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
                   الحالة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
                   التاريخ
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
                   الإجراءات
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-surface-primary divide-y divide-gray-200 dark:divide-border-primary">
               {(activeTab === 'dispatch' ? isLoadingOrders : isLoadingReturns) ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={7} className="px-6 py-4 text-center text-gray-500 dark:text-text-tertiary">
                     <div className="flex items-center justify-center gap-2">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600"></div>
                       جاري التحميل...
@@ -789,26 +789,26 @@ export default function WarehouseDispatchPage() {
               ) : activeTab === 'dispatch' ? (
                 !ordersData?.data?.dispatchOrders || ordersData?.data?.dispatchOrders?.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500 dark:text-text-tertiary">
                       <p className="font-medium">لا توجد أوامر صرف</p>
                     </td>
                   </tr>
                 ) : (
                   ordersData?.data?.dispatchOrders?.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-surface-hover">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-text-primary">
                         #{formatArabicNumber(order.id)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
                         {order.sale?.invoiceNumber || `#${order.saleId}`}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
                         {order.sale?.customer?.name || 'غير محدد'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
                         <div className="flex flex-col">
                           <span className="font-medium text-orange-600">{order.sale?.company?.name}</span>
-                          <span className="text-xs text-gray-500">{order.sale?.company?.code}</span>
+                          <span className="text-xs text-gray-500 dark:text-text-tertiary">{order.sale?.company?.code}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -820,7 +820,7 @@ export default function WarehouseDispatchPage() {
                           {getStatusText(order.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
                         {new Date(order.createdAt).toLocaleDateString('ar-LY')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -844,26 +844,26 @@ export default function WarehouseDispatchPage() {
               ) : (
                 !returnsData?.data?.returnOrders || returnsData?.data?.returnOrders?.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500 dark:text-text-tertiary">
                       <p className="font-medium">لا توجد طلبات استرجاع</p>
                     </td>
                   </tr>
                 ) : (
                   returnsData?.data?.returnOrders?.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-surface-hover">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-text-primary">
                         #{formatArabicNumber(order.id)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
                         {order.saleReturn?.returnNumber || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
                         {order.saleReturn?.customer?.name || 'غير محدد'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
                         <div className="flex flex-col">
                           <span className="font-medium text-blue-600">{order.company?.name}</span>
-                          <span className="text-xs text-gray-500">{order.company?.code}</span>
+                          <span className="text-xs text-gray-500 dark:text-text-tertiary">{order.company?.code}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -875,7 +875,7 @@ export default function WarehouseDispatchPage() {
                           {getStatusText(order.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
                         {new Date(order.createdAt).toLocaleDateString('ar-LY')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -908,19 +908,19 @@ export default function WarehouseDispatchPage() {
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-2 border border-gray-300 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-gray-700 dark:text-text-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-surface-hover"
               >
                 السابق
               </button>
 
-              <span className="px-3 py-2 text-sm text-gray-700">
+              <span className="px-3 py-2 text-sm text-gray-700 dark:text-text-secondary">
                 صفحة {formatArabicNumber(currentPage)} من {formatArabicNumber((activeTab === 'dispatch' ? ordersData : returnsData)?.data?.pagination?.pages || 0)}
               </span>
 
               <button
                 onClick={() => setCurrentPage((prev) => Math.min(prev + 1, (activeTab === 'dispatch' ? ordersData : returnsData)?.data?.pagination?.pages || 0))}
                 disabled={currentPage === ((activeTab === 'dispatch' ? ordersData : returnsData)?.data?.pagination?.pages || 0)}
-                className="px-3 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-2 border border-gray-300 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-gray-700 dark:text-text-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-surface-hover"
               >
                 التالي
               </button>
@@ -931,17 +931,17 @@ export default function WarehouseDispatchPage() {
 
       {/* Details Modal */}
       {showDetailsModal && selectedOrder && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+        <div className="fixed inset-0 bg-gray-600 dark:bg-black/50 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border border-slate-200 dark:border-border-primary w-11/12 max-w-4xl shadow-lg rounded-md bg-white dark:bg-surface-primary">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">تفاصيل أمر الصرف #{formatArabicNumber(selectedOrder.id)}</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-text-primary">تفاصيل أمر الصرف #{formatArabicNumber(selectedOrder.id)}</h3>
               <button
                 onClick={() => {
                   setShowDetailsModal(false);
                   setSelectedOrder(null);
                   setNotes('');
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 dark:text-text-tertiary hover:text-gray-600 dark:hover:text-text-primary"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -950,22 +950,22 @@ export default function WarehouseDispatchPage() {
             </div>
 
             {/* Order Info */}
-            <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+            <div className="mb-6 bg-gray-50 dark:bg-surface-secondary p-4 rounded-lg">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-600">رقم الفاتورة</p>
-                  <p className="font-semibold">{selectedOrder.sale?.invoiceNumber || `#${selectedOrder.saleId}`}</p>
+                  <p className="text-sm text-gray-600 dark:text-text-secondary">رقم الفاتورة</p>
+                  <p className="font-semibold dark:text-text-primary">{selectedOrder.sale?.invoiceNumber || `#${selectedOrder.saleId}`}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">العميل</p>
-                  <p className="font-semibold">{selectedOrder.sale?.customer?.name || 'غير محدد'}</p>
+                  <p className="text-sm text-gray-600 dark:text-text-secondary">العميل</p>
+                  <p className="font-semibold dark:text-text-primary">{selectedOrder.sale?.customer?.name || 'غير محدد'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">الشركة</p>
-                  <p className="font-semibold">{selectedOrder.sale?.company?.name}</p>
+                  <p className="text-sm text-gray-600 dark:text-text-secondary">الشركة</p>
+                  <p className="font-semibold dark:text-text-primary">{selectedOrder.sale?.company?.name}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">الحالة</p>
+                  <p className="text-sm text-gray-600 dark:text-text-secondary">الحالة</p>
                   <span
                     className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
                       selectedOrder.status
@@ -979,27 +979,27 @@ export default function WarehouseDispatchPage() {
 
             {/* Products List */}
             <div className="mb-6">
-              <h4 className="font-semibold text-lg mb-4 text-gray-800">الأصناف المطلوبة:</h4>
-              <div className="border rounded-lg overflow-hidden shadow-sm">
+              <h4 className="font-semibold text-lg mb-4 text-gray-800 dark:text-text-primary">الأصناف المطلوبة:</h4>
+              <div className="border border-slate-200 dark:border-border-primary rounded-lg overflow-hidden shadow-sm">
                 <table className="w-full">
-                  <thead className="bg-gradient-to-r from-orange-50 to-orange-100">
+                  <thead className="bg-gradient-to-r from-orange-50 dark:from-orange-900/20 to-orange-100 dark:to-orange-900/30">
                     <tr>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">الصنف</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">الكود</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">الشركة المصدرة</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">الكمية بالصناديق</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">إجمالي الوحدات</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-text-secondary uppercase tracking-wider">الصنف</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-text-secondary uppercase tracking-wider">الكود</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-text-secondary uppercase tracking-wider">الشركة المصدرة</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-text-secondary uppercase tracking-wider">الكمية بالصناديق</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-text-secondary uppercase tracking-wider">إجمالي الوحدات</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
+                  <tbody className="divide-y divide-gray-200 dark:divide-border-primary bg-white dark:bg-surface-primary">
                     {selectedOrder.sale?.lines?.map((line, idx) => (
-                      <tr key={line.id} className={`hover:bg-orange-50 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">{line.product?.name}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600 font-mono">{line.product?.sku}</td>
+                      <tr key={line.id} className={`hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors ${idx % 2 === 0 ? 'bg-white dark:bg-surface-primary' : 'bg-gray-50 dark:bg-surface-secondary'}`}>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-text-primary">{line.product?.name}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-text-secondary font-mono">{line.product?.sku}</td>
                         <td className="px-4 py-3 text-sm">
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${line.isFromParentCompany
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-orange-100 text-orange-800'
+                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
+                            : 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-400'
                             }`}>
                             {line.isFromParentCompany ? 'التقازي' : selectedOrder.sale?.company?.name || 'الإمارات'}
                           </span>
@@ -1024,12 +1024,12 @@ export default function WarehouseDispatchPage() {
             {/* Notes */}
             {selectedOrder.status !== 'COMPLETED' && selectedOrder.status !== 'CANCELLED' && (
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">ملاحظات (اختياري)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">ملاحظات (اختياري)</label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900/50 transition-all"
                   placeholder="أضف ملاحظات حول عملية الصرف..."
                 />
               </div>
@@ -1043,7 +1043,7 @@ export default function WarehouseDispatchPage() {
                   setSelectedOrder(null);
                   setNotes('');
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 border border-gray-300 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-gray-700 dark:text-text-primary hover:bg-gray-50 dark:hover:bg-surface-hover transition-colors"
               >
                 إغلاق
               </button>
@@ -1072,17 +1072,17 @@ export default function WarehouseDispatchPage() {
       )}
       {/* Return Order Details Modal */}
       {showReturnDetailsModal && selectedReturnOrder && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+        <div className="fixed inset-0 bg-gray-600 dark:bg-black/50 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border border-slate-200 dark:border-border-primary w-11/12 max-w-4xl shadow-lg rounded-md bg-white dark:bg-surface-primary">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">تفاصيل استلام المردودات</h3>
+              <h3 className="text-xl font-bold dark:text-text-primary">تفاصيل استلام المردودات</h3>
               <button
                 onClick={() => {
                   setShowReturnDetailsModal(false);
                   setSelectedReturnOrder(null);
                   setNotes('');
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 dark:text-text-tertiary hover:text-gray-600 dark:hover:text-text-primary"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1090,41 +1090,41 @@ export default function WarehouseDispatchPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-lg text-right">
+            <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 dark:bg-surface-secondary rounded-lg text-right">
               <div>
-                <p className="text-sm text-gray-600">رقم المردود</p>
-                <p className="font-bold">{selectedReturnOrder.saleReturn?.returnNumber || `#${selectedReturnOrder.saleReturnId}`}</p>
+                <p className="text-sm text-gray-600 dark:text-text-secondary">رقم المردود</p>
+                <p className="font-bold dark:text-text-primary">{selectedReturnOrder.saleReturn?.returnNumber || `#${selectedReturnOrder.saleReturnId}`}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">العميل</p>
-                <p className="font-bold">{selectedReturnOrder.saleReturn?.customer?.name || 'غير محدد'}</p>
+                <p className="text-sm text-gray-600 dark:text-text-secondary">العميل</p>
+                <p className="font-bold dark:text-text-primary">{selectedReturnOrder.saleReturn?.customer?.name || 'غير محدد'}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">الفاتورة الأصلية</p>
-                <p className="font-bold">{selectedReturnOrder.saleReturn?.sale?.invoiceNumber || '-'}</p>
+                <p className="text-sm text-gray-600 dark:text-text-secondary">الفاتورة الأصلية</p>
+                <p className="font-bold dark:text-text-primary">{selectedReturnOrder.saleReturn?.sale?.invoiceNumber || '-'}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">الشركة</p>
-                <p className="font-bold text-blue-600">{selectedReturnOrder.company?.name}</p>
+                <p className="text-sm text-gray-600 dark:text-text-secondary">الشركة</p>
+                <p className="font-bold text-blue-600 dark:text-blue-400">{selectedReturnOrder.company?.name}</p>
               </div>
             </div>
 
-            <h4 className="font-bold mb-3 text-right">الأصناف المردودة:</h4>
-            <div className="border rounded-lg overflow-hidden mb-6">
+            <h4 className="font-bold mb-3 text-right dark:text-text-primary">الأصناف المردودة:</h4>
+            <div className="border border-slate-200 dark:border-border-primary rounded-lg overflow-hidden mb-6">
               <table className="w-full text-right">
-                <thead className="bg-blue-50">
+                <thead className="bg-blue-50 dark:bg-blue-900/20">
                   <tr>
-                    <th className="px-4 py-2 border-b">الصنف</th>
-                    <th className="px-4 py-2 border-b">الكود</th>
-                    <th className="px-4 py-2 border-b">الكمية</th>
+                    <th className="px-4 py-2 border-b border-slate-200 dark:border-border-primary dark:text-text-secondary">الصنف</th>
+                    <th className="px-4 py-2 border-b border-slate-200 dark:border-border-primary dark:text-text-secondary">الكود</th>
+                    <th className="px-4 py-2 border-b border-slate-200 dark:border-border-primary dark:text-text-secondary">الكمية</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="bg-white dark:bg-surface-primary">
                   {selectedReturnOrder.saleReturn?.lines?.map((line) => (
-                    <tr key={line.id} className="border-b">
-                      <td className="px-4 py-2">{line.product?.name}</td>
-                      <td className="px-4 py-2 font-mono">{line.product?.sku}</td>
-                      <td className="px-4 py-2 font-bold text-blue-600">
+                    <tr key={line.id} className="border-b border-slate-200 dark:border-border-primary">
+                      <td className="px-4 py-2 dark:text-text-primary">{line.product?.name}</td>
+                      <td className="px-4 py-2 font-mono dark:text-text-secondary">{line.product?.sku}</td>
+                      <td className="px-4 py-2 font-bold text-blue-600 dark:text-blue-400">
                         {formatArabicNumber(Number(line.qty))} {line.product?.unit || 'صندوق'}
                       </td>
                     </tr>
@@ -1134,12 +1134,12 @@ export default function WarehouseDispatchPage() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">ملاحظات المخزن</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2 text-right">ملاحظات المخزن</label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-right"
+                className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 text-right transition-all"
                 placeholder="أضف ملاحظات عند الاستلام..."
               />
             </div>
@@ -1151,7 +1151,7 @@ export default function WarehouseDispatchPage() {
                   setSelectedReturnOrder(null);
                   setNotes('');
                 }}
-                className="px-4 py-2 border rounded-lg"
+                className="px-4 py-2 border border-gray-300 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-gray-700 dark:text-text-primary hover:bg-gray-50 dark:hover:bg-surface-hover transition-colors"
               >
                 إغلاق
               </button>

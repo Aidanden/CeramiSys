@@ -1,4 +1,4 @@
-import { PrismaClient, ProductGroup, Prisma } from '../generated/client';
+import { PrismaClient, ProductGroup, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -170,11 +170,11 @@ export class ProductGroupService {
           : null,
         suppliers: data.supplierIds
           ? {
-              create: data.supplierIds.map((supplierId, index) => ({
-                supplierId,
-                isPrimary: index === 0 && !data.supplierId, // أول مورد يكون رئيسي إذا لم يتم تحديد مورد رئيسي
-              })),
-            }
+            create: data.supplierIds.map((supplierId, index) => ({
+              supplierId,
+              isPrimary: index === 0 && !data.supplierId, // أول مورد يكون رئيسي إذا لم يتم تحديد مورد رئيسي
+            })),
+          }
           : undefined,
       },
     });

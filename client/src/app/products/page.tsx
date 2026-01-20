@@ -1475,12 +1475,12 @@ const ProductsPage = () => {
       {/* Create Product Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+          <div className="bg-white dark:bg-surface-primary rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">إضافة صنف جديد</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-text-primary">إضافة صنف جديد</h3>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 dark:text-text-tertiary hover:text-gray-600 dark:hover:text-text-secondary"
               >
                 ×
               </button>
@@ -1519,33 +1519,33 @@ const ProductsPage = () => {
             }}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                     رمز الصنف *
                   </label>
                   <input
                     type="text"
                     name="sku"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                     placeholder="أدخل رمز الصنف"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                     اسم الصنف *
                   </label>
                   <input
                     type="text"
                     name="name"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                     placeholder="أدخل اسم الصنف"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                     الشركة *
                   </label>
                   {currentUser?.isSystemUser ? (
@@ -1554,7 +1554,7 @@ const ProductsPage = () => {
                       required
                       defaultValue={currentUser?.companyId || ''}
                       disabled={isLoadingCompanies}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all disabled:bg-gray-50 dark:disabled:bg-surface-elevated disabled:cursor-not-allowed"
                     >
                       <option value="">
                         {isLoadingCompanies ? 'جاري تحميل الشركات...' : 'اختر الشركة'}
@@ -1572,9 +1572,9 @@ const ProductsPage = () => {
                         type="text"
                         value={companiesData?.data?.companies?.find(c => c.id === currentUser?.companyId)?.name || 'جاري التحميل...'}
                         readOnly
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600 cursor-not-allowed"
+                        className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-md bg-gray-50 dark:bg-surface-elevated text-gray-600 dark:text-text-tertiary cursor-not-allowed"
                       />
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-text-tertiary mt-1">
                         سيتم إضافة الصنف لشركتك فقط
                       </p>
                     </>
@@ -1582,12 +1582,12 @@ const ProductsPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                     مجموعة الأصناف (اختياري)
                   </label>
                   <select
                     name="groupId"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                   >
                     <option value="">لا توجد مجموعة</option>
                     {groupsData?.map((group) => (
@@ -1598,19 +1598,19 @@ const ProductsPage = () => {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-text-tertiary mt-1">
                     عند اختيار مجموعة، سيتم ربط الصنف بالمورد الافتراضي للمجموعة
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                     الوحدة
                   </label>
                   <select
                     name="unit"
                     value={createUnit}
                     onChange={(e) => setCreateUnit(e.target.value as 'صندوق' | 'قطعة' | 'كيس' | 'لتر')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                   >
                     <option value="صندوق">صندوق</option>
                     <option value="قطعة">قطعة</option>
@@ -1622,7 +1622,7 @@ const ProductsPage = () => {
                 {/* حقل unitsPerBox يظهر فقط للصندوق */}
                 {createUnit === 'صندوق' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                       عدد الوحدات في الصندوق (بالمتر المربع)
                     </label>
                     <input
@@ -1630,14 +1630,14 @@ const ProductsPage = () => {
                       name="unitsPerBox"
                       step="0.01"
                       min="0.01"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                       placeholder="مثال: 1.44 (1.44 متر مربع في الصندوق)"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                     سعر البيع (للمتر الواحد)
                   </label>
                   <input
@@ -1645,16 +1645,16 @@ const ProductsPage = () => {
                     name="sellPrice"
                     step="0.01"
                     min="0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                     placeholder="0.00"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-text-tertiary mt-1">
                     أدخل سعر المتر الواحد (ليس سعر الصندوق)
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">
                     {createUnit === 'صندوق' ? 'عدد الصناديق الأولية' : `الكمية الأولية (${createUnit})`}
                   </label>
                   <input
@@ -1662,10 +1662,10 @@ const ProductsPage = () => {
                     name="initialBoxes"
                     min="0"
                     step="0.01"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
                     placeholder={createUnit === 'صندوق' ? 'عدد الصناديق' : `الكمية بال${createUnit}`}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-text-tertiary mt-1">
                     {createUnit === 'صندوق'
                       ? 'إذا تركت هذا الحقل فارغاً، سيتم إنشاء الصنف بمخزون 0 صندوق'
                       : `إذا تركت هذا الحقل فارغاً، سيتم إنشاء الصنف بمخزون 0 ${createUnit}`
@@ -1678,7 +1678,7 @@ const ProductsPage = () => {
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+                  className="px-4 py-2 text-gray-700 dark:text-text-secondary bg-gray-200 dark:bg-surface-elevated rounded-md hover:bg-gray-300 dark:hover:bg-surface-hover transition-colors"
                 >
                   إلغاء
                 </button>
