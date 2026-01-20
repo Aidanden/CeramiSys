@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     Search,
     RefreshCw,
@@ -12,18 +12,31 @@ import {
     CreditCard,
     BarChart3,
     Wallet,
-    ArrowLeft,
     DollarSign,
-    AlertCircle
+    AlertCircle,
+    Bookmark,
+    CheckCircle,
+    Check,
+    HelpCircle,
+    ChevronLeft
 } from 'lucide-react';
 import {
     useGetProductsWithCostInfoQuery,
     useGetProductCostInfoQuery,
-    useCalculateCostWithCustomRateMutation,
     useUpdateProductCostMutation,
     ProductWithCostInfo
 } from '@/state/productCostApi';
 import { formatArabicNumber, formatArabicCurrency } from '@/utils/formatArabicNumbers';
+
+// Helper for Arabic date formatting
+const formatArabicDate = (dateString: string) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('ar-LY', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+};
 
 // Currency display helper
 const getCurrencyLabel = (currency: string) => {
@@ -63,12 +76,11 @@ export default function ProductCostPage() {
         { skip: !selectedProductId }
     );
 
-    const [calculateWithCustomRate, { isLoading: calculating }] = useCalculateCostWithCustomRateMutation();
     const [updateProductCost, { isLoading: updating }] = useUpdateProductCostMutation();
 
     // Computed values
     const products = productsData?.products || [];
-    const pagination = productsData?.pagination;
+    const filteredProducts = products;
 
     // Calculate cost with custom rate
     const calculatedCost = useMemo(() => {
@@ -80,18 +92,13 @@ export default function ProductCostPage() {
         const qty = costInfo.lastPurchase.qty;
 
         return {
-            totalInLYD: Math.round(totalInLYD * 100) / 100,
-            costPerUnit: qty > 0 ? Math.round((totalInLYD / qty) * 10000) / 10000 : 0,
-            exchangeRate: rate
+            totalInLYD,
+            costPerUnit: qty > 0 ? totalInLYD / qty : 0,
+            exchangeRateUsed: rate,
+            percentage: costInfo.lastPurchase.expenseSharePercentage || 0,
+            expenseSharePerUnit: qty > 0 ? costInfo.lastPurchase.expenseShareAmount / qty : 0
         };
     }, [costInfo, customExchangeRate]);
-
-    // Handlers
-    const handleSelectProduct = (product: ProductWithCostInfo) => {
-        setSelectedProductId(product.id);
-        setCustomExchangeRate(null);
-        setSuccessMessage(null);
-    };
 
     const handleUpdateCost = async () => {
         if (!costInfo || !costInfo.lastPurchase || !calculatedCost) return;
@@ -101,7 +108,7 @@ export default function ProductCostPage() {
                 productId: costInfo.productId,
                 newCost: calculatedCost.costPerUnit,
                 purchaseId: costInfo.lastPurchase.id,
-                exchangeRateUsed: calculatedCost.exchangeRate
+                exchangeRateUsed: calculatedCost.exchangeRateUsed
             }).unwrap();
 
             setSuccessMessage(result.message);
@@ -115,453 +122,350 @@ export default function ProductCostPage() {
     };
 
     return (
-        <div className="p-6 max-w-7xl mx-auto" dir="rtl">
+        <div className="p-6 max-w-7xl mx-auto min-h-screen bg-transparent" dir="rtl">
             {/* Header */}
-            <div className="mb-8">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
-                            <BarChart3 className="w-8 h-8" />
+            <div className="mb-8 relative">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-50 dark:border-emerald-800/20">
+                            <Bookmark className="w-8 h-8" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900">إدارة تكلفة الأصناف</h1>
-                            <p className="text-gray-600">احتساب وتحديث تكلفة الأصناف بناءً على آخر فاتورة مشتريات</p>
+                            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">تكلفة المنتج</h1>
+                            <p className="text-slate-600 dark:text-slate-400 mt-1 text-lg">تحليل وعرض تفاصيل تكلفة صنف محدد بناءً على آخر فاتورة</p>
                         </div>
                     </div>
                     <button
                         onClick={() => { refetchProducts(); if (selectedProductId) refetchCostInfo(); }}
-                        className="flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg transition-all"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-slate-200 dark:border-slate-700 shadow-sm text-sm font-bold text-slate-700 dark:text-white bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 group"
                     >
-                        <RefreshCw className="w-4 h-4" />
-                        تحديث البيانات
+                        <RefreshCw className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                        تحديث القائمة
                     </button>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Products List */}
-                <div className="lg:col-span-1 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col h-[calc(100vh-200px)]">
-                    <div className="p-4 border-b border-gray-200 bg-gray-50">
-                        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2 mb-3">
-                            <Package className="w-5 h-5 text-gray-500" />
+                {/* Left Column: Product Search & List */}
+                <div className="lg:col-span-1">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border-2 border-slate-100 dark:border-slate-700 p-6">
+                        <h2 className="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-3">
+                            <Bookmark className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                             قائمة الأصناف
                         </h2>
-                        <div className="relative">
-                            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+
+                        <div className="mb-6 relative">
+                            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                             <input
                                 type="text"
-                                placeholder="ابحث بالاسم أو الكود..."
                                 value={searchTerm}
-                                onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-                                className="w-full pr-9 pl-4 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="بحث عن صنف..."
+                                className="w-full pr-10 pl-4 py-2.5 border-2 border-slate-100 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-900 text-slate-800 dark:text-white outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium"
                             />
                         </div>
-                    </div>
 
-                    <div className="flex-1 overflow-y-auto">
-                        {productsLoading ? (
-                            <div className="flex items-center justify-center py-12">
-                                <RefreshCw className="w-6 h-6 text-blue-500 animate-spin" />
-                            </div>
-                        ) : products.length === 0 ? (
-                            <div className="text-center py-12 text-gray-500">
-                                <Package className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-                                <p>لا توجد أصناف</p>
-                            </div>
-                        ) : (
-                            <div className="divide-y divide-gray-100">
-                                {products.map((product) => (
+                        <div className="space-y-2 max-h-[600px] overflow-y-auto custom-scrollbar">
+                            {productsLoading ? (
+                                <div className="text-center py-12">
+                                    <RefreshCw className="w-8 h-8 text-emerald-600 animate-spin mx-auto" />
+                                </div>
+                            ) : filteredProducts.length === 0 ? (
+                                <div className="text-center py-12 bg-slate-50 dark:bg-slate-900 rounded-2xl border-2 border-dashed border-slate-100 dark:border-slate-700">
+                                    <Package className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                                    <p className="text-slate-400 dark:text-slate-500 font-bold">لم يتم العثور على نتائج</p>
+                                </div>
+                            ) : (
+                                filteredProducts.map((product: ProductWithCostInfo) => (
                                     <button
                                         key={product.id}
-                                        onClick={() => handleSelectProduct(product)}
-                                        className={`w-full text-right p-3 hover:bg-gray-50 transition-all ${selectedProductId === product.id ? 'bg-blue-50 border-r-4 border-blue-600' : 'border-r-4 border-transparent'
+                                        onClick={() => {
+                                            setSelectedProductId(product.id);
+                                            setCustomExchangeRate(null);
+                                            setSuccessMessage(null);
+                                        }}
+                                        className={`w-full text-right p-4 rounded-xl border-2 transition-all duration-200 group ${selectedProductId === product.id
+                                            ? 'border-emerald-500 bg-emerald-600 shadow-lg shadow-emerald-500/20 translate-x-1'
+                                            : 'border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-emerald-200 dark:hover:border-emerald-900/40 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/5'
                                             }`}
                                     >
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className={`font-semibold text-sm truncate ${selectedProductId === product.id ? 'text-blue-700' : 'text-gray-800'}`}>
-                                                    {product.name}
-                                                </h3>
-                                                <p className="text-xs text-gray-500 font-mono mt-0.5">{product.sku}</p>
-                                                <div className="flex items-center gap-2 mt-2">
-                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${product.cost ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                                                        }`}>
-                                                        {product.cost ? formatArabicCurrency(product.cost) : 'بدون تكلفة'}
-                                                    </span>
-                                                    {product.hasLastPurchase && (
-                                                        <span className="text-[10px] text-blue-600 flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-full">
-                                                            <FileText className="w-3 h-3" />
-                                                            فاتورة
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            {selectedProductId === product.id && (
-                                                <ArrowLeft className="w-4 h-4 text-blue-600 mt-1" />
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className={`font-black text-sm tracking-tight ${selectedProductId === product.id ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
+                                                {product.name}
+                                            </span>
+                                            {selectedProductId === product.id ? (
+                                                <CheckCircle className="w-5 h-5 text-white" />
+                                            ) : (
+                                                <div className="w-1.5 h-6 bg-emerald-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                             )}
                                         </div>
+                                        <div className={`text-xs font-bold ${selectedProductId === product.id ? 'text-emerald-50' : 'text-slate-400 dark:text-slate-500'}`}>
+                                            {product.sku}
+                                        </div>
                                     </button>
-                                ))}
-                            </div>
-                        )}
+                                ))
+                            )}
+                        </div>
                     </div>
+                </div>
 
-                    {/* Pagination */}
-                    {pagination && pagination.pages > 1 && (
-                        <div className="p-3 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
-                            <button
-                                onClick={() => setPage(p => Math.max(1, p - 1))}
-                                disabled={page === 1}
-                                className="p-1.5 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-gray-600"
-                            >
-                                <ArrowRight className="w-4 h-4" />
-                            </button>
-                            <span className="text-xs text-gray-600 font-medium">
-                                {formatArabicNumber(page)} / {formatArabicNumber(pagination.pages)}
-                            </span>
-                            <button
-                                onClick={() => setPage(p => Math.min(pagination.pages, p + 1))}
-                                disabled={page === pagination.pages}
-                                className="p-1.5 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-gray-600"
-                            >
-                                <ArrowLeft className="w-4 h-4" />
-                            </button>
+                {/* Right Column: Cost Details */}
+                <div className="lg:col-span-2">
+                    {!selectedProductId ? (
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border-2 border-slate-100 dark:border-slate-700 p-20 text-center">
+                            <div className="w-20 h-20 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-dashed border-slate-200 dark:border-slate-700">
+                                <Package className="w-10 h-10 text-slate-300 dark:text-slate-600" />
+                            </div>
+                            <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2">اختر صنفاً للبدء</h3>
+                            <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto">اختر من قائمة الأصناف لعرض تحليل التكلفة المعتمد على آخر فاتورة مشتريات</p>
+                        </div>
+                    ) : costInfoLoading ? (
+                        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border-2 border-slate-100 dark:border-slate-700 p-24 text-center">
+                            <RefreshCw className="w-12 h-12 text-emerald-600 dark:text-emerald-400 animate-spin mx-auto mb-6" />
+                            <p className="text-xl font-black text-slate-900 dark:text-white animate-pulse">جاري جلب بيانات التكلفة...</p>
+                        </div>
+                    ) : !costInfo?.lastPurchase ? (
+                        <div className="bg-amber-50 dark:bg-amber-900/10 border-2 border-amber-200 dark:border-amber-900/30 rounded-3xl p-16 text-center">
+                            <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-6" />
+                            <h3 className="text-xl font-black text-amber-900 dark:text-amber-400 mb-2">لا توجد بيانات شراء لهذا الصنف</h3>
+                            <p className="text-amber-700 dark:text-amber-500/80 max-w-sm mx-auto">لم يتم العثور على فواتير مشتريات معتمدة لهذا الصنف سابقاً لحساب تكلفته</p>
+                        </div>
+                    ) : (
+                        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl border-2 border-slate-100 dark:border-slate-700 overflow-hidden animate-in fade-in slide-in-from-left-4 duration-500">
+                            {/* Product & Purchase Overview */}
+                            <div className="p-8 border-b-2 border-slate-50 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-600/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                                <div className="flex items-center justify-between mb-8 relative z-10">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shadow-md border border-slate-100 dark:border-slate-700">
+                                            <Bookmark className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">تفاصيل تكلفة الصنف</p>
+                                            <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+                                                {costInfo?.productName}
+                                            </h2>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setSelectedProductId(null)}
+                                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-700 transition-all shadow-sm"
+                                    >
+                                        <ChevronLeft className="w-6 h-6" />
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
+                                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-50 dark:border-slate-700 transition-transform hover:scale-[1.02]">
+                                        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">رقم الفاتورة</p>
+                                        <p className="text-lg font-black text-slate-900 dark:text-white">
+                                            #{costInfo.lastPurchase.invoiceNumber || costInfo.lastPurchase.id}
+                                        </p>
+                                    </div>
+                                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-50 dark:border-slate-700 transition-transform hover:scale-[1.02]">
+                                        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">التاريخ</p>
+                                        <p className="text-lg font-black text-slate-900 dark:text-white">
+                                            {formatArabicDate(costInfo.lastPurchase.purchaseDate)}
+                                        </p>
+                                    </div>
+                                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-50 dark:border-slate-700 transition-transform hover:scale-[1.02]">
+                                        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">الكمية المشراة</p>
+                                        <p className="text-lg font-black text-slate-900 dark:text-white">
+                                            {formatArabicNumber(costInfo.lastPurchase.qty)}
+                                        </p>
+                                    </div>
+                                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-slate-50 dark:border-slate-700 transition-transform hover:scale-[1.02]">
+                                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-wider mb-2">رقم الصنف</p>
+                                        <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 truncate">
+                                            {costInfo.productSku}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-8 space-y-8">
+                                {/* Base Cost Information */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-3xl p-6 shadow-sm">
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                                <DollarSign className="w-5 h-5" />
+                                            </div>
+                                            <h4 className="text-lg font-black text-slate-900 dark:text-white">القيمة الشرائية</h4>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl">
+                                                <span className="text-slate-500 dark:text-slate-400 font-bold">السعر بالعملة الأجنبية</span>
+                                                <span className="text-xl font-black text-slate-900 dark:text-white">
+                                                    {formatArabicNumber(Number(costInfo.lastPurchase.unitPrice))} {getCurrencySymbol(costInfo.lastPurchase.currency)}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl">
+                                                <span className="text-slate-500 dark:text-slate-400 font-bold">سعر الصرف (الأصلي)</span>
+                                                <span className="text-xl font-black text-slate-600 dark:text-slate-300">
+                                                    {formatArabicNumber(Number(costInfo.lastPurchase.exchangeRate || 1))}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center p-4 border-2 border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/20 dark:bg-emerald-900/5 rounded-2xl">
+                                                <span className="text-emerald-600 dark:text-emerald-400 font-bold">القيمة بالدينار الليبي</span>
+                                                <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                                                    {formatArabicCurrency(Number(costInfo.lastPurchase.unitPrice) * Number(costInfo.lastPurchase.exchangeRate || 1))}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-3xl p-6 shadow-sm">
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-10 h-10 bg-orange-50 dark:bg-orange-900/30 rounded-xl flex items-center justify-center text-orange-600 dark:text-orange-400">
+                                                <TrendingUp className="w-5 h-5" />
+                                            </div>
+                                            <h4 className="text-lg font-black text-slate-900 dark:text-white">تحميل المصروفات</h4>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl">
+                                                <span className="text-slate-500 dark:text-slate-400 font-bold">إجمالي مصروفات الفاتورة</span>
+                                                <span className="text-xl font-bold text-orange-600 dark:text-orange-400">
+                                                    {formatArabicCurrency(Number(costInfo.lastPurchase.totalExpenses || 0))}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl">
+                                                <span className="text-slate-500 dark:text-slate-400 font-bold">حصة المنتج من المصروفات</span>
+                                                <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                                                    {formatArabicNumber(calculatedCost?.percentage.toFixed(2) || 0)}%
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center p-4 border-2 border-orange-100 dark:border-orange-900/30 bg-orange-50/20 dark:bg-orange-900/5 rounded-2xl">
+                                                <span className="text-orange-600 dark:text-orange-400 font-bold">نصيب الوحدة من المصروفات</span>
+                                                <span className="text-2xl font-black text-orange-600 dark:text-orange-400">
+                                                    {formatArabicCurrency(calculatedCost?.expenseSharePerUnit || 0)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Custom Exchange Rate Input */}
+                                {costInfo.lastPurchase.currency !== 'LYD' && (
+                                    <div className="bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-900/30 rounded-xl p-5">
+                                        <label className="block text-sm font-bold text-yellow-800 dark:text-yellow-400 mb-4 flex items-center gap-2">
+                                            <CreditCard className="w-5 h-5" />
+                                            سعر الصرف المحتسب للتكلفة
+                                        </label>
+                                        <div className="flex items-center gap-4">
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                value={customExchangeRate ?? costInfo.lastPurchase.exchangeRate}
+                                                onChange={(e) => setCustomExchangeRate(parseFloat(e.target.value) || null)}
+                                                className="w-40 px-4 py-3 border-2 border-yellow-200 dark:border-yellow-900/50 rounded-xl focus:ring-4 focus:ring-yellow-500/10 focus:border-yellow-500 outline-none text-lg font-black bg-white dark:bg-slate-900 text-slate-900 dark:text-white transition-all shadow-inner"
+                                            />
+                                            <span className="text-yellow-700 dark:text-yellow-400/80 font-bold">د.ل / {getCurrencySymbol(costInfo.lastPurchase.currency)}</span>
+                                            {customExchangeRate && customExchangeRate !== costInfo.lastPurchase.exchangeRate && (
+                                                <button
+                                                    onClick={() => setCustomExchangeRate(null)}
+                                                    className="px-4 py-2 bg-white dark:bg-slate-900 text-yellow-600 dark:text-yellow-400 rounded-lg text-sm font-black border border-yellow-200 dark:border-yellow-900/30 hover:bg-yellow-50 dark:hover:bg-yellow-900/50 transition-all active:scale-95"
+                                                >
+                                                    إعادة للأصلي
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Final Calculation Summary */}
+                                <div className="bg-slate-900 dark:bg-slate-950 rounded-3xl p-8 relative overflow-hidden group shadow-2xl">
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-blue-500/20 transition-colors duration-700"></div>
+
+                                    <div className="flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
+                                        <div>
+                                            <p className="text-blue-400 font-bold uppercase tracking-widest text-xs mb-3 flex items-center gap-2">
+                                                <TrendingUp className="w-4 h-4" />
+                                                التكلفة النهائية المحسوبة للوحدة
+                                            </p>
+                                            <div className="flex items-baseline gap-4">
+                                                <h3 className="text-5xl font-black text-white">
+                                                    {formatArabicCurrency(calculatedCost?.costPerUnit || 0)}
+                                                </h3>
+                                                {costInfo.lastPurchase.currency !== 'LYD' && (
+                                                    <p className="text-slate-400 border-r border-slate-700 pr-4 py-1">
+                                                        <span className="block text-[10px] uppercase font-bold text-slate-500">تم الحساب بـ</span>
+                                                        <span className="font-black text-sm">سعر صرف {formatArabicNumber(calculatedCost?.exchangeRateUsed || costInfo.lastPurchase.exchangeRate)}</span>
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={() => setShowConfirmModal(true)}
+                                            disabled={updating}
+                                            className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-5 rounded-2xl font-black shadow-xl shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-lg"
+                                        >
+                                            {updating ? (
+                                                <RefreshCw className="w-6 h-6 animate-spin" />
+                                            ) : (
+                                                <Check className="w-6 h-6" />
+                                            )}
+                                            اعتماد التكلفة الجديدة
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
-
-                {/* Cost Details */}
-                <div className="lg:col-span-2">
-                    {!selectedProductId ? (
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center h-full flex flex-col items-center justify-center">
-                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                <BarChart3 className="w-8 h-8 text-gray-400" />
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-800 mb-2">اختر صنفاً لعرض التفاصيل</h3>
-                            <p className="text-gray-500 text-sm">قم باختيار صنف من القائمة لعرض تفاصيل التكلفة وآخر فاتورة مشتريات</p>
-                        </div>
-                    ) : costInfoLoading ? (
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center h-full flex flex-col items-center justify-center">
-                            <RefreshCw className="w-10 h-10 text-blue-500 animate-spin mb-4" />
-                            <p className="text-gray-500">جاري تحميل البيانات...</p>
-                        </div>
-                    ) : costInfo ? (
-                        <div className="space-y-6">
-                            {/* Success Message */}
-                            {successMessage && (
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                                            <TrendingUp className="w-4 h-4 text-green-600" />
-                                        </div>
-                                        <p className="text-green-800 font-medium text-sm">{successMessage}</p>
-                                    </div>
-                                    <button
-                                        onClick={() => setSuccessMessage(null)}
-                                        className="text-green-600 hover:text-green-800"
-                                    >
-                                        ×
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Product Info Card */}
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <h2 className="text-xl font-bold text-gray-900 mb-1">{costInfo.productName}</h2>
-                                        <p className="text-gray-500 font-mono text-sm">{costInfo.productSku}</p>
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <div className="text-left bg-gray-50 px-4 py-2 rounded-lg border border-gray-100">
-                                            <span className="block text-xs text-gray-500 mb-1">الوحدة</span>
-                                            <span className="font-bold text-gray-800">{costInfo.unit || '-'}</span>
-                                        </div>
-                                        <div className="text-left bg-gray-50 px-4 py-2 rounded-lg border border-gray-100">
-                                            <span className="block text-xs text-gray-500 mb-1">التكلفة الحالية</span>
-                                            <span className="font-bold text-gray-800">
-                                                {costInfo.currentCost ? formatArabicCurrency(costInfo.currentCost) : 'غير محددة'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Last Purchase Details */}
-                            {costInfo.lastPurchase ? (
-                                <>
-                                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                                        <div className="px-5 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
-                                            <h3 className="font-bold text-gray-800 flex items-center gap-2 text-sm">
-                                                <FileText className="w-4 h-4 text-blue-600" />
-                                                تفاصيل آخر فاتورة مشتريات
-                                            </h3>
-                                            <span className="text-xs text-gray-500 font-mono">
-                                                #{costInfo.lastPurchase.invoiceNumber || costInfo.lastPurchase.id}
-                                            </span>
-                                        </div>
-
-                                        <div className="p-5">
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-                                                <div>
-                                                    <p className="text-xs text-gray-500 mb-1">تاريخ الفاتورة</p>
-                                                    <p className="font-medium text-gray-900 flex items-center gap-1.5">
-                                                        <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                                                        {new Date(costInfo.lastPurchase.purchaseDate).toLocaleDateString('ar-LY')}
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs text-gray-500 mb-1">العملة</p>
-                                                    <p className="font-medium text-gray-900">{getCurrencyLabel(costInfo.lastPurchase.currency)}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs text-gray-500 mb-1">سعر الصرف</p>
-                                                    <p className="font-medium text-gray-900">{formatArabicNumber(costInfo.lastPurchase.exchangeRate)}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs text-gray-500 mb-1">إجمالي الفاتورة</p>
-                                                    <p className="font-medium text-gray-900">{formatArabicCurrency(costInfo.lastPurchase.totalWithExpenses)}</p>
-                                                </div>
-                                            </div>
-
-                                            <div className="border border-gray-200 rounded-lg overflow-hidden mb-6">
-                                                <table className="w-full text-sm">
-                                                    <thead className="bg-gray-50 border-b border-gray-200">
-                                                        <tr>
-                                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الكمية</th>
-                                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">سعر الوحدة</th>
-                                                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">الإجمالي</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-gray-200">
-                                                        <tr>
-                                                            <td className="px-4 py-3 font-medium text-gray-900">
-                                                                {formatArabicNumber(costInfo.lastPurchase.qty)}
-                                                            </td>
-                                                            <td className="px-4 py-3 text-gray-900">
-                                                                {formatArabicNumber(costInfo.lastPurchase.unitPrice)} {getCurrencySymbol(costInfo.lastPurchase.currency)}
-                                                            </td>
-                                                            <td className="px-4 py-3 font-bold text-gray-900">
-                                                                {formatArabicNumber(costInfo.lastPurchase.subTotal)} {getCurrencySymbol(costInfo.lastPurchase.currency)}
-                                                            </td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-
-                                            {/* Expenses Section */}
-                                            <div className="bg-orange-50 rounded-lg border border-orange-100 p-4">
-                                                <h4 className="font-bold text-orange-800 text-sm mb-3 flex items-center gap-2">
-                                                    <Wallet className="w-4 h-4" />
-                                                    توزيع المصروفات
-                                                </h4>
-
-                                                {/* تفاصيل المصروفات الفردية */}
-                                                {costInfo.lastPurchase.expenseDetails && costInfo.lastPurchase.expenseDetails.length > 0 ? (
-                                                    <div className="mb-4">
-                                                        <div className="border border-orange-200 rounded-lg overflow-hidden bg-white">
-                                                            <table className="w-full text-sm">
-                                                                <thead className="bg-orange-100 border-b border-orange-200">
-                                                                    <tr>
-                                                                        <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">نوع المصروف</th>
-                                                                        <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">المبلغ بالعملة الأجنبية</th>
-                                                                        <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">سعر الصرف</th>
-                                                                        <th className="px-3 py-2 text-right text-xs font-medium text-orange-700">المبلغ بالدينار</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody className="divide-y divide-orange-100">
-                                                                    {costInfo.lastPurchase.expenseDetails.map((expense) => (
-                                                                        <tr key={expense.id} className="hover:bg-orange-50/50">
-                                                                            <td className="px-3 py-2 text-gray-800">
-                                                                                <div className="font-medium">{expense.categoryName}</div>
-                                                                                {expense.supplierName && (
-                                                                                    <div className="text-xs text-gray-500">{expense.supplierName}</div>
-                                                                                )}
-                                                                            </td>
-                                                                            <td className="px-3 py-2 text-gray-800 font-mono">
-                                                                                {expense.currency !== 'LYD' && expense.amountForeign ? (
-                                                                                    <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
-                                                                                        {formatArabicNumber(expense.amountForeign)} {getCurrencySymbol(expense.currency)}
-                                                                                    </span>
-                                                                                ) : (
-                                                                                    <span className="text-gray-400">-</span>
-                                                                                )}
-                                                                            </td>
-                                                                            <td className="px-3 py-2 text-gray-800 font-mono">
-                                                                                {expense.currency !== 'LYD' ? (
-                                                                                    <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs">
-                                                                                        {formatArabicNumber(expense.exchangeRate)}
-                                                                                    </span>
-                                                                                ) : (
-                                                                                    <span className="text-gray-400">-</span>
-                                                                                )}
-                                                                            </td>
-                                                                            <td className="px-3 py-2 text-gray-900 font-bold font-mono">
-                                                                                <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs">
-                                                                                    {formatArabicNumber(expense.amountLYD)} د.ل
-                                                                                </span>
-                                                                            </td>
-                                                                        </tr>
-                                                                    ))}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <p className="text-orange-600 text-sm mb-4">لا توجد مصروفات مضافة</p>
-                                                )}
-
-                                                {/* ملخص المصروفات */}
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm border-t border-orange-200 pt-4">
-                                                    <div className="flex justify-between md:block">
-                                                        <span className="text-orange-600 block mb-1 text-xs">إجمالي مصروفات الفاتورة</span>
-                                                        <span className="font-bold text-orange-900">{formatArabicCurrency(costInfo.lastPurchase.totalExpenses)}</span>
-                                                    </div>
-                                                    <div className="flex justify-between md:block">
-                                                        <span className="text-orange-600 block mb-1 text-xs">نسبة تحمل هذا الصنف</span>
-                                                        <span className="font-bold text-orange-900">{formatArabicNumber(costInfo.lastPurchase.expenseSharePercentage)}%</span>
-                                                    </div>
-                                                    <div className="flex justify-between md:block">
-                                                        <span className="text-orange-600 block mb-1 text-xs">نصيب الصنف من المصروفات</span>
-                                                        <span className="font-bold text-orange-900">
-                                                            {formatArabicCurrency(costInfo.lastPurchase.expenseShareAmount)}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Calculation Card */}
-                                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                                        <div className="px-5 py-3 border-b border-gray-200 bg-gray-50">
-                                            <h3 className="font-bold text-gray-800 flex items-center gap-2 text-sm">
-                                                <BarChart3 className="w-4 h-4 text-green-600" />
-                                                احتساب التكلفة النهائية
-                                            </h3>
-                                        </div>
-                                        <div className="p-5">
-                                            {/* Custom Exchange Rate Input */}
-                                            {costInfo.lastPurchase.currency !== 'LYD' && (
-                                                <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                                    <label className="block text-sm font-medium text-yellow-800 mb-2">
-                                                        سعر الصرف المحتسب
-                                                    </label>
-                                                    <div className="flex items-center gap-3">
-                                                        <input
-                                                            type="number"
-                                                            step="0.01"
-                                                            min="0"
-                                                            value={customExchangeRate ?? costInfo.lastPurchase.exchangeRate}
-                                                            onChange={(e) => setCustomExchangeRate(parseFloat(e.target.value) || null)}
-                                                            className="w-32 px-3 py-1.5 border border-yellow-300 rounded focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 text-sm"
-                                                        />
-                                                        <span className="text-yellow-700 text-sm">د.ل / {getCurrencySymbol(costInfo.lastPurchase.currency)}</span>
-                                                        {customExchangeRate && customExchangeRate !== costInfo.lastPurchase.exchangeRate && (
-                                                            <button
-                                                                onClick={() => setCustomExchangeRate(null)}
-                                                                className="text-xs text-yellow-600 hover:text-yellow-800 underline mr-2"
-                                                            >
-                                                                استعادة الأصلي
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            <div className="flex flex-col md:flex-row items-center justify-between bg-gray-50 rounded-lg p-6 border border-gray-200">
-                                                <div className="mb-4 md:mb-0 text-center md:text-right">
-                                                    <p className="text-sm text-gray-500 mb-1">التكلفة الجديدة المحسوبة (للوحدة)</p>
-                                                    <div className="flex items-baseline gap-2">
-                                                        <p className="text-3xl font-bold text-blue-600">
-                                                            {formatArabicCurrency(calculatedCost?.costPerUnit || costInfo.lastPurchase.calculatedCostPerUnit)}
-                                                        </p>
-                                                        {costInfo.lastPurchase.currency !== 'LYD' && (
-                                                            <span className="text-xs text-gray-400">
-                                                                (بسعر صرف {formatArabicNumber(calculatedCost?.exchangeRate || costInfo.lastPurchase.exchangeRate)})
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                <button
-                                                    onClick={() => setShowConfirmModal(true)}
-                                                    disabled={updating}
-                                                    className="w-full md:w-auto bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                                >
-                                                    <CreditCard className="w-4 h-4" />
-                                                    اعتماد التكلفة الجديدة
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-                                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <AlertCircle className="w-6 h-6 text-red-600" />
-                                    </div>
-                                    <h3 className="font-bold text-gray-800 mb-1">لا توجد فاتورة مشتريات</h3>
-                                    <p className="text-gray-500 text-sm max-w-md mx-auto">
-                                        لم يتم العثور على أي فاتورة مشتريات معتمدة لهذا الصنف. لا يمكن احتساب التكلفة بدون فاتورة مرجعية.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    ) : null}
-                </div>
             </div>
 
-            {/* Confirm Modal */}
-            {showConfirmModal && costInfo && calculatedCost && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full overflow-hidden border border-gray-200">
-                        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                            <h3 className="font-bold text-gray-800">تأكيد تحديث التكلفة</h3>
-                            <button onClick={() => setShowConfirmModal(false)} className="text-gray-400 hover:text-gray-600">×</button>
-                        </div>
+            {/* Success Message */}
+            {successMessage && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-900 rounded-2xl p-4 flex items-center gap-4 shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-6 duration-500 ring-4 ring-green-500/5">
+                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900/50 rounded-xl flex items-center justify-center text-green-600 dark:text-green-400">
+                        <CheckCircle className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <p className="text-green-900 dark:text-green-300 font-black text-sm">{successMessage}</p>
+                        <p className="text-green-700/60 dark:text-green-400/60 text-xs font-bold">تم تحديث بيانات الصنف في النظام بنجاح</p>
+                    </div>
+                    <button
+                        onClick={() => setSuccessMessage(null)}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 text-green-400 transition-colors"
+                    >
+                        ×
+                    </button>
+                </div>
+            )}
 
-                        <div className="p-6 space-y-4">
-                            <div className="bg-blue-50 p-3 rounded border border-blue-100">
-                                <p className="text-xs text-blue-600 mb-1">الصنف</p>
-                                <p className="font-medium text-blue-900 text-sm">{costInfo.productName}</p>
+            {/* Confirmation Modal */}
+            {showConfirmModal && costInfo?.lastPurchase && calculatedCost && (
+                <div className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-md w-full shadow-2xl border-2 border-slate-100 dark:border-slate-700 overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="p-8">
+                            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400 mb-6 mx-auto">
+                                <AlertCircle className="w-10 h-10" />
                             </div>
+                            <h3 className="text-2xl font-black text-slate-900 dark:text-white text-center mb-4">تحديث تكلفة الصنف</h3>
+                            <p className="text-slate-600 dark:text-slate-400 text-center font-bold leading-relaxed mb-8">
+                                هل أنت متأكد من رغبتك في تحديث تكلفة الشراء لهذا الصنف لتصبح <span className="text-emerald-600 dark:text-emerald-400 font-black text-xl">{formatArabicCurrency(calculatedCost.costPerUnit)}</span>؟
+                                <br />
+                                <span className="text-slate-400 dark:text-slate-500 text-sm font-medium">سيتم استخدام هذه التكلفة في حسابات الأرباح والتقارير المالية.</span>
+                            </p>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="border border-gray-200 p-3 rounded">
-                                    <p className="text-xs text-gray-500 mb-1">حالياً</p>
-                                    <p className="font-bold text-gray-700">
-                                        {costInfo.currentCost ? formatArabicCurrency(costInfo.currentCost) : '-'}
-                                    </p>
-                                </div>
-                                <div className="border border-green-200 bg-green-50 p-3 rounded">
-                                    <p className="text-xs text-green-600 mb-1">الجديد</p>
-                                    <p className="font-bold text-green-700">
-                                        {formatArabicCurrency(calculatedCost.costPerUnit)}
-                                    </p>
-                                </div>
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => handleUpdateCost()}
+                                    disabled={updating}
+                                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-4 rounded-2xl font-black shadow-lg shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50"
+                                >
+                                    {updating ? 'جاري التحديث...' : 'نعم، قم بالتحديث'}
+                                </button>
+                                <button
+                                    onClick={() => setShowConfirmModal(false)}
+                                    className="flex-1 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-white px-6 py-4 rounded-2xl font-black hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95"
+                                >
+                                    إلغاء
+                                </button>
                             </div>
-
-                            <div className="text-xs text-gray-500 mt-2 bg-gray-50 p-3 rounded">
-                                <p>سيتم توثيق هذا التغيير في سجلات النظام مع ربطه بالفاتورة رقم <strong>#{costInfo.lastPurchase?.invoiceNumber}</strong></p>
-                            </div>
-                        </div>
-
-                        <div className="px-6 py-4 bg-gray-50 flex gap-3 border-t border-gray-100">
-                            <button
-                                onClick={() => setShowConfirmModal(false)}
-                                className="flex-1 px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-100 text-sm font-medium"
-                            >
-                                إلغاء
-                            </button>
-                            <button
-                                onClick={handleUpdateCost}
-                                disabled={updating}
-                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium flex items-center justify-center gap-2"
-                            >
-                                {updating ? <RefreshCw className="w-4 h-4 animate-spin" /> : null}
-                                تأكيد
-                            </button>
                         </div>
                     </div>
                 </div>

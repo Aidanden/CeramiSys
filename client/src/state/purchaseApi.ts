@@ -47,6 +47,7 @@ export interface Purchase {
   totalExpenses: number;
   finalTotal: number;
   currency: 'LYD' | 'USD' | 'EUR';
+  exchangeRate?: number;
   createdAt: string;
   lines: PurchaseLine[];
   payments: PurchasePayment[];
@@ -212,7 +213,7 @@ export const purchaseApi = createApi({
           await queryFulfilled;
           // تحديث cache إيصالات الدفع بشكل فوري
           dispatch(paymentReceiptsApi.util.invalidateTags(['PaymentReceipts']));
-        } catch {}
+        } catch { }
       },
     }),
 
@@ -235,7 +236,7 @@ export const purchaseApi = createApi({
           await queryFulfilled;
           // تحديث cache إيصالات الدفع بشكل فوري
           dispatch(paymentReceiptsApi.util.invalidateTags(['PaymentReceipts']));
-        } catch {}
+        } catch { }
       },
     }),
 
@@ -250,7 +251,7 @@ export const purchaseApi = createApi({
           await queryFulfilled;
           // تحديث cache إيصالات الدفع بشكل فوري
           dispatch(paymentReceiptsApi.util.invalidateTags(['PaymentReceipts']));
-        } catch {}
+        } catch { }
       },
     }),
 
@@ -271,7 +272,7 @@ export const purchaseApi = createApi({
           await queryFulfilled;
           // تحديث cache إيصالات الدفع بشكل فوري
           dispatch(paymentReceiptsApi.util.invalidateTags(['PaymentReceipts']));
-        } catch {}
+        } catch { }
       },
     }),
 
