@@ -9,9 +9,9 @@ import {
     TrendingUp,
     AlertCircle,
     CheckCircle,
-    Save,
+    Download,
     Edit,
-    Info,
+    InfoIcon,
     ChevronLeft,
     BarChart3,
     FileText
@@ -188,41 +188,41 @@ export default function InvoiceCostPage() {
     };
 
     return (
-        <div className="p-6 max-w-7xl mx-auto min-h-screen bg-transparent" dir="rtl">
+        <div className="p-4 max-w-[1600px] mx-auto min-h-screen bg-transparent" dir="rtl">
             {/* Header */}
-            <div className="mb-8 relative">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm border border-blue-50 dark:border-blue-800/20">
-                            <BarChart3 className="w-8 h-8" />
+            <div className="mb-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
+                            <BarChart3 className="w-5 h-5" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-text-primary tracking-tight">تكلفة الفاتورة</h1>
-                            <p className="text-slate-600 dark:text-text-secondary mt-1 text-lg">حساب توزيع التكلفة على جميع منتجات الفاتورة</p>
+                            <h1 className="text-xl font-bold text-slate-900 dark:text-text-primary">تكلفة الفاتورة</h1>
+                            <p className="text-slate-600 dark:text-text-secondary text-xs">حساب توزيع التكلفة على الأصناف</p>
                         </div>
                     </div>
                     <button
                         onClick={() => refetch()}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-slate-200 dark:border-border-primary shadow-sm text-sm font-bold text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 dark:hover:bg-surface-hover hover:border-slate-300 dark:hover:border-border-primary transition-all duration-200 group"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 dark:border-border-primary text-xs font-bold text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 dark:hover:bg-surface-hover transition-all"
                     >
-                        <RefreshCw className="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition-colors" />
-                        تحديث البيانات
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        تحديث
                     </button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Left: Purchase List */}
                 <div className="lg:col-span-1">
-                    <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border-2 border-slate-100 dark:border-border-primary p-6">
-                        <h2 className="text-xl font-black text-slate-900 dark:text-text-primary mb-6 flex items-center gap-3">
-                            <BarChart3 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                            فواتير المشتريات المعتمدة
+                    <div className="bg-white dark:bg-surface-primary rounded-xl shadow-sm border border-slate-200 dark:border-border-primary p-4">
+                        <h2 className="text-sm font-bold text-slate-900 dark:text-text-primary mb-4 flex items-center gap-2">
+                            <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                            فواتير المشتريات
                         </h2>
 
                         {/* Company Filter */}
-                        <div className="mb-6">
-                            <label className="block text-xs font-bold text-slate-500 dark:text-text-tertiary mb-1.5 uppercase tracking-wider">
+                        <div className="mb-3">
+                            <label className="block text-[10px] font-bold text-slate-500 dark:text-text-tertiary mb-1 uppercase">
                                 الشركة
                             </label>
                             <select
@@ -231,7 +231,7 @@ export default function InvoiceCostPage() {
                                     setSelectedCompanyId(e.target.value ? Number(e.target.value) : undefined);
                                     setSelectedPurchaseId(null);
                                 }}
-                                className="w-full px-4 py-2.5 border-2 border-slate-100 dark:border-border-primary rounded-xl bg-slate-50/50 dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold"
+                                className="w-full px-3 py-1.5 border border-slate-200 dark:border-border-primary rounded-lg bg-slate-50 dark:bg-surface-secondary text-slate-800 dark:text-text-primary text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                             >
                                 <option value="">جميع الشركات</option>
                                 {companies.map((company) => (
@@ -243,62 +243,60 @@ export default function InvoiceCostPage() {
                         </div>
 
                         {/* Search */}
-                        <div className="mb-6">
+                        <div className="mb-3">
                             <div className="relative">
-                                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+                                <Search className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-3.5 h-3.5" />
                                 <input
                                     type="text"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     placeholder="بحث برقم الفاتورة..."
-                                    className="w-full pr-10 pl-4 py-2.5 border-2 border-slate-100 dark:border-border-primary rounded-xl bg-slate-50/50 dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium"
+                                    className="w-full pr-8 pl-3 py-1.5 border border-slate-200 dark:border-border-primary rounded-lg bg-slate-50 dark:bg-surface-secondary text-slate-800 dark:text-text-primary text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                                 />
                             </div>
                         </div>
 
                         {/* Purchases List */}
-                        <div className="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar pl-1">
+                        <div className="space-y-2 max-h-[500px] overflow-y-auto custom-scrollbar">
                             {isLoading ? (
-                                <div className="text-center py-12">
-                                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
+                                <div className="text-center py-8">
+                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
                                 </div>
                             ) : purchases.length === 0 ? (
-                                <div className="text-center py-12 bg-slate-50 dark:bg-surface-secondary rounded-2xl border-2 border-dashed border-slate-100 dark:border-border-primary">
-                                    <BarChart3 className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                                    <p className="text-slate-400 dark:text-text-tertiary font-bold">لا توجد فواتير معتمدة</p>
+                                <div className="text-center py-8 bg-slate-50 dark:bg-surface-secondary rounded-lg border border-dashed border-slate-200 dark:border-border-primary">
+                                    <BarChart3 className="w-6 h-6 text-slate-300 mx-auto mb-2" />
+                                    <p className="text-slate-400 dark:text-text-tertiary text-xs font-medium">لا توجد فواتير</p>
                                 </div>
                             ) : (
                                 purchases.map((purchase) => (
                                     <button
                                         key={purchase.id}
                                         onClick={() => setSelectedPurchaseId(purchase.id)}
-                                        className={`w-full text-right p-5 rounded-2xl border-2 transition-all duration-200 group ${selectedPurchaseId === purchase.id
-                                            ? 'border-blue-500 bg-blue-600 shadow-lg shadow-blue-500/20 translate-x-1'
-                                            : 'border-slate-100 dark:border-border-primary bg-white dark:bg-surface-secondary hover:border-blue-200 dark:hover:border-blue-900/40 hover:bg-slate-50/50 dark:hover:bg-blue-900/5'
+                                        className={`w-full text-right p-3 rounded-lg border transition-all ${selectedPurchaseId === purchase.id
+                                            ? 'border-blue-500 bg-blue-600 shadow-md'
+                                            : 'border-slate-200 dark:border-border-primary bg-white dark:bg-surface-secondary hover:border-blue-300 dark:hover:border-blue-900/40 hover:bg-slate-50 dark:hover:bg-blue-900/5'
                                             }`}
                                     >
-                                        <div className="flex items-center justify-between mb-3">
-                                            <span className={`font-black text-lg tracking-tight ${selectedPurchaseId === purchase.id ? 'text-white' : 'text-slate-900 dark:text-text-primary'}`}>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className={`font-bold text-sm ${selectedPurchaseId === purchase.id ? 'text-white' : 'text-slate-900 dark:text-text-primary'}`}>
                                                 {purchase.invoiceNumber || `#${purchase.id}`}
                                             </span>
-                                            {selectedPurchaseId === purchase.id ? (
-                                                <CheckCircle className="w-6 h-6 text-emerald-400" />
-                                            ) : (
-                                                <div className="w-1.5 h-6 bg-blue-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                            {selectedPurchaseId === purchase.id && (
+                                                <CheckCircle className="w-4 h-4 text-emerald-400" />
                                             )}
                                         </div>
-                                        <div className={`space-y-2 ${selectedPurchaseId === purchase.id ? 'text-blue-50' : 'text-slate-500 dark:text-text-secondary'}`}>
-                                            <div className="flex items-center gap-2 font-bold text-sm">
-                                                <Package className="w-4 h-4 opacity-70" />
+                                        <div className={`space-y-1 ${selectedPurchaseId === purchase.id ? 'text-blue-50' : 'text-slate-500 dark:text-text-secondary'}`}>
+                                            <div className="flex items-center gap-1.5 text-[10px] font-medium">
+                                                <Package className="w-3 h-3" />
                                                 {purchase.lines?.length || 0} صنف
                                             </div>
-                                            <div className="flex items-center gap-2 font-black text-base">
-                                                <DollarSign className="w-4 h-4 opacity-70" />
+                                            <div className="flex items-center gap-1.5 text-xs font-bold">
+                                                <DollarSign className="w-3 h-3" />
                                                 {formatArabicCurrency(Number(purchase.total))}
                                             </div>
                                             {purchase.totalExpenses && Number(purchase.totalExpenses) > 0 && (
-                                                <div className={`flex items-center gap-2 text-sm font-bold ${selectedPurchaseId === purchase.id ? 'text-white' : 'text-orange-600 dark:text-orange-400'}`}>
-                                                    <Edit className="w-4 h-4" />
+                                                <div className={`flex items-center gap-1.5 text-[10px] font-medium ${selectedPurchaseId === purchase.id ? 'text-white' : 'text-orange-600 dark:text-orange-400'}`}>
+                                                    <Edit className="w-3 h-3" />
                                                     مصروفات: {formatArabicCurrency(Number(purchase.totalExpenses))}
                                                 </div>
                                             )}
@@ -313,60 +311,58 @@ export default function InvoiceCostPage() {
                 {/* Right: Cost Distribution */}
                 <div className="lg:col-span-2">
                     {!selectedPurchase ? (
-                        <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border-2 border-slate-100 dark:border-border-primary p-20 text-center">
-                            <div className="w-20 h-20 bg-slate-50 dark:bg-surface-secondary rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-dashed border-slate-200 dark:border-border-primary">
-                                <FileText className="w-10 h-10 text-slate-300 dark:text-text-tertiary" />
+                        <div className="bg-white dark:bg-surface-primary rounded-xl shadow-sm border border-slate-200 dark:border-border-primary p-12 text-center">
+                            <div className="w-12 h-12 bg-slate-50 dark:bg-surface-secondary rounded-full flex items-center justify-center mx-auto mb-3 border border-dashed border-slate-200 dark:border-border-primary">
+                                <FileText className="w-6 h-6 text-slate-300 dark:text-text-tertiary" />
                             </div>
-                            <h3 className="text-xl font-black text-slate-900 dark:text-text-primary mb-2">اختر فاتورة للبدء</h3>
-                            <p className="text-slate-500 dark:text-text-tertiary max-w-sm mx-auto">اختر فاتورة مشتريات معتمدة من القائمة لعرض وتوزيع التكاليف على الأصناف</p>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-text-primary mb-1">اختر فاتورة للبدء</h3>
+                            <p className="text-slate-500 dark:text-text-tertiary text-xs max-w-xs mx-auto">اختر فاتورة مشتريات لعرض وتوزيع التكاليف</p>
                         </div>
                     ) : (
-                        <div className="bg-white dark:bg-surface-primary rounded-3xl shadow-xl border-2 border-slate-100 dark:border-border-primary overflow-hidden animate-in fade-in slide-in-from-left-4 duration-500">
+                        <div className="bg-white dark:bg-surface-primary rounded-xl shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden">
                             {/* Purchase Header */}
-                            <div className="p-8 border-b-2 border-slate-50 dark:border-border-primary bg-slate-50/50 dark:bg-surface-secondary relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-                                <div className="flex items-center justify-between mb-8 relative z-10">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-white dark:bg-surface-primary rounded-2xl flex items-center justify-center shadow-md border border-slate-100 dark:border-border-primary">
-                                            <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                            <div className="p-4 border-b border-slate-200 dark:border-border-primary bg-slate-50 dark:bg-surface-secondary">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 bg-white dark:bg-surface-primary rounded-lg flex items-center justify-center border border-slate-200 dark:border-border-primary">
+                                            <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">بيانات فاتورة المشتريات</p>
-                                            <h2 className="text-2xl font-black text-slate-900 dark:text-text-primary">
-                                                فاتورة {selectedPurchase.invoiceNumber || `#${selectedPurchase.id}`}
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase">فاتورة مشتريات</p>
+                                            <h2 className="text-sm font-bold text-slate-900 dark:text-text-primary">
+                                                {selectedPurchase.invoiceNumber || `#${selectedPurchase.id}`}
                                             </h2>
                                         </div>
                                     </div>
                                     <button
                                         onClick={() => setSelectedPurchaseId(null)}
-                                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-surface-primary text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 border border-slate-200 dark:border-border-primary transition-all shadow-sm"
-                                    >
-                                        <ChevronLeft className="w-6 h-6" />
+                                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-surface-primary text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 border border-slate-200 dark:border-border-primary transition-all">
+                                        <ChevronLeft className="w-4 h-4" />
                                     </button>
                                 </div>
 
-                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
-                                    <div className="bg-white dark:bg-surface-primary rounded-2xl p-4 shadow-sm border border-slate-50 dark:border-border-primary transition-transform hover:scale-[1.02]">
-                                        <p className="text-[10px] font-black text-slate-400 dark:text-text-tertiary uppercase tracking-wider mb-2">إجمالي الفاتورة</p>
-                                        <p className="text-lg font-black text-slate-900 dark:text-text-primary">
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                                    <div className="bg-white dark:bg-surface-primary rounded-lg p-2.5 border border-slate-200 dark:border-border-primary">
+                                        <p className="text-[9px] font-bold text-slate-400 dark:text-text-tertiary uppercase mb-1">إجمالي الفاتورة</p>
+                                        <p className="text-sm font-bold text-slate-900 dark:text-text-primary">
                                             {formatArabicCurrency(Number(selectedPurchase.total))}
                                         </p>
                                     </div>
-                                    <div className="bg-white dark:bg-surface-primary rounded-2xl p-4 shadow-sm border border-slate-50 dark:border-border-primary transition-transform hover:scale-[1.02]">
-                                        <p className="text-[10px] font-black text-orange-400 uppercase tracking-wider mb-2">إجمالي المصروفات</p>
-                                        <p className="text-lg font-black text-orange-600 dark:text-orange-400">
+                                    <div className="bg-white dark:bg-surface-primary rounded-lg p-2.5 border border-slate-200 dark:border-border-primary">
+                                        <p className="text-[9px] font-bold text-orange-400 uppercase mb-1">إجمالي المصروفات</p>
+                                        <p className="text-sm font-bold text-orange-600 dark:text-orange-400">
                                             {formatArabicCurrency(Number(selectedPurchase.totalExpenses || 0))}
                                         </p>
                                     </div>
-                                    <div className="bg-white dark:bg-surface-primary rounded-2xl p-4 shadow-sm border border-slate-50 dark:border-border-primary transition-transform hover:scale-[1.02]">
-                                        <p className="text-[10px] font-black text-slate-400 dark:text-text-tertiary uppercase tracking-wider mb-2">سعر الصرف الأصلي</p>
-                                        <p className="text-lg font-black text-slate-600 dark:text-text-secondary">
+                                    <div className="bg-white dark:bg-surface-primary rounded-lg p-2.5 border border-slate-200 dark:border-border-primary">
+                                        <p className="text-[9px] font-bold text-slate-400 dark:text-text-tertiary uppercase mb-1">سعر الصرف</p>
+                                        <p className="text-sm font-bold text-slate-600 dark:text-text-secondary">
                                             {formatArabicNumber(Number(selectedPurchase.exchangeRate || 1))}
                                         </p>
                                     </div>
-                                    <div className="bg-white dark:bg-surface-primary rounded-2xl p-4 shadow-sm border border-slate-50 dark:border-border-primary transition-transform hover:scale-[1.02]">
-                                        <p className="text-[10px] font-black text-green-400 uppercase tracking-wider mb-2">العملة</p>
-                                        <p className="text-lg font-black text-green-600 dark:text-green-400">
+                                    <div className="bg-white dark:bg-surface-primary rounded-lg p-2.5 border border-slate-200 dark:border-border-primary">
+                                        <p className="text-[9px] font-bold text-green-400 uppercase mb-1">العملة</p>
+                                        <p className="text-sm font-bold text-green-600 dark:text-green-400">
                                             {selectedPurchase.currency || 'LYD'}
                                         </p>
                                     </div>
@@ -431,7 +427,7 @@ export default function InvoiceCostPage() {
                                             </>
                                         ) : (
                                             <>
-                                                <Save className="w-5 h-5" />
+                                                <Download className="w-5 h-5" />
                                                 اعتماد وتحديث تكلفة جميع الأصناف
                                             </>
                                         )}
@@ -503,7 +499,7 @@ export default function InvoiceCostPage() {
                                                                 {isUpdatingCost && updatingProductId === line.productId ? (
                                                                     <RefreshCw className="w-5 h-5 animate-spin" />
                                                                 ) : (
-                                                                    <Save className="w-5 h-5" />
+                                                                    <Download className="w-5 h-5" />
                                                                 )}
                                                             </button>
                                                         </td>

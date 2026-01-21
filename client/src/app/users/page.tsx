@@ -302,12 +302,12 @@ const UsersPage = () => {
       <div className="p-6 font-tajawal">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">إدارة المستخدمين</h1>
+          <h1 className="text-3xl font-bold text-slate-800 dark:text-text-primary mb-2">إدارة المستخدمين</h1>
           <p className="text-slate-600 dark:text-text-secondary">إدارة المستخدمين والصلاحيات في النظام</p>
         </div>
 
         {/* Actions Bar */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-4 mb-6">
+        <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-4 mb-6">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="flex flex-col md:flex-row gap-4 items-center flex-1">
               {/* Search */}
@@ -342,7 +342,7 @@ const UsersPage = () => {
               {canAccessScreen('/permission-groups') && (
                 <Link
                   href="/permission-groups"
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-surface-hover text-gray-700 rounded-xl hover:bg-gray-200 transition-colors duration-200"
+                  className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-surface-hover text-slate-700 dark:text-text-secondary rounded-xl hover:bg-slate-200 dark:hover:bg-surface-elevated transition-colors duration-200"
                 >
                   إدارة مجموعات الصلاحيات
                 </Link>
@@ -359,10 +359,10 @@ const UsersPage = () => {
         </div>
 
         {/* Users Table */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden relative">
+        <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden relative">
           {/* Loading Overlay */}
           {isAnyOperationLoading && (
-            <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+            <div className="absolute inset-0 bg-white dark:bg-surface-primary bg-opacity-75 dark:bg-opacity-90 flex items-center justify-center z-10">
               <div className="flex items-center gap-3">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
                 <span className="text-slate-600 dark:text-text-secondary font-medium">
@@ -378,16 +378,16 @@ const UsersPage = () => {
             <table className="w-full">
               <thead className="bg-slate-50 dark:bg-surface-secondary border-b border-slate-200 dark:border-border-primary">
                 <tr>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">المستخدم</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">الدور</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">الشركة</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">الحالة</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">تاريخ الإنشاء</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">آخر دخول</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">الإجراءات</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-slate-700 dark:text-text-secondary">المستخدم</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-slate-700 dark:text-text-secondary">الدور</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-slate-700 dark:text-text-secondary">الشركة</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-slate-700 dark:text-text-secondary">الحالة</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-slate-700 dark:text-text-secondary">تاريخ الإنشاء</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-slate-700 dark:text-text-secondary">آخر دخول</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-slate-700 dark:text-text-secondary">الإجراءات</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-slate-200 dark:divide-border-primary">
                 {isLoadingUsers ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-8 text-center">
@@ -420,7 +420,7 @@ const UsersPage = () => {
                   const roleName = isCustomRole ? "صلاحيات مخصصة" : (findRoleById(user.roleId)?.displayName || 'غير محدد');
                   const badgeClass = isCustomRole ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
                   return (
-                    <tr key={user.id} className="hover:bg-slate-50 dark:bg-surface-secondary transition-colors duration-150">
+                    <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-surface-hover transition-colors duration-150">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
@@ -429,10 +429,10 @@ const UsersPage = () => {
                             </span>
                           </div>
                           <div>
-                            <div className="font-semibold text-gray-900">{user.fullName}</div>
+                            <div className="font-semibold text-slate-900 dark:text-text-primary">{user.fullName}</div>
                             <div className="text-sm text-slate-500 dark:text-text-tertiary">@{user.username}</div>
                             <div className="text-sm text-slate-500 dark:text-text-tertiary">
-                              {user.email || <span className="text-gray-400 italic">لا يوجد بريد إلكتروني</span>}
+                              {user.email || <span className="text-slate-400 dark:text-text-tertiary italic">لا يوجد بريد إلكتروني</span>}
                             </div>
                           </div>
                         </div>
@@ -445,7 +445,7 @@ const UsersPage = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${user.isSystemUser ? 'bg-purple-500' : 'bg-blue-500'}`}></div>
-                          <span className={`text-sm ${user.isSystemUser ? 'text-purple-700 font-semibold' : 'text-gray-700'}`}>
+                          <span className={`text-sm ${user.isSystemUser ? 'text-purple-700 dark:text-purple-400 font-semibold' : 'text-slate-700 dark:text-text-secondary'}`}>
                             {user.companyName || 'غير محدد'}
                           </span>
                           {user.isSystemUser && (
@@ -473,14 +473,14 @@ const UsersPage = () => {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => openEditModal(user)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors duration-200"
+                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors duration-200"
                             title="تعديل"
                           >
                             <Edit className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteUser(user.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors duration-200"
+                            className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors duration-200"
                             title="تعطيل"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -497,14 +497,14 @@ const UsersPage = () => {
 
         {/* Add User Modal */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center pt-20 z-[3] p-4">
-            <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-start justify-center pt-20 z-[3] p-4">
+            <div className="bg-white dark:bg-surface-primary rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-border-primary shadow-xl">
               <div className="p-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">إضافة مستخدم جديد</h2>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-text-primary mb-4">إضافة مستخدم جديد</h2>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">اسم المستخدم</label>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-text-secondary mb-2">اسم المستخدم</label>
                     <input
                       type="text"
                       value={newUser.username}
@@ -515,7 +515,7 @@ const UsersPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">الاسم الكامل</label>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-text-secondary mb-2">الاسم الكامل</label>
                     <input
                       type="text"
                       value={newUser.fullName}
@@ -526,7 +526,7 @@ const UsersPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-text-secondary mb-2">
                       البريد الإلكتروني <span className="text-gray-400 text-sm">(اختياري)</span>
                     </label>
                     <input
@@ -539,7 +539,7 @@ const UsersPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">رقم الهاتف</label>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-text-secondary mb-2">رقم الهاتف</label>
                     <input
                       type="tel"
                       value={newUser.phone}
@@ -550,7 +550,7 @@ const UsersPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">كلمة المرور</label>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-text-secondary mb-2">كلمة المرور</label>
                     <input
                       type="password"
                       value={newUser.password}
@@ -561,7 +561,7 @@ const UsersPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">الدور</label>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-text-secondary mb-2">الدور</label>
                     <select
                       value={newUser.roleId}
                       onChange={(e) => handleAddRoleChange(e.target.value)}
@@ -574,21 +574,21 @@ const UsersPage = () => {
                     </select>
                   </div>
 
-                  <div className="border border-slate-200 dark:border-border-primary rounded-xl p-4 bg-gray-50">
+                  <div className="border border-slate-200 dark:border-border-primary rounded-xl p-4 bg-slate-50 dark:bg-surface-secondary">
                     <div className="flex flex-col gap-2">
-                      <p className="text-sm font-semibold text-gray-700">طريقة تعيين الصلاحيات</p>
+                      <p className="text-sm font-semibold text-slate-700 dark:text-text-secondary">طريقة تعيين الصلاحيات</p>
                       <div className="flex gap-3">
                         <button
                           type="button"
                           onClick={() => handleToggleAddPermissionMode(true)}
-                          className={`flex-1 px-3 py-2 rounded-xl border ${addUseRolePermissions ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-slate-300 dark:border-border-primary'}`}
+                          className={`flex-1 px-3 py-2 rounded-xl border transition-colors ${addUseRolePermissions ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-surface-secondary text-slate-700 dark:text-text-secondary border-slate-300 dark:border-border-primary'}`}
                         >
                           استخدام صلاحيات الدور
                         </button>
                         <button
                           type="button"
                           onClick={() => handleToggleAddPermissionMode(false)}
-                          className={`flex-1 px-3 py-2 rounded-xl border ${!addUseRolePermissions ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-slate-300 dark:border-border-primary'}`}
+                          className={`flex-1 px-3 py-2 rounded-xl border transition-colors ${!addUseRolePermissions ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-surface-secondary text-slate-700 dark:text-text-secondary border-slate-300 dark:border-border-primary'}`}
                         >
                           تخصيص الصلاحيات
                         </button>
@@ -610,14 +610,14 @@ const UsersPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-text-secondary mb-2">
                       الشركة {!newUser.isSystemUser && <span className="text-red-500">*</span>}
                     </label>
                     <select
                       value={newUser.companyId || ''}
                       onChange={(e) => setNewUser({ ...newUser, companyId: e.target.value ? parseInt(e.target.value) : undefined })}
                       disabled={newUser.isSystemUser}
-                      className={`w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${newUser.isSystemUser
+                      className={`w-full px-3 py-2 border rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${newUser.isSystemUser
                         ? 'bg-slate-100 dark:bg-surface-hover cursor-not-allowed border-slate-300 dark:border-border-primary'
                         : !newUser.companyId
                           ? 'border-red-300 focus:ring-red-500'
@@ -649,7 +649,7 @@ const UsersPage = () => {
                       onChange={(e) => setNewUser({ ...newUser, isSystemUser: e.target.checked, companyId: e.target.checked ? undefined : newUser.companyId })}
                       className="w-4 h-4 text-blue-600 bg-slate-100 dark:bg-surface-hover border-slate-300 dark:border-border-primary rounded focus:ring-blue-500 focus:ring-2"
                     />
-                    <label htmlFor="isSystemUser" className="mr-2 text-sm font-semibold text-gray-700">
+                    <label htmlFor="isSystemUser" className="mr-2 text-sm font-semibold text-slate-700 dark:text-text-secondary">
                       مستخدم نظام (مدير عام)
                     </label>
                   </div>
@@ -686,14 +686,14 @@ const UsersPage = () => {
 
         {/* Edit User Modal */}
         {showEditModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center pt-20 z-[3] p-4">
-            <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-start justify-center pt-20 z-[3] p-4">
+            <div className="bg-white dark:bg-surface-primary rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-border-primary shadow-xl">
               <div className="p-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">تعديل المستخدم</h2>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-text-primary mb-4">تعديل المستخدم</h2>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">اسم المستخدم</label>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-text-secondary mb-2">اسم المستخدم</label>
                     <input
                       type="text"
                       value={editUser.username}
@@ -704,7 +704,7 @@ const UsersPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">الاسم الكامل</label>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-text-secondary mb-2">الاسم الكامل</label>
                     <input
                       type="text"
                       value={editUser.fullName}
@@ -715,7 +715,7 @@ const UsersPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-text-secondary mb-2">
                       البريد الإلكتروني <span className="text-gray-400 text-sm">(اختياري)</span>
                     </label>
                     <input
@@ -728,7 +728,7 @@ const UsersPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">رقم الهاتف</label>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-text-secondary mb-2">رقم الهاتف</label>
                     <input
                       type="tel"
                       value={editUser.phone || ""}
@@ -739,7 +739,7 @@ const UsersPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">الدور</label>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-text-secondary mb-2">الدور</label>
                     <select
                       value={editUser.roleId}
                       onChange={(e) => handleEditRoleChange(e.target.value)}
@@ -752,21 +752,21 @@ const UsersPage = () => {
                     </select>
                   </div>
 
-                  <div className="border border-slate-200 dark:border-border-primary rounded-xl p-4 bg-gray-50">
+                  <div className="border border-slate-200 dark:border-border-primary rounded-xl p-4 bg-slate-50 dark:bg-surface-secondary">
                     <div className="flex flex-col gap-2">
-                      <p className="text-sm font-semibold text-gray-700">طريقة تعيين الصلاحيات</p>
+                      <p className="text-sm font-semibold text-slate-700 dark:text-text-secondary">طريقة تعيين الصلاحيات</p>
                       <div className="flex gap-3">
                         <button
                           type="button"
                           onClick={() => handleToggleEditPermissionMode(true)}
-                          className={`flex-1 px-3 py-2 rounded-xl border ${editUseRolePermissions ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-slate-300 dark:border-border-primary'}`}
+                          className={`flex-1 px-3 py-2 rounded-xl border transition-colors ${editUseRolePermissions ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-surface-secondary text-slate-700 dark:text-text-secondary border-slate-300 dark:border-border-primary'}`}
                         >
                           استخدام صلاحيات الدور
                         </button>
                         <button
                           type="button"
                           onClick={() => handleToggleEditPermissionMode(false)}
-                          className={`flex-1 px-3 py-2 rounded-xl border ${!editUseRolePermissions ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-slate-300 dark:border-border-primary'}`}
+                          className={`flex-1 px-3 py-2 rounded-xl border transition-colors ${!editUseRolePermissions ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-surface-secondary text-slate-700 dark:text-text-secondary border-slate-300 dark:border-border-primary'}`}
                         >
                           تخصيص الصلاحيات
                         </button>
@@ -795,7 +795,7 @@ const UsersPage = () => {
                       onChange={(e) => setEditUser({ ...editUser, isActive: e.target.checked })}
                       className="mr-2"
                     />
-                    <label htmlFor="editUserActive" className="text-sm font-semibold text-gray-700">
+                    <label htmlFor="editUserActive" className="text-sm font-semibold text-slate-700 dark:text-text-secondary">
                       المستخدم نشط
                     </label>
                   </div>
@@ -812,7 +812,7 @@ const UsersPage = () => {
                     onClick={() => {
                       setShowEditModal(false);
                     }}
-                    className="flex-1 bg-slate-100 dark:bg-surface-hover text-gray-700 py-2 px-4 rounded-xl hover:bg-gray-200 transition-colors duration-200"
+                    className="flex-1 bg-slate-100 dark:bg-surface-hover text-slate-700 dark:text-text-secondary py-2 px-4 rounded-xl hover:bg-slate-200 dark:hover:bg-surface-elevated transition-colors duration-200"
                   >
                     إلغاء
                   </button>

@@ -3,10 +3,10 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Plus, Edit, Trash2, X, Users } from "lucide-react";
-import { 
-  useGetRolesQuery, 
-  useCreateRoleMutation, 
-  useUpdateRoleMutation, 
+import {
+  useGetRolesQuery,
+  useCreateRoleMutation,
+  useUpdateRoleMutation,
   useDeleteRoleMutation,
 } from "@/state/permissionsApi";
 import type { Role } from "@/state/permissionsApi";
@@ -134,7 +134,7 @@ const PermissionGroupsPage = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-xl">جاري التحميل...</div>
+        <div className="text-xl text-slate-600 dark:text-text-secondary">جاري التحميل...</div>
       </div>
     );
   }
@@ -144,19 +144,19 @@ const PermissionGroupsPage = () => {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">مجموعات الصلاحيات</h1>
-          <p className="text-gray-600 mt-1">إدارة مجموعات الصلاحيات وتعيينها للمستخدمين</p>
+          <h1 className="text-3xl font-bold text-slate-800 dark:text-text-primary">مجموعات الصلاحيات</h1>
+          <p className="text-slate-600 dark:text-text-secondary mt-1">إدارة مجموعات الصلاحيات وتعيينها للمستخدمين</p>
         </div>
         <div className="flex items-center gap-3">
           <Link
             href="/users"
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+            className="px-4 py-2 border border-slate-300 dark:border-border-primary text-slate-700 dark:text-text-secondary rounded-lg hover:bg-slate-50 dark:hover:bg-surface-hover transition"
           >
             الرجوع لإدارة المستخدمين
           </Link>
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition shadow-sm"
           >
             <Plus size={20} />
             <span>إنشاء مجموعة جديدة</span>
@@ -169,13 +169,13 @@ const PermissionGroupsPage = () => {
         {roles.map((role) => (
           <div
             key={role.id}
-            className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition"
+            className="bg-white dark:bg-surface-primary rounded-lg shadow-md border border-slate-200 dark:border-border-primary p-6 hover:shadow-lg transition"
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
-                <h3 className="text-xl font-semibold text-gray-900">{role.displayName}</h3>
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-text-primary">{role.displayName}</h3>
                 {role.description && (
-                  <p className="text-sm text-gray-600 mt-1">{role.description}</p>
+                  <p className="text-sm text-slate-600 dark:text-text-secondary mt-1">{role.description}</p>
                 )}
               </div>
               <div className="flex gap-2">
@@ -187,7 +187,7 @@ const PermissionGroupsPage = () => {
                     permissions: role.permissions,
                     description: role.description ?? undefined,
                   })}
-                  className="p-2 text-blue-600 hover:bg-blue-50 rounded transition"
+                  className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition"
                   title="تعديل"
                 >
                   <Edit size={18} />
@@ -195,7 +195,7 @@ const PermissionGroupsPage = () => {
                 {role.roleName !== 'admin' && (
                   <button
                     onClick={() => handleDelete(role.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded transition"
+                    className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition"
                     title="حذف"
                   >
                     <Trash2 size={18} />
@@ -205,13 +205,13 @@ const PermissionGroupsPage = () => {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-text-secondary">
                 <Users size={16} />
                 <span>عدد الصلاحيات: {role.permissions?.length || 0}</span>
               </div>
-              
+
               {role.permissions?.includes('screen.all') ? (
-                <div className="inline-block px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
+                <div className="inline-block px-3 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 text-sm rounded-full">
                   جميع الصلاحيات
                 </div>
               ) : (
@@ -219,13 +219,13 @@ const PermissionGroupsPage = () => {
                   {role.permissions?.slice(0, 3).map((perm: string) => (
                     <span
                       key={perm}
-                      className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
+                      className="inline-block px-2 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400 text-xs rounded"
                     >
                       {perm.replace('screen.', '')}
                     </span>
                   ))}
                   {role.permissions?.length > 3 && (
-                    <span className="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                    <span className="inline-block px-2 py-1 bg-slate-100 dark:bg-surface-secondary text-slate-600 dark:text-text-secondary text-xs rounded">
                       +{role.permissions.length - 3} أخرى
                     </span>
                   )}
@@ -238,15 +238,15 @@ const PermissionGroupsPage = () => {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-surface-primary rounded-lg shadow-xl border border-slate-200 dark:border-border-primary max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-surface-primary border-b border-slate-200 dark:border-border-primary px-6 py-4 flex items-center justify-between z-10">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-text-primary">
                 {editingGroup ? "تعديل مجموعة الصلاحيات" : "إنشاء مجموعة جديدة"}
               </h2>
               <button
                 onClick={handleCloseModal}
-                className="p-2 hover:bg-gray-100 rounded transition"
+                className="p-2 hover:bg-slate-100 dark:hover:bg-surface-hover rounded transition"
               >
                 <X size={24} />
               </button>
@@ -256,28 +256,28 @@ const PermissionGroupsPage = () => {
               {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-text-secondary mb-2">
                     اسم المجموعة <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={formData.displayName}
                     onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none transition-all"
                     placeholder="مثال: مدير المبيعات"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-text-secondary mb-2">
                     المعرف التقني
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none transition-all disabled:bg-slate-100 dark:disabled:bg-surface-hover disabled:cursor-not-allowed"
                     placeholder="sales_manager"
                     disabled={!!editingGroup}
                   />
@@ -285,13 +285,13 @@ const PermissionGroupsPage = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-text-secondary mb-2">
                   الوصف
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none transition-all"
                   rows={3}
                   placeholder="وصف مختصر لهذه المجموعة..."
                 />
@@ -299,7 +299,7 @@ const PermissionGroupsPage = () => {
 
               {/* Permissions Selector */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-4">
+                <label className="block text-sm font-medium text-slate-700 dark:text-text-secondary mb-4">
                   الصلاحيات <span className="text-red-500">*</span>
                 </label>
                 <ScreenPermissionsSelector
@@ -309,17 +309,17 @@ const PermissionGroupsPage = () => {
               </div>
 
               {/* Actions */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-border-primary">
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                  className="px-6 py-2 border border-slate-300 dark:border-border-primary text-slate-700 dark:text-text-secondary rounded-lg hover:bg-slate-50 dark:hover:bg-surface-hover transition"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
-                  className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  className="flex items-center gap-2 px-6 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition shadow-sm"
                 >
                   <Users size={20} />
                   <span>{editingGroup ? "حفظ التغييرات" : "إنشاء المجموعة"}</span>

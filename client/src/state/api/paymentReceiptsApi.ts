@@ -84,6 +84,8 @@ export interface PaymentInstallment {
   notes?: string;
   paymentMethod?: string;
   referenceNumber?: string;
+  chequeNumber?: string;
+  accountHolderName?: string;
   createdAt: string;
 }
 
@@ -95,6 +97,8 @@ export interface CreateInstallmentDto {
   paymentMethod?: string;
   referenceNumber?: string;
   treasuryId?: number; // الخزينة التي سيتم السحب منها
+  chequeNumber?: string; // رقم الشيك (للشيكات فقط)
+  accountHolderName?: string; // اسم صاحب الحساب (للشيكات فقط)
 }
 
 export const paymentReceiptsApi = createApi({
