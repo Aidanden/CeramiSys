@@ -502,8 +502,8 @@ const ProductsPage = () => {
     const labelsToFill = 12;
     const labels = [];
     // نملأ المصفوفة بالأصناف المختارة فقط، والباقي نتركه فارغاً (null)
-    for (let i = 0; i < labelsToFill; i++) {
-      if (i < selectedProductsList.length) {
+    for (let i = 0; i <labelsToFill; i++) {
+      if (i <selectedProductsList.length) {
         labels.push(selectedProductsList[i]);
       } else {
         labels.push(null);
@@ -1418,7 +1418,7 @@ const ProductsPage = () => {
                     let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
                     let endPage = Math.min(pages, startPage + maxButtons - 1);
 
-                    if (endPage - startPage < maxButtons - 1) {
+                    if (endPage - startPage <maxButtons - 1) {
                       startPage = Math.max(1, endPage - maxButtons + 1);
                     }
 

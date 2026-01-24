@@ -24,18 +24,15 @@ import { useGetCompaniesQuery } from '@/state/companyApi';
 import { useGetCurrentUserQuery } from '@/state/authApi';
 import { BadDebtMonthlyReport } from '@/components/bad-debts/BadDebtMonthlyReport';
 import {
-    Folder,
     Calendar,
     BarChart3,
     TrendingUp,
-    Printer,
     FileText,
     Search,
     X,
     Eye,
     Filter,
     Layout,
-    PieChart as PieChartIcon,
     CircleDollarSign,
     Edit,
     Trash2,
@@ -65,7 +62,7 @@ interface MainStatCardProps {
 
 const MainStatCard = ({ title, value, subtitle, icon: Icon, iconBgColor }: MainStatCardProps) => {
     return (
-        <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-red-100 dark:border-border-primary p-6 hover:shadow-md hover:border-red-200 dark:hover:border-red-800/30 transition-all duration-300">
+        <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-6 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/30 transition-all duration-300">
             <div className="flex items-start justify-between">
                 <div className="flex-1">
                     <p className="text-sm font-medium text-slate-500 dark:text-text-tertiary mb-1">{title}</p>
@@ -108,6 +105,8 @@ export default function BadDebtsPage() {
     const [editingCategory, setEditingCategory] = useState<BadDebtCategory | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<BadDebtCategory | null>(null);
     const [showPreviewModal, setShowPreviewModal] = useState(false);
+    const [categoriesPage, setCategoriesPage] = useState(1);
+
 
     // Print ref
     const printRef = useRef<HTMLDivElement>(null);
@@ -142,13 +141,19 @@ export default function BadDebtsPage() {
         search: searchTerm || undefined
     });
 
+    React.useEffect(() => {
+        setCategoriesPage(1);
+    }, [searchTerm, selectedCompanyId]);
+
+
     const { data: expensesData, isLoading: expensesLoading, refetch: refetchExpenses } = useGetExpensesQuery({
         categoryId: expensesCategoryId,
         startDate: expensesStartDate || undefined,
         endDate: expensesEndDate || undefined,
         page: expensesPage,
-        limit: 20
+        limit: 10
     });
+
 
     const { data: statsData, refetch: refetchStats } = useGetBadDebtStatsQuery({
         companyId: selectedCompanyId,
@@ -178,6 +183,16 @@ export default function BadDebtsPage() {
     const stats = statsData?.data;
     const monthlyReport = monthlyReportData?.data || [];
     const user = userData?.data;
+
+    const ITEMS_PER_PAGE = 10;
+
+    const paginatedCategories = useMemo(() => {
+        const start = (categoriesPage - 1) * ITEMS_PER_PAGE;
+        return categories.slice(start, start + ITEMS_PER_PAGE);
+    }, [categories, categoriesPage]);
+
+    const categoriesTotalPages = Math.ceil(categories.length / ITEMS_PER_PAGE);
+
 
     // حساب إجمالي المصروفات المعروضة
     const totalDisplayedExpenses = useMemo(() => {
@@ -413,7 +428,7 @@ export default function BadDebtsPage() {
                     <MainStatCard
                         title="البنود النشطة"
                         value={stats.totalActiveCategories.toString()}
-                        icon={Folder}
+                        icon={() => <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>}
                         iconBgColor="bg-blue-500"
                     />
                     <MainStatCard
@@ -441,7 +456,7 @@ export default function BadDebtsPage() {
             )}
 
             {/* Tabs */}
-            <div className="bg-white dark:bg-surface-primary rounded-3xl shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden">
+            <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden">
                 <nav className="flex gap-2 p-2 border-b border-slate-100 dark:border-border-primary">
                     {[
                         { key: 'categories', label: '📁 بنود المصروفات', icon: '📁' },
@@ -496,61 +511,111 @@ export default function BadDebtsPage() {
                             ) : categories.length === 0 ? (
                                 <div className="text-center py-10 text-slate-500 dark:text-text-tertiary bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary">لا يوجد بنود مصروفات</div>
                             ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead className="bg-slate-50 dark:bg-surface-secondary">
-                                            <tr>
-                                                <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">اسم البند</th>
-                                                <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">الوصف</th>
-                                                <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">إجمالي المصروفات</th>
-                                                <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">عدد العمليات</th>
-                                                <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">الإجراءات</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100 dark:divide-border-primary">
-                                            {categories.map(category => (
-                                                <tr key={category.id} className="hover:bg-slate-50 dark:hover:bg-surface-hover transition-colors">
-                                                    <td className="px-4 py-3">
-                                                        <p className="font-medium text-gray-900 dark:text-text-primary">{category.name}</p>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-slate-600 dark:text-text-secondary text-sm">{category.description || '-'}</td>
-                                                    <td className="px-4 py-3 font-semibold text-red-600 dark:text-red-400">
-                                                        {formatCurrency(category.totalExpenses || 0)}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-slate-600 dark:text-text-secondary">{category.expensesCount || 0}</td>
-                                                    <td className="px-4 py-3">
-                                                        <div className="flex gap-2">
-                                                            <button
-                                                                onClick={() => openPayModal(category)}
-                                                                className="p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-600 dark:hover:bg-red-700 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
-                                                                title="صرف مصروف"
-                                                            >
-                                                                <CircleDollarSign className="w-5 h-5" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => openEditModal(category)}
-                                                                className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-600 dark:hover:bg-blue-700 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
-                                                                title="تعديل"
-                                                            >
-                                                                <Edit className="w-5 h-5" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDeleteCategory(category)}
-                                                                className="p-2 bg-slate-50 dark:bg-surface-secondary text-slate-600 dark:text-text-secondary rounded-xl hover:bg-gray-600 dark:hover:bg-gray-700 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
-                                                                title="حذف"
-                                                            >
-                                                                <Trash2 className="w-5 h-5" />
-                                                            </button>
-                                                        </div>
-                                                    </td>
+                                <>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead className="bg-slate-50 dark:bg-surface-secondary">
+                                                <tr>
+                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">اسم البند</th>
+                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">الوصف</th>
+                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">إجمالي المصروفات</th>
+                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">عدد العمليات</th>
+                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">الإجراءات</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 dark:divide-border-primary">
+                                                {paginatedCategories.map(category => (
+                                                    <tr key={category.id} className="hover:bg-slate-50 dark:hover:bg-surface-hover transition-colors">
+                                                        <td className="px-4 py-3">
+                                                            <p className="font-medium text-gray-900 dark:text-text-primary">{category.name}</p>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-slate-600 dark:text-text-secondary text-sm">{category.description || '-'}</td>
+                                                        <td className="px-4 py-3 font-semibold text-red-600 dark:text-red-400">
+                                                            {formatCurrency(category.totalExpenses || 0)}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-slate-600 dark:text-text-secondary">{category.expensesCount || 0}</td>
+                                                        <td className="px-4 py-3">
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={() => openPayModal(category)}
+                                                                    className="p-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-600 dark:hover:bg-red-700 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
+                                                                    title="صرف مصروف"
+                                                                >
+                                                                    <CircleDollarSign className="w-5 h-5" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => openEditModal(category)}
+                                                                    className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-600 dark:hover:bg-blue-700 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
+                                                                    title="تعديل"
+                                                                >
+                                                                    <Edit className="w-5 h-5" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteCategory(category)}
+                                                                    className="p-2 bg-slate-50 dark:bg-surface-secondary text-slate-600 dark:text-text-secondary rounded-xl hover:bg-gray-600 dark:hover:bg-gray-700 hover:text-white transition-all duration-200 shadow-sm hover:shadow-md group"
+                                                                    title="حذف"
+                                                                >
+                                                                    <Trash2 className="w-5 h-5" />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+
+                                    </div>
+
+                                    {/* Pagination for Categories */}
+                                    {categoriesTotalPages> 1 && (
+                                        <div className="bg-slate-50/50 dark:bg-slate-900/20 px-6 py-4 flex items-center justify-between border-t border-slate-100 dark:border-border-primary mt-6 rounded-xl">
+                                            <div className="flex-1 flex justify-between sm:hidden">
+                                                <button
+                                                    onClick={() => setCategoriesPage(p => Math.max(1, p - 1))}
+                                                    disabled={categoriesPage === 1}
+                                                    className="relative inline-flex items-center px-4 py-2 border border-slate-200 dark:border-border-primary text-sm font-bold rounded-xl text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 transition-all disabled:opacity-50"
+                                                >
+                                                    السابق
+                                                </button>
+                                                <button
+                                                    onClick={() => setCategoriesPage(p => Math.min(categoriesTotalPages, p + 1))}
+                                                    disabled={categoriesPage === categoriesTotalPages}
+                                                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-200 dark:border-border-primary text-sm font-bold rounded-xl text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 transition-all disabled:opacity-50"
+                                                >
+                                                    التالي
+                                                </button>
+                                            </div>
+                                            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                                <div>
+                                                    <p className="text-sm text-slate-500 dark:text-text-tertiary">
+                                                        عرض صفحة <span className="font-bold text-slate-900 dark:text-text-primary">{categoriesPage}</span> من <span className="font-bold text-slate-900 dark:text-text-primary">{categoriesTotalPages}</span>
+                                                    </p>
+                                                </div>
+                                                <nav className="relative z-0 inline-flex rounded-xl shadow-sm space-x-1 rtl:space-x-reverse" aria-label="Pagination">
+                                                    {Array.from({ length: categoriesTotalPages }, (_, i) => (
+                                                        <button
+                                                            key={i + 1}
+                                                            onClick={() => setCategoriesPage(i + 1)}
+                                                            className={`relative inline-flex items-center px-4 py-2 text-sm font-black rounded-xl transition-all ${categoriesPage === i + 1
+                                                                ? 'z-10 bg-red-600 text-white shadow-md shadow-red-200 dark:shadow-none'
+                                                                : 'bg-white dark:bg-surface-primary border-2 border-slate-100 dark:border-border-primary text-slate-500 dark:text-text-tertiary hover:bg-slate-50 dark:hover:bg-surface-hover'
+                                                                }`}
+                                                        >
+                                                            {i + 1}
+                                                        </button>
+                                                    ))}
+                                                </nav>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     )}
+
+
+
+
 
                     {/* Expenses Tab */}
                     {activeTab === 'expenses' && (
@@ -621,13 +686,13 @@ export default function BadDebtsPage() {
                                     disabled={expenses.length === 0}
                                     className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 flex items-center gap-2 disabled:opacity-50 transition-all duration-200 shadow-sm hover:shadow-md"
                                 >
-                                    <Printer className="w-5 h-5" />
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
                                     طباعة التقرير
                                 </button>
                             </div>
 
                             {/* Summary Bar */}
-                            {expenses.length > 0 && (
+                            {expenses.length> 0 && (
                                 <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-xl p-4 mb-4 flex justify-between items-center">
                                     <div className="flex items-center gap-4">
                                         <span className="text-sm text-red-700 dark:text-red-400">
@@ -682,27 +747,48 @@ export default function BadDebtsPage() {
                                     </div>
 
                                     {/* Pagination */}
-                                    {pagination && pagination.pages > 1 && (
-                                        <div className="flex justify-center gap-2 mt-6">
-                                            <button
-                                                onClick={() => setExpensesPage(p => Math.max(1, p - 1))}
-                                                disabled={expensesPage === 1}
-                                                className="px-4 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary hover:bg-slate-50 dark:hover:bg-surface-hover disabled:opacity-50 transition-all"
-                                            >
-                                                السابق
-                                            </button>
-                                            <span className="px-4 py-2">
-                                                {expensesPage} / {pagination.pages}
-                                            </span>
-                                            <button
-                                                onClick={() => setExpensesPage(p => Math.min(pagination.pages, p + 1))}
-                                                disabled={expensesPage === pagination.pages}
-                                                className="px-4 py-2 border border-slate-200 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary hover:bg-slate-50 dark:hover:bg-surface-hover disabled:opacity-50 transition-all"
-                                            >
-                                                التالي
-                                            </button>
+                                    {pagination && pagination.pages> 1 && (
+                                        <div className="bg-slate-50/50 dark:bg-slate-900/20 px-6 py-4 flex items-center justify-between border-t border-slate-100 dark:border-border-primary mt-6 rounded-xl">
+                                            <div className="flex-1 flex justify-between sm:hidden">
+                                                <button
+                                                    onClick={() => setExpensesPage(p => Math.max(1, p - 1))}
+                                                    disabled={expensesPage === 1}
+                                                    className="relative inline-flex items-center px-4 py-2 border border-slate-200 dark:border-border-primary text-sm font-bold rounded-xl text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 transition-all disabled:opacity-50"
+                                                >
+                                                    السابق
+                                                </button>
+                                                <button
+                                                    onClick={() => setExpensesPage(p => Math.min(pagination.pages, p + 1))}
+                                                    disabled={expensesPage === pagination.pages}
+                                                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-200 dark:border-border-primary text-sm font-bold rounded-xl text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 transition-all disabled:opacity-50"
+                                                >
+                                                    التالي
+                                                </button>
+                                            </div>
+                                            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                                <div>
+                                                    <p className="text-sm text-slate-500 dark:text-text-tertiary">
+                                                        عرض صفحة <span className="font-bold text-slate-900 dark:text-text-primary">{expensesPage}</span> من <span className="font-bold text-slate-900 dark:text-text-primary">{pagination.pages}</span>
+                                                    </p>
+                                                </div>
+                                                <nav className="relative z-0 inline-flex rounded-xl shadow-sm space-x-1 rtl:space-x-reverse" aria-label="Pagination">
+                                                    {Array.from({ length: pagination.pages }, (_, i) => (
+                                                        <button
+                                                            key={i + 1}
+                                                            onClick={() => setExpensesPage(i + 1)}
+                                                            className={`relative inline-flex items-center px-4 py-2 text-sm font-black rounded-xl transition-all ${expensesPage === i + 1
+                                                                ? 'z-10 bg-red-600 text-white shadow-md shadow-red-200 dark:shadow-none'
+                                                                : 'bg-white dark:bg-surface-primary border-2 border-slate-100 dark:border-border-primary text-slate-500 dark:text-text-tertiary hover:bg-slate-50 dark:hover:bg-surface-hover'
+                                                                }`}
+                                                        >
+                                                            {i + 1}
+                                                        </button>
+                                                    ))}
+                                                </nav>
+                                            </div>
                                         </div>
                                     )}
+
                                 </>
                             )}
                         </div>
@@ -755,7 +841,7 @@ export default function BadDebtsPage() {
                                 <div className="bg-white dark:bg-surface-primary border border-slate-100 dark:border-border-primary rounded-2xl p-6 shadow-sm">
                                     <div className="flex items-center gap-3 mb-4">
                                         <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-xl">
-                                            <PieChartIcon className="w-5 h-5 text-red-600 dark:text-red-400" />
+                                            <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
                                         </div>
                                         <h4 className="font-bold text-slate-800 dark:text-text-primary">توزيع المصروفات</h4>
                                     </div>
@@ -769,9 +855,9 @@ export default function BadDebtsPage() {
                                                     </span>
                                                 </div>
                                                 <div className="h-2 bg-slate-100 dark:bg-surface-elevated rounded-full overflow-hidden">
-                                                    <div 
-                                                        className="h-full rounded-full" 
-                                                        style={{ 
+                                                    <div
+                                                        className="h-full rounded-full"
+                                                        style={{
                                                             width: `${(cat.totalAmount / (stats?.thisYear.totalAmount || 1)) * 100}%`,
                                                             backgroundColor: CHART_COLORS[idx % CHART_COLORS.length]
                                                         }}
@@ -833,7 +919,7 @@ export default function BadDebtsPage() {
                                             <div className="h-full flex items-center justify-center text-red-400 dark:text-red-500">
                                                 حدث خطأ في جلب البيانات
                                             </div>
-                                        ) : monthlyReport && monthlyReport.length > 0 ? (
+                                        ) : monthlyReport && monthlyReport.length> 0 ? (
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <BarChart data={monthlyReport} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                                                     <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-slate-200 dark:stroke-slate-700" />
@@ -877,7 +963,7 @@ export default function BadDebtsPage() {
                                         </div>
                                     </div>
                                     <div className="h-[300px] w-full" dir="ltr">
-                                        {pieChartData.length > 0 ? (
+                                        {pieChartData.length> 0 ? (
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <PieChart>
                                                     <Pie
@@ -913,7 +999,7 @@ export default function BadDebtsPage() {
                                     <div className="text-center py-10 text-gray-400 dark:text-text-tertiary">جاري التحميل...</div>
                                 ) : monthlyReportError ? (
                                     <div className="text-center py-10 text-red-400 dark:text-red-500">حدث خطأ في جلب البيانات</div>
-                                ) : monthlyReport && monthlyReport.length > 0 ? (
+                                ) : monthlyReport && monthlyReport.length> 0 ? (
                                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                         {monthlyReport.map(month => (
                                             <div key={month.month} className="bg-slate-50 dark:bg-surface-secondary rounded-xl p-4 text-center hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 shadow-sm hover:shadow-md">
@@ -933,168 +1019,174 @@ export default function BadDebtsPage() {
             </div>
 
             {/* Category Modal */}
-            {showCategoryModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-surface-primary rounded-xl shadow-xl max-w-md w-full">
-                        <div className="bg-red-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
-                            <h3 className="text-lg font-bold">{editingCategory ? 'تعديل بند' : 'إضافة بند جديد'}</h3>
-                            <button onClick={() => { setShowCategoryModal(false); setEditingCategory(null); }} className="text-white hover:text-gray-200 dark:hover:text-gray-300">✕</button>
-                        </div>
-                        <div className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">اسم البند *</label>
-                                <input
-                                    type="text"
-                                    value={categoryForm.name}
-                                    onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
-                                    placeholder="مثال: مصاريف الصيانة"
-                                    required
-                                />
+            {
+                showCategoryModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                        <div className="bg-white dark:bg-surface-primary rounded-xl shadow-xl max-w-md w-full">
+                            <div className="bg-red-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
+                                <h3 className="text-lg font-bold">{editingCategory ? 'تعديل بند' : 'إضافة بند جديد'}</h3>
+                                <button onClick={() => { setShowCategoryModal(false); setEditingCategory(null); }} className="text-white hover:text-gray-200 dark:hover:text-gray-300">✕</button>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">الوصف</label>
-                                <textarea
-                                    value={categoryForm.description}
-                                    onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
-                                    rows={3}
-                                    placeholder="وصف اختياري للبند..."
-                                />
+                            <div className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">اسم البند *</label>
+                                    <input
+                                        type="text"
+                                        value={categoryForm.name}
+                                        onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                                        className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
+                                        placeholder="مثال: مصاريف الصيانة"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">الوصف</label>
+                                    <textarea
+                                        value={categoryForm.description}
+                                        onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+                                        className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
+                                        rows={3}
+                                        placeholder="وصف اختياري للبند..."
+                                    />
+                                </div>
                             </div>
-                        </div>
-                        <div className="px-6 py-4 bg-slate-50 dark:bg-surface-secondary rounded-b-xl flex justify-end gap-3">
-                            <button
-                                onClick={() => { setShowCategoryModal(false); setEditingCategory(null); }}
-                                className="px-4 py-2 text-slate-600 dark:text-text-secondary hover:text-gray-800 dark:hover:text-text-primary"
-                            >
-                                إلغاء
-                            </button>
-                            <button
-                                onClick={editingCategory ? handleUpdateCategory : handleCreateCategory}
-                                disabled={creating || updating || !categoryForm.name}
-                                className="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 transition-all duration-200 shadow-sm hover:shadow-md"
-                            >
-                                {editingCategory ? 'تحديث' : 'إضافة'}
-                            </button>
+                            <div className="px-6 py-4 bg-slate-50 dark:bg-surface-secondary rounded-b-xl flex justify-end gap-3">
+                                <button
+                                    onClick={() => { setShowCategoryModal(false); setEditingCategory(null); }}
+                                    className="px-4 py-2 text-slate-600 dark:text-text-secondary hover:text-gray-800 dark:hover:text-text-primary"
+                                >
+                                    إلغاء
+                                </button>
+                                <button
+                                    onClick={editingCategory ? handleUpdateCategory : handleCreateCategory}
+                                    disabled={creating || updating || !categoryForm.name}
+                                    className="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 transition-all duration-200 shadow-sm hover:shadow-md"
+                                >
+                                    {editingCategory ? 'تحديث' : 'إضافة'}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Pay Modal */}
-            {showPayModal && selectedCategory && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-surface-primary rounded-xl shadow-xl max-w-md w-full">
-                        <div className="bg-red-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
-                            <h3 className="text-lg font-bold">💸 صرف مصروف - {selectedCategory.name}</h3>
-                            <button onClick={() => { setShowPayModal(false); setSelectedCategory(null); }} className="text-white hover:text-gray-200 dark:hover:text-gray-300">✕</button>
-                        </div>
-                        <div className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">المبلغ *</label>
-                                <input
-                                    type="number"
-                                    value={payForm.amount}
-                                    onChange={(e) => setPayForm({ ...payForm, amount: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
-                                    placeholder="أدخل المبلغ"
-                                    required
-                                />
+            {
+                showPayModal && selectedCategory && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                        <div className="bg-white dark:bg-surface-primary rounded-xl shadow-xl max-w-md w-full">
+                            <div className="bg-red-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
+                                <h3 className="text-lg font-bold">💸 صرف مصروف - {selectedCategory.name}</h3>
+                                <button onClick={() => { setShowPayModal(false); setSelectedCategory(null); }} className="text-white hover:text-gray-200 dark:hover:text-gray-300">✕</button>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">الوصف</label>
-                                <input
-                                    type="text"
-                                    value={payForm.description}
-                                    onChange={(e) => setPayForm({ ...payForm, description: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
-                                    placeholder="وصف المصروف..."
-                                />
+                            <div className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">المبلغ *</label>
+                                    <input
+                                        type="number"
+                                        value={payForm.amount}
+                                        onChange={(e) => setPayForm({ ...payForm, amount: e.target.value })}
+                                        className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
+                                        placeholder="أدخل المبلغ"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">الوصف</label>
+                                    <input
+                                        type="text"
+                                        value={payForm.description}
+                                        onChange={(e) => setPayForm({ ...payForm, description: e.target.value })}
+                                        className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
+                                        placeholder="وصف المصروف..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">الخزينة *</label>
+                                    <select
+                                        value={payForm.treasuryId}
+                                        onChange={(e) => setPayForm({ ...payForm, treasuryId: e.target.value })}
+                                        className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
+                                        required
+                                    >
+                                        <option value="">اختر الخزينة</option>
+                                        {treasuries.map(treasury => (
+                                            <option key={treasury.id} value={treasury.id}>
+                                                {treasury.name} ({formatCurrency(treasury.balance)})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">ملاحظات</label>
+                                    <textarea
+                                        value={payForm.notes}
+                                        onChange={(e) => setPayForm({ ...payForm, notes: e.target.value })}
+                                        className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
+                                        rows={2}
+                                    />
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">الخزينة *</label>
-                                <select
-                                    value={payForm.treasuryId}
-                                    onChange={(e) => setPayForm({ ...payForm, treasuryId: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
-                                    required
+                            <div className="px-6 py-4 bg-slate-50 dark:bg-surface-secondary rounded-b-xl flex justify-end gap-3">
+                                <button
+                                    onClick={() => { setShowPayModal(false); setSelectedCategory(null); }}
+                                    className="px-4 py-2 text-slate-600 dark:text-text-secondary hover:text-gray-800 dark:hover:text-text-primary"
                                 >
-                                    <option value="">اختر الخزينة</option>
-                                    {treasuries.map(treasury => (
-                                        <option key={treasury.id} value={treasury.id}>
-                                            {treasury.name} ({formatCurrency(treasury.balance)})
-                                        </option>
-                                    ))}
-                                </select>
+                                    إلغاء
+                                </button>
+                                <button
+                                    onClick={handlePayBadDebt}
+                                    disabled={paying || !payForm.amount || !payForm.treasuryId}
+                                    className="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 transition-all duration-200 shadow-sm hover:shadow-md"
+                                >
+                                    صرف المصروف
+                                </button>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-1">ملاحظات</label>
-                                <textarea
-                                    value={payForm.notes}
-                                    onChange={(e) => setPayForm({ ...payForm, notes: e.target.value })}
-                                    className="w-full px-4 py-2 border border-slate-300 dark:border-border-primary rounded-xl bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all"
-                                    rows={2}
-                                />
-                            </div>
-                        </div>
-                        <div className="px-6 py-4 bg-slate-50 dark:bg-surface-secondary rounded-b-xl flex justify-end gap-3">
-                            <button
-                                onClick={() => { setShowPayModal(false); setSelectedCategory(null); }}
-                                className="px-4 py-2 text-slate-600 dark:text-text-secondary hover:text-gray-800 dark:hover:text-text-primary"
-                            >
-                                إلغاء
-                            </button>
-                            <button
-                                onClick={handlePayBadDebt}
-                                disabled={paying || !payForm.amount || !payForm.treasuryId}
-                                className="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 transition-all duration-200 shadow-sm hover:shadow-md"
-                            >
-                                صرف المصروف
-                            </button>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Preview Modal */}
-            {showPreviewModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-surface-primary rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-                        <div className="bg-red-600 text-white px-6 py-4 flex justify-between items-center">
-                            <h3 className="text-lg font-bold flex items-center gap-2">
-                                <FileText className="w-5 h-5" />
-                                معاينة التقرير
-                            </h3>
-                            <div className="flex items-center gap-3">
-                                <button
-                                    onClick={handlePrintReport}
-                                    className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl flex items-center gap-2 transition-all duration-200 font-medium border border-white/30 shadow-sm hover:shadow-md"
-                                >
-                                    <Printer className="w-5 h-5" />
-                                    طباعة
-                                </button>
-                                <button onClick={() => setShowPreviewModal(false)} className="text-white hover:text-gray-200 dark:hover:text-gray-300">
-                                    <X className="w-6 h-6" />
-                                </button>
+            {
+                showPreviewModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                        <div className="bg-white dark:bg-surface-primary rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                            <div className="bg-red-600 text-white px-6 py-4 flex justify-between items-center">
+                                <h3 className="text-lg font-bold flex items-center gap-2">
+                                    <FileText className="w-5 h-5" />
+                                    معاينة التقرير
+                                </h3>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={handlePrintReport}
+                                        className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl flex items-center gap-2 transition-all duration-200 font-medium border border-white/30 shadow-sm hover:shadow-md"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                                        طباعة
+                                    </button>
+                                    <button onClick={() => setShowPreviewModal(false)} className="text-white hover:text-gray-200 dark:hover:text-gray-300">
+                                        <X className="w-6 h-6" />
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                        <div className="overflow-auto flex-1 p-4 bg-slate-100 dark:bg-surface-secondary">
-                            <div className="transform scale-75 origin-top">
-                                <BadDebtMonthlyReport
-                                    expenses={expenses}
-                                    startDate={expensesStartDate || undefined}
-                                    endDate={expensesEndDate || undefined}
-                                    categoryName={getSelectedCategoryName()}
-                                    companyName={getCompanyInfo().name}
-                                    userName={getCompanyInfo().userName}
-                                    totalAmount={totalDisplayedExpenses}
-                                />
+                            <div className="overflow-auto flex-1 p-4 bg-slate-100 dark:bg-surface-secondary">
+                                <div className="transform scale-75 origin-top">
+                                    <BadDebtMonthlyReport
+                                        expenses={expenses}
+                                        startDate={expensesStartDate || undefined}
+                                        endDate={expensesEndDate || undefined}
+                                        categoryName={getSelectedCategoryName()}
+                                        companyName={getCompanyInfo().name}
+                                        userName={getCompanyInfo().userName}
+                                        totalAmount={totalDisplayedExpenses}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Hidden div for printing */}
             <div ref={printRef} style={{ display: 'none' }}>

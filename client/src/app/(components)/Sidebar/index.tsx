@@ -55,28 +55,24 @@ const SidebarLink = React.memo(({
   return (
     <Link href={href}>
       <div
-        className={`relative flex items-center gap-3 px-4 py-3 mx-2 rounded-xl transition-all duration-200 group ${
-          isActive
-            ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg dark:from-blue-500 dark:to-indigo-500"
-            : "text-slate-700 dark:text-text-secondary hover:bg-blue-50 dark:hover:bg-surface-hover hover:text-blue-700 dark:hover:text-blue-400"
-        } ${isCollapsed ? "justify-center" : ""}`}
+        className={`relative flex items-center gap-3 px-4 py-3 mx-2 rounded-xl transition-all duration-200 group ${isActive
+          ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg dark:from-blue-500 dark:to-indigo-500"
+          : "text-slate-700 dark:text-text-secondary hover:bg-blue-50 dark:hover:bg-surface-hover hover:text-blue-700 dark:hover:text-blue-400"
+          } ${isCollapsed ? "justify-center" : ""}`}
         title={isCollapsed ? label : ""}
       >
         <Icon
-          className={`h-5 w-5 transition-colors shrink-0 ${
-            isActive
-              ? "text-white"
-              : "text-slate-500 dark:text-text-tertiary group-hover:text-blue-600 dark:group-hover:text-blue-400"
-          }`}
+          className={`h-5 w-5 transition-colors shrink-0 ${isActive
+            ? "text-white"
+            : "text-slate-500 dark:text-text-tertiary group-hover:text-blue-600 dark:group-hover:text-blue-400"
+            }`}
         />
         <span
-          className={`font-medium transition-all duration-200 whitespace-nowrap overflow-hidden ${
-            isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
-          } ${
-            isActive
+          className={`font-medium transition-all duration-200 whitespace-nowrap overflow-hidden ${isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+            } ${isActive
               ? "text-white"
               : "text-slate-700 dark:text-text-secondary group-hover:text-blue-700 dark:group-hover:text-blue-400"
-          }`}
+            }`}
         >
           {label}
         </span>
@@ -367,14 +363,7 @@ const Sidebar = () => {
               badgeCount={totalPendingWarehouseOrders}
             />
           )}
-          {canAccessScreen('/warehouse-returns') && (
-            <SidebarLink
-              href="/warehouse-returns"
-              icon={TrendingDown}
-              label="استلام المردودات"
-              isCollapsed={isSidebarCollapsed}
-            />
-          )}
+
 
           {/* إخفاء شاشة "المبيعات من الشركة الأم" من الشركة الأم نفسها */}
           {!isParentCompany && canAccessScreen('/complex-inter-company-sales') && (

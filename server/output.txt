@@ -1,0 +1,59 @@
+--- Checking Sales Data ---
+Total Sales in DB: 20
+Last 5 Approved Sales:
+[
+  {
+    "id": 20,
+    "createdAt": "2026-01-24T17:23:23.501Z",
+    "total": "700",
+    "approvedBy": "Unknown",
+    "status": "APPROVED"
+  },
+  {
+    "id": 19,
+    "createdAt": "2026-01-24T17:22:28.387Z",
+    "total": "461.12",
+    "approvedBy": "Unknown",
+    "status": "APPROVED"
+  },
+  {
+    "id": 18,
+    "createdAt": "2026-01-23T08:35:53.757Z",
+    "total": "1315.6",
+    "approvedBy": "Unknown",
+    "status": "APPROVED"
+  },
+  {
+    "id": 17,
+    "createdAt": "2026-01-23T08:18:35.441Z",
+    "total": "960.2",
+    "approvedBy": "Unknown",
+    "status": "APPROVED"
+  },
+  {
+    "id": 16,
+    "createdAt": "2026-01-19T23:21:54.386Z",
+    "total": "175.68",
+    "approvedBy": "Unknown",
+    "status": "APPROVED"
+  }
+]
+Total Users: 5
+Sample Users: [
+  {
+    "UserID": "manager_user_002",
+    "UserName": "manager_tripoli",
+    "FullName": "مدير فرع طرابلس"
+  },
+  {
+    "UserID": "cashier_user_003",
+    "UserName": "cashier_benghazi",
+    "FullName": "صراف فرع بنغازي"
+  },
+  {
+    "UserID": "cmkk9kl5n0002g2to9rh0m11i",
+    "UserName": "EM",
+    "FullName": "emhemed"
+  }
+]
+Checking period: 2025-12-31T22:00:00.000Z to 2026-01-31T21:59:59.000Z

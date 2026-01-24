@@ -46,7 +46,12 @@ export class SalesService {
         include: {
           group: true,
           stocks: isSystemUser ? true : {
-            where: { companyId: userCompanyId }
+            where: {
+              OR: [
+                { companyId: userCompanyId },
+                { companyId: 1 } // جلب مخزون الشركة الأم أيضاً للتحقق
+              ]
+            }
           },
           prices: isSystemUser ? true : {
             where: { companyId: userCompanyId }
@@ -58,8 +63,48 @@ export class SalesService {
         throw new Error('بعض الأصناف غير موجودة أو ليس لديك صلاحية للوصول إليها');
       }
 
-      // ملاحظة: لا نتحقق من المخزون هنا لأن الفاتورة مبدئية
-      // سيتم التحقق من المخزون عند اعتماد الفاتورة من المحاسب
+      // التحقق من المخزون قبل إنشاء الفاتورة
+      for (const line of data.lines) {
+        const product = products.find((p: any) => p.id === line.productId);
+        if (!product) continue;
+
+        const isParentProduct = product.createdByCompanyId === 1;
+        const requiredBoxes = line.qty;
+
+        // البحث عن المخزون المحلي
+        const localStock = product.stocks.find((s: any) => s.companyId === userCompanyId);
+        const localAvailable = Number(localStock?.boxes || 0);
+
+        // البحث عن مخزون الشركة الأم
+        const parentStock = product.stocks.find((s: any) => s.companyId === 1);
+        const parentAvailable = Number(parentStock?.boxes || 0);
+
+        // تحديد ما إذا كان المستخدم يطلب صراحة من الشركة الأم
+        const requestedFromParent = line.isFromParentCompany;
+
+        // التحقق
+        if (requestedFromParent) {
+          // إذا طلب من الشركة الأم، نتحقق من مخزون الشركة الأم فقط
+          if (parentAvailable < requiredBoxes) {
+            throw new Error(`المخزون غير كافي للصنف "${product.name}" في مخازن الشركة الأم. المتوفر: ${parentAvailable}، المطلوب: ${requiredBoxes}`);
+          }
+        } else {
+          // إذا طلب محلياً، نتحقق من المحلي، وإذا لم يكفِ نتحقق من الأم (إذا كان المنتج لها)
+          if (localAvailable < requiredBoxes) {
+            // هل يمكن تغطيته من الشركة الأم؟
+            if (isParentProduct && parentAvailable >= requiredBoxes) {
+              // مسموح (سيتم تحويله تلقائياً أو يدوياً لاحقاً)
+              // يمكننا هنا تحويله تلقائياً إذا أردنا، لكن سنكتفي بالسماح بالمرور
+            } else {
+              // غير متوفر لا محلياً ولا في الأم (أو المنتج ليس للأم)
+              const extraMsg = isParentProduct ? ` (ولا في الشركة الأم: ${parentAvailable})` : '';
+              throw new Error(`المخزون غير كافي للصنف "${product.name}". المتوفر محلياً: ${localAvailable}${extraMsg}، المطلوب: ${requiredBoxes}`);
+            }
+          }
+        }
+      }
+
+      // سيتم التحقق مرة أخرى عند الاعتماد لضمان عدم تغير المخزون في تلك الأثناء
 
       // التحقق من الخصومات المسموح بها
       for (const line of data.lines) {
@@ -1823,21 +1868,28 @@ export class SalesService {
         let available = getStockLevel(currentSourceId, line.productId);
 
         if (available < required) {
-          // محاولة تبديل المصدر للشركة الأم إذا لم يكن محلياً وكان المنتج للشركة الأم
+          // هل يمكننا الاستعارة من الشركة الأم؟
+          let solvedByParent = false;
+
           if (!line.isFromParentCompany && parentCompanyId && (line.product as any).createdByCompanyId === parentCompanyId) {
             const parentAvailable = getStockLevel(parentCompanyId, line.productId);
             if (parentAvailable >= required) {
-              // تغيير المصدر في الذاكرة وفي قاعدة البيانات لاحقاً
+              // تغيير المصدر للشركة الأم في الذاكرة وفي قاعدة البيانات لاحقاً
               (line as any).isFromParentCompany = true;
               lineAttributeUpdates.push({
                 id: line.id,
                 data: { isFromParentCompany: true }
               });
+              solvedByParent = true;
             } else {
+              // إذا فشل حتى في الشركة الأم، هذا خطأ مزدوج
               throw new Error(`المخزون غير كافي للصنف ${line.product.name}. المتوفر محلياً: ${available} وفي الشركة الأم: ${parentAvailable}. المطلوب: ${required}`);
             }
-          } else {
+          }
+
+          if (!solvedByParent) {
             const sourceName = currentSourceId === parentCompanyId ? parentCompanyName : existingSale.company.name;
+            // إعادة تفعيل الخطأ لمنع البيع بالسالب
             throw new Error(`المخزون غير كافي للصنف ${line.product.name} في ${sourceName}. المتوفر: ${available}. المطلوب: ${required}`);
           }
         }

@@ -2,21 +2,38 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  useGetCustomersQuery, 
+import {
+  useGetCustomersQuery,
   useCreateCustomerMutation,
   useUpdateCustomerMutation,
   useDeleteCustomerMutation,
   Customer,
-  CreateCustomerRequest,
-  UpdateCustomerRequest
+  CreateCustomerRequest
 } from '@/state/salesApi';
 import { useToast } from '@/components/ui/Toast';
+import {
+  Users,
+  UserPlus,
+  Search,
+  Plus,
+  Edit,
+  Trash2,
+  X,
+  Filter,
+  ChevronRight,
+  ChevronLeft,
+  MoreVertical,
+  Phone,
+  FileText,
+  Calendar,
+  AlertCircle,
+  CheckCircle
+} from 'lucide-react';
 
 const CustomersPage = () => {
-  const { success, error, warning, info, confirm } = useToast();
+  const { success, error: showError, warning, info, confirm } = useToast();
   const router = useRouter();
-  
+
   // States
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,25 +42,13 @@ const CustomersPage = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
-  
+
   // Form states
   const [formData, setFormData] = useState<CreateCustomerRequest>({
     name: '',
     phone: '',
     note: ''
   });
-
-  // Search timeout
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, []);
 
   // API calls
   const { data: customersData, isLoading: customersLoading, refetch: refetchCustomers } = useGetCustomersQuery({
@@ -56,69 +61,62 @@ const CustomersPage = () => {
   const [updateCustomer, { isLoading: isUpdating }] = useUpdateCustomerMutation();
   const [deleteCustomer, { isLoading: isDeleting }] = useDeleteCustomerMutation();
 
-  // Handle search with debounce
+  // Handlers
   const handleSearch = (value: string) => {
     setSearchTerm(value);
     setCurrentPage(1);
   };
 
-  // Handle create customer
   const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!formData.name.trim()) {
-      error('خطأ', 'اسم العميل مطلوب');
+      showError('اسم العميل مطلوب');
       return;
     }
 
     try {
       await createCustomer(formData).unwrap();
-      success('تم بنجاح!', 'تم إنشاء العميل بنجاح');
+      success('تم إنشاء العميل بنجاح');
       setShowCreateModal(false);
       setFormData({ name: '', phone: '', note: '' });
       refetchCustomers();
-    } catch (error: any) {
-      error('خطأ', error.data?.message || 'حدث خطأ في إنشاء العميل');
+    } catch (err: any) {
+      showError(err.data?.message || 'حدث خطأ في إنشاء العميل');
     }
   };
 
-  // Handle edit customer
   const handleEditCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!selectedCustomer || !formData.name.trim()) {
-      error('خطأ', 'اسم العميل مطلوب');
+      showError('اسم العميل مطلوب');
       return;
     }
 
     try {
       await updateCustomer({ id: selectedCustomer.id, data: formData }).unwrap();
-      success('تم بنجاح!', 'تم تحديث العميل بنجاح');
+      success('تم تحديث العميل بنجاح');
       setShowEditModal(false);
       setSelectedCustomer(null);
       setFormData({ name: '', phone: '', note: '' });
       refetchCustomers();
-    } catch (error: any) {
-      error('خطأ', error.data?.message || 'حدث خطأ في تحديث العميل');
+    } catch (err: any) {
+      showError(err.data?.message || 'حدث خطأ في تحديث العميل');
     }
   };
 
-  // Handle delete customer
   const handleDeleteCustomer = async () => {
     if (!customerToDelete) return;
-
     try {
       await deleteCustomer(customerToDelete.id).unwrap();
-      success('تم بنجاح!', 'تم حذف العميل بنجاح');
+      success('تم حذف العميل بنجاح');
       setShowDeleteConfirm(false);
       setCustomerToDelete(null);
       refetchCustomers();
-    } catch (error: any) {
-      error('خطأ', error.data?.message || 'حدث خطأ في حذف العميل');
+    } catch (err: any) {
+      showError(err.data?.message || 'حدث خطأ في حذف العميل');
     }
   };
 
-  // Open edit modal
   const openEditModal = (customer: Customer) => {
     setSelectedCustomer(customer);
     setFormData({
@@ -129,453 +127,315 @@ const CustomersPage = () => {
     setShowEditModal(true);
   };
 
-  // Open delete confirm
-  const openDeleteConfirm = (customer: Customer) => {
-    setCustomerToDelete(customer);
-    setShowDeleteConfirm(true);
-  };
-
-  // Reset form
   const resetForm = () => {
     setFormData({ name: '', phone: '', note: '' });
     setSelectedCustomer(null);
   };
 
-  if (customersLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">العملاء</h1>
-              <p className="text-gray-600 mt-2">إدارة قائمة العملاء</p>
-            </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              إضافة عميل جديد
-            </button>
+    <div className="max-w-full space-y-8 animate-fadeIn">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black text-slate-900 dark:text-text-primary tracking-tight flex items-center gap-3">
+            <Users className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            العملاء
+          </h1>
+          <p className="text-slate-500 dark:text-text-secondary font-medium flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+            إدارة قاعدة بيانات العملاء وتتبع تفاصيلهم
+          </p>
+        </div>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black shadow-lg shadow-blue-100 dark:shadow-none hover:scale-[1.02] active:scale-[0.98] transition-all"
+        >
+          <UserPlus className="w-5 h-5" />
+          إضافة عميل جديد
+        </button>
+      </div>
+
+      {/* Filters and Search */}
+      <div className="bg-white dark:bg-surface-primary p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1 relative group">
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-text-tertiary group-focus-within:text-blue-500 transition-colors" />
+            <input
+              type="text"
+              placeholder="ابحث باسم العميل أو رقم الهاتف..."
+              className="w-full pr-12 pl-4 py-3.5 bg-slate-50 dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 dark:focus:border-blue-400 text-slate-900 dark:text-text-primary font-medium transition-all"
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
           </div>
         </div>
+      </div>
 
-        {/* Search and Filters */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Search */}
-            <div className="relative flex-1">
-              <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="text"
-                placeholder="البحث في العملاء..."
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Customers Table */}
-        <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+      {/* Customers Table */}
+      <div className="bg-white dark:bg-surface-primary rounded-3xl shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-right">
+            <thead>
+              <tr className="bg-slate-50/50 dark:bg-slate-900/20 border-b border-slate-200 dark:border-border-primary">
+                <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-text-tertiary uppercase">العميل</th>
+                <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-text-tertiary uppercase">بيانات الاتصال</th>
+                <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-text-tertiary uppercase">التاريخ</th>
+                <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-text-tertiary uppercase">ملاحظات</th>
+                <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-text-tertiary uppercase text-center">الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-border-primary/50">
+              {customersLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="px-6 py-4"><div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-24"></div></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-20"></div></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-16"></div></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-32"></div></td>
+                    <td className="px-6 py-4"><div className="h-8 bg-slate-100 dark:bg-slate-800 rounded w-16 mx-auto"></div></td>
+                  </tr>
+                ))
+              ) : customersData?.data?.customers?.length === 0 ? (
                 <tr>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    #
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    اسم العميل
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    الهاتف
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    الملاحظات
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    تاريخ الإنشاء
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    الإجراءات
-                  </th>
+                  <td colSpan={5} className="px-6 py-20 text-center">
+                    <div className="flex flex-col items-center justify-center gap-4">
+                      <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
+                        <Users className="w-8 h-8 text-slate-400" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-slate-900 dark:text-text-primary font-black text-lg">لم يتم العثور على عملاء</p>
+                        <p className="text-slate-500 dark:text-text-tertiary text-sm">ابدأ بإضافة أول عميل إلى نظامك</p>
+                      </div>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {customersData?.data?.customers?.map((customer, index) => (
-                  <tr key={customer.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {(currentPage - 1) * 10 + index + 1}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{customer.name}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {customer.phone || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="max-w-xs truncate" title={customer.note || ''}>
-                        {customer.note || '-'}
+              ) : (
+                customersData?.data?.customers?.map((customer) => (
+                  <tr key={customer.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold group-hover:scale-110 transition-transform">
+                          {customer.name.charAt(0)}
+                        </div>
+                        <p className="font-bold text-slate-900 dark:text-text-primary">{customer.name}</p>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(customer.createdAt).toLocaleDateString('ar-LY')}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-slate-600 dark:text-text-secondary">
+                        <Phone className="w-4 h-4" />
+                        <span className="font-medium">{customer.phone || '-'}</span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center gap-2">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-slate-500 dark:text-text-tertiary text-sm">
+                        <Calendar className="w-4 h-4" />
+                        {new Date(customer.createdAt).toLocaleDateString('ar-LY')}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-slate-500 dark:text-text-tertiary text-sm max-w-xs">
+                        <FileText className="w-4 h-4 shrink-0" />
+                        <span className="truncate" title={customer.note || ''}>{customer.note || '-'}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => openEditModal(customer)}
-                          className="text-blue-600 hover:text-blue-900 p-1 rounded"
+                          className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all"
                           title="تعديل"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
+                          <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => openDeleteConfirm(customer)}
-                          className="text-red-600 hover:text-red-900 p-1 rounded"
+                          onClick={() => {
+                            setCustomerToDelete(customer);
+                            setShowDeleteConfirm(true);
+                          }}
+                          className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all"
                           title="حذف"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Empty State */}
-          {customersData?.data?.customers?.length === 0 && (
-            <div className="text-center py-12">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">لا توجد عملاء</h3>
-              <p className="mt-1 text-sm text-gray-500">ابدأ بإنشاء عميل جديد.</p>
-            </div>
-          )}
-
-          {/* Pagination */}
-          {customersData?.data?.pagination && customersData.data.pagination.pages > 1 && (
-            <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-              <div className="flex-1 flex justify-between sm:hidden">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  السابق
-                </button>
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(customersData.data.pagination.pages, prev + 1))}
-                  disabled={currentPage === customersData.data.pagination.pages}
-                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  التالي
-                </button>
-              </div>
-              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm text-gray-700">
-                    عرض{' '}
-                    <span className="font-medium">{(currentPage - 1) * 10 + 1}</span>
-                    {' '}إلى{' '}
-                    <span className="font-medium">
-                      {Math.min(currentPage * 10, customersData.data.pagination.total)}
-                    </span>
-                    {' '}من{' '}
-                    <span className="font-medium">{customersData.data.pagination.total}</span>
-                    {' '}نتيجة
-                  </p>
-                </div>
-                <div>
-                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                      disabled={currentPage === 1}
-                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <span className="sr-only">السابق</span>
-                      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                    {(() => {
-                      const totalPages = customersData.data.pagination.pages;
-                      const pages: (number | string)[] = [];
-                      
-                      if (totalPages <= 7) {
-                        for (let i = 1; i <= totalPages; i++) pages.push(i);
-                      } else {
-                        if (currentPage <= 4) {
-                          for (let i = 1; i <= 5; i++) pages.push(i);
-                          pages.push('...');
-                          pages.push(totalPages);
-                        } else if (currentPage >= totalPages - 3) {
-                          pages.push(1);
-                          pages.push('...');
-                          for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
-                        } else {
-                          pages.push(1);
-                          pages.push('...');
-                          for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
-                          pages.push('...');
-                          pages.push(totalPages);
-                        }
-                      }
-                      
-                      return pages.map((page, idx) => (
-                        page === '...' ? (
-                          <span key={`ellipsis-${idx}`} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                            ...
-                          </span>
-                        ) : (
-                          <button
-                            key={page}
-                            onClick={() => setCurrentPage(page as number)}
-                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                              currentPage === page
-                                ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        )
-                      ));
-                    })()}
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(customersData.data.pagination.pages, prev + 1))}
-                      disabled={currentPage === customersData.data.pagination.pages}
-                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <span className="sr-only">التالي</span>
-                      <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </nav>
-                </div>
-              </div>
-            </div>
-          )}
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
 
-        {/* Create Modal */}
-        {showCreateModal && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-              <div className="mt-3">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">إضافة عميل جديد</h3>
-                  <button
-                    onClick={() => {
-                      setShowCreateModal(false);
-                      resetForm();
-                    }}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-
-                <form onSubmit={handleCreateCustomer} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">اسم العميل *</label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">الهاتف</label>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">ملاحظات</label>
-                    <textarea
-                      value={formData.note}
-                      onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="flex justify-end gap-3 pt-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowCreateModal(false);
-                        resetForm();
-                      }}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
-                    >
-                      إلغاء
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isCreating}
-                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      {isCreating ? 'جاري الحفظ...' : 'حفظ'}
-                    </button>
-                  </div>
-                </form>
-              </div>
+        {/* Pagination */}
+        {customersData?.data?.pagination && customersData.data.pagination.pages > 1 && (
+          <div className="bg-slate-50/50 dark:bg-slate-900/20 px-6 py-4 flex items-center justify-between border-t border-slate-100 dark:border-border-primary">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="relative inline-flex items-center px-4 py-2 border border-slate-200 dark:border-border-primary text-sm font-bold rounded-xl text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 transition-all disabled:opacity-50"
+              >
+                السابق
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(customersData.data.pagination.pages, p + 1))}
+                disabled={currentPage === customersData.data.pagination.pages}
+                className="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-200 dark:border-border-primary text-sm font-bold rounded-xl text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 transition-all disabled:opacity-50"
+              >
+                التالي
+              </button>
             </div>
-          </div>
-        )}
-
-        {/* Edit Modal */}
-        {showEditModal && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-              <div className="mt-3">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">تعديل العميل</h3>
-                  <button
-                    onClick={() => {
-                      setShowEditModal(false);
-                      resetForm();
-                    }}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-
-                <form onSubmit={handleEditCustomer} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">اسم العميل *</label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">الهاتف</label>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">ملاحظات</label>
-                    <textarea
-                      value={formData.note}
-                      onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="flex justify-end gap-3 pt-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowEditModal(false);
-                        resetForm();
-                      }}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
-                    >
-                      إلغاء
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isUpdating}
-                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      {isUpdating ? 'جاري التحديث...' : 'تحديث'}
-                    </button>
-                  </div>
-                </form>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-slate-500 dark:text-text-tertiary">
+                  عرض صفحة <span className="font-bold text-slate-900 dark:text-text-primary">{currentPage}</span> من <span className="font-bold text-slate-900 dark:text-text-primary">{customersData.data.pagination.pages}</span>
+                </p>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Delete Confirmation Modal */}
-        {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-              <div className="mt-3">
-                <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full">
-                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
-                </div>
-                <div className="mt-2 text-center">
-                  <h3 className="text-lg font-medium text-gray-900">تأكيد الحذف</h3>
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500">
-                      هل أنت متأكد من حذف العميل "{customerToDelete?.name}"؟ هذا الإجراء لا يمكن التراجع عنه.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex justify-center gap-3 mt-4">
+              <nav className="relative z-0 inline-flex rounded-xl shadow-sm space-x-1 rtl:space-x-reverse" aria-label="Pagination">
+                {Array.from({ length: Math.min(customersData.data.pagination.pages, 10) }, (_, i) => (
                   <button
-                    onClick={() => {
-                      setShowDeleteConfirm(false);
-                      setCustomerToDelete(null);
-                    }}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
+                    key={i + 1}
+                    onClick={() => setCurrentPage(i + 1)}
+                    className={`relative inline-flex items-center px-4 py-2 text-sm font-black rounded-xl transition-all ${currentPage === i + 1
+                      ? 'z-10 bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-none'
+                      : 'bg-white dark:bg-surface-primary border-2 border-slate-100 dark:border-border-primary text-slate-500 dark:text-text-tertiary hover:bg-slate-50 dark:hover:bg-surface-hover'
+                      }`}
                   >
-                    إلغاء
+                    {i + 1}
                   </button>
-                  <button
-                    onClick={handleDeleteCustomer}
-                    disabled={isDeleting}
-                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 disabled:opacity-50"
-                  >
-                    {isDeleting ? 'جاري الحذف...' : 'حذف'}
-                  </button>
-                </div>
-              </div>
+                ))}
+              </nav>
             </div>
           </div>
         )}
       </div>
+
+      {/* Create/Edit Modal */}
+      {(showCreateModal || showEditModal) && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white dark:bg-surface-primary rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 dark:border-border-primary">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-600 dark:to-indigo-600 px-8 py-6 flex flex-row-reverse justify-between items-center text-white">
+              <div className="flex items-center gap-3 flex-row-reverse">
+                <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
+                  <UserPlus className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-black">{showEditModal ? 'تعديل بيانات العميل' : 'إضافة عميل جديد'}</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setShowEditModal(false);
+                  resetForm();
+                }}
+                className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={showEditModal ? handleEditCustomer : handleCreateCustomer} className="p-8 space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-black text-slate-700 dark:text-text-secondary pr-1 block text-right uppercase tracking-wider">اسم العميل *</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 dark:focus:border-blue-400 text-slate-900 dark:text-text-primary font-bold transition-all text-right"
+                  placeholder="أدخل الاسم الكامل..."
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-black text-slate-700 dark:text-text-secondary pr-1 block text-right uppercase tracking-wider">رقم الهاتف</label>
+                <div className="relative group">
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 dark:focus:border-blue-400 text-slate-900 dark:text-text-primary font-bold transition-all text-right"
+                    placeholder="0xxxxxxxxx"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-black text-slate-700 dark:text-text-secondary pr-1 block text-right uppercase tracking-wider">ملاحظات</label>
+                <textarea
+                  value={formData.note}
+                  onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 dark:focus:border-blue-400 text-slate-900 dark:text-text-primary font-medium transition-all text-right resize-none"
+                  placeholder="أي تفاصيل أو ملاحظات إضافية..."
+                />
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="submit"
+                  disabled={isCreating || isUpdating}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl font-black transition-all shadow-lg shadow-blue-100 dark:shadow-none flex items-center justify-center gap-2 hover:translate-y-[-2px] active:translate-y-[0px] disabled:opacity-50"
+                >
+                  {(isCreating || isUpdating) ? (
+                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      {showEditModal ? 'تحديث البيانات' : 'إضافة العميل'}
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowCreateModal(false); setShowEditModal(false); resetForm(); }}
+                  className="px-8 py-4 bg-slate-100 dark:bg-surface-hover text-slate-600 dark:text-text-secondary rounded-2xl font-black transition-all hover:bg-slate-200 dark:hover:bg-surface-selected"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white dark:bg-surface-primary rounded-3xl shadow-2xl max-w-md w-full p-8 border border-slate-200 dark:border-border-primary text-center">
+            <div className="w-20 h-20 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertCircle className="w-10 h-10 text-red-600 dark:text-red-500 animate-pulse" />
+            </div>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-text-primary mb-2">تأكيد الحذف</h3>
+            <p className="text-slate-500 dark:text-text-secondary font-medium mb-8 leading-relaxed">
+              هل أنت متأكد من حذف العميل <span className="text-slate-900 dark:text-text-primary font-black">"{customerToDelete?.name}"</span>؟<br />
+              هذا الإجراء لا يمكن التراجع عنه وسيتم حذف كافة البيانات المرتبطة به.
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={handleDeleteCustomer}
+                disabled={isDeleting}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white px-6 py-4 rounded-2xl font-black transition-all shadow-lg shadow-red-100 dark:shadow-none flex items-center justify-center gap-2 hover:translate-y-[-2px] active:translate-y-[0px] disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    <Trash2 className="w-5 h-5" />
+                    تأكيد الحذف
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => { setShowDeleteConfirm(false); setCustomerToDelete(null); }}
+                className="flex-1 bg-slate-100 dark:bg-surface-hover text-slate-600 dark:text-text-secondary rounded-2xl font-black transition-all hover:bg-slate-200 dark:hover:bg-surface-selected"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

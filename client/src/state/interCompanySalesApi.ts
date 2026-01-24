@@ -6,6 +6,7 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuthInterceptor } from "./apiUtils";
 import { API_CACHE_CONFIG } from "@/lib/config";
+import { treasuryApi } from "./treasuryApi";
 
 // Types
 export interface InterCompanySaleLine {
@@ -105,7 +106,13 @@ export const interCompanySalesApi = createApi({
         method: "POST",
         body: data
       }),
-      invalidatesTags: ["InterCompanySales", "InterCompanySalesStats"]
+      invalidatesTags: ["InterCompanySales", "InterCompanySalesStats"],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+        } catch { }
+      },
     }),
 
     // الحصول على جميع المبيعات بين الشركات

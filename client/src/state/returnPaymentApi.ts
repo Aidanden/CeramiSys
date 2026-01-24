@@ -4,6 +4,7 @@
  */
 
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { treasuryApi } from './treasuryApi';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
@@ -87,13 +88,19 @@ export const returnPaymentApi = createApi({
         { type: 'SaleReturn', id: arg.saleReturnId },
         { type: 'SaleReturn', id: 'LIST' },
       ],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+        } catch { }
+      },
     }),
 
     // الحصول على جميع الدفعات
     getReturnPayments: builder.query<PaginatedReturnPaymentsResponse, ReturnPaymentsQueryParams>({
       query: (params = {}) => {
         const queryParams = new URLSearchParams();
-        
+
         if (params.page) queryParams.append('page', params.page.toString());
         if (params.limit) queryParams.append('limit', params.limit.toString());
         if (params.saleReturnId) queryParams.append('saleReturnId', params.saleReturnId.toString());
@@ -105,9 +112,9 @@ export const returnPaymentApi = createApi({
       providesTags: (result) =>
         result
           ? [
-              ...result.data.map(({ id }) => ({ type: 'ReturnPayment' as const, id })),
-              { type: 'ReturnPayment', id: 'LIST' },
-            ]
+            ...result.data.map(({ id }) => ({ type: 'ReturnPayment' as const, id })),
+            { type: 'ReturnPayment', id: 'LIST' },
+          ]
           : [{ type: 'ReturnPayment', id: 'LIST' }],
     }),
 
@@ -126,6 +133,12 @@ export const returnPaymentApi = createApi({
         { type: 'SaleReturn', id: arg.saleReturnId },
         { type: 'SaleReturn', id: 'LIST' },
       ],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+        } catch { }
+      },
     }),
   }),
 });

@@ -21,7 +21,9 @@ import {
 } from '@/state/notificationsApi';
 import { useToast } from '@/components/ui/Toast';
 import { formatArabicNumber } from '@/utils/formatArabicNumbers';
-import { Bell, Check, Trash2, CheckCheck, X, Package, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import { Bell, Trash2, X, Package } from 'lucide-react';
+
+
 
 export default function WarehouseDispatchPage() {
   const [activeTab, setActiveTab] = useState<'dispatch' | 'returns'>('dispatch');
@@ -91,16 +93,16 @@ export default function WarehouseDispatchPage() {
     const date = new Date(dateString);
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-    
+
     if (diffInMinutes < 1) return 'الآن';
     if (diffInMinutes < 60) return `منذ ${diffInMinutes} دقيقة`;
-    
+
     const diffInHours = Math.floor(diffInMinutes / 60);
     if (diffInHours < 24) return `منذ ${diffInHours} ساعة`;
-    
+
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 7) return `منذ ${diffInDays} يوم`;
-    
+
     return date.toLocaleDateString('ar-LY');
   };
 
@@ -153,12 +155,13 @@ export default function WarehouseDispatchPage() {
   } = useGetDispatchOrdersQuery(
     {
       page: currentPage,
-      limit: 20,
+      limit: 10,
       status: statusFilter || undefined,
       search: searchTerm || customerName || customerPhone || undefined,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
     },
+
     {
       refetchOnMountOrArgChange: true,
       pollingInterval: 10000, // تحديث كل 10 ثواني
@@ -175,12 +178,13 @@ export default function WarehouseDispatchPage() {
   } = useGetReturnOrdersQuery(
     {
       page: currentPage,
-      limit: 20,
+      limit: 10,
       status: statusFilter || undefined,
       search: searchTerm || undefined,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
     },
+
     {
       refetchOnMountOrArgChange: true,
       pollingInterval: 10000, // تحديث كل 10 ثواني
@@ -354,26 +358,24 @@ export default function WarehouseDispatchPage() {
                       <X className="w-5 h-5" />
                     </button>
                   </div>
-                  
+
                   {/* Tabs */}
                   <div className="flex gap-2">
                     <button
                       onClick={() => setNotificationTab('unread')}
-                      className={`px-3 py-1 text-sm rounded-lg transition-colors ${
-                        notificationTab === 'unread'
-                          ? 'bg-white text-orange-600 font-bold'
-                          : 'bg-white/20 hover:bg-white/30'
-                      }`}
+                      className={`px-3 py-1 text-sm rounded-lg transition-colors ${notificationTab === 'unread'
+                        ? 'bg-white text-orange-600 font-bold'
+                        : 'bg-white/20 hover:bg-white/30'
+                        }`}
                     >
                       غير مقروءة ({stockNotificationsCount})
                     </button>
                     <button
                       onClick={() => setNotificationTab('all')}
-                      className={`px-3 py-1 text-sm rounded-lg transition-colors ${
-                        notificationTab === 'all'
-                          ? 'bg-white text-orange-600 font-bold'
-                          : 'bg-white/20 hover:bg-white/30'
-                      }`}
+                      className={`px-3 py-1 text-sm rounded-lg transition-colors ${notificationTab === 'all'
+                        ? 'bg-white text-orange-600 font-bold'
+                        : 'bg-white/20 hover:bg-white/30'
+                        }`}
                     >
                       الكل
                     </button>
@@ -387,7 +389,8 @@ export default function WarehouseDispatchPage() {
                       onClick={handleMarkAllAsRead}
                       className="w-full px-3 py-2 text-sm text-orange-600 hover:bg-orange-50 rounded-lg flex items-center justify-center gap-2 transition-colors"
                     >
-                      <CheckCheck className="w-4 h-4" />
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7m-7 0l4 4L22 7" /></svg>
+
                       تمييز الكل كمقروء
                     </button>
                   </div>
@@ -411,40 +414,37 @@ export default function WarehouseDispatchPage() {
                       {notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`p-4 hover:bg-gray-50 dark:hover:bg-surface-hover transition-colors cursor-pointer ${
-                            !notification.isRead ? 'bg-orange-50 dark:bg-orange-900/20 border-r-4 border-orange-500 dark:border-orange-400' : ''
-                          }`}
+                          className={`p-4 hover:bg-gray-50 dark:hover:bg-surface-hover transition-colors cursor-pointer ${!notification.isRead ? 'bg-orange-50 dark:bg-orange-900/20 border-r-4 border-orange-500 dark:border-orange-400' : ''
+                            }`}
                           onClick={() => handleNotificationClick(notification)}
                         >
                           <div className="flex items-start gap-3">
-                            <div className={`p-2 rounded-xl ${
-                              !notification.isRead ? 'bg-orange-100 dark:bg-orange-900/30' : 'bg-gray-100 dark:bg-surface-secondary'
-                            }`}>
+                            <div className={`p-2 rounded-xl ${!notification.isRead ? 'bg-orange-100 dark:bg-orange-900/30' : 'bg-gray-100 dark:bg-surface-secondary'
+                              }`}>
                               {getNotificationIcon(notification.type)}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
-                                <h4 className={`text-sm font-medium truncate ${
-                                  !notification.isRead ? 'text-gray-900 dark:text-text-primary' : 'text-gray-700 dark:text-text-secondary'
-                                }`}>
+                                <h4 className={`text-sm font-medium truncate ${!notification.isRead ? 'text-gray-900 dark:text-text-primary' : 'text-gray-700 dark:text-text-secondary'
+                                  }`}>
                                   {notification.title}
                                 </h4>
                                 {!notification.isRead && (
                                   <div className="w-2 h-2 bg-orange-500 dark:bg-orange-400 rounded-full flex-shrink-0"></div>
                                 )}
                               </div>
-                              
+
                               {notification.message && (
                                 <p className="text-sm text-gray-600 dark:text-text-secondary mb-2 line-clamp-2">
                                   {notification.message}
                                 </p>
                               )}
-                              
+
                               <span className="text-xs text-gray-400 dark:text-text-tertiary">
                                 {formatNotificationTime(notification.createdAt)}
                               </span>
                             </div>
-                            
+
                             {/* Action Buttons */}
                             <div className="flex flex-col gap-1">
                               {!notification.isRead && (
@@ -456,7 +456,8 @@ export default function WarehouseDispatchPage() {
                                   className="p-1.5 text-gray-400 dark:text-text-tertiary hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors"
                                   title="تمييز كمقروء"
                                 >
-                                  <Check className="w-4 h-4" />
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+
                                 </button>
                               )}
                               <button
@@ -903,30 +904,47 @@ export default function WarehouseDispatchPage() {
 
         {/* Pagination */}
         {((activeTab === 'dispatch' ? ordersData : returnsData)?.data?.pagination?.pages || 0) > 1 && (
-          <div className="mt-6 flex justify-center p-4">
-            <div className="flex space-x-2 space-x-reverse">
+          <div className="bg-slate-50/50 dark:bg-slate-900/20 px-6 py-4 flex items-center justify-between border-t border-slate-100 dark:border-border-primary">
+            <div className="flex-1 flex justify-between sm:hidden">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-2 border border-gray-300 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-gray-700 dark:text-text-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-surface-hover"
+                className="relative inline-flex items-center px-4 py-2 border border-slate-200 dark:border-border-primary text-sm font-bold rounded-xl text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 transition-all disabled:opacity-50"
               >
                 السابق
               </button>
-
-              <span className="px-3 py-2 text-sm text-gray-700 dark:text-text-secondary">
-                صفحة {formatArabicNumber(currentPage)} من {formatArabicNumber((activeTab === 'dispatch' ? ordersData : returnsData)?.data?.pagination?.pages || 0)}
-              </span>
-
               <button
                 onClick={() => setCurrentPage((prev) => Math.min(prev + 1, (activeTab === 'dispatch' ? ordersData : returnsData)?.data?.pagination?.pages || 0))}
                 disabled={currentPage === ((activeTab === 'dispatch' ? ordersData : returnsData)?.data?.pagination?.pages || 0)}
-                className="px-3 py-2 border border-gray-300 dark:border-border-primary rounded-md bg-white dark:bg-surface-secondary text-gray-700 dark:text-text-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-surface-hover"
+                className="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-200 dark:border-border-primary text-sm font-bold rounded-xl text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 transition-all disabled:opacity-50"
               >
                 التالي
               </button>
             </div>
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-slate-500 dark:text-text-tertiary">
+                  عرض صفحة <span className="font-bold text-slate-900 dark:text-text-primary">{formatArabicNumber(currentPage)}</span> من <span className="font-bold text-slate-900 dark:text-text-primary">{formatArabicNumber((activeTab === 'dispatch' ? ordersData : returnsData)?.data?.pagination?.pages || 0)}</span>
+                </p>
+              </div>
+              <nav className="relative z-0 inline-flex rounded-xl shadow-sm space-x-1 rtl:space-x-reverse" aria-label="Pagination">
+                {Array.from({ length: (activeTab === 'dispatch' ? ordersData : returnsData)?.data?.pagination?.pages || 0 }, (_, i) => (
+                  <button
+                    key={i + 1}
+                    onClick={() => setCurrentPage(i + 1)}
+                    className={`relative inline-flex items-center px-4 py-2 text-sm font-black rounded-xl transition-all ${currentPage === i + 1
+                      ? 'z-10 bg-orange-600 text-white shadow-md shadow-orange-200 dark:shadow-none'
+                      : 'bg-white dark:bg-surface-primary border-2 border-slate-100 dark:border-border-primary text-slate-500 dark:text-text-tertiary hover:bg-slate-50 dark:hover:bg-surface-hover'
+                      }`}
+                  >
+                    {formatArabicNumber(i + 1)}
+                  </button>
+                ))}
+              </nav>
+            </div>
           </div>
         )}
+
       </div>
 
       {/* Details Modal */}

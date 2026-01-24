@@ -8,14 +8,38 @@ import {
     DollarSign,
     TrendingUp,
     AlertCircle,
-    CheckCircle,
     Download,
     Edit,
-    InfoIcon,
-    ChevronLeft,
     BarChart3,
     FileText
 } from 'lucide-react';
+
+// Custom Icons components to avoid import issues
+const Check = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <polyline points="20 6 9 17 4 12" />
+    </svg>
+);
+
+const ChevronLeft = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="m15 18-6-6 6-6" />
+    </svg>
+);
+
+const ChevronRight = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="m9 18 6-6-6-6" />
+    </svg>
+);
+
+const Info = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 16v-4" />
+        <path d="M12 8h.01" />
+    </svg>
+);
 import { useGetPurchasesQuery } from '@/state/purchaseApi';
 import { useGetCompaniesQuery } from '@/state/companyApi';
 import { useGetCurrentUserQuery } from '@/state/authApi';
@@ -190,22 +214,17 @@ export default function InvoiceCostPage() {
     return (
         <div className="p-4 max-w-[1600px] mx-auto min-h-screen bg-transparent" dir="rtl">
             {/* Header */}
-            <div className="mb-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="mb-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
-                            <BarChart3 className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-slate-900 dark:text-text-primary">تكلفة الفاتورة</h1>
-                            <p className="text-slate-600 dark:text-text-secondary text-xs">حساب توزيع التكلفة على الأصناف</p>
-                        </div>
+                        <div className="w-1.5 h-8 bg-blue-600 rounded-full"></div>
+                        <h1 className="text-xl font-black text-slate-900 dark:text-text-primary tracking-tight">تكلفة الفاتورة</h1>
                     </div>
                     <button
                         onClick={() => refetch()}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 dark:border-border-primary text-xs font-bold text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 dark:hover:bg-surface-hover transition-all"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white dark:bg-surface-primary border border-slate-200 dark:border-border-primary text-sm font-black text-slate-700 dark:text-text-primary hover:bg-slate-50 dark:hover:bg-surface-secondary hover:border-blue-200 dark:hover:border-blue-800/30 hover:shadow-md transition-all duration-300"
                     >
-                        <RefreshCw className="w-3.5 h-3.5" />
+                        <RefreshCw className="w-4 h-4" />
                         تحديث
                     </button>
                 </div>
@@ -214,15 +233,17 @@ export default function InvoiceCostPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Left: Purchase List */}
                 <div className="lg:col-span-1">
-                    <div className="bg-white dark:bg-surface-primary rounded-xl shadow-sm border border-slate-200 dark:border-border-primary p-4">
-                        <h2 className="text-sm font-bold text-slate-900 dark:text-text-primary mb-4 flex items-center gap-2">
-                            <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                            فواتير المشتريات
-                        </h2>
+                    <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-6 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/30 transition-all duration-300">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                                <BarChart3 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <h2 className="text-lg font-black text-slate-900 dark:text-text-primary uppercase tracking-tight">فواتير المشتريات</h2>
+                        </div>
 
                         {/* Company Filter */}
-                        <div className="mb-3">
-                            <label className="block text-[10px] font-bold text-slate-500 dark:text-text-tertiary mb-1 uppercase">
+                        <div className="mb-4">
+                            <label className="block text-[10px] font-black text-slate-400 dark:text-text-tertiary mb-2 uppercase tracking-widest">
                                 الشركة
                             </label>
                             <select
@@ -231,8 +252,7 @@ export default function InvoiceCostPage() {
                                     setSelectedCompanyId(e.target.value ? Number(e.target.value) : undefined);
                                     setSelectedPurchaseId(null);
                                 }}
-                                className="w-full px-3 py-1.5 border border-slate-200 dark:border-border-primary rounded-lg bg-slate-50 dark:bg-surface-secondary text-slate-800 dark:text-text-primary text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                            >
+                                className="w-full px-4 py-2.5 border border-slate-200 dark:border-border-primary rounded-2xl bg-slate-50 dark:bg-surface-secondary text-slate-800 dark:text-text-primary text-sm font-black focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 transition-all">
                                 <option value="">جميع الشركات</option>
                                 {companies.map((company) => (
                                     <option key={company.id} value={company.id}>
@@ -243,15 +263,15 @@ export default function InvoiceCostPage() {
                         </div>
 
                         {/* Search */}
-                        <div className="mb-3">
-                            <div className="relative">
-                                <Search className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-3.5 h-3.5" />
+                        <div className="mb-4">
+                            <div className="relative group">
+                                <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
                                 <input
                                     type="text"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     placeholder="بحث برقم الفاتورة..."
-                                    className="w-full pr-8 pl-3 py-1.5 border border-slate-200 dark:border-border-primary rounded-lg bg-slate-50 dark:bg-surface-secondary text-slate-800 dark:text-text-primary text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                    className="w-full pr-11 pl-4 py-2.5 border border-slate-200 dark:border-border-primary rounded-2xl bg-slate-50 dark:bg-surface-secondary text-slate-800 dark:text-text-primary text-sm font-medium focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 focus:border-blue-500 transition-all"
                                 />
                             </div>
                         </div>
@@ -272,30 +292,34 @@ export default function InvoiceCostPage() {
                                     <button
                                         key={purchase.id}
                                         onClick={() => setSelectedPurchaseId(purchase.id)}
-                                        className={`w-full text-right p-3 rounded-lg border transition-all ${selectedPurchaseId === purchase.id
-                                            ? 'border-blue-500 bg-blue-600 shadow-md'
-                                            : 'border-slate-200 dark:border-border-primary bg-white dark:bg-surface-secondary hover:border-blue-300 dark:hover:border-blue-900/40 hover:bg-slate-50 dark:hover:bg-blue-900/5'
+                                        className={`w-full text-right p-4 rounded-2xl border transition-all duration-300 group ${selectedPurchaseId === purchase.id
+                                            ? 'border-blue-500 bg-blue-600 shadow-lg shadow-blue-500/20'
+                                            : 'border-slate-100 dark:border-border-primary bg-slate-50 dark:bg-surface-secondary hover:bg-white dark:hover:bg-surface-primary hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/30'
                                             }`}
                                     >
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className={`font-bold text-sm ${selectedPurchaseId === purchase.id ? 'text-white' : 'text-slate-900 dark:text-text-primary'}`}>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className={`font-black text-sm ${selectedPurchaseId === purchase.id ? 'text-white' : 'text-slate-800 dark:text-text-primary group-hover:text-blue-600 dark:group-hover:text-blue-400'} transition-colors`}>
                                                 {purchase.invoiceNumber || `#${purchase.id}`}
                                             </span>
                                             {selectedPurchaseId === purchase.id && (
-                                                <CheckCircle className="w-4 h-4 text-emerald-400" />
+                                                <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center animate-fadeIn">
+                                                    <Check className="w-3 h-3 text-white" />
+                                                </div>
                                             )}
                                         </div>
-                                        <div className={`space-y-1 ${selectedPurchaseId === purchase.id ? 'text-blue-50' : 'text-slate-500 dark:text-text-secondary'}`}>
-                                            <div className="flex items-center gap-1.5 text-[10px] font-medium">
-                                                <Package className="w-3 h-3" />
-                                                {purchase.lines?.length || 0} صنف
-                                            </div>
-                                            <div className="flex items-center gap-1.5 text-xs font-bold">
-                                                <DollarSign className="w-3 h-3" />
-                                                {formatArabicCurrency(Number(purchase.total))}
+                                        <div className={`space-y-2 ${selectedPurchaseId === purchase.id ? 'text-blue-100' : 'text-slate-500 dark:text-text-secondary'}`}>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-1.5 text-xs font-bold">
+                                                    <Package className="w-3.5 h-3.5" />
+                                                    {purchase.lines?.length || 0} صنف
+                                                </div>
+                                                <div className="flex items-center gap-1.5 text-xs font-black">
+                                                    <DollarSign className="w-3.5 h-3.5" />
+                                                    {formatArabicCurrency(Number(purchase.total))}
+                                                </div>
                                             </div>
                                             {purchase.totalExpenses && Number(purchase.totalExpenses) > 0 && (
-                                                <div className={`flex items-center gap-1.5 text-[10px] font-medium ${selectedPurchaseId === purchase.id ? 'text-white' : 'text-orange-600 dark:text-orange-400'}`}>
+                                                <div className={`flex items-center gap-1.5 text-[10px] font-bold p-1.5 rounded-lg ${selectedPurchaseId === purchase.id ? 'bg-blue-500/50 text-white' : 'bg-orange-50 dark:bg-orange-900/10 text-orange-600 dark:text-orange-400'}`}>
                                                     <Edit className="w-3 h-3" />
                                                     مصروفات: {formatArabicCurrency(Number(purchase.totalExpenses))}
                                                 </div>
@@ -319,50 +343,52 @@ export default function InvoiceCostPage() {
                             <p className="text-slate-500 dark:text-text-tertiary text-xs max-w-xs mx-auto">اختر فاتورة مشتريات لعرض وتوزيع التكاليف</p>
                         </div>
                     ) : (
-                        <div className="bg-white dark:bg-surface-primary rounded-xl shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden">
+                        <div className="bg-white dark:bg-surface-primary rounded-3xl shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden transition-all duration-300">
                             {/* Purchase Header */}
-                            <div className="p-4 border-b border-slate-200 dark:border-border-primary bg-slate-50 dark:bg-surface-secondary">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 bg-white dark:bg-surface-primary rounded-lg flex items-center justify-center border border-slate-200 dark:border-border-primary">
-                                            <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                            <div className="p-6 border-b border-slate-100 dark:border-border-primary bg-slate-50/50 dark:bg-surface-secondary/50">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-white dark:bg-surface-primary rounded-2xl flex items-center justify-center border border-slate-100 dark:border-border-primary shadow-sm">
+                                            <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                                         </div>
                                         <div>
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase">فاتورة مشتريات</p>
-                                            <h2 className="text-sm font-bold text-slate-900 dark:text-text-primary">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">فاتورة مشتريات</p>
+                                            <h2 className="text-xl font-black text-slate-900 dark:text-text-primary tracking-tight">
                                                 {selectedPurchase.invoiceNumber || `#${selectedPurchase.id}`}
                                             </h2>
                                         </div>
                                     </div>
                                     <button
                                         onClick={() => setSelectedPurchaseId(null)}
-                                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-surface-primary text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 border border-slate-200 dark:border-border-primary transition-all">
-                                        <ChevronLeft className="w-4 h-4" />
+                                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-surface-primary text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 border border-slate-200 dark:border-border-primary shadow-sm hover:shadow transition-all"
+                                        title="إغلاق"
+                                    >
+                                        <ChevronRight className="w-5 h-5 rtl:rotate-180" />
                                     </button>
                                 </div>
 
-                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                                    <div className="bg-white dark:bg-surface-primary rounded-lg p-2.5 border border-slate-200 dark:border-border-primary">
-                                        <p className="text-[9px] font-bold text-slate-400 dark:text-text-tertiary uppercase mb-1">إجمالي الفاتورة</p>
-                                        <p className="text-sm font-bold text-slate-900 dark:text-text-primary">
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                    <div className="bg-white dark:bg-surface-primary rounded-2xl p-4 border border-slate-100 dark:border-border-primary shadow-sm">
+                                        <p className="text-[10px] font-black text-slate-400 dark:text-text-tertiary uppercase tracking-wider mb-1">إجمالي الفاتورة</p>
+                                        <p className="text-base font-black text-slate-900 dark:text-text-primary">
                                             {formatArabicCurrency(Number(selectedPurchase.total))}
                                         </p>
                                     </div>
-                                    <div className="bg-white dark:bg-surface-primary rounded-lg p-2.5 border border-slate-200 dark:border-border-primary">
-                                        <p className="text-[9px] font-bold text-orange-400 uppercase mb-1">إجمالي المصروفات</p>
-                                        <p className="text-sm font-bold text-orange-600 dark:text-orange-400">
+                                    <div className="bg-white dark:bg-surface-primary rounded-2xl p-4 border border-slate-100 dark:border-border-primary shadow-sm">
+                                        <p className="text-[10px] font-black text-orange-400 uppercase tracking-wider mb-1">إجمالي المصروفات</p>
+                                        <p className="text-base font-black text-orange-600 dark:text-orange-400">
                                             {formatArabicCurrency(Number(selectedPurchase.totalExpenses || 0))}
                                         </p>
                                     </div>
-                                    <div className="bg-white dark:bg-surface-primary rounded-lg p-2.5 border border-slate-200 dark:border-border-primary">
-                                        <p className="text-[9px] font-bold text-slate-400 dark:text-text-tertiary uppercase mb-1">سعر الصرف</p>
-                                        <p className="text-sm font-bold text-slate-600 dark:text-text-secondary">
+                                    <div className="bg-white dark:bg-surface-primary rounded-2xl p-4 border border-slate-100 dark:border-border-primary shadow-sm">
+                                        <p className="text-[10px] font-black text-slate-400 dark:text-text-tertiary uppercase tracking-wider mb-1">سعر الصرف</p>
+                                        <p className="text-base font-black text-slate-700 dark:text-text-secondary">
                                             {formatArabicNumber(Number(selectedPurchase.exchangeRate || 1))}
                                         </p>
                                     </div>
-                                    <div className="bg-white dark:bg-surface-primary rounded-lg p-2.5 border border-slate-200 dark:border-border-primary">
-                                        <p className="text-[9px] font-bold text-green-400 uppercase mb-1">العملة</p>
-                                        <p className="text-sm font-bold text-green-600 dark:text-green-400">
+                                    <div className="bg-white dark:bg-surface-primary rounded-2xl p-4 border border-slate-100 dark:border-border-primary shadow-sm">
+                                        <p className="text-[10px] font-black text-green-400 uppercase tracking-wider mb-1">العملة</p>
+                                        <p className="text-base font-black text-green-600 dark:text-green-400 font-mono">
                                             {selectedPurchase.currency || 'LYD'}
                                         </p>
                                     </div>
@@ -383,8 +409,8 @@ export default function InvoiceCostPage() {
                                                     step="0.01"
                                                     value={customExchangeRate || ''}
                                                     onChange={(e) => setCustomExchangeRate(e.target.value ? Number(e.target.value) : null)}
-                                                    placeholder={`السعر الأصلي: ${selectedPurchase.exchangeRate}`}
-                                                    className="w-full px-5 py-4 border-2 border-white dark:border-border-primary rounded-2xl bg-white dark:bg-surface-primary text-slate-900 dark:text-text-primary text-xl font-black outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-400 transition-all shadow-inner"
+
+                                                    className="w-full px-5 py-4 border-2  dark:border-border-primary rounded-2xl bg-white dark:bg-surface-primary text-slate-900 dark:text-text-primary text-xl font-black outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-400 transition-all shadow-inner"
                                                 />
                                             </div>
                                             {customExchangeRate && (
@@ -412,17 +438,17 @@ export default function InvoiceCostPage() {
                             <div className="p-8">
                                 <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-8">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-2 h-8 bg-blue-600 dark:bg-blue-500 rounded-full"></div>
+                                        <div className="w-1.5 h-8 bg-blue-600 dark:bg-blue-500 rounded-full"></div>
                                         <h3 className="text-xl font-black text-slate-900 dark:text-text-primary uppercase tracking-tight">قائمة الأصناف وتوزيع التكلفة</h3>
                                     </div>
                                     <button
                                         onClick={handleUpdateAllProductsCost}
                                         disabled={isUpdatingCost}
-                                        className="inline-flex items-center gap-3 bg-emerald-600 dark:bg-emerald-600 text-white px-8 py-3 rounded-2xl font-black shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                                        className="inline-flex items-center gap-3 bg-emerald-600 dark:bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                                     >
                                         {isUpdatingCost && updatingProductId === -1 ? (
                                             <>
-                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                                <RefreshCw className="w-5 h-5 animate-spin" />
                                                 جاري التحديث...
                                             </>
                                         ) : (
@@ -433,103 +459,103 @@ export default function InvoiceCostPage() {
                                         )}
                                     </button>
                                 </div>
-                                <div className="border-2 border-slate-100 dark:border-border-primary rounded-3xl overflow-hidden bg-white dark:bg-surface-primary shadow-sm hover:shadow-md transition-all duration-300">
+                                <div className="border border-slate-200 dark:border-border-primary rounded-3xl overflow-hidden bg-white dark:bg-surface-primary shadow-sm hover:shadow-md transition-all duration-300">
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-right border-collapse">
                                             <thead>
-                                                <tr className="bg-slate-50/50 dark:bg-surface-secondary border-b-2 border-slate-100 dark:border-border-primary">
-                                                    <th className="py-5 px-6 font-black text-[10px] text-slate-400 dark:text-text-tertiary uppercase tracking-widest w-[25%]">الأصناف</th>
-                                                    <th className="py-5 px-4 font-black text-[10px] text-slate-400 dark:text-text-tertiary uppercase tracking-widest text-center">الكمية</th>
-                                                    <th className="py-5 px-4 font-black text-[10px] text-slate-400 dark:text-text-tertiary uppercase tracking-widest">
+                                                <tr className="bg-slate-50/80 dark:bg-surface-secondary border-b border-slate-200 dark:border-border-primary">
+                                                    <th className="py-5 px-6 font-black text-[10px] text-slate-500 dark:text-text-tertiary uppercase tracking-wider w-[25%]">الأصناف</th>
+                                                    <th className="py-5 px-4 font-black text-[10px] text-slate-500 dark:text-text-tertiary uppercase tracking-wider text-center">الكمية</th>
+                                                    <th className="py-5 px-4 font-black text-[10px] text-slate-500 dark:text-text-tertiary uppercase tracking-wider">
                                                         القيمة ({selectedPurchase?.currency})
                                                     </th>
-                                                    <th className="py-5 px-4 font-black text-[10px] text-slate-400 dark:text-text-tertiary uppercase tracking-widest">
+                                                    <th className="py-5 px-4 font-black text-[10px] text-slate-500 dark:text-text-tertiary uppercase tracking-wider">
                                                         القيمة (د.ل)
                                                     </th>
-                                                    <th className="py-5 px-4 font-black text-[10px] text-slate-400 dark:text-text-tertiary uppercase tracking-widest text-center">نسبة الحجم</th>
-                                                    <th className="py-5 px-4 font-black text-[10px] text-slate-400 dark:text-text-tertiary uppercase tracking-widest">المصروفات</th>
-                                                    <th className="py-5 px-4 font-black text-[10px] text-slate-400 dark:text-text-tertiary uppercase tracking-widest text-blue-600 dark:text-blue-400">الإجمالي</th>
-                                                    <th className="py-5 px-4 font-black text-[10px] text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-50/10">التكلفة/وحدة</th>
-                                                    <th className="py-5 px-6 font-black text-[10px] text-slate-400 dark:text-text-tertiary uppercase tracking-widest text-center">التحديث</th>
+                                                    <th className="py-5 px-4 font-black text-[10px] text-slate-500 dark:text-text-tertiary uppercase tracking-wider text-center">نسبة الحجم</th>
+                                                    <th className="py-5 px-4 font-black text-[10px] text-slate-500 dark:text-text-tertiary uppercase tracking-wider">المصروفات</th>
+                                                    <th className="py-5 px-4 font-black text-[10px] text-slate-500 dark:text-text-tertiary uppercase tracking-wider text-blue-600 dark:text-blue-400">الإجمالي</th>
+                                                    <th className="py-5 px-4 font-black text-[10px] text-emerald-600 dark:text-emerald-400 uppercase tracking-wider bg-emerald-50/30 dark:bg-emerald-900/10">التكلفة/وحدة</th>
+                                                    <th className="py-5 px-6 font-black text-[10px] text-slate-500 dark:text-text-tertiary uppercase tracking-wider text-center">التحديث</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-50 dark:divide-border-primary">
+                                            <tbody className="divide-y divide-slate-100 dark:divide-border-primary/50">
                                                 {costDistribution.map((line, index) => (
-                                                    <tr key={line.productId} className="hover:bg-slate-50/50 dark:hover:bg-blue-900/5 transition-colors group">
-                                                        <td className="py-5 px-6">
+                                                    <tr key={line.productId} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-colors group">
+                                                        <td className="py-4 px-6">
                                                             <div className="space-y-1">
-                                                                <p className="font-black text-slate-900 dark:text-text-primary leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" title={line.productName}>{line.productName}</p>
-                                                                <p className="text-xs font-bold text-slate-400 dark:text-text-tertiary font-mono" title={line.productSku}>{line.productSku}</p>
+                                                                <p className="font-bold text-slate-900 dark:text-text-primary text-sm leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" title={line.productName}>{line.productName}</p>
+                                                                <p className="text-[10px] font-bold text-slate-400 dark:text-text-tertiary font-mono" title={line.productSku}>{line.productSku}</p>
                                                             </div>
                                                         </td>
-                                                        <td className="py-5 px-4 text-center">
-                                                            <span className="inline-flex items-center px-2 py-1 bg-slate-100 dark:bg-surface-secondary text-slate-700 dark:text-text-primary rounded-lg text-xs font-black">
+                                                        <td className="py-4 px-4 text-center">
+                                                            <span className="inline-flex items-center px-2.5 py-1 bg-slate-100 dark:bg-surface-secondary text-slate-700 dark:text-text-primary rounded-lg text-xs font-black">
                                                                 {formatArabicNumber(line.qty)}
                                                             </span>
                                                         </td>
-                                                        <td className="py-5 px-4 text-slate-600 dark:text-text-secondary font-bold">
+                                                        <td className="py-4 px-4 text-slate-600 dark:text-text-secondary font-bold text-sm">
                                                             {formatArabicNumber(line.subTotal.toFixed(2))}
                                                         </td>
-                                                        <td className="py-5 px-4 text-slate-900 dark:text-text-primary font-black">
+                                                        <td className="py-4 px-4 text-slate-900 dark:text-text-primary font-black text-sm">
                                                             {formatArabicNumber(line.totalWithExpense.toFixed(0))}
                                                         </td>
-                                                        <td className="py-5 px-4 text-center">
-                                                            <span className="inline-flex px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-[10px] font-black border border-blue-100 dark:border-blue-800/20">
+                                                        <td className="py-4 px-4 text-center">
+                                                            <span className="inline-flex px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-[10px] font-black border border-blue-100 dark:border-blue-800/20">
                                                                 {formatArabicNumber(line.valuePercentage.toFixed(1))}%
                                                             </span>
                                                         </td>
-                                                        <td className="py-5 px-4 text-orange-600 dark:text-orange-400 font-bold">
+                                                        <td className="py-4 px-4 text-orange-600 dark:text-orange-400 font-bold text-sm">
                                                             {formatArabicNumber(line.expenseShare.toFixed(0))}
                                                         </td>
-                                                        <td className="py-5 px-4 text-blue-700 dark:text-blue-400 font-black">
+                                                        <td className="py-4 px-4 text-blue-700 dark:text-blue-400 font-black text-sm">
                                                             {formatArabicNumber(line.totalInLYD.toFixed(0))}
                                                         </td>
-                                                        <td className="py-5 px-4 bg-emerald-50/30 dark:bg-emerald-900/10">
-                                                            <span className="font-black text-emerald-700 dark:text-emerald-400 text-lg">
+                                                        <td className="py-4 px-4 bg-emerald-50/20 dark:bg-emerald-900/5">
+                                                            <span className="font-black text-emerald-600 dark:text-emerald-400 text-base">
                                                                 {formatArabicNumber(line.costPerUnit.toFixed(2))}
                                                             </span>
                                                         </td>
-                                                        <td className="py-5 px-6 text-center">
+                                                        <td className="py-4 px-6 text-center">
                                                             <button
                                                                 onClick={() => handleUpdateProductCost(line.productId, line.costPerUnit)}
                                                                 disabled={isUpdatingCost && updatingProductId === line.productId}
-                                                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 dark:hover:bg-emerald-600 hover:text-white border border-emerald-100 dark:border-emerald-800/30 transition-all shadow-sm active:scale-90 mx-auto"
+                                                                className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-surface-secondary text-slate-400 hover:bg-emerald-600 dark:hover:bg-emerald-600 hover:text-white border border-slate-200 dark:border-border-primary transition-all shadow-sm active:scale-95 mx-auto"
                                                                 title="تحديث تكلفة الصنف"
                                                             >
                                                                 {isUpdatingCost && updatingProductId === line.productId ? (
-                                                                    <RefreshCw className="w-5 h-5 animate-spin" />
+                                                                    <RefreshCw className="w-4 h-4 animate-spin" />
                                                                 ) : (
-                                                                    <Download className="w-5 h-5" />
+                                                                    <Download className="w-4 h-4" />
                                                                 )}
                                                             </button>
                                                         </td>
                                                     </tr>
                                                 ))}
                                                 {/* Totals Row */}
-                                                <tr className="bg-slate-900 dark:bg-slate-950 text-white font-black">
-                                                    <td className="py-5 px-6" colSpan={2}>
+                                                <tr className="bg-slate-900 dark:bg-slate-950 text-white font-black text-sm">
+                                                    <td className="py-4 px-6" colSpan={2}>
                                                         <div className="flex items-center gap-2">
                                                             <BarChart3 className="w-5 h-5 text-blue-400" />
                                                             تقرير الإجماليات للفاتورة
                                                         </div>
                                                     </td>
-                                                    <td className="py-5 px-4">
+                                                    <td className="py-4 px-4 text-slate-300">
                                                         {formatArabicNumber(totals.subTotalForeign.toFixed(2))}
                                                     </td>
-                                                    <td className="py-5 px-4">
+                                                    <td className="py-4 px-4">
                                                         {formatArabicNumber(totals.subTotalLYD.toFixed(0))}
                                                     </td>
-                                                    <td className="py-5 px-4 text-center">
-                                                        <span className="px-2 py-1 bg-blue-600 rounded-lg text-[10px]">100%</span>
+                                                    <td className="py-4 px-4 text-center">
+                                                        <span className="px-2 py-0.5 bg-blue-600 text-white rounded-md text-[10px]">100%</span>
                                                     </td>
-                                                    <td className="py-5 px-4 text-orange-400">
+                                                    <td className="py-4 px-4 text-orange-400">
                                                         {formatArabicNumber(totals.expenseShare.toFixed(0))}
                                                     </td>
-                                                    <td className="py-5 px-4 text-blue-400">
+                                                    <td className="py-4 px-4 text-blue-400">
                                                         {formatArabicNumber(totals.totalInLYD.toFixed(0))}
                                                     </td>
-                                                    <td className="py-5 px-4">-</td>
-                                                    <td className="py-5 px-6">-</td>
+                                                    <td className="py-4 px-4">-</td>
+                                                    <td className="py-4 px-6">-</td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -538,39 +564,39 @@ export default function InvoiceCostPage() {
                             </div>
 
                             {/* Summary Cards */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-8">
-                                <div className="relative group overflow-hidden bg-white dark:bg-surface-primary border-2 border-slate-100 dark:border-border-primary rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-125 duration-500"></div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 mb-2">
+                                <div className="relative group overflow-hidden bg-white dark:bg-surface-primary border border-slate-200 dark:border-border-primary rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/5 rounded-full -mr-10 -mt-10 transition-transform group-hover:scale-125 duration-500"></div>
                                     <div className="relative z-10">
-                                        <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-2">إجمالي ({selectedPurchase?.currency})</p>
-                                        <p className="text-2xl font-black text-slate-900 dark:text-text-primary">
+                                        <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-1">إجمالي ({selectedPurchase?.currency})</p>
+                                        <p className="text-xl font-black text-slate-900 dark:text-text-primary">
                                             {formatArabicNumber(totals.subTotalForeign.toFixed(2))}
                                         </p>
                                     </div>
                                 </div>
-                                <div className="relative group overflow-hidden bg-white dark:bg-surface-primary border-2 border-slate-100 dark:border-border-primary rounded-2xl p-6 shadow-sm hover:shadow-md transition-all border-r-4 border-r-blue-500">
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-125 duration-500"></div>
+                                <div className="relative group overflow-hidden bg-white dark:bg-surface-primary border border-slate-200 dark:border-border-primary rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border-r-4 border-r-blue-500">
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/5 rounded-full -mr-10 -mt-10 transition-transform group-hover:scale-125 duration-500"></div>
                                     <div className="relative z-10">
-                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">إجمالي (د.ل)</p>
-                                        <p className="text-2xl font-black text-slate-900 dark:text-text-primary">
+                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">إجمالي (د.ل)</p>
+                                        <p className="text-xl font-black text-slate-900 dark:text-text-primary">
                                             {formatArabicNumber(totals.subTotalLYD.toFixed(0))}
                                         </p>
                                     </div>
                                 </div>
-                                <div className="relative group overflow-hidden bg-white dark:bg-surface-primary border-2 border-slate-100 dark:border-border-primary rounded-2xl p-6 shadow-sm hover:shadow-md transition-all border-r-4 border-r-orange-500">
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-125 duration-500"></div>
+                                <div className="relative group overflow-hidden bg-white dark:bg-surface-primary border border-slate-200 dark:border-border-primary rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border-r-4 border-r-orange-500">
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-orange-500/5 rounded-full -mr-10 -mt-10 transition-transform group-hover:scale-125 duration-500"></div>
                                     <div className="relative z-10">
-                                        <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-2">المصروفات المستهلكة</p>
-                                        <p className="text-2xl font-black text-orange-700 dark:text-orange-400">
+                                        <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">المصروفات المستهلكة</p>
+                                        <p className="text-xl font-black text-orange-700 dark:text-orange-400">
                                             {formatArabicNumber(totals.expenseShare.toFixed(0))}
                                         </p>
                                     </div>
                                 </div>
-                                <div className="relative group overflow-hidden bg-white dark:bg-surface-primary border-2 border-slate-100 dark:border-border-primary rounded-2xl p-6 shadow-sm hover:shadow-md transition-all border-r-4 border-r-emerald-500">
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-125 duration-500"></div>
+                                <div className="relative group overflow-hidden bg-white dark:bg-surface-primary border border-slate-200 dark:border-border-primary rounded-2xl p-5 shadow-sm hover:shadow-md transition-all border-r-4 border-r-emerald-500">
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 rounded-full -mr-10 -mt-10 transition-transform group-hover:scale-125 duration-500"></div>
                                     <div className="relative z-10">
-                                        <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2">الإجمالي النهائي</p>
-                                        <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400">
+                                        <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">الإجمالي النهائي</p>
+                                        <p className="text-xl font-black text-emerald-700 dark:text-emerald-400">
                                             {formatArabicNumber(totals.totalInLYD.toFixed(0))}
                                         </p>
                                     </div>

@@ -34,13 +34,18 @@ export class DashboardService {
         },
       });
 
+
+      // Debug info
+      console.log(`Getting sales stats for period: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+      console.log(`Found ${users.length} active users`);
+
       // جلب مبيعات كل مستخدم في الفترة المحددة
       const usersSales = await Promise.all(
         users.map(async (user) => {
           const sales = await prisma.sale.aggregate({
             where: {
               status: 'APPROVED',
-              approvedBy: user.UserID,
+              approvedBy: user.UserName,
               createdAt: {
                 gte: startDate,
                 lte: endDate,
@@ -53,6 +58,10 @@ export class DashboardService {
               id: true,
             },
           });
+
+          if (sales._count.id > 0) {
+            console.log(`User ${user.UserName} has ${sales._count.id} sales totaling ${sales._sum.total}`);
+          }
 
           return {
             userId: user.UserID,
@@ -99,7 +108,7 @@ export class DashboardService {
   async getComprehensiveChartData(year?: number) {
     try {
       const currentYear = year || new Date().getFullYear();
-      
+
       // البيانات الشهرية للسنة
       const monthlyData = [];
 

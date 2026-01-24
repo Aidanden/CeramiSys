@@ -278,11 +278,11 @@ export default function GeneralReceiptsPage() {
             }
             
             // Filter by date range
-            if (filters.startDate && new Date(r.paymentDate) < new Date(filters.startDate)) return false;
+            if (filters.startDate && new Date(r.paymentDate) <new Date(filters.startDate)) return false;
             if (filters.endDate && new Date(r.paymentDate) > new Date(filters.endDate)) return false;
             
             // Filter by amount range
-            if (filters.minAmount && Number(r.amount) < Number(filters.minAmount)) return false;
+            if (filters.minAmount && Number(r.amount) <Number(filters.minAmount)) return false;
             if (filters.maxAmount && Number(r.amount) > Number(filters.maxAmount)) return false;
             
             // Filter by treasury

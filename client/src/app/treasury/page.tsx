@@ -16,24 +16,17 @@ import { useGetCompaniesQuery } from '@/state/companyApi';
 import {
     Wallet,
     Building2,
-    Landmark,
     Plus,
-    ArrowDownCircle,
-    ArrowUpCircle,
-    ArrowLeftRight,
     Search,
     Filter,
     RefreshCw,
     Trash2,
     X,
-    ChevronLeft,
-    ChevronRight,
     Calendar,
     TrendingUp,
     TrendingDown,
     DollarSign,
     CreditCard,
-    Printer,
 } from 'lucide-react';
 
 // تنسيق العملة
@@ -101,7 +94,7 @@ const TreasuryTypeIcon = ({ type }: { type: string }) => {
         case 'GENERAL':
             return <Wallet className="w-5 h-5 text-green-600" />;
         case 'BANK':
-            return <Landmark className="w-5 h-5 text-purple-600" />;
+            return <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>;
         default:
             return <Wallet className="w-5 h-5 text-slate-600 dark:text-text-secondary" />;
     }
@@ -117,15 +110,15 @@ interface MainStatCardProps {
 
 const MainStatCard = ({ title, value, subtitle, icon: Icon, iconBgColor }: MainStatCardProps) => {
     return (
-        <div className="bg-white dark:bg-surface-primary p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl ${iconBgColor} flex items-center justify-center text-white`}>
-                    <Icon className="w-6 h-6" />
+        <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-6 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/30 transition-all duration-300">
+            <div className="flex items-start justify-between">
+                <div className="flex-1">
+                    <p className="text-sm font-medium text-slate-500 dark:text-text-tertiary mb-1">{title}</p>
+                    <p className="text-2xl font-bold text-slate-800 dark:text-text-primary">{value}</p>
+                    {subtitle && <p className="text-xs text-slate-400 dark:text-text-muted mt-1">{subtitle}</p>}
                 </div>
-                <div>
-                    <p className="text-sm font-medium text-slate-500 dark:text-text-tertiary">{title}</p>
-                    <p className="text-xl font-black text-slate-900 dark:text-text-primary">{value}</p>
-                    {subtitle && <p className="text-xs text-slate-400 dark:text-text-muted mt-0.5">{subtitle}</p>}
+                <div className={`w-14 h-14 ${iconBgColor} rounded-xl flex items-center justify-center shadow-sm`}>
+                    <Icon className="w-7 h-7 text-white" />
                 </div>
             </div>
         </div>
@@ -179,7 +172,7 @@ export default function TreasuryPage() {
         endDate: dateTo || undefined,
         type: transactionTypeFilter || undefined,
         page,
-        limit: 20,
+        limit: 15,
     });
     const { data: companiesData } = useGetCompaniesQuery({});
     const companies = companiesData?.data?.companies || [];
@@ -477,7 +470,7 @@ export default function TreasuryPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-black text-slate-900 dark:text-text-primary tracking-tight flex items-center gap-3">
+                    <h1 className="text-3xl font-bold text-slate-900 dark:text-text-primary tracking-tight flex items-center gap-3">
                         <Wallet className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                         حركات الخزينة
                     </h1>
@@ -491,21 +484,21 @@ export default function TreasuryPage() {
                         onClick={openDepositModal}
                         className="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg shadow-green-100 dark:shadow-none hover:scale-[1.02] active:scale-[0.98] transition-all"
                     >
-                        <ArrowDownCircle className="w-5 h-5" />
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13l-3 3m0 0l-3-3m3 3V8m0 13a9 9 0 110-18 9 9 0 010 18z" /></svg>
                         إيداع
                     </button>
                     <button
                         onClick={openWithdrawModal}
                         className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg shadow-red-100 dark:shadow-none hover:scale-[1.02] active:scale-[0.98] transition-all"
                     >
-                        <ArrowUpCircle className="w-5 h-5" />
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 11l3-3m0 0l3 3m-3-3v8m0 5a9 9 0 110-18 9 9 0 010 18z" /></svg>
                         سحب
                     </button>
                     <button
                         onClick={() => setShowTransferModal(true)}
                         className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold shadow-lg shadow-purple-100 dark:shadow-none hover:scale-[1.02] active:scale-[0.98] transition-all"
                     >
-                        <ArrowLeftRight className="w-5 h-5" />
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
                         تحويل
                     </button>
                     <button
@@ -583,7 +576,7 @@ export default function TreasuryPage() {
             {activeTab === 'overview' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Company Treasuries */}
-                    <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary dark:border-border-primary p-6">
+                    <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-6 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/30 transition-all duration-300">
                         <h3 className="text-lg font-semibold text-slate-900 dark:text-text-primary dark:text-white flex items-center gap-2 mb-4">
                             <Building2 className="w-5 h-5 text-blue-600" />
                             خزائن الشركات
@@ -605,8 +598,8 @@ export default function TreasuryPage() {
                     </div>
 
                     {/* General Treasuries */}
-                    <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary dark:border-border-primary p-6">
-                        <h3 className="text-lg font-semibold text-slate-900 dark:text-text-primary dark:text-white flex items-center gap-2 mb-4">
+                    <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-6 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/30 transition-all duration-300">
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-text-primary flex items-center gap-2 mb-4">
                             <Wallet className="w-5 h-5 text-green-600" />
                             الخزائن العامة
                         </h3>
@@ -626,9 +619,9 @@ export default function TreasuryPage() {
                     </div>
 
                     {/* Bank Accounts */}
-                    <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary dark:border-border-primary p-6">
-                        <h3 className="text-lg font-semibold text-slate-900 dark:text-text-primary dark:text-white flex items-center gap-2 mb-4">
-                            <Landmark className="w-5 h-5 text-purple-600" />
+                    <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-6 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/30 transition-all duration-300">
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-text-primary flex items-center gap-2 mb-4">
+                            <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                             الحسابات المصرفية
                         </h3>
                         <div className="space-y-3">
@@ -650,9 +643,9 @@ export default function TreasuryPage() {
             )}
 
             {activeTab === 'transactions' && (
-                <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary dark:border-border-primary">
+                <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary">
                     {/* Filters */}
-                    <div className="p-4 border-b border-slate-200 dark:border-border-primary dark:border-border-primary">
+                    <div className="p-4 border-b border-slate-200 dark:border-border-primary">
                         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                             <select
                                 value={selectedTreasury || ''}
@@ -693,7 +686,7 @@ export default function TreasuryPage() {
                                 className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
                                 title="طباعة الحركات"
                             >
-                                <Printer className="w-5 h-5" />
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
                                 <span>طباعة</span>
                             </button>
                         </div>
@@ -756,35 +749,54 @@ export default function TreasuryPage() {
 
                     {/* Pagination */}
                     {transactionsData?.pagination && transactionsData.pagination.pages > 1 && (
-                        <div className="p-4 border-t border-slate-200 dark:border-border-primary dark:border-border-primary flex items-center justify-between">
-                            <p className="text-sm text-slate-500 dark:text-text-tertiary">
-                                صفحة {transactionsData.pagination.page} من {transactionsData.pagination.pages}
-                            </p>
-                            <div className="flex gap-2">
+                        <div className="bg-slate-50/50 dark:bg-slate-900/20 px-6 py-4 flex items-center justify-between border-t border-slate-100 dark:border-border-primary mt-6 rounded-xl">
+                            <div className="flex-1 flex justify-between sm:hidden">
                                 <button
                                     onClick={() => setPage(p => Math.max(1, p - 1))}
                                     disabled={page === 1}
-                                    className="p-2 border rounded-xl disabled:opacity-50"
+                                    className="relative inline-flex items-center px-4 py-2 border border-slate-200 dark:border-border-primary text-sm font-bold rounded-xl text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 transition-all disabled:opacity-50"
                                 >
-                                    <ChevronRight className="w-5 h-5" />
+                                    السابق
                                 </button>
                                 <button
                                     onClick={() => setPage(p => Math.min(transactionsData.pagination.pages, p + 1))}
                                     disabled={page === transactionsData.pagination.pages}
-                                    className="p-2 border rounded-xl disabled:opacity-50"
+                                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-200 dark:border-border-primary text-sm font-bold rounded-xl text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 transition-all disabled:opacity-50"
                                 >
-                                    <ChevronLeft className="w-5 h-5" />
+                                    التالي
                                 </button>
+                            </div>
+                            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                <div>
+                                    <p className="text-sm text-slate-500 dark:text-text-tertiary">
+                                        عرض صفحة <span className="font-bold text-slate-900 dark:text-text-primary">{page}</span> من <span className="font-bold text-slate-900 dark:text-text-primary">{transactionsData.pagination.pages}</span>
+                                    </p>
+                                </div>
+                                <nav className="relative z-0 inline-flex rounded-xl shadow-sm space-x-1 rtl:space-x-reverse" aria-label="Pagination">
+                                    {Array.from({ length: transactionsData.pagination.pages }, (_, i) => (
+                                        <button
+                                            key={i + 1}
+                                            onClick={() => setPage(i + 1)}
+                                            className={`relative inline-flex items-center px-4 py-2 text-sm font-bold rounded-xl transition-all ${page === i + 1
+                                                ? 'z-10 bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-none'
+                                                : 'bg-white dark:bg-surface-primary border-2 border-slate-100 dark:border-border-primary text-slate-500 dark:text-text-tertiary hover:bg-slate-50 dark:hover:bg-surface-hover'
+                                                }`}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    ))}
+                                </nav>
                             </div>
                         </div>
                     )}
+
                 </div>
             )}
 
             {activeTab === 'treasuries' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {treasuries?.map((treasury: Treasury) => (
-                        <div key={treasury.id} className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary dark:border-border-primary p-6">
+                        <div key={treasury.id} className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-6 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/30 transition-all duration-300">
                             <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-3">
                                     <TreasuryTypeIcon type={treasury.type} />
@@ -809,7 +821,7 @@ export default function TreasuryPage() {
                             {treasury.accountNumber && (
                                 <p className="text-sm text-slate-500 dark:text-text-tertiary">رقم الحساب: {treasury.accountNumber}</p>
                             )}
-                            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-border-primary dark:border-border-primary">
+                            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-border-primary">
                                 <p className="text-sm text-slate-500 dark:text-text-tertiary">الرصيد الحالي</p>
                                 <p className={`text-2xl font-bold ${treasury.balance >= 0 ? 'text-green-600' : 'text-red-600'
                                     }`}>

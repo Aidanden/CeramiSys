@@ -94,7 +94,7 @@ body,
 #root,
 .app {
   font-size: 16px;
-  font-family: var(--font-tajawal), "Tajawal", sans-serif;
+  font-family: var(--font-cairo), "Cairo", sans-serif;
   background-color: var(--primary-bg);
   color: var(--primary-text);
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -117,13 +117,6 @@ body,
   html {
     font-size: 16px;
   }
-}
-
-@font-face {
-  font-family: 'Tajawal';
-  src: url('./fonts/Tajawal-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
 }
 
 @media (min-width:768px) {

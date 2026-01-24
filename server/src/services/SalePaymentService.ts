@@ -525,6 +525,40 @@ export class SalePaymentService {
         ];
       }
 
+      // تحديد بداية ونهاية اليوم الحالي
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      // استعلام المبيعات الآجلة اليومية
+      const todayCreditSales = await this.prisma.sale.aggregate({
+        where: {
+          ...where,
+          createdAt: {
+            gte: today,
+            lt: tomorrow
+          }
+        },
+        _sum: {
+          total: true
+        }
+      });
+
+      // استعلام المدفوعات المحصلة اليوم (للفواتير الآجلة)
+      const todayPayments = await this.prisma.salePayment.aggregate({
+        where: {
+          paymentDate: {
+            gte: today,
+            lt: tomorrow
+          },
+          sale: where // نفس شروط الفاتورة (الشركة ونوع البيع)
+        },
+        _sum: {
+          amount: true
+        }
+      });
+
       const [
         totalCreditSales,
         fullyPaidSales,
@@ -573,7 +607,9 @@ export class SalePaymentService {
           unpaidSales,
           totalAmount: Number(totalAmount._sum.total || 0),
           totalPaid: Number(totalPaid._sum.paidAmount || 0),
-          totalRemaining: Number(totalRemaining._sum.remainingAmount || 0)
+          totalRemaining: Number(totalRemaining._sum.remainingAmount || 0),
+          todayCreditSales: Number(todayCreditSales._sum.total || 0),
+          todayPayments: Number(todayPayments._sum.amount || 0)
         }
       };
     } catch (error: any) {

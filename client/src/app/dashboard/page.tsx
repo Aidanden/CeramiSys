@@ -4,22 +4,16 @@ import React, { useState } from "react";
 import { useAppSelector } from "@/app/redux";
 import {
   TrendingUp,
-  DollarSign,
   ShoppingCart,
   CreditCard,
   Package,
   Calendar,
-  Clock,
-  AlertTriangle,
   BarChart3,
   Wallet,
-  Receipt,
   CircleDollarSign,
   Users,
   TrendingDown,
-  FileText,
-  Archive,
-  CheckCircle2,
+  FileText
 } from "lucide-react";
 import {
   useGetSalesStatsQuery,
@@ -33,7 +27,8 @@ import {
 } from "@/state/salePaymentApi";
 import {
   useGetTopSellingProductsQuery,
-  useGetLowStockProductsQuery
+  useGetLowStockProductsQuery,
+  useGetProductStatsQuery
 } from "@/state/productsApi";
 import {
   useGetUsersSalesStatsQuery,
@@ -66,26 +61,25 @@ const MainStatCard = ({
   isLoading
 }: MainStatCardProps) => {
   return (
-    <div className="group bg-white dark:bg-surface-primary rounded-3xl shadow-sm border border-slate-200 dark:border-border-primary p-5 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 transition-all duration-500 relative overflow-hidden">
-      <div className="absolute -right-6 -top-6 w-24 h-24 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
-      <div className="flex items-center gap-5 relative z-10">
-        <div className={`w-14 h-14 ${iconBgColor} rounded-2xl flex items-center justify-center shadow-lg transform group-hover:rotate-6 transition-transform duration-500`}>
-          <Icon className="w-7 h-7 text-white" />
-        </div>
+    <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-6 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/30 transition-all duration-300">
+      <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-[10px] font-black text-slate-400 dark:text-text-tertiary uppercase tracking-widest mb-1">{title}</p>
+          <p className="text-sm font-medium text-slate-500 dark:text-text-tertiary mb-1">{title}</p>
           <div className="flex items-baseline gap-2">
-            <h3 className="text-xl font-black text-slate-900 dark:text-text-primary">
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-text-primary">
               {isLoading ? (
-                <div className="h-7 w-24 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg"></div>
+                <div className="h-8 w-24 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg"></div>
               ) : (
                 value
               )}
             </h3>
           </div>
           {subtitle && (
-            <p className="text-xs font-bold text-slate-500 dark:text-text-secondary mt-1">{subtitle}</p>
+            <p className="text-xs text-slate-400 dark:text-text-muted mt-1">{subtitle}</p>
           )}
+        </div>
+        <div className={`w-14 h-14 ${iconBgColor} rounded-xl flex items-center justify-center shadow-sm`}>
+          <Icon className="w-7 h-7 text-white" />
         </div>
       </div>
     </div>
@@ -102,17 +96,17 @@ const CompanySalesCards = () => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
-          <div key={`skeleton-${i}`} className="bg-white dark:bg-surface-primary rounded-3xl p-6 border border-slate-200 dark:border-border-primary animate-pulse">
+          <div key={`skeleton-${i}`} className="bg-white dark:bg-surface-primary rounded-2xl p-6 border border-slate-200 dark:border-border-primary animate-pulse">
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-2xl"></div>
+              <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-xl"></div>
               <div className="flex-1 space-y-2">
                 <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded w-1/2"></div>
                 <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded w-1/3"></div>
               </div>
             </div>
             <div className="space-y-3">
-              <div className="h-10 bg-slate-50 dark:bg-slate-800/50 rounded-xl"></div>
-              <div className="h-10 bg-slate-50 dark:bg-slate-800/50 rounded-xl"></div>
+              <div className="h-10 bg-slate-50 dark:bg-slate-800/50 rounded-lg"></div>
+              <div className="h-10 bg-slate-50 dark:bg-slate-800/50 rounded-lg"></div>
             </div>
           </div>
         ))}
@@ -126,7 +120,7 @@ const CompanySalesCards = () => {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <div className="w-1.5 h-8 bg-blue-600 rounded-full"></div>
-        <h2 className="text-xl font-black text-slate-900 dark:text-text-primary tracking-tight">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-text-primary tracking-tight">
           أداء مبيعات الشركات
         </h2>
       </div>
@@ -158,14 +152,14 @@ const CompanySalesCards = () => {
           return (
             <div
               key={company.companyId}
-              className="group bg-white dark:bg-surface-primary rounded-3xl border border-slate-200 dark:border-border-primary p-5 hover:shadow-2xl hover:shadow-slate-200 dark:hover:shadow-none transition-all duration-500 relative overflow-hidden active:scale-95"
+              className="group bg-white dark:bg-surface-primary rounded-2xl border border-slate-200 dark:border-border-primary p-5 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/30 transition-all duration-300 relative overflow-hidden active:scale-[0.98]"
             >
               <div className="flex items-center gap-4 mb-6 pt-2">
                 <div className={`w-12 h-12 bg-gradient-to-br ${gradient} rounded-2xl flex items-center justify-center text-white shadow-lg shadow-black/10 group-hover:rotate-3 transition-transform`}>
                   <ShoppingCart className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-text-primary leading-tight">{company.companyName}</h3>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-text-primary leading-tight">{company.companyName}</h3>
                   <p className="text-[10px] font-bold text-slate-400 dark:text-text-tertiary uppercase tracking-tighter">{company.companyCode}</p>
                 </div>
               </div>
@@ -173,13 +167,13 @@ const CompanySalesCards = () => {
               <div className="space-y-2">
                 <div className={`${lightBg} rounded-2xl p-3 border border-slate-100 dark:border-white/5`}>
                   <p className="text-[9px] font-bold text-slate-500 dark:text-text-tertiary uppercase mb-1">إجمالي المبيعات</p>
-                  <p className={`text-lg font-black ${textColor}`}>
+                  <p className={`text-lg font-bold ${textColor}`}>
                     {formatArabicCurrency(company.totalRevenue)}
                   </p>
                 </div>
                 <div className="bg-slate-50 dark:bg-surface-secondary rounded-2xl p-3 border border-slate-100 dark:border-white/5">
                   <p className="text-[9px] font-bold text-slate-500 dark:text-text-tertiary uppercase mb-1">الشهر الحالي</p>
-                  <p className="text-base font-black text-slate-700 dark:text-text-primary">
+                  <p className="text-base font-bold text-slate-700 dark:text-text-primary">
                     {formatArabicCurrency(company.monthRevenue)}
                   </p>
                 </div>
@@ -222,25 +216,25 @@ const TreasuryCards = () => {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <div className="w-1.5 h-8 bg-indigo-600 rounded-full"></div>
-        <h2 className="text-xl font-black text-slate-900 dark:text-text-primary tracking-tight">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-text-primary tracking-tight">
           الخزائن والحسابات المصرفية (هذا الشهر)
         </h2>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* المدفوعات (مسحوبات) */}
-        <div className="bg-white dark:bg-surface-primary rounded-3xl border border-slate-200 dark:border-border-primary overflow-hidden shadow-sm hover:shadow-xl hover:shadow-red-500/5 transition-all duration-500 relative group">
+        <div className="bg-white dark:bg-surface-primary rounded-2xl border border-slate-200 dark:border-border-primary overflow-hidden shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/30 transition-all duration-300 relative group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
           <div className="bg-gradient-to-l from-red-500 to-rose-600 px-6 py-5 relative z-10">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-black text-white">إجمالي المدفوعات</h3>
+                <h3 className="text-lg font-bold text-white">إجمالي المدفوعات</h3>
                 <p className="text-white/70 text-xs font-medium">إجمالي المسحوبات والمصروفات</p>
               </div>
               <div className="flex flex-col items-end">
                 <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md rounded-full px-4 py-1.5">
                   <TrendingDown className="w-4 h-4 text-white" />
-                  <span className="text-base font-black text-white">{formatArabicCurrency(payments.total)}</span>
+                  <span className="text-base font-bold text-white">{formatArabicCurrency(payments.total)}</span>
                 </div>
               </div>
             </div>
@@ -262,17 +256,17 @@ const TreasuryCards = () => {
                         )}
                       </div>
                       <div>
-                        <p className="font-black text-slate-800 dark:text-text-primary text-sm">{item.name}</p>
+                        <p className="font-bold text-slate-800 dark:text-text-primary text-sm">{item.name}</p>
                         <p className="text-[10px] font-bold text-slate-400 dark:text-text-tertiary uppercase tracking-wider">{item.type === 'BANK' ? 'حساب مصرفي' : 'خزينة'}</p>
                       </div>
                     </div>
-                    <p className="font-black text-red-600 dark:text-red-400 text-sm">{formatArabicCurrency(item.amount)}</p>
+                    <p className="font-bold text-red-600 dark:text-red-400 text-sm">{formatArabicCurrency(item.amount)}</p>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-8">
-                <Archive className="w-10 h-10 text-slate-200 dark:text-slate-800 mx-auto mb-3" />
+                <svg className="w-10 h-10 text-slate-200 dark:text-slate-800 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
                 <p className="text-slate-500 dark:text-text-tertiary text-sm font-medium">لا توجد عمليات صرف مسجلة</p>
               </div>
             )}
@@ -280,18 +274,18 @@ const TreasuryCards = () => {
         </div>
 
         {/* الإيرادات (إيداعات) */}
-        <div className="bg-white dark:bg-surface-primary rounded-3xl border border-slate-200 dark:border-border-primary overflow-hidden shadow-sm hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-500 relative group">
+        <div className="bg-white dark:bg-surface-primary rounded-2xl border border-slate-200 dark:border-border-primary overflow-hidden shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/30 transition-all duration-300 relative group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
           <div className="bg-gradient-to-l from-emerald-500 to-teal-600 px-6 py-5 relative z-10">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-black text-white">إجمالي الإيرادات</h3>
+                <h3 className="text-lg font-bold text-white">إجمالي الإيرادات</h3>
                 <p className="text-white/70 text-xs font-medium">إجمالي الإيداعات والتحصيلات</p>
               </div>
               <div className="flex flex-col items-end">
                 <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md rounded-full px-4 py-1.5">
                   <TrendingUp className="w-4 h-4 text-white" />
-                  <span className="text-base font-black text-white">{formatArabicCurrency(revenues.total)}</span>
+                  <span className="text-base font-bold text-white">{formatArabicCurrency(revenues.total)}</span>
                 </div>
               </div>
             </div>
@@ -313,17 +307,17 @@ const TreasuryCards = () => {
                         )}
                       </div>
                       <div>
-                        <p className="font-black text-slate-800 dark:text-text-primary text-sm">{item.name}</p>
+                        <p className="font-bold text-slate-800 dark:text-text-primary text-sm">{item.name}</p>
                         <p className="text-[10px] font-bold text-slate-400 dark:text-text-tertiary uppercase tracking-wider">{item.type === 'BANK' ? 'حساب مصرفي' : 'خزينة'}</p>
                       </div>
                     </div>
-                    <p className="font-black text-emerald-600 dark:text-emerald-400 text-sm">{formatArabicCurrency(item.amount)}</p>
+                    <p className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">{formatArabicCurrency(item.amount)}</p>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-8">
-                <Archive className="w-10 h-10 text-slate-200 dark:text-slate-800 mx-auto mb-3" />
+                <svg className="w-10 h-10 text-slate-200 dark:text-slate-800 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
                 <p className="text-slate-500 dark:text-text-tertiary text-sm font-medium">لا توجد عمليات إيداع مسجلة</p>
               </div>
             )}
@@ -358,19 +352,19 @@ const OperationCard = ({
   isLoading
 }: OperationCardProps) => {
   return (
-    <div className="bg-white dark:bg-surface-primary rounded-3xl border border-slate-200 dark:border-border-primary overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 group">
+    <div className="bg-white dark:bg-surface-primary rounded-2xl border border-slate-200 dark:border-border-primary overflow-hidden shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/30 transition-all duration-300 group">
       {/* Header */}
       <div className={`${headerColor} px-6 py-5 relative overflow-hidden`}>
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
         <div className="flex items-center justify-between relative z-10">
-          <h3 className="text-lg font-black text-white">{title}</h3>
+          <h3 className="text-lg font-bold text-white">{title}</h3>
           <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md rounded-full px-4 py-1.5">
             {period === "يوم" ? (
-              <Clock className="w-4 h-4 text-white" />
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             ) : (
               <Calendar className="w-4 h-4 text-white" />
             )}
-            <span className="text-sm font-black text-white uppercase tracking-tighter">
+            <span className="text-sm font-bold text-white uppercase tracking-tighter">
               {period === "يوم" ? "اليوم" : "هذا الشهر"}
             </span>
           </div>
@@ -389,13 +383,13 @@ const OperationCard = ({
                 <div className="p-1.5 bg-white dark:bg-surface-primary rounded-lg border border-slate-100 dark:border-white/5">
                   <stat.icon className={`w-4 h-4 ${stat.color || 'text-blue-600 dark:text-blue-400'}`} />
                 </div>
-                <span className="text-[10px] font-black text-slate-400 dark:text-text-tertiary uppercase tracking-widest">{stat.label}</span>
+                <span className="text-[10px] font-bold text-slate-400 dark:text-text-tertiary uppercase tracking-widest">{stat.label}</span>
               </div>
               <div className="flex items-center gap-2">
                 {isLoading ? (
                   <div className="h-7 w-24 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg"></div>
                 ) : (
-                  <span className="text-xl font-black text-slate-800 dark:text-text-primary">{stat.value}</span>
+                  <span className="text-xl font-bold text-slate-800 dark:text-text-primary">{stat.value}</span>
                 )}
               </div>
             </div>
@@ -428,13 +422,13 @@ const TopSellingProducts = () => {
   const topProducts = topProductsData?.data || [];
 
   return (
-    <div className="bg-white dark:bg-surface-primary rounded-3xl border border-slate-200 dark:border-border-primary p-6 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-500">
+    <div className="bg-white dark:bg-surface-primary rounded-2xl border border-slate-200 dark:border-border-primary p-6 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/30 transition-all duration-300">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
             <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
-          <h3 className="text-lg font-black text-slate-900 dark:text-text-primary uppercase tracking-tight">الأصناف الأكثر مبيعاً</h3>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-text-primary uppercase tracking-tight">الأصناف الأكثر مبيعاً</h3>
         </div>
       </div>
 
@@ -446,16 +440,16 @@ const TopSellingProducts = () => {
               className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-surface-secondary border border-slate-100 dark:border-white/5 hover:bg-white dark:hover:bg-surface-primary hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 group"
             >
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center text-white text-xs font-black shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
                   {index + 1}
                 </div>
                 <div>
-                  <p className="font-black text-slate-800 dark:text-text-primary text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{product.productName}</p>
+                  <p className="font-bold text-slate-800 dark:text-text-primary text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{product.productName}</p>
                   <p className="text-[10px] font-bold text-slate-400 dark:text-text-tertiary uppercase tracking-wider">{product.sku}</p>
                 </div>
               </div>
               <div className="text-left">
-                <p className="font-black text-slate-900 dark:text-text-primary text-sm">{formatArabicNumber(product.totalQuantitySold)} {product.unit}</p>
+                <p className="font-bold text-slate-900 dark:text-text-primary text-sm">{formatArabicNumber(product.totalQuantitySold)} {product.unit}</p>
                 <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">{formatArabicCurrency(product.totalRevenue)}</p>
               </div>
             </div>
@@ -515,13 +509,13 @@ const LowStockProducts = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-surface-primary rounded-3xl border border-slate-200 dark:border-border-primary p-6 shadow-sm hover:shadow-xl hover:shadow-amber-500/5 transition-all duration-500">
+    <div className="bg-white dark:bg-surface-primary rounded-2xl border border-slate-200 dark:border-border-primary p-6 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/30 transition-all duration-300">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
-            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <svg className="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
           </div>
-          <h3 className="text-lg font-black text-slate-900 dark:text-text-primary uppercase tracking-tight">تنبيهات المخزون</h3>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-text-primary uppercase tracking-tight">تنبيهات المخزون</h3>
         </div>
       </div>
 
@@ -537,15 +531,15 @@ const LowStockProducts = () => {
                   <Package className="w-5 h-5 text-amber-500" />
                 </div>
                 <div>
-                  <p className="font-black text-slate-800 dark:text-text-primary text-sm group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">{product.productName}</p>
+                  <p className="font-bold text-slate-800 dark:text-text-primary text-sm group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">{product.productName}</p>
                   <p className="text-[10px] font-bold text-slate-400 dark:text-text-tertiary uppercase tracking-wider">{product.sku}</p>
                 </div>
               </div>
               <div className="text-left flex flex-col items-end gap-1">
-                <span className="font-black text-slate-900 dark:text-text-primary text-sm">
+                <span className="font-bold text-slate-900 dark:text-text-primary text-sm">
                   {formatArabicNumber(product.currentStock)} {product.unit}
                 </span>
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${getStockStatusColor(product.stockStatus)}`}>
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tighter ${getStockStatusColor(product.stockStatus)}`}>
                   {getStockStatusText(product.stockStatus)}
                 </span>
               </div>
@@ -554,7 +548,7 @@ const LowStockProducts = () => {
         </div>
       ) : (
         <div className="text-center py-12 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-3xl border border-dashed border-emerald-200 dark:border-emerald-900/30">
-          <CheckCircle2 className="w-12 h-12 text-emerald-300 dark:text-emerald-900/30 mx-auto mb-3" />
+          <svg className="w-12 h-12 text-emerald-300 dark:text-emerald-900/30 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           <p className="text-emerald-600 dark:text-emerald-400 font-bold text-sm">المخزون في حالة ممتازة</p>
         </div>
       )}
@@ -586,7 +580,7 @@ const UsersSalesCard = () => {
   ];
 
   return (
-    <div className="bg-white dark:bg-surface-primary rounded-3xl border border-slate-200 dark:border-border-primary p-6 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden relative group">
+    <div className="bg-white dark:bg-surface-primary rounded-2xl border border-slate-200 dark:border-border-primary p-6 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/30 transition-all duration-300 overflow-hidden relative group">
       <div className="absolute -left-12 -top-12 w-48 h-48 bg-purple-500/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
 
       {/* Header */}
@@ -596,7 +590,7 @@ const UsersSalesCard = () => {
             <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
-            <h3 className="text-lg font-black text-slate-900 dark:text-text-primary uppercase tracking-tight">مبيعات الموظفين</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-text-primary uppercase tracking-tight">مبيعات الموظفين</h3>
             <p className="text-[10px] font-bold text-slate-400 dark:text-text-tertiary">تحليل أداء فريق العمل</p>
           </div>
         </div>
@@ -605,7 +599,7 @@ const UsersSalesCard = () => {
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(Number(e.target.value))}
-            className="px-3 py-1.5 bg-transparent text-xs font-black text-slate-700 dark:text-text-primary border-none focus:ring-0 cursor-pointer"
+            className="px-3 py-1.5 bg-transparent text-xs font-bold text-slate-700 dark:text-text-primary border-none focus:ring-0 cursor-pointer"
           >
             {months.map((month) => (
               <option key={month.value} value={month.value} className="dark:bg-surface-primary">{month.label}</option>
@@ -615,7 +609,7 @@ const UsersSalesCard = () => {
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="px-3 py-1.5 bg-transparent text-xs font-black text-slate-700 dark:text-text-primary border-none focus:ring-0 cursor-pointer"
+            className="px-3 py-1.5 bg-transparent text-xs font-bold text-slate-700 dark:text-text-primary border-none focus:ring-0 cursor-pointer"
           >
             {years.map((year) => (
               <option key={year} value={year} className="dark:bg-surface-primary">{formatArabicNumber(year)}</option>
@@ -629,22 +623,22 @@ const UsersSalesCard = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8 relative z-10">
           <div className="bg-gradient-to-br from-purple-500/5 to-purple-600/5 rounded-2xl p-4 border border-purple-100/50 dark:border-purple-500/10 flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase mb-1">إجمالي المبيعات</p>
-              <p className="text-base font-black text-purple-900 dark:text-purple-300">{formatArabicCurrency(usersData.data.summary.totalRevenue)}</p>
+              <p className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase mb-1">إجمالي المبيعات</p>
+              <p className="text-base font-bold text-purple-900 dark:text-purple-300">{formatArabicCurrency(usersData.data.summary.totalRevenue)}</p>
             </div>
             <TrendingUp className="w-8 h-8 text-purple-200 dark:text-purple-900/30" />
           </div>
           <div className="bg-gradient-to-br from-blue-500/5 to-blue-600/5 rounded-2xl p-4 border border-blue-100/50 dark:border-blue-500/10 flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase mb-1">إجمالي الفواتير</p>
-              <p className="text-base font-black text-blue-900 dark:text-blue-300">{formatArabicNumber(usersData.data.summary.totalInvoices)}</p>
+              <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase mb-1">إجمالي الفواتير</p>
+              <p className="text-base font-bold text-blue-900 dark:text-blue-300">{formatArabicNumber(usersData.data.summary.totalInvoices)}</p>
             </div>
             <FileText className="w-8 h-8 text-blue-200 dark:text-blue-900/30" />
           </div>
           <div className="bg-gradient-to-br from-emerald-500/5 to-emerald-600/5 rounded-2xl p-4 border border-emerald-100/50 dark:border-emerald-500/10 flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase mb-1">الموظفين النشطين</p>
-              <p className="text-base font-black text-emerald-900 dark:text-emerald-300">{formatArabicNumber(usersData.data.summary.activeUsers)}</p>
+              <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase mb-1">الموظفين النشطين</p>
+              <p className="text-base font-bold text-emerald-900 dark:text-emerald-300">{formatArabicNumber(usersData.data.summary.activeUsers)}</p>
             </div>
             <Users className="w-8 h-8 text-emerald-200 dark:text-emerald-900/30" />
           </div>
@@ -667,16 +661,16 @@ const UsersSalesCard = () => {
                 className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-surface-secondary border border-slate-100 dark:border-white/5 hover:bg-white dark:hover:bg-surface-primary hover:shadow-lg hover:shadow-purple-500/5 transition-all duration-300 group"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-[10px] font-black shadow-lg group-hover:scale-110 transition-transform">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-lg group-hover:scale-110 transition-transform">
                     {user.fullName.substring(0, 2).toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-black text-slate-800 dark:text-text-primary text-sm line-clamp-1">{user.fullName}</p>
+                    <p className="font-bold text-slate-800 dark:text-text-primary text-sm line-clamp-1">{user.fullName}</p>
                     <p className="text-[9px] font-bold text-slate-400 dark:text-text-tertiary uppercase tracking-tighter">{user.companyName}</p>
                   </div>
                 </div>
                 <div className="text-left">
-                  <p className="font-black text-purple-600 dark:text-purple-400 text-sm">{formatArabicCurrency(user.totalSales)}</p>
+                  <p className="font-bold text-purple-600 dark:text-purple-400 text-sm">{formatArabicCurrency(user.totalSales)}</p>
                   <p className="text-[10px] font-bold text-slate-500 dark:text-text-tertiary uppercase">{formatArabicNumber(user.salesCount)} فاتورة</p>
                 </div>
               </div>
@@ -705,7 +699,7 @@ const ComprehensiveChart = () => {
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
   return (
-    <div className="bg-white dark:bg-surface-primary rounded-3xl border border-slate-200 dark:border-border-primary p-6 shadow-sm hover:shadow-xl transition-all duration-500 relative overflow-hidden group">
+    <div className="bg-white dark:bg-surface-primary rounded-2xl border border-slate-200 dark:border-border-primary p-6 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/30 transition-all duration-300 relative overflow-hidden group">
       <div className="absolute -right-24 -bottom-24 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
 
       {/* Header */}
@@ -715,7 +709,7 @@ const ComprehensiveChart = () => {
             <BarChart3 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <h3 className="text-lg font-black text-slate-900 dark:text-text-primary uppercase tracking-tight">نظرة شاملة على العمليات</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-text-primary uppercase tracking-tight">نظرة شاملة على العمليات</h3>
             <p className="text-[10px] font-bold text-slate-400 dark:text-text-tertiary">تحليل المبيعات والمصروفات سنوياً</p>
           </div>
         </div>
@@ -725,7 +719,7 @@ const ComprehensiveChart = () => {
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="bg-transparent text-xs font-black text-slate-700 dark:text-text-primary border-none focus:ring-0 cursor-pointer"
+            className="bg-transparent text-xs font-bold text-slate-700 dark:text-text-primary border-none focus:ring-0 cursor-pointer"
           >
             {years.map((year) => (
               <option key={year} value={year} className="dark:bg-surface-primary">
@@ -743,15 +737,15 @@ const ComprehensiveChart = () => {
             { label: 'المبيعات', val: chartData.data.yearTotals.sales, color: 'emerald', icon: TrendingUp },
             { label: 'المشتريات', val: chartData.data.yearTotals.purchases, color: 'purple', icon: ShoppingCart },
             { label: 'المصروفات', val: chartData.data.yearTotals.badDebts, color: 'orange', icon: CircleDollarSign },
-            { label: 'التالف', val: chartData.data.yearTotals.damages, color: 'red', icon: Archive },
+            { label: 'التالف', val: chartData.data.yearTotals.damages, color: 'red', icon: () => <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg> },
             { label: 'المردودات', val: chartData.data.yearTotals.returns, color: 'amber', icon: TrendingDown },
           ].map((item, i) => (
             <div key={i} className={`bg-${item.color}-500/5 rounded-2xl p-3 border border-${item.color}-500/10 flex flex-col gap-1`}>
               <div className="flex items-center gap-1.5 opacity-70">
                 <item.icon className={`w-3 h-3 text-${item.color}-600 dark:text-${item.color}-400`} />
-                <p className="text-[9px] font-black text-slate-500 dark:text-text-tertiary uppercase tracking-wider">{item.label}</p>
+                <p className="text-[9px] font-bold text-slate-500 dark:text-text-tertiary uppercase tracking-wider">{item.label}</p>
               </div>
-              <p className={`text-xs font-black text-${item.color}-700 dark:text-${item.color}-300`}>{formatArabicCurrency(item.val)}</p>
+              <p className={`text-xs font-bold text-${item.color}-700 dark:text-${item.color}-300`}>{formatArabicCurrency(item.val)}</p>
             </div>
           ))}
         </div>
@@ -809,182 +803,164 @@ const ComprehensiveChart = () => {
 // ==========================================
 // الصفحة الرئيسية
 // ==========================================
-const Dashboard = () => {
-  const { user } = useAppSelector((state) => state.auth);
-
-  // جلب البيانات من APIs
+// ==========================================
+// الصفحة الرئيسية للوحة التحكم
+// ==========================================
+export default function Dashboard() {
   const { data: salesStats, isLoading: salesLoading } = useGetSalesStatsQuery();
-  const { data: purchaseStats, isLoading: purchaseLoading } = useGetPurchaseStatsQuery({});
+  const { data: purchaseStats, isLoading: purchasesLoading } = useGetPurchaseStatsQuery({});
   const { data: creditStats, isLoading: creditLoading } = useGetCreditSalesStatsQuery();
-  const { data: treasuryMonthlyStats, isLoading: treasuryLoading } = useGetMonthlyTreasuryStatsQuery();
+  const { data: productStatsData, isLoading: productsLoading } = useGetProductStatsQuery();
 
-  // تحضير بيانات عمليات اليوم
-  const dailyOperationsStats = [
-    {
-      label: "إجمالي المبيعات",
-      value: formatArabicCurrency(salesStats?.data?.todayRevenue || 0),
-      icon: ShoppingCart,
-      color: "text-blue-600"
-    },
-    {
-      label: "عدد الفواتير",
-      value: formatArabicNumber(salesStats?.data?.todaySales || 0),
-      icon: Receipt,
-      color: "text-indigo-600"
-    },
-  ];
-
-  // تحضير بيانات عمليات الشهر
-  const monthlyOperationsStats = [
-    {
-      label: "إجمالي المشتريات",
-      value: formatArabicCurrency(purchaseStats?.data?.totalInvoicesValue || 0),
-      icon: ShoppingCart,
-      color: "text-purple-600 dark:text-purple-400"
-    },
-    {
-      label: "عدد الفواتير",
-      value: formatArabicNumber(purchaseStats?.data?.totalInvoices || 0),
-      icon: Receipt,
-      color: "text-blue-600 dark:text-blue-400"
-    },
-  ];
-
-  const creditOpsStats = [
-    {
-      label: "تحصيلات اليوم",
-      value: formatArabicCurrency(creditStats?.data?.todayPayments || 0),
-      icon: CircleDollarSign,
-      color: "text-emerald-600 dark:text-emerald-400"
-    },
-    {
-      label: "مبيعات آجل (اليوم)",
-      value: formatArabicCurrency(creditStats?.data?.todayCreditSales || 0),
-      icon: CreditCard,
-      color: "text-amber-600 dark:text-amber-400"
-    },
-  ];
+  // الحصول على التاريخ الحالي بالتنسيق العربي
+  const currentDate = new Date().toLocaleDateString('ar-LY', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 
   return (
-    <div className="flex flex-col gap-8 p-4 sm:p-8 bg-[#f8fafc] dark:bg-slate-950 min-h-screen">
-      {/* Hero Welcome Section */}
-      <div className="relative group">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-indigo-600/10 dark:from-blue-600/5 dark:to-indigo-600/5 rounded-[40px] blur-3xl transition-all duration-1000 group-hover:duration-500 group-hover:from-blue-600/20 group-hover:to-indigo-600/20"></div>
-        <div className="relative bg-white dark:bg-surface-primary rounded-[32px] p-8 border border-slate-200 dark:border-border-primary shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden">
-          <div className="absolute top-0 left-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -ml-32 -mt-32"></div>
-          <div className="absolute bottom-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -mr-32 -mb-32"></div>
+    <div className="p-8 max-w-[1920px] mx-auto min-h-screen bg-slate-50/50 dark:bg-slate-900/10 space-y-8" dir="rtl">
 
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
-            <div className="flex-1">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-full border border-blue-100 dark:border-blue-500/20 mb-6">
-                <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
-                <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest ">لوحة التحكم النشطة</span>
-              </div>
-              <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-text-primary mb-4 leading-tight">
-                أهلاً بك مجدداً، <br />
-                <span className="bg-gradient-to-l from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  {user?.firstName || "المستخدم"}
-                </span> 👋
-              </h1>
-              <p className="text-slate-500 dark:text-text-secondary font-bold text-lg max-w-xl leading-relaxed">
-                CeramiSys يوفر لك نظرة شاملة وتحليلات دقيقة لمبيعاتك ومخزونك لحظة بلحظة.
-              </p>
-            </div>
+      {/* 1. Enterprise Header Section */}
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-2 border-b border-slate-200 dark:border-border-primary/50">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full text-xs font-bold ring-1 ring-blue-700/10">
+            <Calendar className="w-3.5 h-3.5" />
+            <span>{currentDate}</span>
+          </div>
+          <h1 className="text-4xl font-bold text-slate-900 dark:text-text-primary tracking-tight">
+            لوحة المراقبة المركزية
+          </h1>
+          <p className="text-slate-500 dark:text-text-secondary text-lg max-w-2xl font-medium leading-relaxed">
+            نظرة شاملة على مؤشرات الأداء الرئيسية والعمليات المالية للمؤسسة.
+          </p>
+        </div>
 
-            <div className="flex flex-col items-center lg:items-end gap-4 min-w-[240px]">
-              <div className="bg-slate-50 dark:bg-surface-secondary p-5 rounded-3xl border border-slate-100 dark:border-white/5 w-full">
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="w-12 h-12 bg-white dark:bg-surface-primary rounded-2xl flex items-center justify-center shadow-sm border border-slate-100 dark:border-white/10">
-                    <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 dark:text-text-tertiary uppercase tracking-widest leading-none">تاريخ اليوم</p>
-                    <p className="font-black text-slate-900 dark:text-text-primary text-base">
-                      {new Date().toLocaleDateString('ar-LY', { weekday: 'long', day: 'numeric', month: 'long' })}
-                    </p>
-                  </div>
-                </div>
-                <p className="text-[11px] font-bold text-slate-500 dark:text-text-tertiary text-center lg:text-right">
-                  {new Date().toLocaleDateString('ar-LY', { year: 'numeric' })}
-                </p>
-              </div>
-            </div>
+        <div className="flex items-center gap-3">
+          <button className="p-3 bg-white dark:bg-surface-primary border border-slate-200 dark:border-border-primary rounded-xl text-slate-500 hover:text-blue-600 hover:border-blue-200 shadow-sm transition-all group">
+            <Calendar className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          </button>
+          <div className="h-12 w-[1px] bg-slate-200 dark:bg-border-primary hidden lg:block"></div>
+          <div className="flex flex-col items-end hidden lg:flex">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">آخر تحديث</span>
+            <span className="text-sm font-bold text-slate-900 dark:text-text-primary dir-ltr">
+              {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Quick Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 2. Key Performance Indicators (KPIs) - Hero Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <MainStatCard
-          title="مبيعات اليوم"
+          title="المبيعات (اليومية)"
           value={formatArabicCurrency(salesStats?.data?.todayRevenue || 0)}
-          subtitle={`${formatArabicNumber(salesStats?.data?.todaySales || 0)} فاتورة مسجلة`}
+          subtitle={`عدد العمليات: ${formatArabicNumber(salesStats?.data?.todaySales || 0)}`}
           icon={TrendingUp}
-          iconBgColor="bg-gradient-to-br from-emerald-500 to-teal-600"
+          iconBgColor="bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20"
           isLoading={salesLoading}
         />
         <MainStatCard
-          title="تحصيلات النقدية"
+          title="المدفوعات الآجلة (المحصلة)"
           value={formatArabicCurrency(creditStats?.data?.todayPayments || 0)}
-          subtitle="إجمالي المقبوضات اليوم"
-          icon={CircleDollarSign}
-          iconBgColor="bg-gradient-to-br from-blue-500 to-indigo-600"
-          isLoading={creditLoading}
-        />
-        <MainStatCard
-          title="المبيعات الآجلة"
-          value={formatArabicCurrency(creditStats?.data?.todayCreditSales || 0)}
-          subtitle="الذمم المدينة المسجلة اليوم"
-          icon={CreditCard}
-          iconBgColor="bg-gradient-to-br from-amber-500 to-orange-600"
+          subtitle="تحصيلات اليوم"
+          icon={Wallet}
+          iconBgColor="bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/20"
           isLoading={creditLoading}
         />
         <MainStatCard
           title="إجمالي المشتريات"
-          value={formatArabicCurrency(purchaseStats?.data?.totalInvoicesValue || 0)}
-          subtitle={`${formatArabicNumber(purchaseStats?.data?.totalInvoices || 0)} فاتورة مشتريات`}
-          icon={ShoppingCart}
-          iconBgColor="bg-gradient-to-br from-purple-500 to-violet-600"
-          isLoading={purchaseLoading}
+          value={formatArabicCurrency(purchaseStats?.totalAmount || 0)}
+          subtitle={`عدد الفواتير: ${formatArabicNumber(purchaseStats?.totalPurchases || 0)}`}
+          icon={CreditCard}
+          iconBgColor="bg-gradient-to-br from-rose-500 to-red-600 shadow-lg shadow-rose-500/20"
+          isLoading={purchasesLoading}
+        />
+        <MainStatCard
+          title="المبيعات الآجلة (اليوم)"
+          value={formatArabicCurrency(creditStats?.data?.todayCreditSales || 0)}
+          subtitle="ذمم مدينة جديدة"
+          icon={CircleDollarSign}
+          iconBgColor="bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/20"
+          isLoading={creditLoading}
         />
       </div>
 
-      {/* مبيعات الشركات */}
-      <CompanySalesCards />
+      {/* 3. Main Operational Dashboard Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
 
-      {/* الخزائن (المدفوعات والإيداعات) */}
-      <TreasuryCards />
+        {/* Left Column (Main Charts & Data) - Spans 2 cols */}
+        <div className="xl:col-span-2 space-y-8">
 
-      {/* كروت العمليات اليومية والشهرية */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <OperationCard
-          title="تتبع المبيعات اليومية"
-          period="يوم"
-          stats={dailyOperationsStats}
-          headerColor="bg-gradient-to-l from-blue-600 to-indigo-700"
-          isLoading={salesLoading}
-        />
-        <OperationCard
-          title="ملخص المشتريات للشهر"
-          period="شهر"
-          stats={monthlyOperationsStats}
-          headerColor="bg-gradient-to-l from-indigo-600 to-purple-700"
-          isLoading={salesLoading || treasuryLoading}
-        />
-      </div>
+          {/* Comprehensive Chart */}
+          <ComprehensiveChart />
 
-      {/* مبيعات المستخدمين */}
-      <UsersSalesCard />
+          {/* Detailed Financial & Users Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <TreasuryCards />
+            <div className="space-y-6">
+              <UsersSalesCard />
+              <CompanySalesCards />
+            </div>
+          </div>
 
-      {/* الرسم البياني الشامل */}
-      <ComprehensiveChart />
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TopSellingProducts />
-        <LowStockProducts />
+        {/* Right Column (Side Stats & Alerts) */}
+        <div className="space-y-8">
+
+          {/* Stock Alerts */}
+          <LowStockProducts />
+
+          {/* Top Products */}
+          <TopSellingProducts />
+
+          {/* Quick Operations Summary */}
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
+            <div className="relative z-10">
+              <h3 className="text-xl font-bold mb-6 flex items-center gap-3">
+                <Package className="w-5 h-5 text-blue-400" />
+                ملخص المخزون
+              </h3>
+
+              <div className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
+                  <div>
+                    <p className="text-sm text-slate-400 mb-1">إجمالي المنتجات</p>
+                    <p className="text-2xl font-bold tracking-tight">
+                      {productsLoading ? "..." : formatArabicNumber(productStatsData?.data?.totalProducts || 0)}
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                    <Package className="w-5 h-5 text-blue-400" />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
+                  <div>
+                    <p className="text-sm text-slate-400 mb-1">قيمة المخزون</p>
+                    <p className="text-xl font-bold tracking-tight text-emerald-400">
+                      {productsLoading ? "..." : formatArabicCurrency(productStatsData?.data?.totalStockValue || 0)}
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <CircleDollarSign className="w-5 h-5 text-emerald-400" />
+                  </div>
+                </div>
+              </div>
+
+              <button className="w-full mt-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-900/50 flex items-center justify-center gap-2">
+                عرض تقرير المخزون الكامل
+                <TrendingUp className="w-4 h-4 rtl:rotate-180" />
+              </button>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   );
-};
-
-export default Dashboard;
+}

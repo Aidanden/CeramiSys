@@ -102,7 +102,7 @@ export default function StoreProductsPage() {
                                     <div className="bg-slate-100 dark:bg-gray-700 h-48 flex items-center justify-center relative relative group-hover:bg-blue-600 transition-colors duration-500">
                                         <Package className="text-slate-300 group-hover:text-blue-200 transition-colors" size={64} />
                                         <div className="absolute top-4 right-4">
-                                            <span className={`px-4 py-1.5 rounded-full text-xs font-black shadow-sm ${isLowStock
+                                            <span className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm ${isLowStock
                                                 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
                                                 : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
                                                 }`}>
@@ -114,10 +114,10 @@ export default function StoreProductsPage() {
                                     {/* Content */}
                                     <div className="p-6">
                                         <div className="mb-4">
-                                            <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                                            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1 line-clamp-1 group-hover:text-blue-600 transition-colors">
                                                 {product.name}
                                             </h3>
-                                            <p className="text-xs text-blue-500 font-black tracking-widest uppercase">
+                                            <p className="text-xs text-blue-500 font-bold tracking-widest uppercase">
                                                 {product.sku}
                                             </p>
                                         </div>
@@ -125,7 +125,7 @@ export default function StoreProductsPage() {
                                         <div className="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-gray-700/50 pt-5">
                                             <div>
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">الكمية المتاحة</p>
-                                                <p className={`text-xl font-black ${isLowStock ? 'text-amber-500' : 'text-slate-800 dark:text-white'}`}>
+                                                <p className={`text-xl font-bold ${isLowStock ? 'text-amber-500' : 'text-slate-800 dark:text-white'}`}>
                                                     {Number(stock).toLocaleString('en-US', { numberingSystem: 'latn' })}
                                                     <span className="text-xs mr-1 font-medium text-slate-400">{product.unit || 'صندوق'}</span>
                                                 </p>
@@ -133,7 +133,7 @@ export default function StoreProductsPage() {
                                             {showPrices && (
                                                 <div className="text-left font-sans">
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">سعر المبيع</p>
-                                                    <p className="text-xl font-black text-blue-600">
+                                                    <p className="text-xl font-bold text-blue-600">
                                                         {Number(price).toLocaleString('en-US', { numberingSystem: 'latn' })}
                                                         <span className="text-[10px] mr-1">د.ل</span>
                                                     </p>

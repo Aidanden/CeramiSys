@@ -593,6 +593,7 @@ const SaleReturnsPage = () => {
         {/* Pagination */}
         {returnsData?.pagination && returnsData.pagination.totalPages > 1 && (
           <div className="bg-surface-primary px-4 py-3 flex items-center justify-between border-t border-border-primary sm:px-6">
+            {/* Mobile View */}
             <div className="flex-1 flex justify-between sm:hidden">
               <button
                 onClick={() => dispatch(setCurrentPage(Math.max(1, currentPage - 1)))}
@@ -601,7 +602,7 @@ const SaleReturnsPage = () => {
               >
                 السابق
               </button>
-              <span className="text-sm text-text-secondary">
+              <span className="text-sm text-text-secondary flex items-center">
                 {formatArabicNumber(currentPage)} / {formatArabicNumber(returnsData.pagination.totalPages)}
               </span>
               <button
@@ -611,6 +612,67 @@ const SaleReturnsPage = () => {
               >
                 التالي
               </button>
+            </div>
+
+            {/* Desktop View */}
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-text-secondary">
+                  عرض صفحة <span className="font-bold text-text-primary">{formatArabicNumber(currentPage)}</span> من <span className="font-bold text-text-primary">{formatArabicNumber(returnsData.pagination.totalPages)}</span>
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px space-x-reverse" aria-label="Pagination">
+                  <button
+                    onClick={() => dispatch(setCurrentPage(Math.max(1, currentPage - 1)))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-border-primary bg-surface-primary text-sm font-medium text-text-secondary hover:bg-background-hover disabled:opacity-50"
+                  >
+                    <span className="sr-only">السابق</span>
+                    <span className="h-5 w-5 flex items-center justify-center">➜</span>
+                  </button>
+
+                  {/* Page Numbers */}
+                  {Array.from({ length: Math.min(5, returnsData.pagination.totalPages) }, (_, i) => {
+                    // Logic to show a sliding window of pages
+                    let pageNum = i + 1;
+                    if (returnsData.pagination.totalPages > 5) {
+                      if (currentPage > 3) {
+                        pageNum = currentPage - 2 + i;
+                        // Adjust if we are near the end
+                        if (pageNum > returnsData.pagination.totalPages) {
+                          pageNum = returnsData.pagination.totalPages - 4 + i;
+                        }
+                      }
+                    }
+
+                    if (pageNum > 0 && pageNum <= returnsData.pagination.totalPages) {
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => dispatch(setCurrentPage(pageNum))}
+                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === pageNum
+                              ? 'z-10 bg-primary-50 border-primary-500 text-primary-600'
+                              : 'bg-surface-primary border-border-primary text-text-secondary hover:bg-background-hover'
+                            }`}
+                        >
+                          {formatArabicNumber(pageNum)}
+                        </button>
+                      );
+                    }
+                    return null;
+                  })}
+
+                  <button
+                    onClick={() => dispatch(setCurrentPage(Math.min(returnsData.pagination.totalPages, currentPage + 1)))}
+                    disabled={currentPage === returnsData.pagination.totalPages}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-border-primary bg-surface-primary text-sm font-medium text-text-secondary hover:bg-background-hover disabled:opacity-50"
+                  >
+                    <span className="sr-only">التالي</span>
+                    <span className="h-5 w-5 flex items-center justify-center">←</span>
+                  </button>
+                </nav>
+              </div>
             </div>
           </div>
         )}

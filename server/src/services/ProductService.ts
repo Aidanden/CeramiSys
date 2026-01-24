@@ -749,28 +749,32 @@ export class ProductService {
       const productsWithoutStock = stocksWithZeroBoxes.length + (totalProducts - productIdsWithStock.size);
 
       // قيمة المخزون الإجمالية - استخدام Prisma ORM بدلاً من raw query
-      const stockWithPrices = await this.prisma.stock.findMany({
+      const stockWithProducts = await this.prisma.stock.findMany({
         where: {
-          ...(isSystemUser !== true && { companyId: userCompanyId })
+          ...(isSystemUser !== true && { companyId: userCompanyId }),
+          boxes: { gt: 0 } // ✅ حساب قيمة المخزون الموجود فعلياً فقط (تجاهل السالب والصفر)
         },
         include: {
           product: {
-            include: {
-              prices: {
-                where: {
-                  ...(isSystemUser !== true && { companyId: userCompanyId })
-                }
-              }
+            select: {
+              cost: true,
+              unitsPerBox: true
             }
           }
         }
       });
 
-      const totalStockValue = stockWithPrices.reduce((total, stock) => {
-        const price = stock.product.prices[0]?.sellPrice || 0;
-        const unitsPerBox = stock.product.unitsPerBox || 1;
-        const totalUnits = Number(stock.boxes) * Number(unitsPerBox);
-        return total + (totalUnits * Number(price));
+      const totalStockValue = stockWithProducts.reduce((total, stock) => {
+        // استخدام التكلفة (cost) بدلاً من سعر البيع
+        // إذا لم تكن التكلفة محددة، نعتبرها 0
+        const cost = Number(stock.product.cost) || 0;
+        const unitsPerBox = stock.product.unitsPerBox ? Number(stock.product.unitsPerBox) : 1;
+
+        // الكمية بالوحدات
+        const totalUnits = Number(stock.boxes) * unitsPerBox;
+
+        // القيمة = الكمية * التكلفة للوحدة
+        return total + (totalUnits * cost);
       }, 0);
 
       // متوسط سعر الأصناف

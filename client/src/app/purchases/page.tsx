@@ -2599,7 +2599,7 @@ const PurchasesPage = () => {
         onSuccess={handleApprovalSuccess}
         purchase={purchaseToApprove}
       />
-    </div >
+    </div>
   );
 };
 

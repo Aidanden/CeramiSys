@@ -28,6 +28,8 @@ export interface AuthRequest extends Request {
     roleName?: string;
     permissions?: any;
     isSystemUser?: boolean;
+    username?: string;
+    fullName?: string;
   };
   storeUser?: {
     id: string;
@@ -47,6 +49,8 @@ declare global {
         roleName?: string;
         permissions?: any;
         isSystemUser?: boolean;
+        username?: string;
+        fullName?: string;
       };
       storeUser?: {
         id: string;
@@ -144,6 +148,8 @@ export const authenticateToken = async (
       roleName: user.Role?.RoleName || 'مستخدم',
       permissions: permissions,
       isSystemUser: decoded.isSystemUser || user.IsSystemUser,
+      username: user.UserName,
+      fullName: user.FullName,
     };
 
     next();

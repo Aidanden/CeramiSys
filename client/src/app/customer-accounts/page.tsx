@@ -766,7 +766,7 @@ const CustomerAccountsPage = () => {
                             <div className="flex flex-wrap gap-2">
                               <button
                                 onClick={() => handleShowAccount(customer.id)}
-                                className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                                className="inline-flex items-center justify-center w-40 px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                               >
                                 <FileText className="w-4 h-4 ml-1" />
                                 كشف الحساب
@@ -774,7 +774,7 @@ const CustomerAccountsPage = () => {
                               {customer.currentBalance > 0 && (
                                 <button
                                   onClick={() => handleShowInvoices(customer.id)}
-                                  className="inline-flex items-center px-3 py-1.5 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
+                                  className="inline-flex items-center justify-center w-40 px-3 py-1.5 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
                                 >
                                   <FileText className="w-4 h-4 ml-1" />
                                   الفواتير المفتوحة

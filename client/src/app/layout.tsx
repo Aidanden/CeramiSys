@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
+import { Cairo } from "next/font/google"; // استخدام خط Cairo من جوجل مباشرة لأداء أفضل وأجمل
 import "./globals.css";
 import "../styles/print.css";
 import DashboardWrapper from "./dashboardWrapper";
@@ -9,9 +9,10 @@ import { SessionTimeoutProvider } from "@/components/SessionTimeoutProvider";
 import { ToastProvider } from "@/components/ui/Toast";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
-const tajawal = localFont({
-  src: "./fonts/Tajawal-Regular.ttf",
-  variable: "--font-tajawal",
+const cairo = Cairo({
+  subsets: ["arabic"],
+  variable: "--font-cairo",
+  weight: ["200", "300", "400", "500", "600", "700", "800", "900"],
   display: "swap",
 });
 
@@ -34,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl">
-      <body className={`${tajawal.variable} antialiased`} suppressHydrationWarning={true}>
+      <body className={`${cairo.variable} antialiased`} suppressHydrationWarning={true}>
         <StoreProvider>
           <ThemeProvider>
             <AuthProvider>

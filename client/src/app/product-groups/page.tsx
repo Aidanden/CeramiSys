@@ -108,7 +108,7 @@ const ProductGroupsPage = () => {
       }
 
       const { total, page, limit } = productsData.data.pagination;
-      setHasMoreProducts(page * limit < total);
+      setHasMoreProducts(page * limit <total);
     }
   }, [productsData, productPage]);
 
@@ -381,7 +381,7 @@ const ProductGroupsPage = () => {
                                   className="text-sm text-gray-700 dark:text-text-secondary"
                                 >
                                   {supplier.name}
-                                  {index < group.suppliers!.length - 1 && ","}
+                                  {index <group.suppliers!.length - 1 && ","}
                                 </span>
                               ))
                             ) : (

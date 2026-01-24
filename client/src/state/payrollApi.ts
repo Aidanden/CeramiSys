@@ -5,6 +5,7 @@
 
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithAuthInterceptor } from "./apiUtils";
+import { treasuryApi } from "./treasuryApi";
 
 // Types
 export interface Employee {
@@ -190,6 +191,12 @@ export const payrollApi = createApi({
                 body: data,
             }),
             invalidatesTags: ["SalaryPayments", "PayrollStats", "Employees", "SalaryStatement"],
+            async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+                try {
+                    await queryFulfilled;
+                    dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+                } catch { }
+            },
         }),
 
         payMultipleSalaries: builder.mutation<{
@@ -212,6 +219,12 @@ export const payrollApi = createApi({
                 body: data,
             }),
             invalidatesTags: ["SalaryPayments", "PayrollStats", "Employees"],
+            async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+                try {
+                    await queryFulfilled;
+                    dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+                } catch { }
+            },
         }),
 
         getSalaryPayments: builder.query<{ success: boolean; data: SalaryPayment[] }, { month: number; year: number; companyId?: number }>({
@@ -232,9 +245,9 @@ export const payrollApi = createApi({
 
         // ============== المكافآت ==============
 
-        getBonuses: builder.query<{ success: boolean; data: EmployeeBonus[] }, { 
-            month?: number; 
-            year?: number; 
+        getBonuses: builder.query<{ success: boolean; data: EmployeeBonus[] }, {
+            month?: number;
+            year?: number;
             type?: string;
             employeeId?: number;
             companyId?: number;
@@ -266,6 +279,12 @@ export const payrollApi = createApi({
                 body: data,
             }),
             invalidatesTags: ["Bonuses", "PayrollStats", "Employees"],
+            async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+                try {
+                    await queryFulfilled;
+                    dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+                } catch { }
+            },
         }),
 
         // ============== الإحصائيات ==============

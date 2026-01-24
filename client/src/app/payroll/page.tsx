@@ -48,7 +48,7 @@ import {
     CreditCard,
     TrendingUp,
     FileText as PrinterIcon,
-    BarChart3 as LucideBarChart // Renamed to avoid confusion with BarChart from recharts
+    BarChart3 as LucideBarChart
 } from 'lucide-react';
 import {
     BarChart,
@@ -141,6 +141,17 @@ export default function PayrollPage() {
     const [statementEmployeeFilter, setStatementEmployeeFilter] = useState<number | undefined>();
     const [statsYear, setStatsYear] = useState(currentDate.getFullYear());
 
+    // Pagination state
+    const itemsPerPage = 10;
+    const [employeesPage, setEmployeesPage] = useState(1);
+    const [salariesPage, setSalariesPage] = useState(1);
+    const [bonusesPage, setBonusesPage] = useState(1);
+
+    // Reset pages when filters change
+    React.useEffect(() => setEmployeesPage(1), [searchTerm, selectedCompanyId]);
+    React.useEffect(() => setSalariesPage(1), [salaryMonth, salaryYear, statementEmployeeFilter]);
+    React.useEffect(() => setBonusesPage(1), [bonusMonth, bonusYear, bonusTypeFilter, bonusEmployeeFilter]);
+
     // Form state
     const [employeeForm, setEmployeeForm] = useState({
         name: '',
@@ -212,6 +223,18 @@ export default function PayrollPage() {
     const employees = employeesData?.data || [];
     const allSalaryPayments = salaryData?.data || [];
     const bonuses = bonusesData?.data || [];
+
+    // Paginated Data
+    const paginatedEmployees = React.useMemo(() => {
+        const start = (employeesPage - 1) * itemsPerPage;
+        return employees.slice(start, start + itemsPerPage);
+    }, [employees, employeesPage]);
+
+    const paginatedBonuses = React.useMemo(() => {
+        const start = (bonusesPage - 1) * itemsPerPage;
+        return bonuses.slice(start, start + itemsPerPage);
+    }, [bonuses, bonusesPage]);
+
     const treasuries = treasuriesData || [];
     const companies = companiesData?.data?.companies || [];
     const stats = statsData?.data;
@@ -222,6 +245,11 @@ export default function PayrollPage() {
         if (!statementEmployeeFilter) return allSalaryPayments;
         return allSalaryPayments.filter(payment => payment.employeeId === statementEmployeeFilter);
     }, [allSalaryPayments, statementEmployeeFilter]);
+
+    const paginatedSalaries = React.useMemo(() => {
+        const start = (salariesPage - 1) * itemsPerPage;
+        return salaryPayments.slice(start, start + itemsPerPage);
+    }, [salaryPayments, salariesPage]);
 
     // تحديد اسم الشركة/الشركات واسم المستخدم للطباعة
     const getCompanyInfo = () => {
@@ -453,7 +481,7 @@ export default function PayrollPage() {
             setSelectedEmployees([]);
             resetPayForm();
             refetchEmployees();
-            alert(`تم صرف ${result.data.totalPaid} مرتب${result.data.totalFailed > 0 ? ` وفشل ${result.data.totalFailed}` : ''}`);
+            alert(`تم صرف ${result.data.totalPaid} مرتب${result.data.totalFailed> 0 ? ` وفشل ${result.data.totalFailed}` : ''}`);
         } catch (error: any) {
             alert(error.data?.message || 'حدث خطأ أثناء صرف المرتبات');
         }
@@ -606,7 +634,7 @@ export default function PayrollPage() {
                         </select>
                     </div>
                 </div>
-            </div >
+            </div>
 
             {/* Stats Cards */}
             {
@@ -681,7 +709,7 @@ export default function PayrollPage() {
                                     />
                                 </div>
                                 <div className="flex gap-3">
-                                    {selectedEmployees.length > 0 && (
+                                    {selectedEmployees.length> 0 && (
                                         <button
                                             onClick={() => setShowBatchPayModal(true)}
                                             className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 flex items-center gap-2"
@@ -728,7 +756,7 @@ export default function PayrollPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100 dark:divide-border-primary">
-                                            {employees.map(employee => (
+                                            {paginatedEmployees.map(employee => (
                                                 <tr key={employee.id} className="hover:bg-slate-50 dark:hover:bg-surface-hover transition-colors">
                                                     <td className="px-4 py-3">
                                                         <input
@@ -799,6 +827,50 @@ export default function PayrollPage() {
                                     </table>
                                 </div>
                             )}
+
+                            {/* Pagination for Employees */}
+                            {employees.length> itemsPerPage && (
+                                <div className="bg-slate-50/50 dark:bg-slate-900/20 px-6 py-4 flex items-center justify-between border-t border-slate-100 dark:border-border-primary mt-6 rounded-xl">
+                                    <div className="flex-1 flex justify-between sm:hidden">
+                                        <button
+                                            onClick={() => setEmployeesPage(p => Math.max(1, p - 1))}
+                                            disabled={employeesPage === 1}
+                                            className="relative inline-flex items-center px-4 py-2 border border-slate-200 dark:border-border-primary text-sm font-bold rounded-xl text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 transition-all disabled:opacity-50"
+                                        >
+                                            السابق
+                                        </button>
+                                        <button
+                                            onClick={() => setEmployeesPage(p => Math.min(Math.ceil(employees.length / itemsPerPage), p + 1))}
+                                            disabled={employeesPage === Math.ceil(employees.length / itemsPerPage)}
+                                            className="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-200 dark:border-border-primary text-sm font-bold rounded-xl text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 transition-all disabled:opacity-50"
+                                        >
+                                            التالي
+                                        </button>
+                                    </div>
+                                    <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                        <div>
+                                            <p className="text-sm text-slate-500 dark:text-text-tertiary">
+                                                عرض صفحة <span className="font-bold text-slate-900 dark:text-text-primary">{employeesPage}</span> من <span className="font-bold text-slate-900 dark:text-text-primary">{Math.ceil(employees.length / itemsPerPage)}</span>
+                                            </p>
+                                        </div>
+                                        <nav className="relative z-0 inline-flex rounded-xl shadow-sm space-x-1 rtl:space-x-reverse" aria-label="Pagination">
+                                            {Array.from({ length: Math.ceil(employees.length / itemsPerPage) }, (_, i) => (
+                                                <button
+                                                    key={i + 1}
+                                                    onClick={() => setEmployeesPage(i + 1)}
+                                                    className={`relative inline-flex items-center px-4 py-2 text-sm font-black rounded-xl transition-all ${employeesPage === i + 1
+                                                        ? 'z-10 bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-none'
+                                                        : 'bg-white dark:bg-surface-primary border-2 border-slate-100 dark:border-border-primary text-slate-500 dark:text-text-tertiary hover:bg-slate-50 dark:hover:bg-surface-hover'
+                                                        }`}
+                                                >
+                                                    {i + 1}
+                                                </button>
+                                            ))}
+                                        </nav>
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
                     )}
 
@@ -870,47 +942,82 @@ export default function PayrollPage() {
                                     <div className="overflow-x-auto">
                                         <table className="w-full">
                                             <thead className="bg-gray-50 dark:bg-surface-secondary">
-                                            <tr>
-                                                <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">رقم الإيصال</th>
-                                                <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">الموظف</th>
-                                                <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">المبلغ</th>
-                                                <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">تاريخ الصرف</th>
-                                                <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">ملاحظات</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-200 dark:divide-border-primary">
-                                            {salaryPayments.map(payment => (
-                                                <tr key={payment.id} className="hover:bg-gray-50 dark:hover:bg-surface-hover">
-                                                    <td className="px-4 py-3 font-mono text-sm text-slate-600 dark:text-text-secondary">{payment.receiptNumber}</td>
-                                                    <td className="px-4 py-3">
-                                                        <div>
-                                                            <p className="font-medium text-gray-900 dark:text-text-primary">{payment.employee?.name}</p>
-                                                            {payment.employee?.jobTitle && (
-                                                                <p className="text-xs text-slate-500 dark:text-text-tertiary">{payment.employee.jobTitle}</p>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-3 font-semibold text-green-600 dark:text-green-400">{formatCurrency(payment.amount)}</td>
-                                                    <td className="px-4 py-3 text-slate-600 dark:text-text-secondary">
-                                                        {new Date(payment.paymentDate).toLocaleDateString('ar-LY')}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-slate-500 dark:text-text-tertiary text-sm">{payment.notes || '-'}</td>
+                                                <tr>
+                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">رقم الإيصال</th>
+                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">الموظف</th>
+                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">المبلغ</th>
+                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">تاريخ الصرف</th>
+                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">ملاحظات</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200 dark:divide-border-primary">
+                                                {paginatedSalaries.map(payment => (
+                                                    <tr key={payment.id} className="hover:bg-gray-50 dark:hover:bg-surface-hover">
+                                                        <td className="px-4 py-3 font-mono text-sm text-slate-600 dark:text-text-secondary">{payment.receiptNumber}</td>
+                                                        <td className="px-4 py-3">
+                                                            <div>
+                                                                <p className="font-medium text-gray-900 dark:text-text-primary">{payment.employee?.name}</p>
+                                                                {payment.employee?.jobTitle && (
+                                                                    <p className="text-xs text-slate-500 dark:text-text-tertiary">{payment.employee.jobTitle}</p>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3 font-semibold text-green-600 dark:text-green-400">{formatCurrency(payment.amount)}</td>
+                                                        <td className="px-4 py-3 text-slate-600 dark:text-text-secondary">
+                                                            {new Date(payment.paymentDate).toLocaleDateString('ar-LY')}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-slate-500 dark:text-text-tertiary text-sm">{payment.notes || '-'}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
                                     {/* Summary for Salaries */}
-                                    <div className="bg-green-50 dark:bg-green-900/20 px-6 py-4 border-t border-slate-200 dark:border-border-primary">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm font-medium text-gray-700 dark:text-text-secondary">الإجمالي الكلي:</span>
-                                            <span className="text-lg font-bold text-green-600 dark:text-green-400">
-                                                {formatCurrency(salaryPayments.reduce((sum, p) => sum + Number(p.amount), 0))}
-                                            </span>
+                                </div>
+                            )}
+                            {/* Pagination for Salaries */}
+                            {salaryPayments.length> itemsPerPage && (
+                                <div className="bg-slate-50/50 dark:bg-slate-900/20 px-6 py-4 flex items-center justify-between border-t border-slate-100 dark:border-border-primary mt-6 rounded-xl">
+                                    <div className="flex-1 flex justify-between sm:hidden">
+                                        <button
+                                            onClick={() => setSalariesPage(p => Math.max(1, p - 1))}
+                                            disabled={salariesPage === 1}
+                                            className="relative inline-flex items-center px-4 py-2 border border-slate-200 dark:border-border-primary text-sm font-bold rounded-xl text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 transition-all disabled:opacity-50"
+                                        >
+                                            السابق
+                                        </button>
+                                        <button
+                                            onClick={() => setSalariesPage(p => Math.min(Math.ceil(salaryPayments.length / itemsPerPage), p + 1))}
+                                            disabled={salariesPage === Math.ceil(salaryPayments.length / itemsPerPage)}
+                                            className="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-200 dark:border-border-primary text-sm font-bold rounded-xl text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 transition-all disabled:opacity-50"
+                                        >
+                                            التالي
+                                        </button>
+                                    </div>
+                                    <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                        <div>
+                                            <p className="text-sm text-slate-500 dark:text-text-tertiary">
+                                                عرض صفحة <span className="font-bold text-slate-900 dark:text-text-primary">{salariesPage}</span> من <span className="font-bold text-slate-900 dark:text-text-primary">{Math.ceil(salaryPayments.length / itemsPerPage)}</span>
+                                            </p>
                                         </div>
+                                        <nav className="relative z-0 inline-flex rounded-xl shadow-sm space-x-1 rtl:space-x-reverse" aria-label="Pagination">
+                                            {Array.from({ length: Math.ceil(salaryPayments.length / itemsPerPage) }, (_, i) => (
+                                                <button
+                                                    key={i + 1}
+                                                    onClick={() => setSalariesPage(i + 1)}
+                                                    className={`relative inline-flex items-center px-4 py-2 text-sm font-black rounded-xl transition-all ${salariesPage === i + 1
+                                                        ? 'z-10 bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-none'
+                                                        : 'bg-white dark:bg-surface-primary border-2 border-slate-100 dark:border-border-primary text-slate-500 dark:text-text-tertiary hover:bg-slate-50 dark:hover:bg-surface-hover'
+                                                        }`}
+                                                >
+                                                    {i + 1}
+                                                </button>
+                                            ))}
+                                        </nav>
                                     </div>
                                 </div>
                             )}
+
                         </div>
                     )}
 
@@ -991,63 +1098,110 @@ export default function PayrollPage() {
                                     <p className="text-sm">اختر الفترة والفلاتر المطلوبة لعرض البيانات</p>
                                 </div>
                             ) : (
-                                <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden">
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full">
-                                            <thead className="bg-orange-50 dark:bg-orange-900/20">
-                                                <tr>
-                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">رقم الإيصال</th>
-                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">الموظف</th>
-                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">النوع</th>
-                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">المبلغ</th>
-                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">التاريخ</th>
-                                                    <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">السبب</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-200 dark:divide-border-primary">
-                                                {bonuses.map(bonus => (
-                                                    <tr key={bonus.id} className="hover:bg-orange-50/30 dark:hover:bg-orange-900/10">
-                                                        <td className="px-4 py-3 font-mono text-sm text-slate-600 dark:text-text-secondary">{bonus.receiptNumber}</td>
-                                                        <td className="px-4 py-3">
-                                                            <div>
-                                                                <p className="font-medium text-gray-900 dark:text-text-primary">{bonus.employee?.name}</p>
-                                                                {bonus.employee?.jobTitle && (
-                                                                    <p className="text-xs text-slate-500 dark:text-text-tertiary">{bonus.employee.jobTitle}</p>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${bonus.type === 'BONUS' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
-                                                                bonus.type === 'RAISE' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
-                                                                    bonus.type === 'INCENTIVE' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400' :
-                                                                        'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400'
-                                                                }`}>
-                                                                {bonus.typeName}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-4 py-3 font-semibold text-orange-600 dark:text-orange-400">{formatCurrency(bonus.amount)}</td>
-                                                        <td className="px-4 py-3 text-slate-600 dark:text-text-secondary">
-                                                            {new Date(bonus.paymentDate).toLocaleDateString('ar-LY')}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-slate-500 dark:text-text-tertiary text-sm">{bonus.reason || '-'}</td>
+                                <>
+                                    <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full">
+                                                <thead className="bg-orange-50 dark:bg-orange-900/20">
+                                                    <tr>
+                                                        <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">رقم الإيصال</th>
+                                                        <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">الموظف</th>
+                                                        <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">النوع</th>
+                                                        <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">المبلغ</th>
+                                                        <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">التاريخ</th>
+                                                        <th className="px-4 py-3 text-right text-sm font-semibold text-slate-600 dark:text-text-secondary">السبب</th>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    {/* Summary */}
-                                    <div className="bg-orange-50 dark:bg-orange-900/20 px-6 py-4 border-t border-slate-200 dark:border-border-primary">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm font-medium text-gray-700 dark:text-text-secondary">الإجمالي الكلي:</span>
-                                            <span className="text-lg font-bold text-orange-600 dark:text-orange-400">
-                                                {formatCurrency(bonuses.reduce((sum, b) => sum + Number(b.amount), 0))}
-                                            </span>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-200 dark:divide-border-primary">
+                                                    {paginatedBonuses.map(bonus => (
+                                                        <tr key={bonus.id} className="hover:bg-orange-50/30 dark:hover:bg-orange-900/10">
+                                                            <td className="px-4 py-3 font-mono text-sm text-slate-600 dark:text-text-secondary">{bonus.receiptNumber}</td>
+                                                            <td className="px-4 py-3">
+                                                                <div>
+                                                                    <p className="font-medium text-gray-900 dark:text-text-primary">{bonus.employee?.name}</p>
+                                                                    {bonus.employee?.jobTitle && (
+                                                                        <p className="text-xs text-slate-500 dark:text-text-tertiary">{bonus.employee.jobTitle}</p>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${bonus.type === 'BONUS' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
+                                                                    bonus.type === 'RAISE' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                                                                        bonus.type === 'INCENTIVE' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400' :
+                                                                            'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400'
+                                                                    }`}>
+                                                                    {bonus.typeName}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-4 py-3 font-semibold text-orange-600 dark:text-orange-400">{formatCurrency(bonus.amount)}</td>
+                                                            <td className="px-4 py-3 text-slate-600 dark:text-text-secondary">
+                                                                {new Date(bonus.paymentDate).toLocaleDateString('ar-LY')}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-slate-500 dark:text-text-tertiary text-sm">{bonus.reason || '-'}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+
+                                        </div>
+                                        {/* Summary */}
+                                        <div className="bg-orange-50 dark:bg-orange-900/20 px-6 py-4 border-t border-slate-200 dark:border-border-primary">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm font-medium text-gray-700 dark:text-text-secondary">الإجمالي الكلي:</span>
+                                                <span className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                                                    {formatCurrency(bonuses.reduce((sum, b) => sum + Number(b.amount), 0))}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+
+                                    {/* Pagination for Bonuses */}
+                                    {bonuses.length> itemsPerPage && (
+                                        <div className="bg-slate-50/50 dark:bg-slate-900/20 px-6 py-4 flex items-center justify-between border-t border-slate-100 dark:border-border-primary mt-6 rounded-xl">
+                                            <div className="flex-1 flex justify-between sm:hidden">
+                                                <button
+                                                    onClick={() => setBonusesPage(p => Math.max(1, p - 1))}
+                                                    disabled={bonusesPage === 1}
+                                                    className="relative inline-flex items-center px-4 py-2 border border-slate-200 dark:border-border-primary text-sm font-bold rounded-xl text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 transition-all disabled:opacity-50"
+                                                >
+                                                    السابق
+                                                </button>
+                                                <button
+                                                    onClick={() => setBonusesPage(p => Math.min(Math.ceil(bonuses.length / itemsPerPage), p + 1))}
+                                                    disabled={bonusesPage === Math.ceil(bonuses.length / itemsPerPage)}
+                                                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-200 dark:border-border-primary text-sm font-bold rounded-xl text-slate-700 dark:text-text-primary bg-white dark:bg-surface-secondary hover:bg-slate-50 transition-all disabled:opacity-50"
+                                                >
+                                                    التالي
+                                                </button>
+                                            </div>
+                                            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                                <div>
+                                                    <p className="text-sm text-slate-500 dark:text-text-tertiary">
+                                                        عرض صفحة <span className="font-bold text-slate-900 dark:text-text-primary">{bonusesPage}</span> من <span className="font-bold text-slate-900 dark:text-text-primary">{Math.ceil(bonuses.length / itemsPerPage)}</span>
+                                                    </p>
+                                                </div>
+                                                <nav className="relative z-0 inline-flex rounded-xl shadow-sm space-x-1 rtl:space-x-reverse" aria-label="Pagination">
+                                                    {Array.from({ length: Math.ceil(bonuses.length / itemsPerPage) }, (_, i) => (
+                                                        <button
+                                                            key={i + 1}
+                                                            onClick={() => setBonusesPage(i + 1)}
+                                                            className={`relative inline-flex items-center px-4 py-2 text-sm font-black rounded-xl transition-all ${bonusesPage === i + 1
+                                                                ? 'z-10 bg-orange-600 text-white shadow-md shadow-orange-200 dark:shadow-none'
+                                                                : 'bg-white dark:bg-surface-primary border-2 border-slate-100 dark:border-border-primary text-slate-500 dark:text-text-tertiary hover:bg-slate-50 dark:hover:bg-surface-hover'
+                                                                }`}
+                                                        >
+                                                            {i + 1}
+                                                        </button>
+                                                    ))}
+                                                </nav>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     )}
+
 
                     {/* Stats Tab */}
                     {activeTab === 'stats' && (
@@ -1178,10 +1332,10 @@ export default function PayrollPage() {
                                                     tickFormatter={(value) => `${value}`}
                                                 />
                                                 <Tooltip
-                                                    contentStyle={{ 
-                                                        borderRadius: '12px', 
-                                                        border: 'none', 
-                                                        boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', 
+                                                    contentStyle={{
+                                                        borderRadius: '12px',
+                                                        border: 'none',
+                                                        boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
                                                         padding: '12px',
                                                         backgroundColor: 'white'
                                                     }}
@@ -1608,8 +1762,8 @@ export default function PayrollPage() {
                 <PayrollMonthlyReport
                     month={salaryMonth}
                     year={salaryYear}
-                    payments={salaryPayments}
-                    bonuses={[]}
+                    payments={salaryPayments as any}
+                    bonuses={[] as any}
                     companyName={getCompanyInfo().name}
                     userName={getCompanyInfo().userName}
                 />
@@ -1618,7 +1772,7 @@ export default function PayrollPage() {
             {/* Hidden div for bonuses printing - للطباعة المكافآت (مخفي) */}
             <div ref={bonusesPrintRef} style={{ display: 'none' }}>
                 <BonusesReport
-                    bonuses={bonuses}
+                    bonuses={bonuses as any}
                     month={bonusMonth}
                     year={bonusYear}
                     type={bonusTypeFilter}
@@ -1626,7 +1780,7 @@ export default function PayrollPage() {
                     userName={getCompanyInfo().userName}
                 />
             </div>
-        </div >
+        </div>
     );
 }
 
@@ -1847,7 +2001,7 @@ function SalaryStatementModal({ employeeId, month: initialMonth, year: initialYe
                             </div>
                             <div className="text-center">
                                 <p className="text-xs text-purple-600 dark:text-purple-400 mb-1">المتبقي</p>
-                                <p className={`text-lg font-bold ${statement.summary.remaining > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-800 dark:text-text-primary'}`}>
+                                <p className={`text-lg font-bold ${statement.summary.remaining> 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-800 dark:text-text-primary'}`}>
                                     {new Intl.NumberFormat('ar-LY').format(statement.summary.remaining)}
                                 </p>
                             </div>
@@ -1969,7 +2123,7 @@ function SalaryStatementModal({ employeeId, month: initialMonth, year: initialYe
                                 </div>
                                 <div>
                                     <p style={{ fontSize: '11px', color: '#7c3aed', marginBottom: '5px' }}>المتبقي</p>
-                                    <p style={{ fontSize: '16px', fontWeight: 'bold', color: statement.summary.remaining > 0 ? '#f59e0b' : '#1e293b' }}>
+                                    <p style={{ fontSize: '16px', fontWeight: 'bold', color: statement.summary.remaining> 0 ? '#f59e0b' : '#1e293b' }}>
                                         {new Intl.NumberFormat('ar-LY').format(statement.summary.remaining)}
                                     </p>
                                 </div>
