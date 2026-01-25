@@ -25,8 +25,18 @@ export default function ExpenseCategoriesPage() {
     supplierIds: [],
   });
   const [supplierSearchTerm, setSupplierSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [allSelectedSuppliers, setAllSelectedSuppliers] = useState<any[]>([]);
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(supplierSearchTerm);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [supplierSearchTerm]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -44,7 +54,10 @@ export default function ExpenseCategoriesPage() {
 
   // API Queries
   const { data: categories = [], isLoading, refetch } = useGetExpenseCategoriesQuery(true);
-  const { data: suppliersData, refetch: refetchSuppliers } = useGetSuppliersQuery({});
+  const { data: suppliersData, refetch: refetchSuppliers, isFetching: isSuppliersLoading } = useGetSuppliersQuery({
+    limit: 200,
+    search: debouncedSearchTerm
+  });
   const suppliers = suppliersData?.data?.suppliers || [];
 
   // Mutations
@@ -52,15 +65,9 @@ export default function ExpenseCategoriesPage() {
   const [updateCategory, { isLoading: isUpdating }] = useUpdateExpenseCategoryMutation();
   const [deleteCategory] = useDeleteExpenseCategoryMutation();
 
-  // Filter suppliers based on search
-  const filteredSuppliers = suppliers.filter((supplier: any) =>
-    supplier.name.toLowerCase().includes(supplierSearchTerm.toLowerCase())
-  );
-
-  // Get selected suppliers
-  const selectedSuppliers = suppliers.filter((s: any) => 
-    formData.supplierIds?.includes(s.id)
-  );
+  // We use allSelectedSuppliers state to keep track of selected supplier objects
+  // so they remain visible even when the search query results change.
+  const selectedSuppliers = allSelectedSuppliers;
 
   const handleOpenModal = (category?: PurchaseExpenseCategory) => {
     if (category) {
@@ -70,9 +77,15 @@ export default function ExpenseCategoriesPage() {
         description: category.description || '',
         supplierIds: category.suppliers?.map((s) => s.supplierId) || [],
       });
+      // Populate selected suppliers state from category data
+      setAllSelectedSuppliers(category.suppliers?.map(s => ({
+        id: s.supplierId,
+        name: s.supplier.name
+      })) || []);
     } else {
       setEditingCategory(null);
       setFormData({ name: '', description: '', supplierIds: [] });
+      setAllSelectedSuppliers([]);
     }
     setSupplierSearchTerm('');
     setShowSupplierDropdown(false);
@@ -83,6 +96,7 @@ export default function ExpenseCategoriesPage() {
     setShowModal(false);
     setEditingCategory(null);
     setFormData({ name: '', description: '', supplierIds: [] });
+    setAllSelectedSuppliers([]);
     setSupplierSearchTerm('');
     setShowSupplierDropdown(false);
   };
@@ -109,7 +123,7 @@ export default function ExpenseCategoriesPage() {
 
   const handleDelete = async (id: number) => {
     if (!confirm('هل أنت متأكد من حذف هذه الفئة؟')) return;
-    
+
     try {
       await deleteCategory(id).unwrap();
       success('تم الحذف', 'تم حذف فئة المصروفات بنجاح');
@@ -119,14 +133,22 @@ export default function ExpenseCategoriesPage() {
     }
   };
 
-  const handleAddSupplier = (supplierId: number) => {
+  const handleAddSupplier = (supplier: any) => {
     setFormData((prev) => {
       const supplierIds = prev.supplierIds || [];
-      if (!supplierIds.includes(supplierId)) {
-        return { ...prev, supplierIds: [...supplierIds, supplierId] };
+      if (!supplierIds.includes(supplier.id)) {
+        return { ...prev, supplierIds: [...supplierIds, supplier.id] };
       }
       return prev;
     });
+
+    setAllSelectedSuppliers(prev => {
+      if (!prev.find(s => s.id === supplier.id)) {
+        return [...prev, supplier];
+      }
+      return prev;
+    });
+
     setSupplierSearchTerm('');
     setShowSupplierDropdown(false);
   };
@@ -136,6 +158,7 @@ export default function ExpenseCategoriesPage() {
       ...prev,
       supplierIds: (prev.supplierIds || []).filter((id) => id !== supplierId),
     }));
+    setAllSelectedSuppliers(prev => prev.filter(s => s.id !== supplierId));
   };
 
   const handleSupplierCreated = () => {
@@ -167,7 +190,7 @@ export default function ExpenseCategoriesPage() {
             </button>
           </Link>
         </div>
-        
+
         {/* Title and Add Button */}
         <div className="flex justify-between items-center">
           <div>
@@ -189,11 +212,10 @@ export default function ExpenseCategoriesPage() {
         {categories.map((category) => (
           <div
             key={category.id}
-            className={`p-6 rounded-lg border-2 shadow-md transition-all ${
-              category.isActive
-                ? 'bg-white border-gray-200 hover:border-blue-300'
-                : 'bg-gray-50 border-gray-300 opacity-60'
-            }`}
+            className={`p-6 rounded-lg border-2 shadow-md transition-all ${category.isActive
+              ? 'bg-white border-gray-200 hover:border-blue-300'
+              : 'bg-gray-50 border-gray-300 opacity-60'
+              }`}
           >
             <div className="flex justify-between items-start mb-4">
               <div className="flex-1">
@@ -203,11 +225,10 @@ export default function ExpenseCategoriesPage() {
                 )}
               </div>
               <span
-                className={`px-2 py-1 text-xs rounded-full ${
-                  category.isActive
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-200 text-gray-600'
-                }`}
+                className={`px-2 py-1 text-xs rounded-full ${category.isActive
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-gray-200 text-gray-600'
+                  }`}
               >
                 {category.isActive ? 'نشط' : 'غير نشط'}
               </span>
@@ -328,24 +349,35 @@ export default function ExpenseCategoriesPage() {
                     placeholder="ابحث عن مورد..."
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
-                  
+
                   {/* Dropdown */}
-                  {showSupplierDropdown && supplierSearchTerm && filteredSuppliers.length > 0 && (
+                  {showSupplierDropdown && (
                     <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {filteredSuppliers.map((supplier: any) => (
-                        <button
-                          key={supplier.id}
-                          type="button"
-                          onClick={() => handleAddSupplier(supplier.id)}
-                          disabled={formData.supplierIds?.includes(supplier.id)}
-                          className="w-full text-right px-4 py-2 hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <span className="text-sm text-gray-700">{supplier.name}</span>
-                          {formData.supplierIds?.includes(supplier.id) && (
-                            <span className="text-xs text-green-600 mr-2">✓ مضاف</span>
-                          )}
-                        </button>
-                      ))}
+                      {isSuppliersLoading ? (
+                        <div className="px-4 py-3 text-sm text-gray-500 text-center">جاري البحث...</div>
+                      ) : suppliers.length > 0 ? (
+                        suppliers.map((supplier: any) => (
+                          <button
+                            key={supplier.id}
+                            type="button"
+                            onClick={() => handleAddSupplier(supplier)}
+                            disabled={formData.supplierIds?.includes(supplier.id)}
+                            className="w-full text-right px-4 py-2 hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border-b border-gray-50 last:border-0"
+                          >
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-gray-700">{supplier.name}</span>
+                              {supplier.phone && (
+                                <span className="text-xs text-gray-500">{supplier.phone}</span>
+                              )}
+                            </div>
+                            {formData.supplierIds?.includes(supplier.id) && (
+                              <span className="text-xs text-green-600 mr-2">✓ مضاف</span>
+                            )}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-3 text-sm text-gray-500 text-center">لا توجد نتائج مطابقة</div>
+                      )}
                     </div>
                   )}
                 </div>

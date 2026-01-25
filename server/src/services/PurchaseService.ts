@@ -67,20 +67,20 @@ export class PurchaseService {
 
     // Calculate total (الأسعار بالعملة المُختارة مباشرة - بدون تحويل)
     const currency = data.currency || 'LYD';
-    
+
     console.log('💰 [PurchaseService] العملة المستخدمة:', currency);
 
     // حساب الإجمالي مع الأخذ في الاعتبار وحدة المنتج
     const total = lines.reduce((sum, line) => {
       const product = products.find(p => p.id === line.productId);
       let lineTotal = line.qty * line.unitPrice;
-      
+
       // إذا كانت الوحدة صندوق، يجب ضرب الكمية في unitsPerBox
       if (product && product.unit === 'صندوق' && product.unitsPerBox) {
         const totalMeters = line.qty * Number(product.unitsPerBox);
         lineTotal = totalMeters * line.unitPrice;
       }
-      
+
       return sum + lineTotal;
     }, 0);
 
@@ -105,13 +105,13 @@ export class PurchaseService {
           create: lines.map(line => {
             const product = products.find(p => p.id === line.productId);
             let subTotal = line.qty * line.unitPrice;
-            
+
             // إذا كانت الوحدة صندوق، يجب ضرب الكمية في unitsPerBox
             if (product && product.unit === 'صندوق' && product.unitsPerBox) {
               const totalMeters = line.qty * Number(product.unitsPerBox);
               subTotal = totalMeters * line.unitPrice;
             }
-            
+
             return {
               productId: line.productId,
               qty: line.qty,
@@ -167,7 +167,7 @@ export class PurchaseService {
         currency,
         purchaseId: purchase.id
       });
-      
+
       const SupplierAccountService = (await import('./SupplierAccountService')).default;
       await SupplierAccountService.createAccountEntry({
         supplierId: supplierId,
@@ -549,13 +549,13 @@ export class PurchaseService {
       const total = data.lines.reduce((sum, line) => {
         const product = products.find(p => p.id === line.productId);
         let lineTotal = line.qty * line.unitPrice;
-        
+
         // إذا كانت الوحدة صندوق، يجب ضرب الكمية في unitsPerBox
         if (product && product.unit === 'صندوق' && product.unitsPerBox) {
           const totalMeters = line.qty * Number(product.unitsPerBox);
           lineTotal = totalMeters * line.unitPrice;
         }
-        
+
         return sum + lineTotal;
       }, 0);
 
@@ -975,12 +975,13 @@ export class PurchaseService {
   static async getSuppliers(query: GetSuppliersQuery) {
     const { page, limit, search } = query;
     const skip = (page - 1) * limit;
+    const normalizedSearch = search ? search.trim() : '';
 
-    const where = search ? {
+    const where = normalizedSearch ? {
       OR: [
-        { name: { contains: search, mode: 'insensitive' as const } },
-        { phone: { contains: search, mode: 'insensitive' as const } },
-        { email: { contains: search, mode: 'insensitive' as const } },
+        { name: { contains: normalizedSearch, mode: 'insensitive' as const } },
+        { phone: { contains: normalizedSearch, mode: 'insensitive' as const } },
+        { email: { contains: normalizedSearch, mode: 'insensitive' as const } },
       ],
     } : {};
 
@@ -989,7 +990,7 @@ export class PurchaseService {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: normalizedSearch ? { name: 'asc' } : { createdAt: 'desc' },
         include: {
           _count: {
             select: {
