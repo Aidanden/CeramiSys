@@ -187,5 +187,15 @@ export interface PurchaseStats {
   cashPurchases: number;
   creditPurchases: number;
   averagePurchase: number;
+  /** إحصائيات حسب العملة (للداشبورد والتقارير) */
+  totalPurchasesLYD: number;
+  totalPurchasesUSD: number;
+  totalPurchasesEUR: number;
+  totalExpensesLYD: number;
+  totalExpensesUSD: number;
+  totalExpensesEUR: number;
+  grandTotalLYD: number;
+  grandTotalUSD: number;
+  grandTotalEUR: number;
 }
 

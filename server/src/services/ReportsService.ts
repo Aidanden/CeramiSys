@@ -302,7 +302,7 @@ export class ReportsService {
   }
 
   /**
-   * تقرير الموردين
+   * تقرير الموردين - حسب العملة (دينار، دولار، يورو)
    */
   async getSupplierReport(query: SupplierReportQuery, userCompanyId: number, isSystemUser: boolean = false) {
     const where: any = {
@@ -331,32 +331,74 @@ export class ReportsService {
       },
     });
 
+    const emptyCurrency = () => ({ LYD: 0, USD: 0, EUR: 0 });
+
     const suppliersData = suppliers.map((supplier: any) => {
-      const totalPurchases = supplier.purchases.reduce((sum: number, p: any) => sum + Number(p.finalTotal), 0);
-      const totalPaid = supplier.accountEntries
+      // إجمالي المشتريات حسب العملة = مجموع قيود CREDIT في حسابه فقط (ما سُجّل فعلياً له)
+      // لا نستخدم finalTotal الفاتورة لأنه يشمل مصروفات لموردين آخرين ومصروفات تقديرية
+      const totalPurchasesByCurrency: Record<string, number> = emptyCurrency();
+      supplier.accountEntries
+        .filter((a: any) => a.transactionType === 'CREDIT')
+        .forEach((a: any) => {
+          const cur = (a.currency || 'LYD').toString();
+          if (!totalPurchasesByCurrency[cur]) totalPurchasesByCurrency[cur] = 0;
+          totalPurchasesByCurrency[cur] += Number(a.amount);
+        });
+
+      // المدفوع حسب العملة (DEBIT = دفعات للمورد)
+      const totalPaidByCurrency: Record<string, number> = emptyCurrency();
+      supplier.accountEntries
         .filter((a: any) => a.transactionType === 'DEBIT')
-        .reduce((sum: number, a: any) => sum + Number(a.amount), 0);
-      const balance = supplier.accountEntries.length > 0
-        ? Number(supplier.accountEntries[0].balance)
-        : 0;
+        .forEach((a: any) => {
+          const cur = (a.currency || 'LYD').toString();
+          if (!totalPaidByCurrency[cur]) totalPaidByCurrency[cur] = 0;
+          totalPaidByCurrency[cur] += Number(a.amount);
+        });
+
+      // الرصيد الحالي حسب العملة = آخر قيد مسجل لكل عملة
+      const balanceByCurrency: Record<string, number> = emptyCurrency();
+      const entriesByCurrency: Record<string, any[]> = {};
+      supplier.accountEntries.forEach((a: any) => {
+        const cur = (a.currency || 'LYD').toString();
+        if (!entriesByCurrency[cur]) entriesByCurrency[cur] = [];
+        entriesByCurrency[cur].push(a);
+      });
+      Object.keys(entriesByCurrency).forEach((cur) => {
+        const arr = entriesByCurrency[cur];
+        if (!arr) return;
+        arr.sort((x: any, y: any) => new Date(y.createdAt).getTime() - new Date(x.createdAt).getTime());
+        balanceByCurrency[cur] = arr.length ? Number(arr[0].balance) : 0;
+      });
 
       return {
         id: supplier.id,
         name: supplier.name,
         phone: supplier.phone,
-        totalPurchases,
-        totalPaid,
-        balance,
+        totalPurchasesByCurrency,
+        totalPaidByCurrency,
+        balanceByCurrency,
       };
+    });
+
+    // إجماليات التقرير حسب العملة
+    const totalPurchasesByCurrency = emptyCurrency();
+    const totalPaidByCurrency = emptyCurrency();
+    const totalBalanceByCurrency = emptyCurrency();
+    suppliersData.forEach((s: any) => {
+      (['LYD', 'USD', 'EUR'] as const).forEach((cur) => {
+        totalPurchasesByCurrency[cur] += s.totalPurchasesByCurrency[cur] ?? 0;
+        totalPaidByCurrency[cur] += s.totalPaidByCurrency[cur] ?? 0;
+        totalBalanceByCurrency[cur] += s.balanceByCurrency[cur] ?? 0;
+      });
     });
 
     return {
       suppliers: suppliersData,
       stats: {
         totalSuppliers: suppliersData.length,
-        totalPurchases: suppliersData.reduce((sum, s) => sum + s.totalPurchases, 0),
-        totalPaid: suppliersData.reduce((sum, s) => sum + s.totalPaid, 0),
-        totalBalance: suppliersData.reduce((sum, s) => sum + s.balance, 0),
+        totalPurchasesByCurrency,
+        totalPaidByCurrency,
+        totalBalanceByCurrency,
       }
     };
   }

@@ -375,14 +375,21 @@ export default function ReportsPage() {
         if (filters.supplierReportPhone && !textSearch(supplier.phone, filters.supplierReportPhone)) return false;
         return true;
       });
-      tableHeaders = ['المورد', 'الهاتف', 'إجمالي المشتريات', 'المدفوع', 'الرصيد'];
+      const pf = (v: number) => (v ?? 0).toLocaleString('ar-LY', { minimumFractionDigits: 2 });
+      tableHeaders = ['المورد', 'الهاتف', 'مشتريات د.ل', 'مشتريات $', 'مشتريات €', 'مدفوع د.ل', 'مدفوع $', 'مدفوع €', 'رصيد د.ل', 'رصيد $', 'رصيد €'];
       tableRows = (supplier: any) => `
         <tr>
           <td>${supplier.name}</td>
           <td>${supplier.phone || '-'}</td>
-          <td>${supplier.totalPurchases.toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</td>
-          <td>${supplier.totalPaid.toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</td>
-          <td style="color: red; font-weight: bold;">${supplier.balance.toLocaleString('ar-LY', { minimumFractionDigits: 2 })} د.ل</td>
+          <td>${pf(supplier.totalPurchasesByCurrency?.LYD)}</td>
+          <td>${pf(supplier.totalPurchasesByCurrency?.USD)}</td>
+          <td>${pf(supplier.totalPurchasesByCurrency?.EUR)}</td>
+          <td>${pf(supplier.totalPaidByCurrency?.LYD)}</td>
+          <td>${pf(supplier.totalPaidByCurrency?.USD)}</td>
+          <td>${pf(supplier.totalPaidByCurrency?.EUR)}</td>
+          <td style="color: red; font-weight: bold;">${pf(supplier.balanceByCurrency?.LYD)}</td>
+          <td style="color: red; font-weight: bold;">${pf(supplier.balanceByCurrency?.USD)}</td>
+          <td style="color: red; font-weight: bold;">${pf(supplier.balanceByCurrency?.EUR)}</td>
         </tr>
       `;
     } else if (activeReport === 'purchases' && purchaseReport) {
@@ -1583,48 +1590,61 @@ export default function ReportsPage() {
           </div>
         )}
 
-        {/* Suppliers Report */}
+        {/* Suppliers Report - حسب العملة (دينار، دولار، يورو) */}
         {activeReport === "suppliers" && supplierReport && !supplierLoading && (
           <div className="space-y-6">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white p-4 rounded-lg shadow">
-                <p className="text-sm text-gray-600">إجمالي الموردين</p>
-                <p className="text-2xl font-bold text-indigo-600">
-                  {supplierReport.data.stats.totalSuppliers.toLocaleString("ar-LY")}
-                </p>
+            {/* إجمالي الموردين */}
+            <div className="bg-white p-4 rounded-lg shadow max-w-xs">
+              <p className="text-sm text-gray-600">إجمالي الموردين</p>
+              <p className="text-2xl font-bold text-indigo-600">
+                {supplierReport.data.stats.totalSuppliers.toLocaleString("ar-LY")}
+              </p>
+            </div>
+            {/* Stats Cards حسب العملة */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white p-4 rounded-lg shadow border-r-4 border-amber-500">
+                <p className="text-xs text-gray-500 font-bold mb-2">دينار ليبي (د.ل)</p>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between"><span className="text-gray-500">إجمالي المشتريات</span><span className="font-semibold">{(supplierReport.data.stats.totalPurchasesByCurrency?.LYD ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">إجمالي المدفوع</span><span className="font-semibold text-green-600">{(supplierReport.data.stats.totalPaidByCurrency?.LYD ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">الرصيد المستحق</span><span className="font-semibold text-red-600">{(supplierReport.data.stats.totalBalanceByCurrency?.LYD ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span></div>
+                </div>
               </div>
-              <div className="bg-white p-4 rounded-lg shadow">
-                <p className="text-sm text-gray-600">إجمالي المشتريات</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {supplierReport.data.stats.totalPurchases.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                </p>
+              <div className="bg-white p-4 rounded-lg shadow border-r-4 border-green-500">
+                <p className="text-xs text-gray-500 font-bold mb-2">دولار ($)</p>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between"><span className="text-gray-500">إجمالي المشتريات</span><span className="font-semibold">{(supplierReport.data.stats.totalPurchasesByCurrency?.USD ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">إجمالي المدفوع</span><span className="font-semibold text-green-600">{(supplierReport.data.stats.totalPaidByCurrency?.USD ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">الرصيد المستحق</span><span className="font-semibold text-red-600">{(supplierReport.data.stats.totalBalanceByCurrency?.USD ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span></div>
+                </div>
               </div>
-              <div className="bg-white p-4 rounded-lg shadow">
-                <p className="text-sm text-gray-600">إجمالي المدفوع</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {supplierReport.data.stats.totalPaid.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                </p>
-              </div>
-              <div className="bg-white p-4 rounded-lg shadow">
-                <p className="text-sm text-gray-600">الرصيد المستحق</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {supplierReport.data.stats.totalBalance.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                </p>
+              <div className="bg-white p-4 rounded-lg shadow border-r-4 border-indigo-500">
+                <p className="text-xs text-gray-500 font-bold mb-2">يورو (€)</p>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between"><span className="text-gray-500">إجمالي المشتريات</span><span className="font-semibold">{(supplierReport.data.stats.totalPurchasesByCurrency?.EUR ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">إجمالي المدفوع</span><span className="font-semibold text-green-600">{(supplierReport.data.stats.totalPaidByCurrency?.EUR ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">الرصيد المستحق</span><span className="font-semibold text-red-600">{(supplierReport.data.stats.totalBalanceByCurrency?.EUR ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span></div>
+                </div>
               </div>
             </div>
 
-            {/* Suppliers Table */}
+            {/* Suppliers Table - أعمدة حسب العملة */}
             <div className="bg-white rounded-lg shadow overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المورد</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الهاتف</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">إجمالي المشتريات</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المدفوع</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الرصيد</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">المورد</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الهاتف</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">إجمالي المشتريات <span className="text-amber-600">(د.ل)</span></th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">إجمالي المشتريات <span className="text-green-600">($)</span></th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">إجمالي المشتريات <span className="text-indigo-600">(€)</span></th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">المدفوع (د.ل)</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">المدفوع ($)</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">المدفوع (€)</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الرصيد (د.ل)</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الرصيد ($)</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الرصيد (€)</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -1634,23 +1654,20 @@ export default function ReportsPage() {
                         if (filters.supplierReportPhone && !textSearch(supplier.phone, filters.supplierReportPhone)) return false;
                         return true;
                       });
+                      const fmt = (v: number) => (v ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 });
                       return paginateData(filteredSuppliers).map((supplier: any) => (
                         <tr key={supplier.id} className="hover:bg-gray-50 print:hover:bg-white">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {supplier.name}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {supplier.phone || "-"}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {supplier.totalPurchases.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                            {supplier.totalPaid.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
-                            {supplier.balance.toLocaleString("ar-LY", { minimumFractionDigits: 2 })} د.ل
-                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{supplier.name}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{supplier.phone || "-"}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{fmt(supplier.totalPurchasesByCurrency?.LYD)}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{fmt(supplier.totalPurchasesByCurrency?.USD)}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{fmt(supplier.totalPurchasesByCurrency?.EUR)}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-green-600">{fmt(supplier.totalPaidByCurrency?.LYD)}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-green-600">{fmt(supplier.totalPaidByCurrency?.USD)}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-green-600">{fmt(supplier.totalPaidByCurrency?.EUR)}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-red-600">{fmt(supplier.balanceByCurrency?.LYD)}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-red-600">{fmt(supplier.balanceByCurrency?.USD)}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-red-600">{fmt(supplier.balanceByCurrency?.EUR)}</td>
                         </tr>
                       ));
                     })()}

@@ -853,7 +853,7 @@ export default function Dashboard() {
       </div>
 
       {/* 2. Key Performance Indicators (KPIs) - Hero Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         <MainStatCard
           title="المبيعات (اليومية)"
           value={formatArabicCurrency(salesStats?.data?.todayRevenue || 0)}
@@ -871,14 +871,6 @@ export default function Dashboard() {
           isLoading={creditLoading}
         />
         <MainStatCard
-          title="إجمالي المشتريات"
-          value={formatArabicCurrency(purchaseStats?.totalAmount || 0)}
-          subtitle={`عدد الفواتير: ${formatArabicNumber(purchaseStats?.totalPurchases || 0)}`}
-          icon={CreditCard}
-          iconBgColor="bg-gradient-to-br from-rose-500 to-red-600 shadow-lg shadow-rose-500/20"
-          isLoading={purchasesLoading}
-        />
-        <MainStatCard
           title="المبيعات الآجلة (اليوم)"
           value={formatArabicCurrency(creditStats?.data?.todayCreditSales || 0)}
           subtitle="ذمم مدينة جديدة"
@@ -886,6 +878,83 @@ export default function Dashboard() {
           iconBgColor="bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/20"
           isLoading={creditLoading}
         />
+      </div>
+      {/* المشتريات - نفس آلية وتصميم كروت تقرير المشتريات (د.ل، $، € + عدد الفواتير) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-4 border-r-4 border-blue-500">
+              <p className="text-xs text-slate-500 dark:text-text-tertiary font-bold mb-2">المشتريات (د.ل)</p>
+              {purchasesLoading ? (
+                <div className="h-16 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg" />
+              ) : (
+                <>
+                  <div className="flex justify-between items-end border-b border-slate-100 dark:border-white/5 pb-1 mb-1">
+                    <span className="text-[10px] text-slate-400 dark:text-text-muted">إجمالي المشتريات</span>
+                    <span className="text-sm font-semibold text-slate-800 dark:text-text-primary">{(purchaseStats?.totalPurchasesLYD ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between items-end border-b border-slate-100 dark:border-white/5 pb-1 mb-1">
+                    <span className="text-[10px] text-slate-400 dark:text-text-muted">إجمالي المصروفات</span>
+                    <span className="text-sm font-semibold text-slate-800 dark:text-text-primary">{(purchaseStats?.totalExpensesLYD ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between items-end pt-1">
+                    <span className="text-[11px] font-bold text-blue-700 dark:text-blue-400">الإجمالي النهائي</span>
+                    <span className="text-lg font-black text-blue-600 dark:text-blue-400">{(purchaseStats?.grandTotalLYD ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })} <span className="text-[10px]">د.ل</span></span>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-4 border-r-4 border-green-500">
+              <p className="text-xs text-slate-500 dark:text-text-tertiary font-bold mb-2">المشتريات ($)</p>
+              {purchasesLoading ? (
+                <div className="h-16 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg" />
+              ) : (
+                <>
+                  <div className="flex justify-between items-end border-b border-slate-100 dark:border-white/5 pb-1 mb-1">
+                    <span className="text-[10px] text-slate-400 dark:text-text-muted">إجمالي المشتريات</span>
+                    <span className="text-sm font-semibold text-slate-800 dark:text-text-primary">{(purchaseStats?.totalPurchasesUSD ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between items-end border-b border-slate-100 dark:border-white/5 pb-1 mb-1">
+                    <span className="text-[10px] text-slate-400 dark:text-text-muted">إجمالي المصروفات</span>
+                    <span className="text-sm font-semibold text-slate-800 dark:text-text-primary">{(purchaseStats?.totalExpensesUSD ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between items-end pt-1">
+                    <span className="text-[11px] font-bold text-green-700 dark:text-green-400">الإجمالي النهائي</span>
+                    <span className="text-lg font-black text-green-600 dark:text-green-400">{(purchaseStats?.grandTotalUSD ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })} <span className="text-[10px]">$</span></span>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-4 border-r-4 border-purple-500">
+              <p className="text-xs text-slate-500 dark:text-text-tertiary font-bold mb-2">المشتريات (€)</p>
+              {purchasesLoading ? (
+                <div className="h-16 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg" />
+              ) : (
+                <>
+                  <div className="flex justify-between items-end border-b border-slate-100 dark:border-white/5 pb-1 mb-1">
+                    <span className="text-[10px] text-slate-400 dark:text-text-muted">إجمالي المشتريات</span>
+                    <span className="text-sm font-semibold text-slate-800 dark:text-text-primary">{(purchaseStats?.totalPurchasesEUR ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between items-end border-b border-slate-100 dark:border-white/5 pb-1 mb-1">
+                    <span className="text-[10px] text-slate-400 dark:text-text-muted">إجمالي المصروفات</span>
+                    <span className="text-sm font-semibold text-slate-800 dark:text-text-primary">{(purchaseStats?.totalExpensesEUR ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between items-end pt-1">
+                    <span className="text-[11px] font-bold text-purple-700 dark:text-purple-400">الإجمالي النهائي</span>
+                    <span className="text-lg font-black text-purple-600 dark:text-purple-400">{(purchaseStats?.grandTotalEUR ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })} <span className="text-[10px]">€</span></span>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-4 border-r-4 border-slate-400">
+              <p className="text-xs text-slate-500 dark:text-text-tertiary font-bold mb-2">عدد الفواتير</p>
+              {purchasesLoading ? (
+                <div className="h-16 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg" />
+              ) : (
+                <>
+                  <p className="text-xl font-bold text-slate-800 dark:text-text-primary">{(purchaseStats?.totalPurchases ?? 0).toLocaleString("ar-LY")}</p>
+                  <p className="text-[10px] text-slate-500 dark:text-text-muted mt-1">إجمالي فواتير معتمدة</p>
+                </>
+              )}
+            </div>
       </div>
 
       {/* 3. Main Operational Dashboard Grid */}

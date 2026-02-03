@@ -916,9 +916,9 @@ export class PurchaseService {
     return { payment, updatedPurchase };
   }
 
-  // Get purchase statistics
+  // Get purchase statistics (including by currency for dashboard/reports)
   static async getPurchaseStats(companyId?: number): Promise<PurchaseStats> {
-    const where = companyId ? { companyId } : {};
+    const where: any = { isApproved: true, ...(companyId ? { companyId } : {}) };
 
     const [
       totalPurchases,
@@ -926,6 +926,7 @@ export class PurchaseService {
       totalPaid,
       cashPurchases,
       creditPurchases,
+      purchasesWithExpenses,
     ] = await Promise.all([
       prisma.purchase.count({ where }),
       prisma.purchase.aggregate({
@@ -942,12 +943,46 @@ export class PurchaseService {
       prisma.purchase.count({
         where: { ...where, purchaseType: 'CREDIT' },
       }),
+      prisma.purchase.findMany({
+        where,
+        select: {
+          total: true,
+          currency: true,
+          purchaseType: true,
+          expenses: { select: { amount: true, currency: true } },
+        },
+      }),
     ]);
 
     const totalAmountValue = Number(totalAmount._sum.total || 0);
     const totalPaidValue = Number(totalPaid._sum.paidAmount || 0);
     const totalRemaining = totalAmountValue - totalPaidValue;
     const averagePurchase = totalPurchases > 0 ? totalAmountValue / totalPurchases : 0;
+
+    const statsByCurrency = {
+      totalPurchasesLYD: 0,
+      totalPurchasesUSD: 0,
+      totalPurchasesEUR: 0,
+      totalExpensesLYD: 0,
+      totalExpensesUSD: 0,
+      totalExpensesEUR: 0,
+    };
+
+    purchasesWithExpenses.forEach((p: any) => {
+      const invoiceTotal = Number(p.total);
+      const currency = (p.currency || 'LYD').toString();
+      if (currency === 'LYD') statsByCurrency.totalPurchasesLYD += invoiceTotal;
+      else if (currency === 'USD') statsByCurrency.totalPurchasesUSD += invoiceTotal;
+      else if (currency === 'EUR') statsByCurrency.totalPurchasesEUR += invoiceTotal;
+
+      (p.expenses || []).forEach((ex: any) => {
+        const exAmount = Number(ex.amount);
+        const exCur = (ex.currency || 'LYD').toString();
+        if (exCur === 'LYD') statsByCurrency.totalExpensesLYD += exAmount;
+        else if (exCur === 'USD') statsByCurrency.totalExpensesUSD += exAmount;
+        else if (exCur === 'EUR') statsByCurrency.totalExpensesEUR += exAmount;
+      });
+    });
 
     return {
       totalPurchases,
@@ -957,6 +992,10 @@ export class PurchaseService {
       cashPurchases,
       creditPurchases,
       averagePurchase,
+      ...statsByCurrency,
+      grandTotalLYD: statsByCurrency.totalPurchasesLYD + statsByCurrency.totalExpensesLYD,
+      grandTotalUSD: statsByCurrency.totalPurchasesUSD + statsByCurrency.totalExpensesUSD,
+      grandTotalEUR: statsByCurrency.totalPurchasesEUR + statsByCurrency.totalExpensesEUR,
     };
   }
 
