@@ -186,7 +186,7 @@ export class DashboardService {
         // المردودات
         const returns = await prisma.saleReturn.aggregate({
           where: {
-            status: 'APPROVED',
+            status: { in: ['APPROVED', 'RECEIVED_WAREHOUSE'] },
             createdAt: {
               gte: startDate,
               lte: endDate,

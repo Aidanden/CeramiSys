@@ -572,12 +572,11 @@ export class ReportsService {
     });
 
     // مردودات المبيعات (زيادة)
-    // تظهر في حساب الشركة التي تمتلك الصنف (التي يتم إرجاع المخزون إليها)
+    // تظهر في حساب نفس الشركة التي تم فيها تسجيل المردود
     const saleReturns = await this.prisma.saleReturnLine.findMany({
       where: {
         productId,
-        saleReturn: { status: 'APPROVED' },
-        product: { createdByCompanyId: companyId }
+        saleReturn: { status: { in: ['APPROVED', 'RECEIVED_WAREHOUSE'] }, companyId }
       },
       include: {
         saleReturn: {
@@ -742,7 +741,7 @@ export class ReportsService {
     const returns = await this.prisma.saleReturn.findMany({
       where: {
         ...(companyId && { companyId }),
-        status: 'APPROVED',
+        status: { in: ['APPROVED', 'RECEIVED_WAREHOUSE'] },
         ...dateFilter,
         ...(qProductId && { lines: { some: { productId: qProductId } } }),
       },
@@ -1023,7 +1022,7 @@ export class ReportsService {
     const returnLines = await this.prisma.saleReturnLine.findMany({
       where: {
         productId: { in: productIds },
-        saleReturn: { status: 'APPROVED', ...(companyId && { companyId }) }
+        saleReturn: { status: { in: ['APPROVED', 'RECEIVED_WAREHOUSE'] }, ...(companyId && { companyId }) }
       }
     });
 

@@ -390,6 +390,9 @@ export class SaleReturnService {
       // 🟢 تحسين: معالجة مجمعة لتجنب N+1
 
       // 1. جلب جميع المنتجات دفعة واحدة لمعرفة الشركة المنشئة
+      // ملاحظة: منطق تعديل المخزون سيتم عند استلام المردود من المخزن (WarehouseService.updateReturnOrderStatus)
+      // لذلك تم تعطيل الكود التالي باستخدام if (false) لمنع التكرار.
+      /*
       const productIds = updatedReturn.lines.map(l => l.productId);
       const products = await tx.product.findMany({
         where: { id: { in: productIds } },
@@ -445,6 +448,7 @@ export class SaleReturnService {
 
       // 5. تنفيذ التحديثات
       await Promise.all(stockUpdates);
+      */
 
       // 6. تحديث كشف حساب العميل (إضافة رصيد دائن للمردود)
       if (updatedReturn.customerId) {
@@ -533,8 +537,8 @@ export class SaleReturnService {
   async createReturnPayment(data: CreateReturnPaymentDto, companyId: number) {
     const saleReturn = await this.getSaleReturnById(data.saleReturnId, companyId);
 
-    // التحقق من أن المردود معتمد
-    if (saleReturn.status !== 'APPROVED') {
+    // التحقق من أن المردود معتمد أو تم استلامه في المخزن
+    if (saleReturn.status !== 'APPROVED' && saleReturn.status !== 'RECEIVED_WAREHOUSE') {
       throw new Error('لا يمكن إضافة دفعة لمردود غير معتمد');
     }
 

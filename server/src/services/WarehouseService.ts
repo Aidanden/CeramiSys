@@ -505,6 +505,35 @@ export class WarehouseService {
             where: { id: updated.saleReturnId },
             data: { status: 'RECEIVED_WAREHOUSE' as any }
           });
+
+          // 📦 عند استلام المردود في المخزن، نعيد الكميات إلى مخزون الشركة صاحبة أمر الاستلام
+          const lines = updated.saleReturn?.lines || [];
+          if (lines.length > 0) {
+            const stockUpdates = lines.map((line: any) => {
+              const productId = line.productId;
+              const boxesToAdd = Number(line.qty);
+              const stockCompanyId = updated.companyId; // مخزن هذه الشركة
+
+              return tx.stock.upsert({
+                where: {
+                  companyId_productId: {
+                    companyId: stockCompanyId,
+                    productId
+                  }
+                },
+                update: {
+                  boxes: { increment: boxesToAdd }
+                },
+                create: {
+                  companyId: stockCompanyId,
+                  productId,
+                  boxes: boxesToAdd
+                }
+              });
+            });
+
+            await Promise.all(stockUpdates);
+          }
         }
 
         return updated;
