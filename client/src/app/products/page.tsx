@@ -11,7 +11,9 @@ import {
   DollarSign,
   Filter,
   Eye,
-  Shield
+  Shield,
+  Store,
+  Info
 } from 'lucide-react';
 import {
   useGetProductsQuery,
@@ -58,6 +60,7 @@ const ProductsPage = () => {
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
@@ -502,8 +505,8 @@ const ProductsPage = () => {
     const labelsToFill = 12;
     const labels = [];
     // نملأ المصفوفة بالأصناف المختارة فقط، والباقي نتركه فارغاً (null)
-    for (let i = 0; i <labelsToFill; i++) {
-      if (i <selectedProductsList.length) {
+    for (let i = 0; i < labelsToFill; i++) {
+      if (i < selectedProductsList.length) {
         labels.push(selectedProductsList[i]);
       } else {
         labels.push(null);
@@ -1110,31 +1113,37 @@ const ProductsPage = () => {
                     />
                   </th>
                 )}
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '22%' }}>
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '16%' }}>
                   الصنف
                 </th>
                 <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '6%' }}>
                   الرمز
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden sm:table-cell" style={{ width: '6%' }}>
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden sm:table-cell" style={{ width: '5%' }}>
                   الوحدة
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '7%' }}>
-                  المخزون
+                <th className="px-2 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '7%' }}>
+                  العبوة
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden md:table-cell" style={{ width: '10%' }}>
-                  الكمية (م²)
+                <th className="px-1 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '8%' }}>
+                  إجمالي المخزون
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '9%' }}>
+                <th className="px-1 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '8%' }}>
+                  في المستودع
+                </th>
+                <th className="px-1 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '8%' }}>
+                  في المحلات
+                </th>
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '8%' }}>
                   السعر
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden md:table-cell" style={{ width: '9%' }}>
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden md:table-cell" style={{ width: '8%' }}>
                   التكلفة
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden lg:table-cell" style={{ width: '13%' }}>
+                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden lg:table-cell" style={{ width: '11%' }}>
                   الشركة
                 </th>
-                <th className="px-2 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '18%' }}>
+                <th className="px-2 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '15%' }}>
                   الإجراءات
                 </th>
               </tr>
@@ -1230,32 +1239,36 @@ const ProductsPage = () => {
                         {product.unit || '-'}
                       </span>
                     </td>
-                    <td className="px-2 py-3 text-sm text-text-primary">
-                      <div className="flex flex-col items-start">
-                        <span className={`inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full ${((product.stock as any)?.[0]?.boxes || 0) > 0
-                          ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-200'
-                          : 'bg-error-100 dark:bg-error-900/30 text-error-800 dark:text-error-200'
-                          }`}>
-                          {formatArabicQuantity((product.stock as any)?.[0]?.boxes || 0)}
-                        </span>
-                        <span className="text-xs text-text-secondary mt-0.5">
-                          {product.unit === 'صندوق' ? 'صندوق' : (product.unit || 'وحدة')}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-2 py-3 text-sm text-gray-900 hidden md:table-cell">
+                    <td className="px-2 py-3 text-center text-sm text-text-primary">
                       {product.unit === 'صندوق' && product.unitsPerBox ? (
-                        <div className="text-center">
-                          <div className="font-medium text-blue-600 text-sm">
-                            {formatArabicArea(Number((product.stock as any)?.[0]?.boxes || 0) * Number(product.unitsPerBox))} م²
-                          </div>
-                          <div className="text-xs text-gray-500 mt-0.5">
-                            {formatArabicArea(product.unitsPerBox)} م² × {formatArabicQuantity((product.stock as any)?.[0]?.boxes || 0)}
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400 text-center block">-</span>
-                      )}
+                        <span className="font-bold text-blue-600 truncate block">
+                          {formatArabicArea(product.unitsPerBox)} م²
+                        </span>
+                      ) : '-'}
+                    </td>
+                    <td className="px-1 py-3 text-center">
+                      <span className={`inline-flex px-1.5 py-0.5 text-xs font-bold rounded-full ${Math.max(0, (product.stock?.[0]?.boxes || 0) + (product.externalStoreStock || 0)) > 0
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
+                        : 'bg-error-100 dark:bg-error-900/30 text-error-800 dark:text-error-200'
+                        }`}>
+                        {formatArabicQuantity(Math.max(0, (product.stock?.[0]?.boxes || 0) + (product.externalStoreStock || 0)))}
+                      </span>
+                    </td>
+                    <td className="px-1 py-3 text-center">
+                      <span className={`inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full ${Math.max(0, product.stock?.[0]?.boxes || 0) > 0
+                        ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-200'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
+                        }`}>
+                        {formatArabicQuantity(Math.max(0, product.stock?.[0]?.boxes || 0))}
+                      </span>
+                    </td>
+                    <td className="px-1 py-3 text-center">
+                      <span className={`inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full ${Math.max(0, product.externalStoreStock || 0) > 0
+                        ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
+                        }`}>
+                        {formatArabicQuantity(Math.max(0, product.externalStoreStock || 0))}
+                      </span>
                     </td>
                     <td className="px-2 py-3 text-sm text-gray-900">
                       <div className="font-medium text-green-600">
@@ -1279,6 +1292,16 @@ const ProductsPage = () => {
                     <td className="px-2 py-3 text-center text-sm font-medium">
                       <div className="flex items-center justify-center gap-1 flex-wrap">
                         {/* الأزرار الأساسية - تظهر دائماً */}
+                        <button
+                          onClick={() => {
+                            setSelectedProduct(product);
+                            setIsDetailsModalOpen(true);
+                          }}
+                          className="text-orange-600 hover:text-orange-900 p-1.5 rounded-md hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+                          title="تفاصيل المخزون"
+                        >
+                          <Info className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => {
                             setSelectedProduct(product);
@@ -1418,7 +1441,7 @@ const ProductsPage = () => {
                     let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
                     let endPage = Math.min(pages, startPage + maxButtons - 1);
 
-                    if (endPage - startPage <maxButtons - 1) {
+                    if (endPage - startPage < maxButtons - 1) {
                       startPage = Math.max(1, endPage - maxButtons + 1);
                     }
 
@@ -2189,6 +2212,133 @@ const ProductsPage = () => {
                   تحميل
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Stock Details Modal */}
+      {isDetailsModalOpen && selectedProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-surface-primary rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4 flex justify-between items-center">
+              <div className="flex items-center gap-3 text-white">
+                <div className="bg-white/20 p-2 rounded-lg">
+                  <Info className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">تفاصيل المخزون</h3>
+                  <p className="text-orange-100 text-sm">توزيع الكميات عبر المستودع والمحلات</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsDetailsModalOpen(false);
+                  setSelectedProduct(null);
+                }}
+                className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6 overflow-y-auto max-h-[70vh]">
+              {/* Product Info Summary */}
+              <div className="flex items-center gap-4 bg-background-secondary p-4 rounded-xl border border-border-primary">
+                <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 text-orange-600 rounded-xl flex items-center justify-center">
+                  <ShoppingBag className="w-8 h-8" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-text-primary">{selectedProduct.name}</h4>
+                  <div className="flex gap-4 mt-1">
+                    <span className="text-sm text-text-secondary flex items-center gap-1">
+                      <span className="font-mono bg-background-tertiary px-1.5 py-0.5 rounded">{selectedProduct.sku}</span>
+                    </span>
+                    <span className="text-sm text-text-secondary flex items-center gap-1">
+                      الوحدة: <span className="font-medium text-text-primary">{selectedProduct.unit || 'وحدة'}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Main Totals Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 p-4 rounded-xl text-center">
+                  <p className="text-blue-600 dark:text-blue-400 text-sm font-medium mb-1">إجمالي المخزون</p>
+                  <p className="text-3xl font-black text-blue-800 dark:text-blue-200">
+                    {formatArabicQuantity(Math.max(0, (selectedProduct.stock?.[0]?.boxes || 0) + (selectedProduct.externalStoreStock || 0)))}
+                  </p>
+                </div>
+                <div className="bg-success-50 dark:bg-success-900/10 border border-success-100 dark:border-success-900/20 p-4 rounded-xl text-center">
+                  <p className="text-success-600 dark:text-success-400 text-sm font-medium mb-1">في المستودع</p>
+                  <p className="text-3xl font-black text-success-800 dark:text-success-200">
+                    {formatArabicQuantity(Math.max(0, selectedProduct.stock?.[0]?.boxes || 0))}
+                  </p>
+                </div>
+                <div className="bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/20 p-4 rounded-xl text-center">
+                  <p className="text-orange-600 dark:text-orange-400 text-sm font-medium mb-1">في المحلات</p>
+                  <p className="text-3xl font-black text-orange-800 dark:text-orange-200">
+                    {formatArabicQuantity(Math.max(0, selectedProduct.externalStoreStock || 0))}
+                  </p>
+                </div>
+              </div>
+
+              {/* Detailed Stores List */}
+              <div>
+                <h5 className="text-sm font-bold text-text-primary mb-3 flex items-center gap-2">
+                  <Store className="w-4 h-4 text-orange-500" />
+                  تفاصيل الكميات في المحلات
+                </h5>
+                <div className="border border-border-primary rounded-xl overflow-hidden">
+                  <table className="w-full text-sm text-right">
+                    <thead className="bg-background-secondary border-b border-border-primary text-text-secondary">
+                      <tr>
+                        <th className="px-4 py-3 font-medium">اسم المحل</th>
+                        <th className="px-4 py-3 font-medium text-center">الكمية المعروضة</th>
+                        <th className="px-4 py-3 font-medium">آخر تحديث</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border-primary">
+                      {selectedProduct.externalStoreDetails && selectedProduct.externalStoreDetails.length > 0 ? (
+                        selectedProduct.externalStoreDetails.map((detail, idx) => (
+                          <tr key={idx} className="hover:bg-background-hover transition-colors">
+                            <td className="px-4 py-3 text-text-primary font-medium">{detail.storeName}</td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 px-2 py-0.5 rounded-full font-bold">
+                                {formatArabicQuantity(detail.quantity)}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-text-tertiary text-xs">
+                              {new Date(detail.updatedAt).toLocaleDateString('ar-LY')}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={3} className="px-4 py-8 text-center text-text-tertiary italic">
+                            لا توجد كميات معروضة في محلات خارجية حالياً
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-background-secondary border-t border-border-primary flex justify-end">
+              <button
+                onClick={() => {
+                  setIsDetailsModalOpen(false);
+                  setSelectedProduct(null);
+                }}
+                className="px-6 py-2 bg-text-primary text-surface-primary rounded-lg font-bold hover:opacity-90 transition-opacity"
+              >
+                إغلاق
+              </button>
             </div>
           </div>
         </div>

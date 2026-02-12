@@ -35,6 +35,7 @@ export interface ExternalStoreInvoiceLine {
         sku: string;
         name: string;
         unit?: string;
+        unitsPerBox?: number;
     };
 }
 

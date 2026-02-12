@@ -879,82 +879,116 @@ export default function Dashboard() {
           isLoading={creditLoading}
         />
       </div>
-      {/* المشتريات - نفس آلية وتصميم كروت تقرير المشتريات (د.ل، $، € + عدد الفواتير) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-4 border-r-4 border-blue-500">
-              <p className="text-xs text-slate-500 dark:text-text-tertiary font-bold mb-2">المشتريات (د.ل)</p>
-              {purchasesLoading ? (
-                <div className="h-16 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg" />
-              ) : (
-                <>
-                  <div className="flex justify-between items-end border-b border-slate-100 dark:border-white/5 pb-1 mb-1">
-                    <span className="text-[10px] text-slate-400 dark:text-text-muted">إجمالي المشتريات</span>
-                    <span className="text-sm font-semibold text-slate-800 dark:text-text-primary">{(purchaseStats?.totalPurchasesLYD ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between items-end border-b border-slate-100 dark:border-white/5 pb-1 mb-1">
-                    <span className="text-[10px] text-slate-400 dark:text-text-muted">إجمالي المصروفات</span>
-                    <span className="text-sm font-semibold text-slate-800 dark:text-text-primary">{(purchaseStats?.totalExpensesLYD ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between items-end pt-1">
-                    <span className="text-[11px] font-bold text-blue-700 dark:text-blue-400">الإجمالي النهائي</span>
-                    <span className="text-lg font-black text-blue-600 dark:text-blue-400">{(purchaseStats?.grandTotalLYD ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })} <span className="text-[10px]">د.ل</span></span>
-                  </div>
-                </>
-              )}
+      {/* المشتريات */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-1.5 h-8 bg-purple-600 rounded-full"></div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-text-primary tracking-tight">ملخص المشتريات والمصروفات</h2>
+          </div>
+          {!purchasesLoading && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-surface-secondary rounded-xl border border-slate-200 dark:border-white/5">
+              <FileText className="w-4 h-4 text-slate-500 dark:text-text-tertiary" />
+              <span className="text-sm font-bold text-slate-700 dark:text-text-primary">{formatArabicNumber(purchaseStats?.totalPurchases ?? 0)}</span>
+              <span className="text-xs text-slate-500 dark:text-text-tertiary">فاتورة معتمدة</span>
             </div>
-            <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-4 border-r-4 border-green-500">
-              <p className="text-xs text-slate-500 dark:text-text-tertiary font-bold mb-2">المشتريات ($)</p>
-              {purchasesLoading ? (
-                <div className="h-16 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg" />
-              ) : (
-                <>
-                  <div className="flex justify-between items-end border-b border-slate-100 dark:border-white/5 pb-1 mb-1">
-                    <span className="text-[10px] text-slate-400 dark:text-text-muted">إجمالي المشتريات</span>
-                    <span className="text-sm font-semibold text-slate-800 dark:text-text-primary">{(purchaseStats?.totalPurchasesUSD ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between items-end border-b border-slate-100 dark:border-white/5 pb-1 mb-1">
-                    <span className="text-[10px] text-slate-400 dark:text-text-muted">إجمالي المصروفات</span>
-                    <span className="text-sm font-semibold text-slate-800 dark:text-text-primary">{(purchaseStats?.totalExpensesUSD ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between items-end pt-1">
-                    <span className="text-[11px] font-bold text-green-700 dark:text-green-400">الإجمالي النهائي</span>
-                    <span className="text-lg font-black text-green-600 dark:text-green-400">{(purchaseStats?.grandTotalUSD ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })} <span className="text-[10px]">$</span></span>
-                  </div>
-                </>
-              )}
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* د.ل */}
+          <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-5 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/30 transition-all duration-300 group">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:rotate-3 transition-transform">
+                <CreditCard className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-text-primary">الدينار الليبي</h3>
+                <p className="text-[10px] font-bold text-slate-400 dark:text-text-tertiary uppercase tracking-wider">د.ل</p>
+              </div>
             </div>
-            <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-4 border-r-4 border-purple-500">
-              <p className="text-xs text-slate-500 dark:text-text-tertiary font-bold mb-2">المشتريات (€)</p>
-              {purchasesLoading ? (
-                <div className="h-16 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg" />
-              ) : (
-                <>
-                  <div className="flex justify-between items-end border-b border-slate-100 dark:border-white/5 pb-1 mb-1">
-                    <span className="text-[10px] text-slate-400 dark:text-text-muted">إجمالي المشتريات</span>
-                    <span className="text-sm font-semibold text-slate-800 dark:text-text-primary">{(purchaseStats?.totalPurchasesEUR ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between items-end border-b border-slate-100 dark:border-white/5 pb-1 mb-1">
-                    <span className="text-[10px] text-slate-400 dark:text-text-muted">إجمالي المصروفات</span>
-                    <span className="text-sm font-semibold text-slate-800 dark:text-text-primary">{(purchaseStats?.totalExpensesEUR ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between items-end pt-1">
-                    <span className="text-[11px] font-bold text-purple-700 dark:text-purple-400">الإجمالي النهائي</span>
-                    <span className="text-lg font-black text-purple-600 dark:text-purple-400">{(purchaseStats?.grandTotalEUR ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 })} <span className="text-[10px]">€</span></span>
-                  </div>
-                </>
-              )}
+            {purchasesLoading ? (
+              <div className="space-y-3"><div className="h-10 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl" /><div className="h-10 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl" /></div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-surface-secondary rounded-xl border border-slate-100 dark:border-white/5">
+                  <span className="text-xs font-medium text-slate-500 dark:text-text-tertiary">المشتريات</span>
+                  <span className="text-sm font-bold text-slate-800 dark:text-text-primary">{formatArabicCurrency(purchaseStats?.totalPurchasesLYD ?? 0)}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-surface-secondary rounded-xl border border-slate-100 dark:border-white/5">
+                  <span className="text-xs font-medium text-slate-500 dark:text-text-tertiary">المصروفات</span>
+                  <span className="text-sm font-bold text-slate-800 dark:text-text-primary">{formatArabicCurrency(purchaseStats?.totalExpensesLYD ?? 0)}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-500/10">
+                  <span className="text-xs font-bold text-blue-700 dark:text-blue-400">الإجمالي</span>
+                  <span className="text-lg font-black text-blue-600 dark:text-blue-400">{formatArabicCurrency(purchaseStats?.grandTotalLYD ?? 0)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* $ */}
+          <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-5 hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-800/30 transition-all duration-300 group">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-11 h-11 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:rotate-3 transition-transform">
+                <CircleDollarSign className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-text-primary">الدولار الأمريكي</h3>
+                <p className="text-[10px] font-bold text-slate-400 dark:text-text-tertiary uppercase tracking-wider">USD</p>
+              </div>
             </div>
-            <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-4 border-r-4 border-slate-400">
-              <p className="text-xs text-slate-500 dark:text-text-tertiary font-bold mb-2">عدد الفواتير</p>
-              {purchasesLoading ? (
-                <div className="h-16 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg" />
-              ) : (
-                <>
-                  <p className="text-xl font-bold text-slate-800 dark:text-text-primary">{(purchaseStats?.totalPurchases ?? 0).toLocaleString("ar-LY")}</p>
-                  <p className="text-[10px] text-slate-500 dark:text-text-muted mt-1">إجمالي فواتير معتمدة</p>
-                </>
-              )}
+            {purchasesLoading ? (
+              <div className="space-y-3"><div className="h-10 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl" /><div className="h-10 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl" /></div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-surface-secondary rounded-xl border border-slate-100 dark:border-white/5">
+                  <span className="text-xs font-medium text-slate-500 dark:text-text-tertiary">المشتريات</span>
+                  <span className="text-sm font-bold text-slate-800 dark:text-text-primary">{formatArabicCurrency(purchaseStats?.totalPurchasesUSD ?? 0)}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-surface-secondary rounded-xl border border-slate-100 dark:border-white/5">
+                  <span className="text-xs font-medium text-slate-500 dark:text-text-tertiary">المصروفات</span>
+                  <span className="text-sm font-bold text-slate-800 dark:text-text-primary">{formatArabicCurrency(purchaseStats?.totalExpensesUSD ?? 0)}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100 dark:border-emerald-500/10">
+                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">الإجمالي</span>
+                  <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">{formatArabicCurrency(purchaseStats?.grandTotalUSD ?? 0)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* € */}
+          <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary p-5 hover:shadow-md hover:border-purple-200 dark:hover:border-purple-800/30 transition-all duration-300 group">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-11 h-11 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20 group-hover:rotate-3 transition-transform">
+                <Wallet className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-text-primary">اليورو</h3>
+                <p className="text-[10px] font-bold text-slate-400 dark:text-text-tertiary uppercase tracking-wider">EUR</p>
+              </div>
             </div>
+            {purchasesLoading ? (
+              <div className="space-y-3"><div className="h-10 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl" /><div className="h-10 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-xl" /></div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-surface-secondary rounded-xl border border-slate-100 dark:border-white/5">
+                  <span className="text-xs font-medium text-slate-500 dark:text-text-tertiary">المشتريات</span>
+                  <span className="text-sm font-bold text-slate-800 dark:text-text-primary">{formatArabicCurrency(purchaseStats?.totalPurchasesEUR ?? 0)}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-surface-secondary rounded-xl border border-slate-100 dark:border-white/5">
+                  <span className="text-xs font-medium text-slate-500 dark:text-text-tertiary">المصروفات</span>
+                  <span className="text-sm font-bold text-slate-800 dark:text-text-primary">{formatArabicCurrency(purchaseStats?.totalExpensesEUR ?? 0)}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/10 rounded-xl border border-purple-100 dark:border-purple-500/10">
+                  <span className="text-xs font-bold text-purple-700 dark:text-purple-400">الإجمالي</span>
+                  <span className="text-lg font-black text-purple-600 dark:text-purple-400">{formatArabicCurrency(purchaseStats?.grandTotalEUR ?? 0)}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* 3. Main Operational Dashboard Grid */}
@@ -966,14 +1000,10 @@ export default function Dashboard() {
           {/* Comprehensive Chart */}
           <ComprehensiveChart />
 
-          {/* Detailed Financial & Users Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <TreasuryCards />
-            <div className="space-y-6">
-              <UsersSalesCard />
-              <CompanySalesCards />
-            </div>
-          </div>
+          {/* Detailed Financial & Users sections */}
+          <TreasuryCards />
+          <UsersSalesCard />
+          <CompanySalesCards />
 
         </div>
 

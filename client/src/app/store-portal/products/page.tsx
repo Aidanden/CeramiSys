@@ -76,20 +76,8 @@ export default function StoreProductsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                     {filteredProducts?.map((item: any) => {
                         const product = item.product;
-
-                        // استخراج السعر (TG أو TAQAZI)
-                        const priceObj = product.prices?.find((p: any) =>
-                            p.company?.code === 'TAQAZI' || p.company?.code === 'TG'
-                        ) || product.prices?.[0];
-                        const price = priceObj?.sellPrice || priceObj?.SellPrice || 0;
-
-                        // استخراج الكمية (boxes أو qty)
-                        const stockObj = product.stocks?.find((s: any) =>
-                            s.company?.code === 'TAQAZI' || s.company?.code === 'TG'
-                        ) || product.stocks?.[0];
-                        const stock = stockObj?.qty || stockObj?.Qty ||
-                            stockObj?.boxes || stockObj?.Boxes || 0;
-
+                        const stock = Math.max(0, product.storeQuantity || 0);
+                        const price = product.sellPrice || 0;
                         const isLowStock = stock <= 10;
 
                         return (

@@ -552,68 +552,86 @@ export default function ExternalStoreInvoicesPage() {
                                             <tr className="bg-slate-50 dark:bg-gray-700/50 border-b border-slate-200 dark:border-gray-700">
                                                 <th className="px-6 py-4 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">الصنف / المنتج</th>
                                                 <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest w-32">الكمية</th>
+                                                <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest w-32">إجمالي العبوة</th>
                                                 <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest w-40">سعر الوحدة</th>
                                                 <th className="px-6 py-4 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest w-40">الإجمالي</th>
                                                 {isEditing && <th className="px-6 py-4 text-center w-16"></th>}
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100 dark:divide-gray-800">
-                                            {(isEditing ? editLines : selectedInvoice.lines).map((line: EditLine | ExternalStoreInvoiceLine | any, idx: number) => (
-                                                <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-gray-700/30 transition-colors">
-                                                    <td className="px-6 py-4">
-                                                        <div className="font-bold text-slate-900 dark:text-white text-sm">
-                                                            {isEditing ? line.name : line.product.name}
-                                                        </div>
-                                                        <div className="text-xs text-slate-400 font-mono mt-0.5">
-                                                            {isEditing ? line.sku : line.product.sku}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        {isEditing ? (
-                                                            <input
-                                                                type="number"
-                                                                value={line.qty}
-                                                                onChange={(e) => updateLineEdit(idx, 'qty', e.target.value)}
-                                                                className="w-20 px-2 py-1 text-center border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                                                            />
-                                                        ) : (
-                                                            <span className="text-sm font-bold text-slate-700 dark:text-gray-300">
-                                                                {Number(line.qty).toLocaleString('en-US')}
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        {isEditing ? (
-                                                            <input
-                                                                type="number"
-                                                                value={line.unitPrice}
-                                                                onChange={(e) => updateLineEdit(idx, 'unitPrice', e.target.value)}
-                                                                className="w-24 px-2 py-1 text-center border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                                                            />
-                                                        ) : (
-                                                            <div className="font-bold text-slate-500 text-sm">
-                                                                {Number(line.unitPrice).toLocaleString('en-US')}
+                                            {(isEditing ? editLines : selectedInvoice.lines).map((line: any, idx: number) => {
+                                                const unit = (isEditing ? line.unit : line.product?.unit) || 'قطعة';
+                                                const unitsPerBox = isEditing ? line.unitsPerBox : line.product?.unitsPerBox;
+
+                                                let totalPackage = '-';
+                                                if (unit === 'صندوق' && unitsPerBox) {
+                                                    totalPackage = `${(Number(line.qty) * Number(unitsPerBox)).toLocaleString('en-US', { minimumFractionDigits: 2 })} م²`;
+                                                } else {
+                                                    totalPackage = `${Number(line.qty).toLocaleString('en-US')} ${unit}`;
+                                                }
+
+                                                return (
+                                                    <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-gray-700/30 transition-colors">
+                                                        <td className="px-6 py-4">
+                                                            <div className="font-bold text-slate-900 dark:text-white text-sm">
+                                                                {isEditing ? line.name : line.product.name}
                                                             </div>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        <div className="font-bold text-slate-900 dark:text-white text-sm">
-                                                            {Number(line.subTotal).toLocaleString('en-US')}
-                                                            <span className="text-[10px] mr-1 text-slate-400">د.ل</span>
-                                                        </div>
-                                                    </td>
-                                                    {isEditing && (
-                                                        <td className="px-6 py-4 text-center">
-                                                            <button
-                                                                onClick={() => removeLineEdit(idx)}
-                                                                className="text-red-400 hover:text-red-600 transition-colors"
-                                                            >
-                                                                <Trash2 size={18} />
-                                                            </button>
+                                                            <div className="text-xs text-slate-400 font-mono mt-0.5">
+                                                                {isEditing ? line.sku : line.product.sku}
+                                                            </div>
                                                         </td>
-                                                    )}
-                                                </tr>
-                                            ))}
+                                                        <td className="px-6 py-4 text-center">
+                                                            {isEditing ? (
+                                                                <input
+                                                                    type="number"
+                                                                    value={line.qty}
+                                                                    onChange={(e) => updateLineEdit(idx, 'qty', e.target.value)}
+                                                                    className="w-20 px-2 py-1 text-center border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                                                />
+                                                            ) : (
+                                                                <span className="text-sm font-bold text-slate-700 dark:text-gray-300">
+                                                                    {Number(line.qty).toLocaleString('en-US')} {unit}
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-center">
+                                                            <span className="text-sm font-bold text-blue-600">
+                                                                {totalPackage}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-center">
+                                                            {isEditing ? (
+                                                                <input
+                                                                    type="number"
+                                                                    value={line.unitPrice}
+                                                                    onChange={(e) => updateLineEdit(idx, 'unitPrice', e.target.value)}
+                                                                    className="w-24 px-2 py-1 text-center border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                                                />
+                                                            ) : (
+                                                                <div className="font-bold text-slate-500 text-sm">
+                                                                    {Number(line.unitPrice).toLocaleString('en-US')}
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-center">
+                                                            <div className="font-bold text-slate-900 dark:text-white text-sm">
+                                                                {Number(line.subTotal).toLocaleString('en-US')}
+                                                                <span className="text-[10px] mr-1 text-slate-400">د.ل</span>
+                                                            </div>
+                                                        </td>
+                                                        {isEditing && (
+                                                            <td className="px-6 py-4 text-center">
+                                                                <button
+                                                                    onClick={() => removeLineEdit(idx)}
+                                                                    className="text-red-400 hover:text-red-600 transition-colors"
+                                                                >
+                                                                    <Trash2 size={18} />
+                                                                </button>
+                                                            </td>
+                                                        )}
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                         <tfoot className="bg-slate-50 dark:bg-slate-900 border-t border-slate-200">
                                             <tr>

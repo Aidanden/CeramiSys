@@ -830,6 +830,7 @@ model ExternalStoreProduct {
   id        Int           @id @default(autoincrement())
   storeId   Int
   productId Int
+  quantity  Decimal       @default(0) @db.Decimal(20, 4)
   createdAt DateTime      @default(now())
   product   Product       @relation(fields: [productId], references: [id])
   store     ExternalStore @relation(fields: [storeId], references: [id], onDelete: Cascade)

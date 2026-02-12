@@ -40,6 +40,13 @@ export interface Product {
     name: string;
     maxDiscountPercentage: number;
   };
+  externalStoreStock?: number; // إجمالي الكمية المعروضة في المحلات الخارجية
+  externalStoreDetails?: Array<{
+    storeId: number;
+    storeName: string;
+    quantity: number;
+    updatedAt: string;
+  }>;
 }
 
 export interface CreateProductRequest {

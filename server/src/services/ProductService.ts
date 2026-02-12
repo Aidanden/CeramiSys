@@ -141,6 +141,13 @@ export class ProductService {
           },
           prices: {
             select: { companyId: true, sellPrice: true, updatedAt: true }
+          },
+          externalStoreProducts: {
+            include: {
+              store: {
+                select: { id: true, name: true }
+              }
+            }
           }
         },
         orderBy: { createdAt: 'desc' },
@@ -192,7 +199,14 @@ export class ProductService {
           stock: stockData,
           price: priceData,
           prices: allPrices, // جميع أسعار الشركات
-          groupId: product.groupId ?? undefined
+          groupId: product.groupId ?? undefined,
+          externalStoreStock: (product.externalStoreProducts || []).reduce((sum, esp) => sum + parseFloat(esp.quantity?.toString() || '0'), 0),
+          externalStoreDetails: (product.externalStoreProducts || []).map(esp => ({
+            storeId: esp.storeId,
+            storeName: esp.store?.name || 'محل غير معروف',
+            quantity: parseFloat(esp.quantity?.toString() || '0'),
+            updatedAt: esp.createdAt
+          }))
         };
       });
 
@@ -238,6 +252,13 @@ export class ProductService {
               ...(isSystemUser !== true && { companyId: userCompanyId })
             },
             select: { sellPrice: true, updatedAt: true }
+          },
+          externalStoreProducts: {
+            include: {
+              store: {
+                select: { id: true, name: true }
+              }
+            }
           }
         },
       });
@@ -276,7 +297,14 @@ export class ProductService {
           sellPrice: Number(product.prices[0].sellPrice),
           updatedAt: product.prices[0].updatedAt
         } : undefined,
-        groupId: product.groupId ?? undefined
+        groupId: product.groupId ?? undefined,
+        externalStoreStock: (product.externalStoreProducts || []).reduce((sum, esp) => sum + parseFloat(esp.quantity?.toString() || '0'), 0),
+        externalStoreDetails: (product.externalStoreProducts || []).map(esp => ({
+          storeId: esp.storeId,
+          storeName: esp.store?.name || 'محل غير معروف',
+          quantity: parseFloat(esp.quantity?.toString() || '0'),
+          updatedAt: esp.createdAt
+        }))
       };
     } catch (error) {
       console.error('خطأ في جلب الصنف:', error);

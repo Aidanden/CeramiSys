@@ -20,7 +20,7 @@ import {
   setSelectedReturnId
 } from '@/state/saleReturnsSlice';
 import { useToast } from '@/components/ui/Toast';
-import { formatArabicNumber, formatArabicCurrency } from '@/utils/formatArabicNumbers';
+import { formatArabicNumber, formatArabicCurrency, formatArabicArea } from '@/utils/formatArabicNumbers';
 import { SaleReturnPrint } from '@/components/returns/SaleReturnPrint';
 import {
   TrendingDown,
@@ -183,6 +183,8 @@ const SaleReturnsPage = () => {
         productName: line.product?.name || '',
         isFromParentCompany: line.isFromParentCompany || false,
         parentUnitPrice: line.parentUnitPrice || null,
+        unit: line.product?.unit,
+        unitsPerBox: line.product?.unitsPerBox,
       }));
     }
   };
@@ -652,8 +654,8 @@ const SaleReturnsPage = () => {
                           key={pageNum}
                           onClick={() => dispatch(setCurrentPage(pageNum))}
                           className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === pageNum
-                              ? 'z-10 bg-primary-50 border-primary-500 text-primary-600'
-                              : 'bg-surface-primary border-border-primary text-text-secondary hover:bg-background-hover'
+                            ? 'z-10 bg-primary-50 border-primary-500 text-primary-600'
+                            : 'bg-surface-primary border-border-primary text-text-secondary hover:bg-background-hover'
                             }`}
                         >
                           {formatArabicNumber(pageNum)}
@@ -804,45 +806,88 @@ const SaleReturnsPage = () => {
                   </h3>
 
                   {/* Return Lines */}
-                  <div className="space-y-3 mb-6 max-h-64 overflow-y-auto">
-                    {returnForm.lines.map((line: any, index) => (
-                      <div key={index} className="p-4 bg-background-secondary border border-border-primary rounded-lg">
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="flex-1">
-                            <p className="font-medium text-text-primary">{((window as any).returnFormExtras?.[index] || {}).productName}</p>
-                            <p className="text-sm text-text-secondary mt-1">
-                              السعر: {formatArabicCurrency(line.unitPrice)} •
-                              الكمية الأصلية: {formatArabicNumber(((window as any).returnFormExtras?.[index] || {}).maxQty || 0)}
-                              {((window as any).returnFormExtras?.[index] || {}).isFromParentCompany && (
-                                <span className="mr-2 text-warning-600">• من التقازي</span>
-                              )}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="w-32">
-                              <label className="block text-xs text-text-secondary mb-1">الكمية المردودة</label>
-                              <input
-                                type="number"
-                                min="0"
-                                max={((window as any).returnFormExtras?.[index] || {}).maxQty || 0}
-                                step="0.01"
-                                value={line.qty}
-                                onChange={(e) => handleLineQtyChange(index, parseFloat(e.target.value) || 0)}
-                                className="w-full px-3 py-2 border border-border-primary rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-surface-primary text-text-primary"
-                              />
-                            </div>
-                            <div className="w-32">
-                              <label className="block text-xs text-text-secondary mb-1">المجموع الفرعي</label>
-                              <div className="px-3 py-2 bg-surface-primary border border-border-primary rounded-md">
-                                <span className="font-semibold text-primary-600">
-                                  {formatArabicCurrency(line.qty * line.unitPrice)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  {/* Return Lines Table */}
+                  <div className="overflow-x-auto border border-border-primary rounded-lg mb-6">
+                    <table className="min-w-full divide-y divide-border-primary">
+                      <thead className="bg-background-secondary">
+                        <tr>
+                          <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
+                            المنتج
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider">
+                            الوحدة
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider">
+                            سعر الوحدة
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider w-32">
+                            الكمية المردودة
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider">
+                            إجمالي العبوة
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider">
+                            المجموع الفرعي
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-surface-primary divide-y divide-border-primary">
+                        {returnForm.lines.map((line: any, index) => {
+                          const extras = (window as any).returnFormExtras?.[index] || {};
+                          const isBox = extras.unit === 'صندوق' && extras.unitsPerBox;
+                          return (
+                            <tr key={index}>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-text-primary">{extras.productName}</div>
+                                {extras.isFromParentCompany && (
+                                  <div className="text-xs text-warning-600 mt-1">من التقازي</div>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-text-secondary">
+                                {extras.unit || '-'}
+                                {isBox && (
+                                  <div className="text-xs text-blue-600 mt-1 dir-ltr">
+                                    {extras.unitsPerBox} m²/box
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-text-primary">
+                                {formatArabicCurrency(line.unitPrice)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={extras.maxQty || 0}
+                                  step="0.01"
+                                  value={line.qty}
+                                  onChange={(e) => handleLineQtyChange(index, parseFloat(e.target.value) || 0)}
+                                  className="w-full px-2 py-1 text-center border border-border-primary rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-surface-primary text-text-primary"
+                                />
+                                <div className="text-xs text-text-secondary mt-1">
+                                  بحد أقصى: {formatArabicNumber(extras.maxQty || 0)}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-blue-600 font-medium">
+                                {isBox ? (
+                                  <span dir="ltr">
+                                    {formatArabicArea(line.qty * extras.unitsPerBox)} m²
+                                  </span>
+                                ) : '-'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-primary-600">
+                                {(() => {
+                                  const amount = isBox
+                                    ? (line.qty * line.unitPrice * extras.unitsPerBox)
+                                    : (line.qty * line.unitPrice);
+                                  return formatArabicCurrency(amount);
+                                })()}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
 
                   {/* Return Details */}
@@ -889,9 +934,14 @@ const SaleReturnsPage = () => {
                         <span className="text-lg font-semibold text-text-primary">المبلغ الإجمالي للمردود:</span>
                         <span className="text-2xl font-bold text-primary-600">
                           {formatArabicCurrency(
-                            returnForm.lines.reduce((sum: number, line: any) =>
-                              sum + (line.qty * line.unitPrice), 0
-                            )
+                            returnForm.lines.reduce((sum: number, line: any, index: number) => {
+                              const extras = (window as any).returnFormExtras?.[index] || {};
+                              const isBox = extras.unit === 'صندوق' && extras.unitsPerBox;
+                              const lineTotal = isBox
+                                ? (line.qty * line.unitPrice * extras.unitsPerBox)
+                                : (line.qty * line.unitPrice);
+                              return sum + lineTotal;
+                            }, 0)
                           )}
                         </span>
                       </div>

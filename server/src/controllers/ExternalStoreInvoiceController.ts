@@ -73,6 +73,7 @@ export class ExternalStoreInvoiceController {
                                         sku: true,
                                         name: true,
                                         unit: true,
+                                        unitsPerBox: true,
                                     },
                                 },
                             },
@@ -126,6 +127,7 @@ export class ExternalStoreInvoiceController {
                                     sku: true,
                                     name: true,
                                     unit: true,
+                                    unitsPerBox: true,
                                 },
                             },
                         },
@@ -438,12 +440,24 @@ export class ExternalStoreInvoiceController {
                 return res.status(400).json({ error: 'Invoice is not pending' });
             }
 
+            if (!invoice.store.customerId) {
+                return res.status(400).json({
+                    error: 'المحل غير مرتبط بعميل. يرجى ربط المحل بعميل في صفحة إدارة المحلات ليتم تسجيل المبيعات في حسابه.'
+                });
+            }
+
             // استخدام transaction للتأكد من تنفيذ جميع العمليات
             const result = await prisma.$transaction(async (tx: any) => {
+                // 0. الحصول على معرف شركة المستودع من الإعدادات
+                const storeCompanySetting = await tx.globalSettings.findUnique({
+                    where: { key: 'EXTERNAL_STORE_COMPANY_ID' }
+                });
+                const warehouseCompanyId = storeCompanySetting ? parseInt(storeCompanySetting.value) : 1;
+
                 // 1. إنشاء فاتورة مبيعات آجلة للعميل المرتبط بالمحل
                 const sale = await tx.sale.create({
                     data: {
-                        companyId: userCompanyId || 1, // شركة التقازي الرئيسية
+                        companyId: userCompanyId || warehouseCompanyId, // استخدام شركة المستودع
                         customerId: invoice.store.customerId, // العميل المرتبط بالمحل
                         invoiceNumber: `EXT-${invoice.store.id}-${invoice.id}`,
                         saleType: 'CREDIT', // آجلة
@@ -453,13 +467,13 @@ export class ExternalStoreInvoiceController {
                         remainingAmount: invoice.total,
                         isFullyPaid: false,
                         status: 'APPROVED', // معتمدة تلقائياً
-                        notes: `فاتورة محل خارجي: ${invoice.store.name} - رقم الفاتورة: ${invoice.invoiceNumber || invoice.id}`,
+                        notes: `فاتورة صادرة من بوابة المحل الخارجي: ${invoice.store.name}. ملاحظات المحل: ${invoice.notes || 'بدون'}`,
                         approvedBy: userId,
                         approvedAt: new Date(),
                     },
                 });
 
-                // 2. إنشاء بنود فاتورة المبيعات وخصم المخزون
+                // 2. إنشاء بنود فاتورة المبيعات وخصم المخزون من المستودع
                 for (const line of invoice.lines) {
                     // أ. إنشاء بند الفاتورة
                     await tx.saleLine.create({
@@ -472,26 +486,27 @@ export class ExternalStoreInvoiceController {
                         },
                     });
 
-                    // ب. خصم الكمية من المخزون
-                    const stockCompanyId = userCompanyId || 1;
+                    // ب. خصم الكمية من مخزون المستودع الرئيسي (وليس بضاعة العرض في المحل)
                     const qtyToDecrement = Number(line.qty);
 
                     await tx.stock.upsert({
                         where: {
                             companyId_productId: {
-                                companyId: stockCompanyId,
-                                productId: line.productId,
+                                companyId: warehouseCompanyId,
+                                productId: line.productId
                             }
                         },
                         update: {
                             boxes: { decrement: qtyToDecrement }
                         },
                         create: {
-                            companyId: stockCompanyId,
+                            companyId: warehouseCompanyId,
                             productId: line.productId,
                             boxes: -qtyToDecrement
                         }
                     });
+
+                    // ملاحظة: لا يتم خصم الكمية من externalStoreProduct لتبقى كمية العرض ثابتة كما هي
                 }
 
                 // 3. إنشاء أمر صرف مرتبط بالفاتورة
@@ -540,7 +555,7 @@ export class ExternalStoreInvoiceController {
                         amount: Number(result.invoice.total),
                         referenceType: 'SALE',
                         referenceId: result.sale.id,
-                        description: `فاتورة مبيعات آجلة (محل خارجي) رقم ${result.sale.invoiceNumber || result.sale.id}`,
+                        description: `قيد دين تلقائي: مبيعات عبر المحل الخارجي (${result.invoice.store.name}) بموجب الفاتورة رقم ${result.sale.invoiceNumber || result.sale.id}`,
                         transactionDate: new Date()
                     });
                 } catch (accError) {
@@ -752,6 +767,9 @@ export class ExternalStoreInvoiceController {
                             }
                         }
                     },
+                    externalStoreProducts: {
+                        where: { storeId: storeId }
+                    }
                 },
             });
 
@@ -760,8 +778,9 @@ export class ExternalStoreInvoiceController {
             // 4. Format the data for the frontend
             const formattedProducts = products.map(product => {
                 // Determine stock and price for the target company
-                const stock = product.stocks[0];
+                const warehouseStock = product.stocks[0];
                 const price = product.prices[0];
+                const storeAssignment = (product as any).externalStoreProducts?.[0];
 
                 return {
                     productId: product.id,
@@ -773,7 +792,8 @@ export class ExternalStoreInvoiceController {
                         unit: product.unit,
                         unitsPerBox: product.unitsPerBox,
                         // Provide current stock and price based on configured company
-                        currentStock: stock ? Number(stock.boxes) : 0,
+                        warehouseStock: warehouseStock ? Number(warehouseStock.boxes) : 0,
+                        storeQuantity: storeAssignment ? Number(storeAssignment.quantity) : 0,
                         sellPrice: price ? Number(price.sellPrice) : 0,
                         // Keep original arrays for flexibility if needed
                         stocks: product.stocks,

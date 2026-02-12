@@ -107,7 +107,7 @@ export const UpdateCustomerDtoSchema = z.object({
 
 export const GetCustomersQueryDtoSchema = z.object({
   page: z.string().optional().default('1').transform(Number).pipe(z.number().int().positive()),
-  limit: z.string().optional().default('10').transform(Number).pipe(z.number().int().positive().max(1000)),
+  limit: z.string().optional().default('10').transform(Number).pipe(z.number().int().positive().max(50000)),
   search: z.string().optional()
 });
 

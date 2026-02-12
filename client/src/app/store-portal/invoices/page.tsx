@@ -396,6 +396,7 @@ export default function StoreInvoicesPage() {
                                         <tr>
                                             <th className="px-4 py-2 border-b border-gray-100 dark:border-gray-700">الصنف</th>
                                             <th className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 text-center">الكمية</th>
+                                            <th className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 text-center">إجمالي العبوة</th>
                                             {showPrices && (
                                                 <>
                                                     <th className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 text-center">السعر</th>
@@ -405,27 +406,47 @@ export default function StoreInvoicesPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                        {viewingInvoice.lines?.map((line: any, idx: number) => (
-                                            <tr key={idx} className="text-sm text-gray-700 dark:text-gray-300">
-                                                <td className="px-4 py-3">
-                                                    <div className="font-medium">{line.product?.name || 'منتج غير معروف'}</div>
-                                                    <div className="text-xs text-gray-400 font-mono">{line.product?.sku}</div>
-                                                </td>
-                                                <td className="px-4 py-3 text-center">
-                                                    {Number(line.qty).toLocaleString('en-US')} {line.product?.unit || ''}
-                                                </td>
-                                                {showPrices && (
-                                                    <>
-                                                        <td className="px-4 py-3 text-center">
-                                                            {Number(line.unitPrice).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-center font-semibold">
-                                                            {Number(line.subTotal).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                                                        </td>
-                                                    </>
-                                                )}
-                                            </tr>
-                                        ))}
+                                        {viewingInvoice.lines?.map((line: any, idx: number) => {
+                                            const unit = line.product?.unit || 'قطعة';
+                                            let unitPriceLabel = 'سعر القطعة';
+                                            if (unit === 'صندوق') unitPriceLabel = 'سعر المتر';
+                                            else if (unit === 'لتر') unitPriceLabel = 'سعر اللتر';
+                                            else if (unit === 'كيس') unitPriceLabel = 'سعر الكيس';
+                                            else if (unit === 'متر') unitPriceLabel = 'سعر المتر';
+
+                                            let totalPackage = '-';
+                                            if (unit === 'صندوق' && line.product?.unitsPerBox) {
+                                                totalPackage = `${(Number(line.qty) * Number(line.product.unitsPerBox)).toLocaleString('en-US', { minimumFractionDigits: 2 })} م²`;
+                                            } else {
+                                                totalPackage = `${Number(line.qty).toLocaleString('en-US')} ${unit}`;
+                                            }
+
+                                            return (
+                                                <tr key={idx} className="text-sm text-gray-700 dark:text-gray-300">
+                                                    <td className="px-4 py-3">
+                                                        <div className="font-medium">{line.product?.name || 'منتج غير معروف'}</div>
+                                                        <div className="text-xs text-gray-400 font-mono">{line.product?.sku}</div>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        {Number(line.qty).toLocaleString('en-US')} {unit}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center font-bold text-blue-600">
+                                                        {totalPackage}
+                                                    </td>
+                                                    {showPrices && (
+                                                        <>
+                                                            <td className="px-4 py-3 text-center">
+                                                                <div>{Number(line.unitPrice).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                                                                <div className="text-[10px] text-slate-400">({unitPriceLabel})</div>
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center font-semibold">
+                                                                {Number(line.subTotal).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                            </td>
+                                                        </>
+                                                    )}
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                     {showPrices && (
                                         <tfoot className="bg-gray-50 dark:bg-gray-800/50">
@@ -508,35 +529,42 @@ export default function StoreInvoicesPage() {
                                 {(skuSearch || nameSearch) && (
                                     <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                                         {filteredProducts.length > 0 ? (
-                                            filteredProducts.map((item: any) => (
-                                                <button
-                                                    key={item.productId}
-                                                    onClick={() => handleAddProduct(item.productId)}
-                                                    className="w-full text-right px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-600 border-b border-gray-100 dark:border-gray-600 last:border-0 flex justify-between items-center"
-                                                >
-                                                    <div className="flex-1">
-                                                        <div className="font-medium text-gray-900 dark:text-white">{item.product.name}</div>
-                                                        <div className="flex items-center gap-2 mt-0.5">
-                                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">{item.product.sku}</span>
-                                                            {item.product.unitsPerBox && (
-                                                                <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded font-bold border border-blue-100">
-                                                                    عبوة: {Number(item.product.unitsPerBox).toLocaleString()}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    {showPrices && (
-                                                        <div className="text-right">
-                                                            <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                                                                {Number(item.product.prices?.find((p: any) => p.company?.code === 'TAQAZI' || p.company?.code === 'TG')?.sellPrice || item.product.prices?.[0]?.sellPrice || 0).toLocaleString('en-US')} د.ل
+                                            filteredProducts.map((item: any) => {
+                                                const unit = item.product.unit || 'قطعة';
+                                                let unitPriceLabel = 'سعر القطعة';
+                                                if (unit === 'صندوق') unitPriceLabel = 'سعر المتر';
+                                                else if (unit === 'لتر') unitPriceLabel = 'سعر اللتر';
+                                                else if (unit === 'كيس') unitPriceLabel = 'سعر الكيس';
+                                                else if (unit === 'متر') unitPriceLabel = 'سعر المتر';
+
+                                                return (
+                                                    <button
+                                                        key={item.productId}
+                                                        onClick={() => handleAddProduct(item.productId)}
+                                                        className="w-full text-right px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-600 border-b border-gray-100 dark:border-gray-600 last:border-0 flex justify-between items-center"
+                                                    >
+                                                        <div className="flex-1">
+                                                            <div className="font-medium text-gray-900 dark:text-white">{item.product.name}</div>
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">{item.product.sku}</span>
+                                                                {item.product.unitsPerBox && (
+                                                                    <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded font-bold border border-blue-100">
+                                                                        عبوة: {Number(item.product.unitsPerBox).toLocaleString()} متر
+                                                                    </span>
+                                                                )}
                                                             </div>
-                                                            {item.product.unit === 'صندوق' && (
-                                                                <div className="text-[10px] text-slate-400 font-medium">(سعر المتر)</div>
-                                                            )}
                                                         </div>
-                                                    )}
-                                                </button>
-                                            ))
+                                                        {showPrices && (
+                                                            <div className="text-right">
+                                                                <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                                                                    {Number(item.product.prices?.find((p: any) => p.company?.code === 'TAQAZI' || p.company?.code === 'TG')?.sellPrice || item.product.prices?.[0]?.sellPrice || 0).toLocaleString('en-US')} د.ل
+                                                                </div>
+                                                                <div className="text-[10px] text-slate-400 font-medium">({unitPriceLabel})</div>
+                                                            </div>
+                                                        )}
+                                                    </button>
+                                                );
+                                            })
                                         ) : (
                                             <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                                                 لا توجد نتائج
@@ -552,6 +580,7 @@ export default function StoreInvoicesPage() {
                                         <tr>
                                             <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">المنتج</th>
                                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-24">الكمية</th>
+                                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-28">إجمالي العبوة</th>
                                             {showPrices && (
                                                 <>
                                                     <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-32">السعر</th>
@@ -563,54 +592,73 @@ export default function StoreInvoicesPage() {
                                     </thead>
                                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                                         {lines.length > 0 ? (
-                                            lines.map((line, index) => (
-                                                <tr key={index} className="hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors">
-                                                    <td className="px-4 py-3">
-                                                        <div className="text-sm font-medium text-gray-900 dark:text-white">{line.productName}</div>
-                                                        <div className="flex items-center gap-2 mt-0.5">
-                                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">{line.sku}</span>
-                                                            {line.unitsPerBox && (
-                                                                <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded font-bold border border-blue-100">
-                                                                    عبوة: {Number(line.unitsPerBox).toLocaleString()}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        <input
-                                                            type="number"
-                                                            min="1"
-                                                            value={line.qty}
-                                                            onChange={(e) => updateLine(index, 'qty', parseInt(e.target.value))}
-                                                            className="w-full px-2 py-1 text-center bg-white border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                                                        />
-                                                    </td>
-                                                    {showPrices && (
-                                                        <>
-                                                            <td className="px-4 py-3 text-center">
-                                                                <div className="text-gray-700 font-mono">{line.unitPrice.toLocaleString('en-US')}</div>
-                                                                {line.unit === 'صندوق' && (
-                                                                    <div className="text-[10px] text-slate-400 font-medium">(سعر المتر)</div>
+                                            lines.map((line, index) => {
+                                                const unit = line.unit || 'قطعة';
+                                                let unitPriceLabel = 'سعر القطعة';
+                                                if (unit === 'صندوق') unitPriceLabel = 'سعر المتر';
+                                                else if (unit === 'لتر') unitPriceLabel = 'سعر اللتر';
+                                                else if (unit === 'كيس') unitPriceLabel = 'سعر الكيس';
+                                                else if (unit === 'متر') unitPriceLabel = 'سعر المتر';
+
+                                                let totalPackage = '-';
+                                                if (unit === 'صندوق' && line.unitsPerBox) {
+                                                    totalPackage = `${(line.qty * line.unitsPerBox).toLocaleString('en-US', { minimumFractionDigits: 2 })} م²`;
+                                                } else {
+                                                    totalPackage = `${line.qty.toLocaleString('en-US')} ${unit}`;
+                                                }
+
+                                                return (
+                                                    <tr key={index} className="hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors">
+                                                        <td className="px-4 py-3">
+                                                            <div className="text-sm font-medium text-gray-900 dark:text-white">{line.productName}</div>
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">{line.sku}</span>
+                                                                {line.unitsPerBox && (
+                                                                    <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded font-bold border border-blue-100">
+                                                                        عبوة: {Number(line.unitsPerBox).toLocaleString()} متر
+                                                                    </span>
                                                                 )}
-                                                            </td>
-                                                            <td className="px-4 py-3 text-center font-bold text-gray-900">
-                                                                {line.subTotal.toLocaleString('en-US')}
-                                                            </td>
-                                                        </>
-                                                    )}
-                                                    <td className="px-4 py-3 text-center">
-                                                        <button
-                                                            onClick={() => removeLine(index)}
-                                                            className="text-red-500 hover:text-red-700 transition-colors"
-                                                        >
-                                                            <Trash2 size={18} />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <div className="flex items-center gap-1">
+                                                                <input
+                                                                    type="number"
+                                                                    min="1"
+                                                                    value={line.qty}
+                                                                    onChange={(e) => updateLine(index, 'qty', parseInt(e.target.value))}
+                                                                    className="w-full px-2 py-1 text-center bg-white border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                                                />
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-center text-sm font-bold text-blue-600">
+                                                            {totalPackage}
+                                                        </td>
+                                                        {showPrices && (
+                                                            <>
+                                                                <td className="px-4 py-3 text-center">
+                                                                    <div className="text-gray-700 font-mono">{line.unitPrice.toLocaleString('en-US')}</div>
+                                                                    <div className="text-[10px] text-slate-400 font-medium">({unitPriceLabel})</div>
+                                                                </td>
+                                                                <td className="px-4 py-3 text-center font-bold text-gray-900">
+                                                                    {line.subTotal.toLocaleString('en-US')}
+                                                                </td>
+                                                            </>
+                                                        )}
+                                                        <td className="px-4 py-3 text-center">
+                                                            <button
+                                                                onClick={() => removeLine(index)}
+                                                                className="text-red-500 hover:text-red-700 transition-colors"
+                                                            >
+                                                                <Trash2 size={18} />
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
                                         ) : (
                                             <tr>
-                                                <td colSpan={showPrices ? 5 : 3} className="px-4 py-8 text-center text-gray-500 text-sm">
+                                                <td colSpan={showPrices ? 6 : 4} className="px-4 py-8 text-center text-gray-500 text-sm">
                                                     لم يتم إضافة منتجات بعد
                                                 </td>
                                             </tr>

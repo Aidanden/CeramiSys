@@ -1,9 +1,4 @@
-/**
- * Warehouse Service
- * خدمة أوامر صرف المخزن
- */
-
-import { DispatchOrderStatus } from '@prisma/client';
+import { DispatchOrderStatus, Currency, Prisma, SupplierPaymentType, PaymentReceiptStatus } from '@prisma/client';
 import prisma from '../models/prismaClient';
 import { PaymentMethod } from '../dto/salesDto';
 
@@ -481,10 +476,18 @@ export class WarehouseService {
                 customer: {
                   select: { id: true, name: true, phone: true }
                 },
+                sale: {
+                  select: { id: true, invoiceNumber: true }
+                },
+                company: {
+                  select: { id: true, name: true, code: true }
+                },
                 lines: {
                   include: {
                     product: {
-                      select: { id: true, name: true, sku: true, unit: true, unitsPerBox: true }
+                      include: {
+                        createdByCompany: true
+                      }
                     }
                   }
                 }
@@ -501,9 +504,10 @@ export class WarehouseService {
 
         // إذا اكتمل الاستلام، نحدث حالة المردود في الشاشة الرئيسية
         if (data.status === 'COMPLETED') {
+          // تحديث الحالة إلى APPROVED مباشرة ليظهر في المالية
           await tx.saleReturn.update({
             where: { id: updated.saleReturnId },
-            data: { status: 'RECEIVED_WAREHOUSE' as any }
+            data: { status: 'APPROVED' as any }
           });
 
           // 📦 عند استلام المردود في المخزن، نعيد الكميات إلى مخزون الشركة صاحبة أمر الاستلام
@@ -534,6 +538,110 @@ export class WarehouseService {
 
             await Promise.all(stockUpdates);
           }
+
+          // 💰 إنشاء الإيصالات المالية وتحديث حساب العميل
+          const updatedReturn = updated.saleReturn;
+          if (updatedReturn) {
+            let parentCompanyReturnValue = 0;
+            let branchCompanyReturnValue = 0;
+
+            for (const line of updatedReturn.lines) {
+              // @ts-ignore
+              const product = line.product;
+              // @ts-ignore
+              if (product && product.createdByCompany && product.createdByCompany.isParent) {
+                parentCompanyReturnValue += Number(line.subTotal);
+              } else {
+                branchCompanyReturnValue += Number(line.subTotal);
+              }
+            }
+
+            // أ. الشركة الأم
+            if (parentCompanyReturnValue > 0) {
+              const parentSupplier = await tx.supplier.findFirst({
+                where: {
+                  OR: [
+                    { name: { contains: 'تقازي', mode: 'insensitive' } },
+                    { name: { contains: 'Taqazi', mode: 'insensitive' } },
+                    { note: { contains: 'الشركة الأم', mode: 'insensitive' } }
+                  ]
+                }
+              });
+
+              await tx.supplierPaymentReceipt.create({
+                data: {
+                  supplierId: parentSupplier?.id,
+                  saleReturnId: updatedReturn.id,
+                  customerId: updatedReturn.customerId,
+                  companyId: updated.companyId,
+                  amount: new Prisma.Decimal(parentCompanyReturnValue),
+                  type: SupplierPaymentType.RETURN,
+                  description: `مردود مبيعات (تقازي): ${updatedReturn.customer?.name || 'عميل'} - فاتورة #${updatedReturn.sale?.invoiceNumber || updatedReturn.saleId}`,
+                  status: PaymentReceiptStatus.PENDING,
+                  currency: Currency.LYD,
+                  exchangeRate: new Prisma.Decimal(1),
+                  notes: updatedReturn.customer?.name || 'عميل'
+                }
+              });
+            }
+
+            // ب. الشركة الفرعية
+            if (branchCompanyReturnValue > 0) {
+              let branchSupplierId: number | undefined;
+              // @ts-ignore
+              if (updated.companyId !== updatedReturn.companyId) { // updatedReturn.companyId usually references Sale's company
+                const branchSupplier = await tx.supplier.findFirst({
+                  where: {
+                    // @ts-ignore
+                    name: { contains: updatedReturn.company?.name || '', mode: 'insensitive' }
+                  }
+                });
+                branchSupplierId = branchSupplier?.id;
+              }
+
+              await tx.supplierPaymentReceipt.create({
+                data: {
+                  supplierId: branchSupplierId,
+                  saleReturnId: updatedReturn.id,
+                  customerId: updatedReturn.customerId,
+                  companyId: updated.companyId,
+                  amount: new Prisma.Decimal(branchCompanyReturnValue),
+                  type: SupplierPaymentType.RETURN,
+                  description: `مردود مبيعات (إمارات): ${updatedReturn.customer?.name || 'عميل'} - فاتورة #${updatedReturn.sale?.invoiceNumber || updatedReturn.saleId}`,
+                  status: PaymentReceiptStatus.PENDING,
+                  currency: Currency.LYD,
+                  exchangeRate: new Prisma.Decimal(1),
+                  notes: updatedReturn.customer?.name || 'عميل'
+                }
+              });
+            }
+
+            // ج. تحديث كشف حساب العميل
+            if (updatedReturn.customerId) {
+              try {
+                const CustomerAccountService = (await import('./CustomerAccountService')).default;
+                await CustomerAccountService.createAccountEntry({
+                  customerId: updatedReturn.customerId,
+                  transactionType: 'CREDIT',
+                  amount: Number(updatedReturn.total),
+                  referenceType: 'RETURN',
+                  referenceId: updatedReturn.id,
+                  description: `مردود مبيعات - فاتورة #${updatedReturn.sale?.invoiceNumber || updatedReturn.saleId}`,
+                  transactionDate: new Date()
+                }, tx);
+              } catch (error) {
+                console.error(`[ERROR] Failed to create Account Entry for Return #${updatedReturn.id}:`, error);
+              }
+            }
+          }
+        }
+
+        // إذا تم رفض الاستلام (إلغاء الأمر)، نحدث حالة المردود إلى مرفوض
+        else if (data.status === 'CANCELLED') {
+          await tx.saleReturn.update({
+            where: { id: updated.saleReturnId },
+            data: { status: 'REJECTED' as any }
+          });
         }
 
         return updated;

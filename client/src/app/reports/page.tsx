@@ -161,7 +161,7 @@ export default function ReportsPage() {
       printData = salesReport.data.sales.filter((sale: any) => {
         if (filters.invoiceNumber && !textSearch(sale.invoiceNumber, filters.invoiceNumber)) return false;
         if (filters.customerName && !textSearch(sale.customer?.name, filters.customerName)) return false;
-        if (filters.minAmount && sale.total <parseFloat(filters.minAmount)) return false;
+        if (filters.minAmount && sale.total < parseFloat(filters.minAmount)) return false;
         if (filters.maxAmount && sale.total > parseFloat(filters.maxAmount)) return false;
         return true;
       });
@@ -504,9 +504,9 @@ export default function ReportsPage() {
       const data = productMovementReport.data;
       tableHeaders = ['التاريخ', 'النوع', 'الوصف', 'الوارد', 'الصادر', 'الرصيد التحليلي'];
       tableRows = (m: any) => `
-        <tr style="background-color: ${m.type === 'SALE' ? '#f0f9ff' : m.type === 'PURCHASE' ? '#f0fdf4' : m.type === 'RETURN' ? '#fff7ed' : m.type === 'DAMAGE' ? '#fef2f2' : 'white'}">
+        <tr style="background-color: ${m.type === 'SALE' ? '#f0f9ff' : m.type === 'PURCHASE' ? '#f0fdf4' : m.type === 'RETURN' ? '#fff7ed' : m.type === 'DAMAGE' ? '#fef2f2' : m.type === 'TRANSFER_OUT' ? '#f5f3ff' : 'white'}">
           <td>${new Date(m.date).toLocaleDateString('ar-LY')}</td>
-          <td><span style="font-weight: bold; color: ${m.type === 'SALE' ? '#1e40af' : m.type === 'PURCHASE' ? '#166534' : m.type === 'RETURN' ? '#9a3412' : m.type === 'DAMAGE' ? '#991b1b' : '#374151'}">${m.type === 'SALE' ? 'بيع' : m.type === 'PURCHASE' ? 'شراء' : m.type === 'RETURN' ? 'مردود' : m.type === 'DAMAGE' ? 'تالف' : 'افتتاحي'}</span></td>
+          <td><span style="font-weight: bold; color: ${m.type === 'SALE' ? '#1e40af' : m.type === 'PURCHASE' ? '#166534' : m.type === 'RETURN' ? '#9a3412' : m.type === 'DAMAGE' ? '#991b1b' : m.type === 'TRANSFER_OUT' ? '#5b21b6' : '#374151'}">${m.type === 'SALE' ? 'بيع' : m.type === 'PURCHASE' ? 'شراء' : m.type === 'RETURN' ? 'مردود' : m.type === 'DAMAGE' ? 'تالف' : m.type === 'TRANSFER_OUT' ? 'نقل بضاعة عرض' : 'افتتاحي'}</span></td>
           <td style="font-size: 10px;">${m.description}</td>
           <td style="color: #166534; font-weight: bold;">${m.qtyIn > 0 ? `+${m.qtyIn.toLocaleString('ar-LY')}` : '-'}</td>
           <td style="color: #991b1b; font-weight: bold;">${m.qtyOut > 0 ? `-${m.qtyOut.toLocaleString('ar-LY')}` : '-'}</td>
@@ -1352,7 +1352,7 @@ export default function ReportsPage() {
                       const filteredSales = salesReport.data.sales.filter((sale: any) => {
                         if (filters.invoiceNumber && !textSearch(sale.invoiceNumber, filters.invoiceNumber)) return false;
                         if (filters.customerName && !textSearch(sale.customer?.name, filters.customerName)) return false;
-                        if (filters.minAmount && sale.total <parseFloat(filters.minAmount)) return false;
+                        if (filters.minAmount && sale.total < parseFloat(filters.minAmount)) return false;
                         if (filters.maxAmount && sale.total > parseFloat(filters.maxAmount)) return false;
                         return true;
                       });
@@ -1398,7 +1398,7 @@ export default function ReportsPage() {
                 filteredItems={salesReport.data.sales.filter((sale: any) => {
                   if (filters.invoiceNumber && !textSearch(sale.invoiceNumber, filters.invoiceNumber)) return false;
                   if (filters.customerName && !textSearch(sale.customer?.name, filters.customerName)) return false;
-                  if (filters.minAmount && sale.total <parseFloat(filters.minAmount)) return false;
+                  if (filters.minAmount && sale.total < parseFloat(filters.minAmount)) return false;
                   if (filters.maxAmount && sale.total > parseFloat(filters.maxAmount)) return false;
                   return true;
                 })}
@@ -1774,7 +1774,7 @@ export default function ReportsPage() {
                         if (filters.invoiceNumber && !textSearch(purchase.invoiceNumber, filters.invoiceNumber)) return false;
                         if (filters.supplierName && !textSearch(purchase.supplier?.name, filters.supplierName)) return false;
                         if (filters.supplierPhone && !textSearch(purchase.supplier?.phone, filters.supplierPhone)) return false;
-                        if (filters.minAmount && Number(purchase.total) <Number(filters.minAmount)) return false;
+                        if (filters.minAmount && Number(purchase.total) < Number(filters.minAmount)) return false;
                         if (filters.maxAmount && Number(purchase.total) > Number(filters.maxAmount)) return false;
                         if (filters.invoiceAmount && Number(purchase.total) !== Number(filters.invoiceAmount)) return false;
                         return true;
@@ -1830,7 +1830,7 @@ export default function ReportsPage() {
                   if (filters.invoiceNumber && !textSearch(purchase.invoiceNumber, filters.invoiceNumber)) return false;
                   if (filters.supplierName && !textSearch(purchase.supplier?.name, filters.supplierName)) return false;
                   if (filters.supplierPhone && !textSearch(purchase.supplier?.phone, filters.supplierPhone)) return false;
-                  if (filters.minAmount && Number(purchase.total) <Number(filters.minAmount)) return false;
+                  if (filters.minAmount && Number(purchase.total) < Number(filters.minAmount)) return false;
                   if (filters.maxAmount && Number(purchase.total) > Number(filters.maxAmount)) return false;
                   if (filters.invoiceAmount && Number(purchase.total) !== Number(filters.invoiceAmount)) return false;
                   return true;
@@ -2289,14 +2289,16 @@ export default function ReportsPage() {
                                 m.type === 'PURCHASE' ? 'bg-emerald-100 text-emerald-700' :
                                   m.type === 'RETURN' ? 'bg-orange-100 text-orange-700' :
                                     m.type === 'DAMAGE' ? 'bg-rose-100 text-rose-700' :
-                                      'bg-slate-200 text-slate-700'
+                                      m.type === 'TRANSFER_OUT' ? 'bg-indigo-100 text-indigo-700' :
+                                        'bg-slate-200 text-slate-700'
                                 }`}>
                                 {m.type === 'SALE' && <ArrowRight className="w-3 h-3" />}
                                 {m.type === 'PURCHASE' && <ArrowRight className="w-3 h-3 rotate-180" />}
                                 {m.type === 'RETURN' && <Undo2 className="w-3 h-3" />}
                                 {m.type === 'DAMAGE' && <AlertTriangle className="w-3 h-3" />}
+                                {m.type === 'TRANSFER_OUT' && <Building2 className="w-3 h-3" />}
                                 {m.type === 'INITIAL' && <Layers className="w-3 h-3" />}
-                                {m.type === 'SALE' ? 'مبيعات' : m.type === 'PURCHASE' ? 'مشتريات' : m.type === 'RETURN' ? 'مردود' : m.type === 'DAMAGE' ? 'تالف' : 'رصيد أول'}
+                                {m.type === 'SALE' ? 'مبيعات' : m.type === 'PURCHASE' ? 'مشتريات' : m.type === 'RETURN' ? 'مردود' : m.type === 'DAMAGE' ? 'تالف' : m.type === 'TRANSFER_OUT' ? 'نقل بضاعة عرض' : 'رصيد أول'}
                               </span>
                             </td>
                             <td className="px-6 py-4 text-sm text-slate-600 leading-relaxed max-w-md">

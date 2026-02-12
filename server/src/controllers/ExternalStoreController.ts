@@ -33,6 +33,12 @@ export class ExternalStoreController {
                     skip,
                     take: Number(limit),
                     include: {
+                        customer: {
+                            select: {
+                                id: true,
+                                name: true,
+                            }
+                        },
                         _count: {
                             select: {
                                 users: true,
@@ -138,6 +144,14 @@ export class ExternalStoreController {
             const store = await prisma.externalStore.findUnique({
                 where: { id: Number(id) },
                 include: {
+                    customer: {
+                        select: {
+                            id: true,
+                            name: true,
+                            phone: true,
+                            address: true,
+                        }
+                    },
                     users: {
                         select: {
                             id: true,
@@ -183,29 +197,35 @@ export class ExternalStoreController {
      */
     async createStore(req: Request, res: Response) {
         try {
-            const { name, ownerName, phone1, phone2, address, googleMapsUrl, showPrices } = req.body;
+            const { name, ownerName, phone1, phone2, address, googleMapsUrl, showPrices, customerId } = req.body;
 
             // التحقق من البيانات المطلوبة
             if (!name || !ownerName || !phone1) {
                 return res.status(400).json({ error: 'Name, owner name, and phone1 are required' });
             }
 
-            // استخدام transaction لإنشاء العميل والمحل معاً
+            // استخدام transaction لضمان ربط / إنشاء العميل والمحل معاً
             const result = await prisma.$transaction(async (tx) => {
                 console.log('🔄 Starting transaction for store:', name);
 
-                // 1. إنشاء عميل أولاً
-                const customer = await tx.customer.create({
-                    data: {
-                        name,
-                        phone: phone1,
-                        phone2: phone2 || undefined,
-                        address: address || undefined,
-                        notes: `عميل تابع لمحل خارجي: ${name}`,
-                    },
-                });
+                let finalCustomerId = customerId;
 
-                console.log(`✅ Customer created: ${customer.id}`);
+                // إذا لم يتم توفير رقم عميل، نقوم بإنشاء عميل جديد تلقائياً (السلوك القديم)
+                if (!finalCustomerId) {
+                    const customer = await tx.customer.create({
+                        data: {
+                            name,
+                            phone: phone1,
+                            phone2: phone2 || undefined,
+                            address: address || undefined,
+                            notes: `عميل تابع لمحل خارجي: ${name}`,
+                        },
+                    });
+                    finalCustomerId = customer.id;
+                    console.log(`✅ New customer created: ${finalCustomerId}`);
+                } else {
+                    console.log(`✅ Using existing customer: ${finalCustomerId}`);
+                }
 
                 // 2. إنشاء المحل وربطه بالعميل
                 const store = await tx.externalStore.create({
@@ -216,39 +236,27 @@ export class ExternalStoreController {
                         phone2,
                         address,
                         googleMapsUrl,
-                        customerId: customer.id,
+                        customerId: finalCustomerId,
                         showPrices: showPrices !== undefined ? showPrices : true,
                     },
+                    include: {
+                        customer: true
+                    }
                 });
 
                 console.log(`✅ External store created: ${store.id}`);
 
-                return { store, customer };
+                return store;
             });
 
             console.log('✨ Transaction completed successfully');
 
-            return res.status(201).json({
-                id: result.store.id,
-                name: result.store.name,
-                ownerName: result.store.ownerName,
-                phone1: result.store.phone1,
-                phone2: result.store.phone2,
-                address: result.store.address,
-                googleMapsUrl: result.store.googleMapsUrl,
-                isActive: result.store.isActive,
-                showPrices: result.store.showPrices,
-                createdAt: result.store.createdAt,
-                updatedAt: result.store.updatedAt,
-                customerId: result.customer.id,
-                customerName: result.customer.name,
-            });
+            return res.status(201).json(result);
         } catch (error: any) {
             console.error('❌ Error creating store:', error);
             return res.status(500).json({
                 error: 'Failed to create store',
                 message: error.message,
-                details: error.stack
             });
         }
     }
@@ -259,7 +267,7 @@ export class ExternalStoreController {
     async updateStore(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const { name, ownerName, phone1, phone2, address, googleMapsUrl, isActive, showPrices } = req.body;
+            const { name, ownerName, phone1, phone2, address, googleMapsUrl, isActive, showPrices, customerId } = req.body;
 
             const store = await prisma.externalStore.update({
                 where: { id: Number(id) },
@@ -272,7 +280,11 @@ export class ExternalStoreController {
                     googleMapsUrl,
                     isActive,
                     showPrices,
+                    customerId: customerId ? Number(customerId) : undefined,
                 },
+                include: {
+                    customer: true
+                }
             });
 
             return res.json(store);
@@ -367,35 +379,81 @@ export class ExternalStoreController {
     async assignProducts(req: Request, res: Response) {
         try {
             const { id } = req.params;
+            const storeId = Number(id);
             const { productIds } = req.body;
 
-            if (!Array.isArray(productIds) || productIds.length === 0) {
+            if (!Array.isArray(productIds)) {
                 return res.status(400).json({ error: 'Product IDs array is required' });
             }
 
-            // التحقق من وجود المحل
-            const store = await prisma.externalStore.findUnique({
-                where: { id: Number(id) },
+            // 1. Get the configured company ID (Warehouse)
+            const externalStoreCompanyIdStr = await prisma.globalSettings.findUnique({
+                where: { key: 'EXTERNAL_STORE_COMPANY_ID' }
+            });
+            const targetCompanyId = externalStoreCompanyIdStr ? parseInt(externalStoreCompanyIdStr.value) : 1;
+
+            // 2. Wrap in transaction
+            await prisma.$transaction(async (tx) => {
+                // Get current assignments
+                const currentAssignments = await tx.externalStoreProduct.findMany({
+                    where: { storeId }
+                });
+                const currentProductIds = currentAssignments.map(a => a.productId);
+
+                // IDs to add
+                const toAdd = productIds.filter(pid => !currentProductIds.includes(pid));
+                // IDs to remove
+                const toRemove = currentProductIds.filter(pid => !productIds.includes(pid));
+
+                // Process Additions
+                for (const productId of toAdd) {
+                    // Deduct 1 from warehouse stock
+                    const stock = await tx.stock.findUnique({
+                        where: { companyId_productId: { companyId: targetCompanyId, productId } }
+                    });
+
+                    if (stock) {
+                        // Only decrement if we have something, else keep it non-negative
+                        const currentBoxes = Number(stock.boxes);
+                        await tx.stock.update({
+                            where: { id: stock.id },
+                            data: { boxes: Math.max(0, currentBoxes - 1) }
+                        });
+                    } else {
+                        // If stock record doesn't exist, start at 0
+                        await tx.stock.create({
+                            data: {
+                                companyId: targetCompanyId,
+                                productId,
+                                boxes: 0
+                            }
+                        });
+                    }
+
+                    // Create ExternalStoreProduct with qty 1
+                    await tx.externalStoreProduct.create({
+                        data: { storeId, productId, quantity: 1 }
+                    });
+                }
+
+                // Process Removals
+                for (const productId of toRemove) {
+                    const assignment = currentAssignments.find(a => a.productId === productId);
+                    if (assignment) {
+                        // Return qty to warehouse stock
+                        await tx.stock.updateMany({
+                            where: { companyId: targetCompanyId, productId },
+                            data: { boxes: { increment: assignment.quantity } }
+                        });
+                        // Delete assignment
+                        await tx.externalStoreProduct.delete({
+                            where: { id: assignment.id }
+                        });
+                    }
+                }
             });
 
-            if (!store) {
-                return res.status(404).json({ error: 'Store not found' });
-            }
-
-            // حذف الربط القديم وإنشاء الجديد
-            await prisma.externalStoreProduct.deleteMany({
-                where: { storeId: Number(id) },
-            });
-
-            const assignments = await prisma.externalStoreProduct.createMany({
-                data: productIds.map((productId: number) => ({
-                    storeId: Number(id),
-                    productId,
-                })),
-                skipDuplicates: true,
-            });
-
-            return res.json({ message: 'Products assigned successfully', count: assignments.count });
+            return res.json({ message: 'تم ربط المتاحف بنجاح وتحديث المخزون' });
         } catch (error: any) {
             console.error('Error assigning products:', error);
             return res.status(500).json({ error: 'Failed to assign products', details: error.message });

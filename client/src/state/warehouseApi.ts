@@ -1,6 +1,8 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithAuthInterceptor } from './apiUtils';
 import { API_CACHE_CONFIG } from '@/lib/config';
+import { salesApi } from './salesApi';
+import { saleReturnApi } from './saleReturnApi';
 
 // Types
 export interface DispatchOrder {
@@ -222,6 +224,11 @@ export const warehouseApi = createApi({
           );
 
           await queryFulfilled;
+
+          // تحديث الكاش للمبيعات لأن حالة التسليم تغيرت
+          // هذا يحل مشكلة تأخر ظهور حالة "جاهز للإرجاع" في شاشة المردودات
+          dispatch(salesApi.util.invalidateTags(['Sales', { type: 'Sales', id: 'LIST' }]));
+
         } catch {
           // في حالة الخطأ، نرجع التغييرات
           patchResults.forEach(patchResult => patchResult.undo());
@@ -268,6 +275,8 @@ export const warehouseApi = createApi({
       providesTags: ['ReturnOrders'],
     }),
 
+
+
     // Update return order status
     updateReturnOrderStatus: builder.mutation<
       { data: ReturnOrder },
@@ -286,6 +295,15 @@ export const warehouseApi = createApi({
         'TreasuryTransaction',
         'TreasuryStats'
       ],
+      async onQueryStarted({ id, body }, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // تحديث قائمة المردودات بشكل مباشر
+          dispatch(saleReturnApi.util.invalidateTags(['SaleReturns']));
+        } catch {
+          // ignore error
+        }
+      },
     }),
   }),
 });

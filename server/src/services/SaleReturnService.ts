@@ -58,22 +58,56 @@ export class SaleReturnService {
       throw new Error('لا يمكن إجراء مردود لفاتورة لم يتم تسليمها من المخزن بعد (أمر الصرف حالته معلق)');
     }
 
-    // التحقق من أن الكميات المردودة صحيحة
+    // جلب المردودات السابقة لنفس الفاتورة (باستثناء المرفوضة)
+    const previousReturns = await prisma.saleReturn.findMany({
+      where: {
+        saleId: data.saleId,
+        status: { not: 'REJECTED' }
+      },
+      include: {
+        lines: true
+      }
+    });
+
+    // حساب الكميات التي تم إرجاعها مسبقاً لكل منتج
+    const previouslyReturnedMap = new Map<number, number>();
+    for (const ret of previousReturns) {
+      for (const line of ret.lines) {
+        const currentQty = previouslyReturnedMap.get(line.productId) || 0;
+        previouslyReturnedMap.set(line.productId, currentQty + Number(line.qty));
+      }
+    }
+
+    // التحقق من أن الكميات المردودة صحيحة ولا تتجاوز المتبقي
     for (const returnLine of data.lines) {
       const saleLine = sale.lines.find(l => l.productId === returnLine.productId);
       if (!saleLine) {
         throw new Error(`الصنف غير موجود في الفاتورة الأصلية`);
       }
 
-      // يمكن إضافة تحقق إضافي للكمية المسموح بإرجاعها
-      if (returnLine.qty > Number(saleLine.qty)) {
-        throw new Error(`الكمية المردودة للصنف ${saleLine.product.name} أكبر من الكمية المباعة`);
+      const returnedQty = previouslyReturnedMap.get(returnLine.productId) || 0;
+      const originalQty = Number(saleLine.qty);
+      const remainingQty = originalQty - returnedQty;
+
+      // التأكد من أن الكمية المراد ارجاعها لا تتجاوز الكمية المتبقية
+      if (returnLine.qty > remainingQty) {
+        throw new Error(
+          `لا يمكن إرجاع ${returnLine.qty} من الصنف '${saleLine.product.name}'. الكمية المتبقية القابلة للرد هي ${remainingQty} فقط. (تم بيع: ${originalQty}، تم رد سابقاً: ${returnedQty})`
+        );
       }
     }
 
     // حساب المجموع الكلي للمردود
     const total = data.lines.reduce((sum, line) => {
-      return sum + (line.qty * line.unitPrice);
+      const saleLine = sale.lines.find(l => l.productId === line.productId);
+      const product = saleLine?.product;
+      const isBox = product?.unit === 'صندوق' && (product as any).unitsPerBox;
+
+      const lineTotal = isBox
+        ? line.qty * (product as any).unitsPerBox * line.unitPrice
+        : line.qty * line.unitPrice;
+
+      return sum + lineTotal;
     }, 0);
 
     // إنشاء المردود
@@ -92,12 +126,21 @@ export class SaleReturnService {
           reason: data.reason,
           notes: data.notes,
           lines: {
-            create: data.lines.map(line => ({
-              productId: line.productId,
-              qty: line.qty,
-              unitPrice: line.unitPrice,
-              subTotal: line.qty * line.unitPrice
-            }))
+            create: data.lines.map(line => {
+              const saleLine = sale.lines.find(l => l.productId === line.productId);
+              const product = saleLine?.product;
+              const isBox = product?.unit === 'صندوق' && (product as any).unitsPerBox;
+              const subTotal = isBox
+                ? line.qty * (product as any).unitsPerBox * line.unitPrice
+                : line.qty * line.unitPrice;
+
+              return {
+                productId: line.productId,
+                qty: line.qty,
+                unitPrice: line.unitPrice,
+                subTotal: subTotal
+              };
+            })
           }
         },
         include: {
@@ -158,69 +201,6 @@ export class SaleReturnService {
           status: 'PENDING'
         }
       });
-
-      // إنشاء إيصالات مردودات للمحاسب
-      // Create return receipts for the accountant
-
-      // 1. الجزء الخاص بالشركة الأم
-      if (parentCompanyReturnValue > 0) {
-        const parentSupplier = await tx.supplier.findFirst({
-          where: {
-            OR: [
-              { name: { contains: 'تقازي', mode: 'insensitive' } },
-              { name: { contains: 'Taqazi', mode: 'insensitive' } },
-              { note: { contains: 'الشركة الأم', mode: 'insensitive' } }
-            ]
-          }
-        });
-
-        await tx.supplierPaymentReceipt.create({
-          data: {
-            supplierId: parentSupplier?.id, // اختياري الآن
-            saleReturnId: newReturn.id,
-            customerId: newReturn.customerId,
-            companyId: companyId,
-            amount: new Prisma.Decimal(parentCompanyReturnValue),
-            type: SupplierPaymentType.RETURN,
-            description: `مردود مبيعات (تقازي): ${newReturn.customer?.name || 'عميل'} - فاتورة #${newReturn.id}`,
-            status: PaymentReceiptStatus.PENDING,
-            currency: Currency.LYD,
-            exchangeRate: new Prisma.Decimal(1),
-            notes: newReturn.customer?.name || 'عميل'
-          }
-        });
-      }
-
-      // 2. الجزء الخاص بالشركة الفرعية (أو المحلية)
-      if (branchCompanyReturnValue > 0) {
-        // البحث عن مورد يمثل الشركة الفرعية إذا لم تكن هي نفس الشركة الحالية
-        let branchSupplierId: number | undefined;
-
-        if (companyId !== newReturn.companyId) {
-          const branchSupplier = await tx.supplier.findFirst({
-            where: {
-              name: { contains: newReturn.company.name, mode: 'insensitive' }
-            }
-          });
-          branchSupplierId = branchSupplier?.id;
-        }
-
-        await tx.supplierPaymentReceipt.create({
-          data: {
-            supplierId: branchSupplierId, // قد يكون null للمردودات المحلية
-            saleReturnId: newReturn.id,
-            customerId: newReturn.customerId,
-            companyId: companyId,
-            amount: new Prisma.Decimal(branchCompanyReturnValue),
-            type: SupplierPaymentType.RETURN,
-            description: `مردود مبيعات (إمارات): ${newReturn.customer?.name || 'عميل'} - فاتورة #${newReturn.id}`,
-            status: PaymentReceiptStatus.PENDING,
-            currency: Currency.LYD,
-            exchangeRate: new Prisma.Decimal(1),
-            notes: newReturn.customer?.name || 'عميل'
-          }
-        });
-      }
 
       return newReturn;
     });
@@ -382,7 +362,8 @@ export class SaleReturnService {
           },
           customer: true,
           sale: true,
-          payments: true
+          payments: true,
+          company: true
         }
       });
 
@@ -450,6 +431,7 @@ export class SaleReturnService {
       await Promise.all(stockUpdates);
       */
 
+
       // 6. تحديث كشف حساب العميل (إضافة رصيد دائن للمردود)
       if (updatedReturn.customerId) {
         console.log(`[DEBUG] Creating CustomerAccount entry for Return #${updatedReturn.id}`);
@@ -457,9 +439,9 @@ export class SaleReturnService {
           const CustomerAccountService = (await import('./CustomerAccountService')).default;
           await CustomerAccountService.createAccountEntry({
             customerId: updatedReturn.customerId,
-            transactionType: 'CREDIT', // PrismaClient will handle string to enum mapping
+            transactionType: 'CREDIT',
             amount: Number(updatedReturn.total),
-            referenceType: 'RETURN',   // PrismaClient will handle string to enum mapping
+            referenceType: 'RETURN',
             referenceId: updatedReturn.id,
             description: `مردود مبيعات - فاتورة #${updatedReturn.sale.invoiceNumber || updatedReturn.sale.id}`,
             transactionDate: new Date()
@@ -467,8 +449,90 @@ export class SaleReturnService {
           console.log(`[DEBUG] Created Account Entry for Return #${updatedReturn.id}`);
         } catch (error) {
           console.error(`[ERROR] Failed to create Account Entry for Return #${updatedReturn.id}:`, error);
-          throw error; // Re-throw to fail the transaction
+          throw error;
         }
+      }
+
+
+      // إنشاء إيصالات مردودات للمحاسب (المنطق المالي)
+      // 1. جلب المنتجات لحساب القيم المنفصلة
+      const productIds = updatedReturn.lines.map(l => l.productId);
+      const products = await tx.product.findMany({
+        where: { id: { in: productIds } },
+        include: { createdByCompany: true }
+      });
+      const productsMap = new Map();
+      products.forEach(p => productsMap.set(p.id, p));
+
+      let parentCompanyReturnValue = 0;
+      let branchCompanyReturnValue = 0;
+
+      for (const line of updatedReturn.lines) {
+        const product = productsMap.get(line.productId);
+        if (product && product.createdByCompany.isParent) {
+          parentCompanyReturnValue += Number(line.subTotal);
+        } else {
+          branchCompanyReturnValue += Number(line.subTotal);
+        }
+      }
+
+      // 2. إنشاء الإيصالات
+      // أ. الشركة الأم
+      if (parentCompanyReturnValue > 0) {
+        const parentSupplier = await tx.supplier.findFirst({
+          where: {
+            OR: [
+              { name: { contains: 'تقازي', mode: 'insensitive' } },
+              { name: { contains: 'Taqazi', mode: 'insensitive' } },
+              { note: { contains: 'الشركة الأم', mode: 'insensitive' } }
+            ]
+          }
+        });
+
+        await tx.supplierPaymentReceipt.create({
+          data: {
+            supplierId: parentSupplier?.id,
+            saleReturnId: updatedReturn.id,
+            customerId: updatedReturn.customerId,
+            companyId: companyId,
+            amount: new Prisma.Decimal(parentCompanyReturnValue),
+            type: SupplierPaymentType.RETURN,
+            description: `مردود مبيعات (تقازي): ${updatedReturn.customer?.name || 'عميل'} - فاتورة #${updatedReturn.id}`,
+            status: PaymentReceiptStatus.PENDING,
+            currency: Currency.LYD,
+            exchangeRate: new Prisma.Decimal(1),
+            notes: updatedReturn.customer?.name || 'عميل'
+          }
+        });
+      }
+
+      // ب. الشركة الفرعية
+      if (branchCompanyReturnValue > 0) {
+        let branchSupplierId: number | undefined;
+        if (companyId !== updatedReturn.companyId) {
+          const branchSupplier = await tx.supplier.findFirst({
+            where: {
+              name: { contains: updatedReturn.company.name, mode: 'insensitive' }
+            }
+          });
+          branchSupplierId = branchSupplier?.id;
+        }
+
+        await tx.supplierPaymentReceipt.create({
+          data: {
+            supplierId: branchSupplierId,
+            saleReturnId: updatedReturn.id,
+            customerId: updatedReturn.customerId,
+            companyId: companyId,
+            amount: new Prisma.Decimal(branchCompanyReturnValue),
+            type: SupplierPaymentType.RETURN,
+            description: `مردود مبيعات (إمارات): ${updatedReturn.customer?.name || 'عميل'} - فاتورة #${updatedReturn.id}`,
+            status: PaymentReceiptStatus.PENDING,
+            currency: Currency.LYD,
+            exchangeRate: new Prisma.Decimal(1),
+            notes: updatedReturn.customer?.name || 'عميل'
+          }
+        });
       }
 
       return updatedReturn;
@@ -522,8 +586,26 @@ export class SaleReturnService {
       throw new Error('لا يمكن حذف مردود معتمد أو مرفوض');
     }
 
-    await prisma.saleReturn.delete({
-      where: { id }
+    await prisma.$transaction(async (tx) => {
+      // 1. حذف سطور المردود
+      await tx.saleReturnLine.deleteMany({
+        where: { saleReturnId: id }
+      });
+
+      // 2. حذف طلبات الاستلام المخزنية المرتبطة (إن وجدت)
+      await tx.returnOrder.deleteMany({
+        where: { saleReturnId: id }
+      });
+
+      // 3. حذف أي إيصالات مالية مرتبطة (إن وجدت - رغم أنها لا يجب أن تكون موجودة لمردود غير معتمد)
+      await tx.supplierPaymentReceipt.deleteMany({
+        where: { saleReturnId: id }
+      });
+
+      // 4. حذف المردود نفسه
+      await tx.saleReturn.delete({
+        where: { id }
+      });
     });
 
     return { success: true, message: 'تم حذف المردود بنجاح' };

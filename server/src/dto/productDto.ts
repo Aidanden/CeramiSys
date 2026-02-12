@@ -199,6 +199,13 @@ export interface ProductResponseDto {
     name: string;
     maxDiscountPercentage: number;
   };
+  externalStoreStock?: number; // إجمالي الكمية المعروضة في المحلات الخارجية
+  externalStoreDetails?: Array<{
+    storeId: number;
+    storeName: string;
+    quantity: number;
+    updatedAt: Date;
+  }>;
 }
 
 export interface ProductsResponseDto {

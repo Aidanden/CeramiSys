@@ -595,6 +595,34 @@ export class ReportsService {
       include: { damageReport: { select: { createdAt: true, reason: true } } }
     });
 
+    // جلب بضاعة العرض المحولة للمحلات (نقص من المستودع)
+    const storeCompanySetting = await this.prisma.globalSettings.findUnique({
+      where: { key: 'EXTERNAL_STORE_COMPANY_ID' }
+    });
+    const targetCompanyId = storeCompanySetting ? parseInt(storeCompanySetting.value) : 1;
+
+    let storeMovements: any[] = [];
+    if (companyId === targetCompanyId) {
+      const storeAssignments = await this.prisma.externalStoreProduct.findMany({
+        where: { productId },
+        include: {
+          store: {
+            include: {
+              customer: { select: { name: true } }
+            }
+          }
+        }
+      });
+
+      storeMovements = storeAssignments.map(a => ({
+        date: a.createdAt,
+        type: 'TRANSFER_OUT',
+        description: `نقل بضاعة عرض الي محل (${a.store.name})${a.store.customer ? ` - عميل: ${a.store.customer.name}` : ''}`,
+        qtyIn: 0,
+        qtyOut: Number(a.quantity || 1),
+      }));
+    }
+
     // 3. توحيد الحركات في قائمة واحدة
     const allMovements: any[] = [
       ...sales.map(s => {
@@ -637,7 +665,8 @@ export class ReportsService {
         description: `تالف: ${d.damageReport.reason || 'بدون وصف'}`,
         qtyIn: 0,
         qtyOut: Number(d.quantity),
-      }))
+      })),
+      ...storeMovements
     ];
 
     // ترتيب الحركات حسب التاريخ تصاعدياً

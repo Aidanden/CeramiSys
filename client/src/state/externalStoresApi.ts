@@ -24,6 +24,13 @@ export interface ExternalStore {
     showPrices: boolean;
     createdAt: string;
     updatedAt: string;
+    customerId?: number;
+    customer?: {
+        id: number;
+        name: string;
+        phone?: string;
+        address?: string;
+    };
     users?: ExternalStoreUser[];
     productAssignments?: ExternalStoreProductAssignment[];
     _count?: {
@@ -48,6 +55,7 @@ export interface CreateStoreRequest {
     phone2?: string;
     address?: string;
     googleMapsUrl?: string;
+    customerId?: number;
 }
 
 export type UpdateStoreRequest = Partial<CreateStoreRequest> & {

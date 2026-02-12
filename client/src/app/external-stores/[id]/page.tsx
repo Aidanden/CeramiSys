@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { useReactToPrint } from 'react-to-print';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowRight, Users, Package, FileText, Phone, MapPin, RefreshCw, AlertCircle, Plus, Edit, Search, X, Trash2, Settings } from 'lucide-react';
+import { ArrowRight, Users, Package, FileText, Phone, MapPin, RefreshCw, AlertCircle, Plus, Edit, Search, X, Trash2, Settings, UserPlus, CheckCircle, Printer } from 'lucide-react';
 import {
     useGetStoreByIdQuery,
     useUpdateStoreMutation,
@@ -13,6 +14,7 @@ import {
 } from '@/state/externalStoresApi';
 import { useGetProductsQuery } from '@/state/productsApi';
 import { useGetAllSettingsQuery } from '@/state/settingsApi';
+import { useGetCustomersQuery, useCreateCustomerMutation, Customer, CreateCustomerRequest } from '@/state/salesApi';
 import { useToast } from '@/components/ui/Toast';
 
 export default function ExternalStoreDetailsPage() {
@@ -40,7 +42,15 @@ export default function ExternalStoreDetailsPage() {
         googleMapsUrl: '',
         isActive: true,
         showPrices: true,
+        customerId: null as number | null,
     });
+
+    // Customer Selection State
+    const [customerSearchTerm, setCustomerSearchTerm] = useState('');
+    const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+    const [selectedCustomerName, setSelectedCustomerName] = useState('');
+    const [showCreateCustomerModal, setShowCreateCustomerModal] = useState(false);
+
     const [newUserForm, setNewUserForm] = useState({ username: '', password: '' });
     const [editingUserId, setEditingUserId] = useState<string | null>(null);
     const [userEditForm, setUserEditForm] = useState({ username: '', password: '', isActive: true });
@@ -51,13 +61,35 @@ export default function ExternalStoreDetailsPage() {
     const [skuSearch, setSkuSearch] = useState('');
     const [nameSearch, setNameSearch] = useState('');
 
+    const printComponentRef = useRef<HTMLDivElement>(null);
+    const handlePrintProductsInvoice = useReactToPrint({
+        content: () => printComponentRef.current,
+        documentTitle: `فاتورة_توزيع_${store?.name || 'محل'}`,
+    });
+
     const [updateStore, { isLoading: isUpdatingStore }] = useUpdateStoreMutation();
     const [createStoreUser, { isLoading: isCreatingUser }] = useCreateStoreUserMutation();
     const [updateStoreUser, { isLoading: isUpdatingUser }] = useUpdateStoreUserMutation();
     const [assignProducts, { isLoading: isAssigningProducts }] = useAssignProductsMutation();
 
+    // Debounced customer search term
+    const [debouncedCustomerSearchTerm, setDebouncedCustomerSearchTerm] = useState('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedCustomerSearchTerm(customerSearchTerm);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [customerSearchTerm]);
+
     // Get company ID from settings for product filtering
     const { data: allSettings } = useGetAllSettingsQuery();
+    const { data: customersData, isLoading: isLoadingCustomers } = useGetCustomersQuery({
+        limit: 100,
+        search: debouncedCustomerSearchTerm
+    });
+    const [createCustomer] = useCreateCustomerMutation();
+
     const externalStoreCompanyId = useMemo(() => {
         const setting = allSettings?.find(s => s.key === 'EXTERNAL_STORE_COMPANY_ID');
         return setting ? parseInt(setting.value) : 1;
@@ -73,6 +105,7 @@ export default function ExternalStoreDetailsPage() {
         { skip: !storeId }
     );
     const availableProducts = productsResponse?.data?.products ?? [];
+    const productAssignments = store?.productAssignments ?? [];
 
     useEffect(() => {
         if (store) {
@@ -85,7 +118,11 @@ export default function ExternalStoreDetailsPage() {
                 googleMapsUrl: store.googleMapsUrl || '',
                 isActive: !!store.isActive,
                 showPrices: store.showPrices !== undefined ? store.showPrices : true,
+                customerId: store.customerId || null,
             });
+            if (store.customer) {
+                setSelectedCustomerName(store.customer.name);
+            }
         }
     }, [store]);
 
@@ -129,6 +166,7 @@ export default function ExternalStoreDetailsPage() {
                     googleMapsUrl: storeForm.googleMapsUrl || undefined,
                     isActive: storeForm.isActive,
                     showPrices: storeForm.showPrices,
+                    customerId: storeForm.customerId || undefined,
                 },
             }).unwrap();
 
@@ -213,6 +251,28 @@ export default function ExternalStoreDetailsPage() {
         }
     };
 
+    const handleCreateNewCustomer = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        const customerData: CreateCustomerRequest = {
+            name: formData.get('custName') as string,
+            phone: (formData.get('custPhone') as string) || undefined,
+            note: (formData.get('custNote') as string) || undefined,
+        };
+
+        try {
+            const result = await createCustomer(customerData).unwrap();
+            if (result.data) {
+                setStoreForm(prev => ({ ...prev, customerId: result.data.id }));
+                setSelectedCustomerName(result.data.name);
+                setShowCreateCustomerModal(false);
+                toast.success('تم الإنشاء', 'تم إنشاء العميل وربطه بالمحل');
+            }
+        } catch (err: any) {
+            toast.error('فشل الإنشاء', err?.data?.message || 'حدث خطأ أثناء إنشاء العميل');
+        }
+    };
+
     const renderStatusBadge = () => (
         <span
             className={`px-4 py-1.5 rounded-full text-sm font-semibold shadow-sm transition-colors ${store?.isActive
@@ -277,7 +337,6 @@ export default function ExternalStoreDetailsPage() {
         }
 
         const users = store.users ?? [];
-        const productAssignments = store.productAssignments ?? [];
 
         return (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -426,6 +485,77 @@ export default function ExternalStoreDetailsPage() {
                                                 />
                                             </div>
                                         </div>
+                                        <div className="md:col-span-2 space-y-4 p-6 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/30">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-sm font-bold text-blue-800 dark:text-blue-300">العميل المرتبط</label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowCreateCustomerModal(true)}
+                                                    className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                                                >
+                                                    <UserPlus size={14} />
+                                                    عميل جديد
+                                                </button>
+                                            </div>
+
+                                            <div className="relative">
+                                                <div className="relative">
+                                                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                                                    <input
+                                                        type="text"
+                                                        value={selectedCustomerName || customerSearchTerm}
+                                                        placeholder="البحث عن عميل موجود للربط..."
+                                                        onChange={(e) => {
+                                                            setCustomerSearchTerm(e.target.value);
+                                                            setSelectedCustomerName('');
+                                                            setStoreForm(prev => ({ ...prev, customerId: null }));
+                                                            setShowCustomerSuggestions(true);
+                                                        }}
+                                                        onFocus={() => setShowCustomerSuggestions(true)}
+                                                        className="w-full pr-10 pl-4 py-3 rounded-xl border border-blue-200 dark:border-blue-900/30 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm"
+                                                    />
+                                                    {storeForm.customerId && (
+                                                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-500">
+                                                            <CheckCircle size={20} />
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {showCustomerSuggestions && customerSearchTerm && (
+                                                    <div className="absolute z-[60] mt-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-h-[250px] overflow-y-auto overflow-x-hidden">
+                                                        {isLoadingCustomers ? (
+                                                            <div className="p-4 text-center text-sm text-gray-500">جاري التحميل...</div>
+                                                        ) : (
+                                                            <>
+                                                                {customersData?.data?.customers
+                                                                    ?.map((customer: Customer) => (
+                                                                        <button
+                                                                            key={customer.id}
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setStoreForm(prev => ({ ...prev, customerId: customer.id }));
+                                                                                setSelectedCustomerName(customer.name);
+                                                                                setShowCustomerSuggestions(false);
+                                                                                setCustomerSearchTerm('');
+                                                                            }}
+                                                                            className="w-full text-right px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center justify-between border-b border-gray-100 dark:border-gray-700 last:border-0"
+                                                                        >
+                                                                            <div className="flex flex-col text-right">
+                                                                                <span className="font-bold text-gray-900 dark:text-gray-100 text-sm">{customer.name}</span>
+                                                                                <span className="text-xs text-gray-400">{customer.phone || 'بدون هاتف'}</span>
+                                                                            </div>
+                                                                            {storeForm.customerId === customer.id && <CheckCircle size={16} className="text-green-500" />}
+                                                                        </button>
+                                                                    ))}
+                                                                {customersData?.data?.customers?.length === 0 && (
+                                                                    <div className="p-4 text-center text-sm text-gray-500">لا توجد نتائج</div>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700">
@@ -484,7 +614,7 @@ export default function ExternalStoreDetailsPage() {
 
                         {/* Users Section */}
                         <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-                            <div className="px-8 py-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex justify-between items-center">
+                            <div className="px-6 md:px-8 py-5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex flex-wrap justify-between items-center gap-3">
                                 <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                     <Users className="text-blue-600" size={20} />
                                     إدارة المستخدمين
@@ -494,23 +624,23 @@ export default function ExternalStoreDetailsPage() {
                                 </span>
                             </div>
 
-                            <div className="p-8">
+                            <div className="p-5 md:p-8 space-y-6">
                                 {/* Add User Form */}
-                                <div className="mb-8 bg-gray-50 dark:bg-gray-900/50 p-6 rounded-2xl border border-gray-100 dark:border-gray-700">
+                                <div className="bg-gray-50 dark:bg-gray-900/50 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
                                     <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                                         <div className="p-1 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                                             <Plus size={14} className="text-blue-600 dark:text-blue-400" />
                                         </div>
                                         إضافة مستخدم جديد
                                     </h3>
-                                    <form onSubmit={handleCreateUser} className="flex flex-col md:flex-row gap-4">
+                                    <form onSubmit={handleCreateUser} className="space-y-3 md:space-y-0 md:flex md:items-center md:gap-3">
                                         <input
                                             type="text"
                                             placeholder="اسم المستخدم"
                                             value={newUserForm.username}
                                             onChange={(e) => setNewUserForm((prev) => ({ ...prev, username: e.target.value }))}
                                             required
-                                            className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                            className="w-full md:flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                         />
                                         <input
                                             type="password"
@@ -518,12 +648,12 @@ export default function ExternalStoreDetailsPage() {
                                             value={newUserForm.password}
                                             onChange={(e) => setNewUserForm((prev) => ({ ...prev, password: e.target.value }))}
                                             required
-                                            className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                            className="w-full md:flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                         />
                                         <button
                                             type="submit"
                                             disabled={isCreatingUser}
-                                            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 disabled:opacity-50 whitespace-nowrap"
+                                            className="w-full md:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 disabled:opacity-50 whitespace-nowrap"
                                         >
                                             {isCreatingUser ? 'جاري الإضافة...' : 'إضافة'}
                                         </button>
@@ -532,24 +662,24 @@ export default function ExternalStoreDetailsPage() {
 
                                 {/* Users List */}
                                 {users.length > 0 ? (
-                                    <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
-                                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                    <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+                                        <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
                                             <thead className="bg-gray-50 dark:bg-gray-900">
                                                 <tr>
-                                                    <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">المستخدم</th>
-                                                    <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">الحالة</th>
-                                                    <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">آخر ظهور</th>
-                                                    <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">تاريخ التسجيل</th>
-                                                    <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">تحكم</th>
+                                                    <th className="px-4 md:px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">المستخدم</th>
+                                                    <th className="px-4 md:px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">الحالة</th>
+                                                    <th className="px-4 md:px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">آخر ظهور</th>
+                                                    <th className="px-4 md:px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">تاريخ التسجيل</th>
+                                                    <th className="px-4 md:px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">تحكم</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                                 {users.map((user) => (
                                                     <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                                        <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-white">
+                                                        <td className="px-4 md:px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-white text-sm">
                                                             {user.username}
                                                         </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                        <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.isActive
                                                                 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
                                                                 : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
@@ -557,17 +687,18 @@ export default function ExternalStoreDetailsPage() {
                                                                 {user.isActive ? 'نشط' : 'محظور'}
                                                             </span>
                                                         </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                        <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                             {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('ar-LY') : '-'}
                                                         </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                        <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                             {new Date(user.createdAt).toLocaleDateString('ar-LY')}
                                                         </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                        <td className="px-4 md:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                             <button
                                                                 onClick={() => handleStartEditingUser(user)}
-                                                                className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-blue-600 hover:text-white hover:bg-blue-600 dark:text-blue-400 dark:hover:text-white dark:hover:bg-blue-600 border border-blue-200 dark:border-blue-700 rounded-lg transition-all text-xs font-bold"
                                                             >
+                                                                <Edit size={13} />
                                                                 تعديل
                                                             </button>
                                                         </td>
@@ -585,25 +716,25 @@ export default function ExternalStoreDetailsPage() {
 
                                 {/* Edit User Modal/Area */}
                                 {editingUserId && (
-                                    <div className="mt-6 animate-in fade-in slide-in-from-top-2">
-                                        <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-2xl border border-blue-100 dark:border-blue-800">
+                                    <div className="animate-in fade-in slide-in-from-top-2">
+                                        <div className="bg-blue-50 dark:bg-blue-900/20 p-5 md:p-6 rounded-2xl border border-blue-100 dark:border-blue-800">
                                             <div className="flex items-center justify-between mb-4">
-                                                <h3 className="font-bold text-blue-900 dark:text-blue-100">تعديل بيانات المستخدم</h3>
-                                                <button onClick={handleCancelEditUser} className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400">إلغاء</button>
+                                                <h3 className="font-bold text-blue-900 dark:text-blue-100 text-sm">تعديل بيانات المستخدم</h3>
+                                                <button onClick={handleCancelEditUser} className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 font-medium">إلغاء</button>
                                             </div>
-                                            <form onSubmit={handleUpdateUser} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <form onSubmit={handleUpdateUser} className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-4">
                                                 <input
                                                     type="text"
                                                     value={userEditForm.username}
                                                     onChange={(e) => setUserEditForm((prev) => ({ ...prev, username: e.target.value }))}
-                                                    className="px-4 py-2 border border-blue-200 dark:border-blue-700 rounded-lg bg-white dark:bg-gray-800"
+                                                    className="w-full px-4 py-2.5 border border-blue-200 dark:border-blue-700 rounded-xl bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                     placeholder="اسم المستخدم"
                                                 />
                                                 <input
                                                     type="password"
                                                     value={userEditForm.password}
                                                     onChange={(e) => setUserEditForm((prev) => ({ ...prev, password: e.target.value }))}
-                                                    className="px-4 py-2 border border-blue-200 dark:border-blue-700 rounded-lg bg-white dark:bg-gray-800"
+                                                    className="w-full px-4 py-2.5 border border-blue-200 dark:border-blue-700 rounded-xl bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                     placeholder="كلمة المرور الجديدة (اختياري)"
                                                 />
                                                 <div className="flex items-center gap-4">
@@ -617,8 +748,8 @@ export default function ExternalStoreDetailsPage() {
                                                         <span className="text-sm text-gray-700 dark:text-gray-300">حساب نشط</span>
                                                     </label>
                                                 </div>
-                                                <button type="submit" className="bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                                                    حفظ التعديلات
+                                                <button type="submit" disabled={isUpdatingUser} className="w-full bg-blue-600 text-white py-2.5 rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50">
+                                                    {isUpdatingUser ? 'جاري الحفظ...' : 'حفظ التعديلات'}
                                                 </button>
                                             </form>
                                         </div>
@@ -684,10 +815,22 @@ export default function ExternalStoreDetailsPage() {
                         {/* Products Assignment Card */}
                         <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col h-[600px]">
                             <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
-                                <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                    <Package className="text-blue-600" size={20} />
-                                    المنتجات المتاحة
-                                </h2>
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <Package className="text-blue-600" size={20} />
+                                        المنتجات المتاحة
+                                    </h2>
+                                    {productAssignments.length > 0 && (
+                                        <button
+                                            onClick={() => handlePrintProductsInvoice()}
+                                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors text-xs font-bold"
+                                            title="طباعة كشف الاستلام (الكمية 1 لكل صنف)"
+                                        >
+                                            <Printer size={16} />
+                                            طباعة الفاتورة
+                                        </button>
+                                    )}
+                                </div>
                                 <div className="flex gap-2 mt-4">
                                     <button
                                         onClick={() => setActiveProductTab('list')}
@@ -716,13 +859,21 @@ export default function ExternalStoreDetailsPage() {
                                         <div className="space-y-2">
                                             {productAssignments.map((assignment) => (
                                                 <div key={assignment.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-800">
-                                                    <div>
-                                                        <p className="font-bold text-gray-900 dark:text-white text-sm">{assignment.product?.name}</p>
-                                                        <p className="text-xs text-gray-500 font-mono mt-1">{assignment.product?.sku}</p>
+                                                    <div className="flex items-center gap-4 flex-1">
+                                                        <div className="w-10 h-10 bg-white dark:bg-gray-800 rounded-lg flex items-center justify-center border border-gray-100 dark:border-gray-700 text-blue-600 font-bold shrink-0">
+                                                            {Math.max(0, Number(assignment.quantity || 1))}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="font-bold text-gray-900 dark:text-white text-sm">{assignment.product?.name}</p>
+                                                            <p className="text-xs text-gray-500 font-mono mt-0.5">{assignment.product?.sku}</p>
+                                                        </div>
                                                     </div>
-                                                    <span className="text-xs bg-white dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400">
-                                                        {assignment.product?.unit}
-                                                    </span>
+                                                    <div className="text-left shrink-0">
+                                                        <span className="text-[10px] font-bold text-gray-400 uppercase block mb-1">الوحدة</span>
+                                                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                                                            {assignment.product?.unit}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
@@ -824,6 +975,40 @@ export default function ExternalStoreDetailsPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Create Customer Modal */}
+                {showCreateCustomerModal && (
+                    <div className="fixed inset-0 bg-gray-900/90 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-2xl max-w-md w-full border border-gray-100 dark:border-gray-700 overflow-hidden">
+                            <div className="p-10 text-right" dir="rtl">
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-8 flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-2xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600">
+                                        <UserPlus size={24} />
+                                    </div>
+                                    إضافة عميل جديد للربط
+                                </h3>
+                                <form onSubmit={handleCreateNewCustomer} className="space-y-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300 px-1">اسم العميل *</label>
+                                        <input name="custName" required className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 outline-none transition-all" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300 px-1">رقم الهاتف</label>
+                                        <input name="custPhone" type="tel" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 outline-none transition-all" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300 px-1">ملاحظات</label>
+                                        <textarea name="custNote" rows={2} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 outline-none transition-all" />
+                                    </div>
+                                    <div className="flex gap-4 pt-4">
+                                        <button type="submit" className="flex-1 px-6 py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl transition-all font-bold shadow-lg shadow-green-500/25">حفظ واختيار</button>
+                                        <button type="button" onClick={() => setShowCreateCustomerModal(false)} className="px-6 py-4 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-2xl transition-all font-bold">إلغاء</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     };
@@ -844,6 +1029,78 @@ export default function ExternalStoreDetailsPage() {
                 </div>
 
                 {renderContent()}
+
+                {/* Hidden Printable Component */}
+                <div style={{ display: 'none' }}>
+                    <div ref={printComponentRef} dir="rtl" className="p-8 font-sans bg-white text-black">
+                        {/* Header */}
+                        <div className="flex justify-between items-start border-b-2 border-gray-100 pb-6 mb-8">
+                            <div>
+                                <h1 className="text-2xl font-black text-gray-900 mb-1">فاتورة تسليم بضاعة</h1>
+                                <p className="text-gray-500 font-medium">المحل: <span className="text-black">{store?.name}</span></p>
+                                <p className="text-gray-500 text-sm mt-1">التاريخ: {new Date().toLocaleDateString('ar-LY')}</p>
+                            </div>
+                            <div className="text-left font-black text-blue-600 text-3xl">
+                                CeramiSys
+                            </div>
+                        </div>
+
+                        {/* Customer Info */}
+                        <div className="grid grid-cols-2 gap-8 mb-8">
+                            <div className="bg-gray-50 p-4 rounded-2xl">
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">معلومات المحل</h3>
+                                <p className="font-bold text-gray-900">{store?.name}</p>
+                                <p className="text-sm text-gray-600">{store?.address || 'لا يوجد عنوان'}</p>
+                                <p className="text-sm text-gray-600 font-mono">{store?.phone1}</p>
+                            </div>
+                            <div className="bg-gray-50 p-4 rounded-2xl">
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">رقم الفاتورة</h3>
+                                <p className="font-bold text-gray-900">#ES-{storeId}-{Date.now().toString().slice(-6)}</p>
+                                <p className="text-sm text-gray-600 mt-1">نوع العملية: نقل مخزون (محل خارجي)</p>
+                            </div>
+                        </div>
+
+                        {/* Table */}
+                        <table className="w-full text-right border-collapse mb-10">
+                            <thead>
+                                <tr className="bg-gray-900 text-white">
+                                    <th className="px-4 py-3 text-sm font-bold rounded-r-xl">ت</th>
+                                    <th className="px-4 py-3 text-sm font-bold">كود الصنف</th>
+                                    <th className="px-4 py-3 text-sm font-bold">اسم الصنف</th>
+                                    <th className="px-4 py-3 text-sm font-bold text-center">الكمية</th>
+                                    <th className="px-4 py-3 text-sm font-bold rounded-l-xl">الوحدة</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {productAssignments.map((assignment, index) => (
+                                    <tr key={index} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
+                                        <td className="px-4 py-3 text-sm font-mono font-bold text-gray-900">{assignment.product?.sku}</td>
+                                        <td className="px-4 py-3 text-sm font-bold text-gray-900">{assignment.product?.name}</td>
+                                        <td className="px-4 py-3 text-sm font-black text-center text-blue-600">1</td>
+                                        <td className="px-4 py-3 text-sm text-gray-500">{assignment.product?.unit}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+
+                        {/* Footer */}
+                        <div className="grid grid-cols-2 gap-12 pt-10 mt-10 border-t border-gray-100">
+                            <div className="text-center">
+                                <p className="text-xs font-bold text-gray-400 uppercase mb-8">توقيع المستلم</p>
+                                <div className="border-b-2 border-gray-200 mx-10"></div>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-xs font-bold text-gray-400 uppercase mb-8">توقيع المخازن</p>
+                                <div className="border-b-2 border-gray-200 mx-10"></div>
+                            </div>
+                        </div>
+
+                        <div className="mt-20 text-center text-[10px] text-gray-400 border-t border-gray-50 pt-4">
+                            طُبع بواسطة نظام CeramiSys لإدارة السيراميك والمواد الصحية
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

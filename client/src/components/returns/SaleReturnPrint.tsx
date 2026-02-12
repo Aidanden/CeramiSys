@@ -13,15 +13,15 @@ interface SaleReturnPrintProps {
   companyCode: string;
 }
 
-export const SaleReturnPrint: React.FC<SaleReturnPrintProps> = ({ 
-  saleReturn, 
-  companyName, 
-  companyCode 
+export const SaleReturnPrint: React.FC<SaleReturnPrintProps> = ({
+  saleReturn,
+  companyName,
+  companyCode
 }) => {
   return (
-    <div className="print-return" style={{ 
-      width: '210mm', 
-      minHeight: '297mm', 
+    <div className="print-return" style={{
+      width: '210mm',
+      minHeight: '297mm',
       padding: '20mm',
       backgroundColor: 'white',
       fontFamily: 'Arial, sans-serif',
@@ -42,9 +42,9 @@ export const SaleReturnPrint: React.FC<SaleReturnPrintProps> = ({
       </div>
 
       {/* معلومات المردود */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: '1fr 1fr', 
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
         gap: '20px',
         marginBottom: '30px',
         padding: '15px',
@@ -81,7 +81,7 @@ export const SaleReturnPrint: React.FC<SaleReturnPrintProps> = ({
           <p style={{ margin: '5px 0', fontSize: '14px' }}>
             <strong>الحالة:</strong> {
               saleReturn.status === 'PENDING' ? 'قيد الانتظار' :
-              saleReturn.status === 'APPROVED' ? 'معتمد' : 'مرفوض'
+                saleReturn.status === 'APPROVED' ? 'معتمد' : 'مرفوض'
             }
           </p>
           {saleReturn.reason && (
@@ -93,8 +93,8 @@ export const SaleReturnPrint: React.FC<SaleReturnPrintProps> = ({
       </div>
 
       {/* جدول الأصناف المردودة */}
-      <table style={{ 
-        width: '100%', 
+      <table style={{
+        width: '100%',
         borderCollapse: 'collapse',
         marginBottom: '30px',
         fontSize: '13px'
@@ -103,10 +103,10 @@ export const SaleReturnPrint: React.FC<SaleReturnPrintProps> = ({
           <tr style={{ backgroundColor: '#dc2626', color: 'white' }}>
             <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>م</th>
             <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'right' }}>الصنف</th>
-            <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>الكود</th>
-            <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>الكمية</th>
             <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>الوحدة</th>
-            <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>السعر</th>
+            <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>سعر الوحدة</th>
+            <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>الكمية</th>
+            <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>إجمالي العبوة</th>
             <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>الإجمالي</th>
           </tr>
         </thead>
@@ -122,24 +122,29 @@ export const SaleReturnPrint: React.FC<SaleReturnPrintProps> = ({
                   {formatArabicNumber(index + 1)}
                 </td>
                 <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'right' }}>
-                  {line.product?.name || 'غير معروف'}
+                  <div style={{ fontWeight: 'bold' }}>{line.product?.name || 'غير معروف'}</div>
+                  <div style={{ fontSize: '12px', color: '#666' }}>{line.product?.sku || '-'}</div>
                 </td>
                 <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>
-                  {line.product?.sku || '-'}
-                </td>
-                <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>
-                  {formatArabicNumber(line.qty)}
-                  {isBox && totalUnits > 0 && (
-                    <div style={{ fontSize: '11px', color: '#666', marginTop: '3px' }}>
-                      ({formatArabicNumber(totalUnits)} م²)
+                  {line.product?.unit || 'وحدة'}
+                  {isBox && unitsPerBox > 0 && (
+                    <div style={{ fontSize: '11px', color: '#2563eb', direction: 'ltr' }}>
+                      {unitsPerBox} m²/box
                     </div>
                   )}
                 </td>
                 <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>
-                  {line.product?.unit || 'وحدة'}
+                  {formatArabicCurrency(line.unitPrice)}
                 </td>
                 <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>
-                  {formatArabicCurrency(line.unitPrice)}
+                  {formatArabicNumber(line.qty)}
+                </td>
+                <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center', color: '#dc2626' }}>
+                  {isBox && totalUnits > 0 ? (
+                    <span dir="ltr" style={{ fontWeight: 'bold' }}>
+                      {formatArabicNumber(totalUnits)} m²
+                    </span>
+                  ) : '-'}
                 </td>
                 <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center', fontWeight: 'bold' }}>
                   {formatArabicCurrency(line.subTotal)}
@@ -161,7 +166,7 @@ export const SaleReturnPrint: React.FC<SaleReturnPrintProps> = ({
       </table>
 
       {/* معلومات الدفع */}
-      <div style={{ 
+      <div style={{
         marginBottom: '30px',
         padding: '15px',
         backgroundColor: '#dbeafe',
@@ -201,9 +206,9 @@ export const SaleReturnPrint: React.FC<SaleReturnPrintProps> = ({
       )}
 
       {/* التوقيعات */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: '1fr 1fr 1fr', 
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr 1fr',
         gap: '30px',
         marginTop: '60px',
         paddingTop: '20px',
