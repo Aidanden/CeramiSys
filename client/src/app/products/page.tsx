@@ -22,6 +22,7 @@ import {
   useDeleteProductMutation,
   useUpdateStockMutation,
   useUpdatePriceMutation,
+  useUpdateCostMutation,
   Product,
   CreateProductRequest,
   UpdateProductRequest
@@ -59,6 +60,7 @@ const ProductsPage = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
+  const [isCostModalOpen, setIsCostModalOpen] = useState(false);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -123,6 +125,7 @@ const ProductsPage = () => {
   const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation();
   const [updateStock] = useUpdateStockMutation();
   const [updatePrice] = useUpdatePriceMutation();
+  const [updateCost] = useUpdateCostMutation();
 
   // بيانات الأصناف
   const pagination = productsData?.data?.pagination;
@@ -296,6 +299,23 @@ const ProductsPage = () => {
       // RTK Query invalidatesTags سيحدث البيانات تلقائياً
     } catch (error: any) {
       notifications.products.priceUpdateError(error?.data?.message);
+    }
+  };
+
+  // معالجة تحديث التكلفة
+  const handleUpdateCost = async (cost: number) => {
+    if (!selectedProduct) return;
+
+    try {
+      await updateCost({
+        productId: selectedProduct.id,
+        cost
+      }).unwrap();
+      notifications.custom.success('تم تحديث التكلفة', `تم تحديث تكلفة الصنف ${selectedProduct.name} بنجاح`);
+      setIsCostModalOpen(false);
+      setSelectedProduct(null);
+    } catch (error: any) {
+      notifications.custom.error('خطأ', error?.data?.message || 'فشل تحديث التكلفة');
     }
   };
 
@@ -1335,6 +1355,18 @@ const ProductsPage = () => {
                           <DollarSign className="w-4 h-4" />
                         </button>
                         <button
+                          onClick={() => {
+                            setSelectedProduct(product);
+                            setIsCostModalOpen(true);
+                          }}
+                          className="text-orange-600 hover:text-orange-900 p-1.5 rounded-md hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors hidden sm:block"
+                          title="تعديل التكلفة"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </button>
+                        <button
                           onClick={() => handleGenerateQR(product)}
                           className="text-indigo-600 hover:text-indigo-900 p-1.5 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors hidden md:block"
                           title="عرض QR Code"
@@ -2118,6 +2150,86 @@ const ProductsPage = () => {
                   className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
                 >
                   تحديث السعر
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Cost Management Modal */}
+      {isCostModalOpen && selectedProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">تعديل سعر التكلفة</h3>
+              <button
+                onClick={() => {
+                  setIsCostModalOpen(false);
+                  setSelectedProduct(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <div className="bg-gray-50 p-3 rounded-md">
+                <p className="font-medium text-gray-900">{selectedProduct.name}</p>
+                <p className="text-sm text-gray-600">رمز الصنف: {selectedProduct.sku}</p>
+                <div className="text-sm text-gray-600 space-y-1">
+                  <div className="flex justify-between">
+                    <span>التكلفة الحالية:</span>
+                    <span className="font-medium">{formatArabicCurrency(selectedProduct.cost || 0)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const cost = Number(formData.get('cost'));
+              handleUpdateCost(cost);
+            }}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    التكلفة الجديدة *
+                  </label>
+                  <input
+                    type="number"
+                    name="cost"
+                    required
+                    min="0"
+                    step="0.01"
+                    defaultValue={selectedProduct.cost || 0}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="أدخل التكلفة الجديدة"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    هذا السعر هو سعر التكلفة الأساسي للصنف
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCostModalOpen(false);
+                    setSelectedProduct(null);
+                  }}
+                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
+                >
+                  تحديث التكلفة
                 </button>
               </div>
             </form>

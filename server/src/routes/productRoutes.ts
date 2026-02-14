@@ -102,6 +102,14 @@ router.put('/stock/update', (req, res) => productController.updateStock(req, res
 router.put('/price/update', (req, res) => productController.updatePrice(req, res));
 
 /**
+ * @route PUT /api/products/cost/update
+ * @desc تحديث التكلفة
+ * @access Private
+ * @body productId, cost
+ */
+router.put('/cost/update', (req, res) => productController.updateCost(req, res));
+
+/**
  * @route PUT /api/products/groups/bulk-update
  * @desc تحديث مجموعة الأصناف لمجموعة من المنتجات
  * @access Private

@@ -92,6 +92,11 @@ export interface UpdatePriceRequest {
   sellPrice: number;
 }
 
+export interface UpdateCostRequest {
+  productId: number;
+  cost: number;
+}
+
 // تعريف أنواع الاستجابة
 export interface ProductsResponse {
   success: boolean;
@@ -275,6 +280,26 @@ export const productsApi = createApi({
       },
     }),
 
+    // تحديث التكلفة
+    updateCost: builder.mutation<{ success: boolean; message: string }, UpdateCostRequest>({
+      query: (costData) => ({
+        url: "/products/cost/update",
+        method: "PUT",
+        body: costData,
+      }),
+      invalidatesTags: (result, error, { productId }) => [
+        { type: 'Product', id: productId },
+        { type: 'Products', id: 'LIST' },
+        'ProductStats'
+      ],
+      async onQueryStarted({ productId, cost }, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(productsApi.util.invalidateTags([{ type: 'Products', id: 'LIST' }]));
+        } catch { }
+      },
+    }),
+
     // الحصول على إحصائيات الأصناف
     getProductStats: builder.query<ProductStatsResponse, void>({
       query: () => "/products/stats",
@@ -352,6 +377,7 @@ export const {
   useDeleteProductMutation,
   useUpdateStockMutation,
   useUpdatePriceMutation,
+  useUpdateCostMutation,
   useGetProductStatsQuery,
   useGetTopSellingProductsQuery,
   useGetLowStockProductsQuery,

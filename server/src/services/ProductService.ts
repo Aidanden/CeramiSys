@@ -14,7 +14,8 @@ import {
   UpdatePriceDto,
   ProductResponseDto,
   ProductsResponseDto,
-  ProductStatsResponseDto
+  ProductStatsResponseDto,
+  UpdateCostDto
 } from '../dto/productDto';
 
 export class ProductService {
@@ -718,6 +719,31 @@ export class ProductService {
     await this.prisma.companyProductPrice.update({
       where: { id: existingPrice.id },
       data: { sellPrice: data.sellPrice }
+    });
+  }
+
+  /**
+   * تحديث سعر التكلفة
+   */
+  async updateCost(data: UpdateCostDto, userCompanyId: number, isSystemUser?: boolean): Promise<void> {
+    // التحقق من وجود الصنف
+    const product = await this.prisma.product.findUnique({
+      where: { id: data.productId }
+    });
+
+    if (!product) {
+      throw new Error('الصنف غير موجود');
+    }
+
+    // التحقق من الصلاحية (فقط الشركة المنشئة أو مستخدمو النظام يمكنهم التعديل)
+    if (!isSystemUser && product.createdByCompanyId !== userCompanyId) {
+      throw new Error('ليس لديك صلاحية لتعديل تكلفة هذا الصنف');
+    }
+
+    // تحديث التكلفة
+    await this.prisma.product.update({
+      where: { id: data.productId },
+      data: { cost: data.cost }
     });
   }
 

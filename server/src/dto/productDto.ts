@@ -160,6 +160,19 @@ export class UpdatePriceDto {
   sellPrice!: number;
 }
 
+// DTO لتحديث سعر التكلفة
+export class UpdateCostDto {
+  @IsNumber({}, { message: 'معرف الصنف يجب أن يكون رقم' })
+  @IsInt({ message: 'معرف الصنف يجب أن يكون رقم صحيح' })
+  @Min(1, { message: 'معرف الصنف يجب أن يكون أكبر من صفر' })
+  productId!: number;
+
+  @Transform(({ value }) => parseFloat(value))
+  @IsNumber({ maxDecimalPlaces: 4 }, { message: 'سعر التكلفة يجب أن يكون رقم صالح' })
+  @Min(0, { message: 'سعر التكلفة يجب أن يكون أكبر من أو يساوي صفر' })
+  cost!: number;
+}
+
 // Response DTOs
 export interface ProductResponseDto {
   id: number;
@@ -167,6 +180,7 @@ export interface ProductResponseDto {
   name: string;
   unit?: string;
   unitsPerBox?: number; // عدد الوحدات في الصندوق
+  cost?: number; // سعر التكلفة
   qrCode?: string; // QR Code كـ Data URL
   createdByCompanyId: number;
   createdByCompany: {

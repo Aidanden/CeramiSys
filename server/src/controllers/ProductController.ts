@@ -29,22 +29,11 @@ export class ProductController {
         strict: req.query.strict === 'true',
       };
 
-      // Debug logging
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('ProductController Debug:', {
-          path: req.path,
-          user: (req as any).user ? 'exists' : 'null',
-          userCompanyId: (req as any).user?.companyId || 'null',
-          query: query
-        });
-      }
-
       const userCompanyId = (req as any).user?.companyId;
       const isSystemUser = (req as any).user?.isSystemUser;
       const userPermissions = (req as any).user?.permissions || [];
 
       if (!userCompanyId) {
-        console.log('ProductController Error: userCompanyId is null or undefined');
         res.status(401).json({
           success: false,
           message: 'غير مصرح لك بالوصول',
@@ -159,16 +148,6 @@ export class ProductController {
         initialBoxes: initialBoxes ? parseFloat(initialBoxes) : undefined,
         groupId: req.body.groupId,
       };
-
-      // Debug logging for initialBoxes
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('ProductController - Create Product Debug:', {
-          receivedInitialBoxes: initialBoxes,
-          typeOfInitialBoxes: typeof initialBoxes,
-          parsedInitialBoxes: initialBoxes ? parseFloat(initialBoxes) : undefined,
-          finalProductData: productData
-        });
-      }
 
       const product = await this.productService.createProduct(productData);
 
@@ -470,6 +449,52 @@ export class ProductController {
       });
     } catch (error: any) {
       console.error('خطأ في تحديث السعر:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'خطأ في الخادم الداخلي',
+      });
+    }
+  }
+
+  /**
+   * تحديث التكلفة
+   */
+  async updateCost(req: Request, res: Response): Promise<void> {
+    try {
+      const { productId, cost } = req.body;
+
+      if (!productId || cost === undefined) {
+        res.status(400).json({
+          success: false,
+          message: 'معرف الصنف والتكلفة مطلوبة',
+        });
+        return;
+      }
+
+      const userCompanyId = (req as any).user?.companyId;
+      const isSystemUser = (req as any).user?.isSystemUser;
+
+      if (!userCompanyId) {
+        res.status(401).json({
+          success: false,
+          message: 'غير مصرح لك بالوصول',
+        });
+        return;
+      }
+
+      const costData = {
+        productId: parseInt(productId),
+        cost: parseFloat(cost),
+      };
+
+      await this.productService.updateCost(costData, userCompanyId, isSystemUser);
+
+      res.status(200).json({
+        success: true,
+        message: 'تم تحديث التكلفة بنجاح',
+      });
+    } catch (error: any) {
+      console.error('خطأ في تحديث التكلفة:', error);
       res.status(500).json({
         success: false,
         message: error.message || 'خطأ في الخادم الداخلي',
