@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   useGetSalesQuery,
   useCreateSaleMutation,
@@ -786,7 +786,7 @@ const SalesPage = () => {
         branchUnitPrice,
         subTotal: line.qty * branchUnitPrice - (line.discountAmount || 0),
         isFromParentCompany: line.isFromParentCompany || false,
-        profitMargin: line.isFromParentCompany ? profitMargin : 0,
+        profitMargin: line.isFromParentCompany ? (line.profitMargin ?? profitMargin) : 0,
         discountPercentage: line.discountPercentage,
         discountAmount: line.discountAmount
       };
@@ -1079,7 +1079,7 @@ const SalesPage = () => {
     setEditLines(prev => prev.filter((_, i) => i !== index));
   };
 
-  const updateEditLine = (index: number, field: string, value: any) => {
+  const updateEditLine = useCallback((index: number, field: string, value: any) => {
     setEditLines(prev => prev.map((line, i) => {
       if (i !== index) return line;
 
@@ -1124,7 +1124,7 @@ const SalesPage = () => {
 
       return newLine;
     }));
-  };
+  }, [productsData]);
 
   // دالة لتحديث السعر من السعر/متر
   const updatePriceFromUnitPrice = (index: number, pricePerUnit: number) => {
@@ -1169,14 +1169,14 @@ const SalesPage = () => {
   };
 
   // Update sale line
-  const updateSaleLine = (index: number, field: string, value: any) => {
+  const updateSaleLine = useCallback((index: number, field: string, value: any) => {
     setSaleForm(prev => ({
       ...prev,
       lines: prev.lines.map((line, i) =>
         i === index ? { ...line, [field]: value } : line
       )
     }));
-  };
+  }, []);
 
   // Debug: عرض عدد الأصناف المتاحة
   console.log('🔍 Products Debug:', {

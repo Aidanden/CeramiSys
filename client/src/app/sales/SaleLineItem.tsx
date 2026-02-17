@@ -275,6 +275,8 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
                 const newPrice = Number(e.target.value);
                 setIsManualPrice(true); // تعليم السعر كسعر يدوي
                 updateSaleLine(index, 'unitPrice', newPrice);
+                // تحديث سعر الفرع أيضاً لضمان استخدام السعر اليدوي في الفواتير المعقدة
+                updateSaleLine(index, 'branchUnitPrice', newPrice);
 
                 // عكس حساب هامش الربح إذا كان الصنف من الشركة الأم
                 if (line.isFromParentCompany) {
