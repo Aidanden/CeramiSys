@@ -852,7 +852,14 @@ const SaleReturnsPage = () => {
                                 )}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-text-primary">
-                                {formatArabicCurrency(line.unitPrice)}
+                                {(() => {
+                                  // السعر في قاعدة البيانات هو سعر الصندوق
+                                  // لغرض العرض، نظهر سعر المتر (بقسمة سعر الصندوق على عدد الأمتار)
+                                  const unitsPerBox = Number(extras.unitsPerBox || 0);
+                                  const displayPrice = (isBox && unitsPerBox > 0) ? (line.unitPrice / unitsPerBox) : line.unitPrice;
+                                  return formatArabicCurrency(displayPrice);
+                                })()}
+                                {isBox && <div className="text-[10px] text-text-tertiary">/م²</div>}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center">
                                 <input
@@ -877,9 +884,8 @@ const SaleReturnsPage = () => {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-primary-600">
                                 {(() => {
-                                  const amount = isBox
-                                    ? (line.qty * line.unitPrice * extras.unitsPerBox)
-                                    : (line.qty * line.unitPrice);
+                                  // المجموع = الكمية × سعر الصندوق (السعر المخزن هو دائماً سعر الوحدة المُباعة)
+                                  const amount = line.qty * line.unitPrice;
                                   return formatArabicCurrency(amount);
                                 })()}
                               </td>
@@ -934,12 +940,8 @@ const SaleReturnsPage = () => {
                         <span className="text-lg font-semibold text-text-primary">المبلغ الإجمالي للمردود:</span>
                         <span className="text-2xl font-bold text-primary-600">
                           {formatArabicCurrency(
-                            returnForm.lines.reduce((sum: number, line: any, index: number) => {
-                              const extras = (window as any).returnFormExtras?.[index] || {};
-                              const isBox = extras.unit === 'صندوق' && extras.unitsPerBox;
-                              const lineTotal = isBox
-                                ? (line.qty * line.unitPrice * extras.unitsPerBox)
-                                : (line.qty * line.unitPrice);
+                            returnForm.lines.reduce((sum: number, line: any) => {
+                              const lineTotal = line.qty * line.unitPrice;
                               return sum + lineTotal;
                             }, 0)
                           )}

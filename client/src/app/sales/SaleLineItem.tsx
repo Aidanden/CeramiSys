@@ -32,6 +32,9 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
   const [localDiscountAmount, setLocalDiscountAmount] = React.useState(Math.max(0, Number(line.discountAmount || 0)));
   const [isDiscountEnabled, setIsDiscountEnabled] = React.useState(line.discountPercentage > 0 || line.discountAmount > 0);
   const [profitMargin, setProfitMargin] = React.useState(getProfitMargin());
+  const [isManualPrice, setIsManualPrice] = React.useState(false);
+  const prevProductIdRef = useRef(line.productId);
+  const prevIsFromParentRef = useRef(line.isFromParentCompany);
 
   React.useEffect(() => {
     const savedMargin = localStorage.getItem('profitMargin');
@@ -71,9 +74,23 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
     return () => clearTimeout(timer);
   }, [localQty, index, updateSaleLine]);
 
+  // إعادة تعيين علامة السعر اليدوي عند تغيير الصنف أو نوع الشركة
+  useEffect(() => {
+    const productChanged = line.productId !== prevProductIdRef.current;
+    const companyChanged = line.isFromParentCompany !== prevIsFromParentRef.current;
+    if (productChanged || companyChanged) {
+      prevProductIdRef.current = line.productId;
+      prevIsFromParentRef.current = line.isFromParentCompany;
+      setIsManualPrice(false);
+    }
+  }, [line.productId, line.isFromParentCompany]);
+
   // تحديث السعر تلقائياً عند تغيير نوع الشركة أو الصنف أو هامش الربح الخاص بالبند
   useEffect(() => {
     if (!line.productId) return;
+    // إذا قام المستخدم بتغيير السعر يدوياً، لا نعيد تعيينه
+    if (isManualPrice) return;
+
     const p = productsData?.data?.products?.find((item: any) => item.id === line.productId);
     if (!p) return;
 
@@ -90,7 +107,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
     // متى نقوم بالتحديث التلقائي للسعر والهامش؟
     // فقط إذا كان صنفاً جديداً (ليس له id) أو إذا قام المستخدم بتغيير الصنف يدوياً
     const isNewItem = !line.id;
-    const productChanged = line.productId !== p.id;
+    const productChanged = line.productId !== prevProductIdRef.current;
 
     if (isNewItem || productChanged) {
       updateSaleLine(index, 'unitPrice', calculatedPrice);
@@ -107,7 +124,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
         updateSaleLine(index, 'parentUnitPrice', basePrice);
       }
     }
-  }, [line.productId, line.isFromParentCompany, line.profitMargin, profitMargin, productsData, index, updateSaleLine]);
+  }, [line.productId, line.isFromParentCompany, line.profitMargin, profitMargin, productsData, index, updateSaleLine, isManualPrice]);
 
   // حساب الخصم بناءً على السعر الحالي والكمية
   useEffect(() => {
@@ -181,7 +198,10 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
                       <input
                         type="number"
                         value={line.profitMargin ?? profitMargin}
-                        onChange={(e) => updateSaleLine(index, 'profitMargin', Number(e.target.value))}
+                        onChange={(e) => {
+                          setIsManualPrice(false); // إعادة تعيين السعر اليدوي لحساب السعر من الهامش
+                          updateSaleLine(index, 'profitMargin', Number(e.target.value));
+                        }}
                         className="w-12 bg-white dark:bg-surface-primary border border-orange-200 dark:border-orange-800/30 rounded px-1 text-xs font-black text-orange-800 dark:text-orange-300 outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50"
                       />
                       <span className="text-[10px] font-black text-orange-700 dark:text-orange-300">%</span>
@@ -253,6 +273,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
               value={line.unitPrice || ''}
               onChange={(e) => {
                 const newPrice = Number(e.target.value);
+                setIsManualPrice(true); // تعليم السعر كسعر يدوي
                 updateSaleLine(index, 'unitPrice', newPrice);
 
                 // عكس حساب هامش الربح إذا كان الصنف من الشركة الأم

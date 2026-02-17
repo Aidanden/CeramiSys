@@ -1,7 +1,7 @@
 /**
- * Sale Return Service
- * خدمة المردودات
- */
+  * Sale Return Service
+    * خدمة المردودات
+      */
 
 import { Prisma, Currency, SupplierPaymentType, PaymentReceiptStatus } from '@prisma/client';
 import prisma from '../models/prismaClient';
@@ -99,14 +99,7 @@ export class SaleReturnService {
 
     // حساب المجموع الكلي للمردود
     const total = data.lines.reduce((sum, line) => {
-      const saleLine = sale.lines.find(l => l.productId === line.productId);
-      const product = saleLine?.product;
-      const isBox = product?.unit === 'صندوق' && (product as any).unitsPerBox;
-
-      const lineTotal = isBox
-        ? line.qty * (product as any).unitsPerBox * line.unitPrice
-        : line.qty * line.unitPrice;
-
+      const lineTotal = line.qty * line.unitPrice;
       return sum + lineTotal;
     }, 0);
 
@@ -127,18 +120,11 @@ export class SaleReturnService {
           notes: data.notes,
           lines: {
             create: data.lines.map(line => {
-              const saleLine = sale.lines.find(l => l.productId === line.productId);
-              const product = saleLine?.product;
-              const isBox = product?.unit === 'صندوق' && (product as any).unitsPerBox;
-              const subTotal = isBox
-                ? line.qty * (product as any).unitsPerBox * line.unitPrice
-                : line.qty * line.unitPrice;
-
               return {
                 productId: line.productId,
                 qty: line.qty,
                 unitPrice: line.unitPrice,
-                subTotal: subTotal
+                subTotal: line.qty * line.unitPrice
               };
             })
           }

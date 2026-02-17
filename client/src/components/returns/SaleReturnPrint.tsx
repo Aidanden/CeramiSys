@@ -134,7 +134,12 @@ export const SaleReturnPrint: React.FC<SaleReturnPrintProps> = ({
                   )}
                 </td>
                 <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>
-                  {formatArabicCurrency(line.unitPrice)}
+                  {(() => {
+                    const unitsPerBox = (line.product as any)?.unitsPerBox || 0;
+                    const displayPrice = isBox && unitsPerBox > 0 ? (line.unitPrice / unitsPerBox) : line.unitPrice;
+                    return formatArabicCurrency(displayPrice);
+                  })()}
+                  {isBox && <div style={{ fontSize: '10px', color: '#666' }}>/م²</div>}
                 </td>
                 <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>
                   {formatArabicNumber(line.qty)}
