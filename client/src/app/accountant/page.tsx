@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { useGetSalesQuery, useGetCashSalesQuery, useIssueReceiptMutation, useApproveSaleMutation, useUpdateSaleMutation, Sale, salesApi } from '@/state/salesApi';
+import { useGetSalesQuery, useGetCashSalesQuery, useIssueReceiptMutation, useApproveSaleMutation, useUpdateSaleMutation, useCancelSaleMutation, Sale, salesApi } from '@/state/salesApi';
 import { useCreateDispatchOrderMutation } from '@/state/warehouseApi';
 import { useGetCurrentUserQuery } from '@/state/authApi';
 import { useGetProductsQuery } from '@/state/productsApi';
@@ -54,6 +54,19 @@ export default function AccountantWorkspace() {
     qty: number;
     unitPrice: number;
   }>>([]);
+
+  const [cancelSale, { isLoading: isCancellingSale }] = useCancelSaleMutation();
+
+  const handleCancelSale = async (sale: Sale) => {
+    if (confirm('⚠️ هل أنت متأكد من إلغاء هذه الفاتورة؟\n\n- سيتم إرجاع جميع المواد إلى المخزن.\n- سيتم إلغاء القيد المالي على العميل.\n- لا يمكن التراجع عن هذه العملية.')) {
+      try {
+        await cancelSale(sale.id).unwrap();
+        success('تم إلغاء الفاتورة بنجاح');
+      } catch (err: any) {
+        showError(err?.data?.message || 'حدث خطأ أثناء إلغاء الفاتورة');
+      }
+    }
+  };
 
   const [approvalSaleType, setApprovalSaleType] = useState<"CASH" | "CREDIT">("CREDIT");
   const [approvalPaymentMethod, setApprovalPaymentMethod] = useState<"CASH" | "BANK" | "CARD">("CASH");
@@ -748,7 +761,7 @@ ${itemsText}
       return;
     }
 
-    if (amount> remainingAmount) {
+    if (amount > remainingAmount) {
       showError(
         `❌ لا يمكن قبض مبلغ أكبر من المبلغ المتبقي!\n` +
         `المبلغ المتبقي: ${formatArabicCurrency(remainingAmount)}\n` +
@@ -950,7 +963,7 @@ ${itemsText}
 
   // Debug: عرض البيانات المحملة
   React.useEffect(() => {
-    if (sales.length> 0) {
+    if (sales.length > 0) {
       console.log('📊 الفواتير المحملة في المحاسب:', sales.length);
       console.log('🔍 أول فاتورة:', {
         id: sales[0].id,
@@ -1252,7 +1265,12 @@ ${itemsText}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center justify-center gap-2">
-                          {sale.status === 'DRAFT' ? (
+                          {sale.status === 'CANCELLED' ? (
+                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-lg text-xs font-bold border border-red-100 dark:border-red-900/30">
+                              <AlertCircle className="w-3.5 h-3.5" />
+                              ملغية
+                            </span>
+                          ) : sale.status === 'DRAFT' ? (
                             <button
                               onClick={() => {
                                 setSaleToApprove(sale);
@@ -1267,6 +1285,27 @@ ${itemsText}
                             </button>
                           ) : (
                             <>
+                              {/* Cancel Approved Sale Button */}
+                              {sale.status === 'APPROVED' &&
+                                sale.saleType === 'CREDIT' &&
+                                (sale.paidAmount === 0 || !sale.paidAmount) &&
+                                (!sale.payments || sale.payments.length === 0) && (
+                                  <button
+                                    onClick={() => handleCancelSale(sale)}
+                                    disabled={isCancellingSale}
+                                    className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all disabled:opacity-50"
+                                    title="إلغاء الفاتورة (استرجاع المخزن وإلغاء القيد)"
+                                  >
+                                    <div className="relative">
+                                      <Trash2 className="w-5 h-5" />
+                                      <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                      </span>
+                                    </div>
+                                  </button>
+                                )}
+
                               {(sale.remainingAmount || 0) > 0 && (
                                 <button
                                   onClick={() => {
@@ -1280,7 +1319,7 @@ ${itemsText}
                                 </button>
                               )}
 
-                              {sale.payments && sale.payments.length> 0 && (
+                              {sale.payments && sale.payments.length > 0 && (
                                 <button
                                   onClick={() => {
                                     setSelectedCreditSale(sale);
@@ -1297,7 +1336,7 @@ ${itemsText}
                               )}
 
                               {!sale.isAutoGenerated && (
-                                sale.dispatchOrders && sale.dispatchOrders.length> 0 ? (
+                                sale.dispatchOrders && sale.dispatchOrders.length > 0 ? (
                                   <div className="p-2 text-slate-300 dark:text-slate-700 cursor-not-allowed" title="تم إصدار أمر الصرف">
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -1339,7 +1378,7 @@ ${itemsText}
                                 </button>
                               )}
 
-                              {sale.saleType !== 'CASH' && sale.payments && sale.payments.length> 0 && (
+                              {sale.saleType !== 'CASH' && sale.payments && sale.payments.length > 0 && (
                                 <button
                                   onClick={() => {
                                     const lastPayment = sale.payments![sale.payments!.length - 1];
@@ -1377,7 +1416,7 @@ ${itemsText}
           </div>
 
           {/* Pagination */}
-          {pagination && pagination.pages> 1 && (
+          {pagination && pagination.pages > 1 && (
             <div className="bg-slate-50/50 dark:bg-slate-900/20 px-6 py-4 flex items-center justify-between border-t border-slate-100 dark:border-border-primary mt-6 rounded-xl">
               <div className="flex-1 flex justify-between sm:hidden">
                 <button
@@ -1461,10 +1500,10 @@ ${itemsText}
           position: 'fixed',
           left: '-9999px',
           top: '0',
-          visibility: selectedCreditSale && selectedCreditSale.payments && selectedCreditSale.payments.length> 0 ? 'visible' : 'hidden'
+          visibility: selectedCreditSale && selectedCreditSale.payments && selectedCreditSale.payments.length > 0 ? 'visible' : 'hidden'
         }}
       >
-        {selectedCreditSale && selectedCreditSale.payments && selectedCreditSale.payments.length> 0 && (
+        {selectedCreditSale && selectedCreditSale.payments && selectedCreditSale.payments.length > 0 && (
           <PaymentsHistoryPrint
             sale={selectedCreditSale as any}
             payments={selectedCreditSale.payments as any}
@@ -1735,7 +1774,7 @@ ${itemsText}
                           const input = e.target as HTMLInputElement;
                           const value = Number(input.value);
                           const remaining = selectedCreditSale.remainingAmount || 0;
-                          if (value> remaining) {
+                          if (value > remaining) {
                             input.setCustomValidity(`المبلغ لا يمكن أن يتجاوز المتبقي (${formatArabicCurrency(remaining)})`);
                           } else if (value <= 0) {
                             input.setCustomValidity('المبلغ يجب أن يكون أكبر من صفر');
@@ -1996,7 +2035,7 @@ ${itemsText}
                       سجل الدفعات والمتحصلات
                       <span className="text-sm font-bold text-slate-400 dark:text-text-tertiary mr-2">({formatArabicNumber(selectedCreditSale.payments?.length || 0)})</span>
                     </h4>
-                    {selectedCreditSale.payments && selectedCreditSale.payments.length> 0 && (
+                    {selectedCreditSale.payments && selectedCreditSale.payments.length > 0 && (
                       <button
                         onClick={() => printPaymentsHistory(selectedCreditSale as any)}
                         className="px-4 py-2 bg-slate-900 dark:bg-surface-secondary text-white dark:text-text-primary rounded-xl text-xs font-black hover:bg-slate-800 dark:hover:bg-surface-hover transition-all flex items-center gap-2"
@@ -2009,7 +2048,7 @@ ${itemsText}
                     )}
                   </div>
 
-                  {selectedCreditSale.payments && selectedCreditSale.payments.length> 0 ? (
+                  {selectedCreditSale.payments && selectedCreditSale.payments.length > 0 ? (
                     <div className="bg-slate-50 dark:bg-surface-secondary rounded-2xl border border-slate-100 dark:border-border-primary overflow-hidden">
                       <table className="w-full text-right">
                         <thead className="bg-slate-100 dark:bg-surface-hover border-b border-slate-200 dark:border-border-primary">
@@ -2203,7 +2242,7 @@ ${itemsText}
                                 <label className="text-xs font-black text-slate-400 dark:text-text-tertiary uppercase pr-1">السعر/متر</label>
                                 <input
                                   type="number"
-                                  value={unitsPerBox> 0 ? (line.unitPrice / unitsPerBox) : 0}
+                                  value={unitsPerBox > 0 ? (line.unitPrice / unitsPerBox) : 0}
                                   onChange={(e) => updatePriceFromUnitPrice(index, Number(e.target.value))}
                                   className="w-full px-4 py-3 bg-slate-50 dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-xl outline-none focus:ring-2 focus:ring-orange-500/20 font-bold text-slate-900 dark:text-text-primary transition-all"
                                   min="0" step="0.01" required

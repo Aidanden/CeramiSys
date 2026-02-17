@@ -1079,160 +1079,158 @@ export class SalesService {
             { relatedBranchPurchaseId: id }
           ]
         },
-        select: {
-          id: true,
-          invoiceNumber: true,
-          customer: { select: { name: true } }
-        }
+        select: { id: true, invoiceNumber: true }
       });
 
       if (parentComplexSale) {
-        const customerName = parentComplexSale.customer?.name || 'غير محدد';
-        const invoiceRef = parentComplexSale.invoiceNumber || `#${parentComplexSale.id}`;
-        throw new Error(
-          `⛔ لا يمكن حذف هذه الفاتورة مباشرة!\n\n` +
-          `هذه فاتورة تم إنشاؤها تلقائياً من فاتورة معقدة.\n\n` +
-          `📋 الفاتورة الأصلية: ${invoiceRef}\n` +
-          `👤 العميل: ${customerName}\n\n` +
-          `💡 لحذف هذه الفاتورة، اذهب إلى الفاتورة الأصلية واحذفها.`
-        );
+        throw new Error(`⛔ لا يمكن حذف هذه الفاتورة مباشرة! هذه فاتورة تلقائية مرتبطة بالفاتورة رقم ${parentComplexSale.invoiceNumber}. يجب حذف الفاتورة الأصلية ليتم حذف هذه تلقائياً.`);
       }
 
+      // تنفيذ الحذف كعملية ذرية واحدة
+      await this.prisma.$transaction(async (tx) => {
+        // 1. حذف الفواتير المرتبطة (Cascade Delete) إذا كانت فاتورة معقدة
+        if (existingSale.relatedParentSaleId || existingSale.relatedBranchPurchaseId || existingSale.relatedPurchaseFromParentId) {
+          // أ. حذف فاتورة الشركة الأم
+          if (existingSale.relatedParentSaleId) {
+            const parentSale = await tx.sale.findUnique({
+              where: { id: existingSale.relatedParentSaleId },
+              include: { lines: true }
+            });
 
-
-      // 1. حذف الفواتير المرتبطة (Cascade Delete) إذا كانت فاتورة معقدة
-      if (existingSale.relatedParentSaleId || existingSale.relatedBranchPurchaseId || existingSale.relatedPurchaseFromParentId) {
-
-
-        // حذف فاتورة الشركة الأم
-        if (existingSale.relatedParentSaleId) {
-
-          const parentSale = await this.prisma.sale.findUnique({
-            where: { id: existingSale.relatedParentSaleId },
-            include: { lines: true }
-          });
-
-          if (parentSale) {
-            // إرجاع مخزون الشركة الأم
-            for (const line of parentSale.lines) {
-              await this.prisma.stock.upsert({
-                where: {
-                  companyId_productId: {
+            if (parentSale) {
+              // إرجاع مخزون الشركة الأم
+              for (const line of parentSale.lines) {
+                await tx.stock.upsert({
+                  where: {
+                    companyId_productId: {
+                      companyId: parentSale.companyId,
+                      productId: line.productId
+                    }
+                  },
+                  update: {
+                    boxes: { increment: Number(line.qty) }
+                  },
+                  create: {
                     companyId: parentSale.companyId,
-                    productId: line.productId
+                    productId: line.productId,
+                    boxes: Number(line.qty)
                   }
-                },
-                update: {
-                  boxes: {
-                    increment: Number(line.qty)
-                  }
-                },
-                create: {
-                  companyId: parentSale.companyId,
-                  productId: line.productId,
-                  boxes: Number(line.qty)
+                });
+              }
+
+              // حذف أسطر وإيصالات الفاتورة
+              await tx.saleLine.deleteMany({ where: { saleId: parentSale.id } });
+              await tx.salePayment.deleteMany({ where: { saleId: parentSale.id } });
+              await tx.sale.delete({ where: { id: parentSale.id } });
+            }
+          }
+
+          // ب. حذف فاتورة مشتريات الشركة التابعة
+          if (existingSale.relatedBranchPurchaseId) {
+            const branchPurchase = await tx.purchase.findUnique({
+              where: { id: existingSale.relatedBranchPurchaseId }
+            });
+
+            if (branchPurchase) {
+              await tx.purchaseLine.deleteMany({ where: { purchaseId: branchPurchase.id } });
+              await tx.purchasePayment.deleteMany({ where: { purchaseId: branchPurchase.id } });
+              await tx.purchase.delete({ where: { id: branchPurchase.id } });
+            }
+          }
+
+          // ج. حذف سجل PurchaseFromParent
+          if (existingSale.relatedPurchaseFromParentId) {
+            await tx.purchaseFromParentLine.deleteMany({ where: { purchaseId: existingSale.relatedPurchaseFromParentId } });
+            await tx.purchaseFromParentReceipt.deleteMany({ where: { purchaseId: existingSale.relatedPurchaseFromParentId } });
+            await tx.purchaseFromParent.delete({ where: { id: existingSale.relatedPurchaseFromParentId } });
+          }
+        }
+
+        // 2. إرجاع مخزون الفاتورة الحالية (إذا كانت معتمدة)
+        if (existingSale.status === 'APPROVED') {
+          for (const line of existingSale.lines) {
+            await tx.stock.upsert({
+              where: {
+                companyId_productId: {
+                  companyId: existingSale.companyId,
+                  productId: line.productId
                 }
-              });
-            }
-
-            // حذف أسطر وإيصالات الفاتورة
-            await this.prisma.saleLine.deleteMany({ where: { saleId: parentSale.id } });
-            await this.prisma.salePayment.deleteMany({ where: { saleId: parentSale.id } });
-            await this.prisma.sale.delete({ where: { id: parentSale.id } });
-
-          }
-        }
-
-        // حذف فاتورة مشتريات الشركة التابعة
-        if (existingSale.relatedBranchPurchaseId) {
-
-          const branchPurchase = await this.prisma.purchase.findUnique({
-            where: { id: existingSale.relatedBranchPurchaseId },
-            include: { lines: true }
-          });
-
-          if (branchPurchase) {
-            // ملاحظة: لا نحتاج لإرجاع المخزون لأن affectsInventory = false
-
-            // حذف أسطر ودفعات الفاتورة
-            await this.prisma.purchaseLine.deleteMany({ where: { purchaseId: branchPurchase.id } });
-            await this.prisma.purchasePayment.deleteMany({ where: { purchaseId: branchPurchase.id } });
-            await this.prisma.purchase.delete({ where: { id: branchPurchase.id } });
-
-          }
-        }
-
-        // حذف سجل PurchaseFromParent
-        if (existingSale.relatedPurchaseFromParentId) {
-
-          const purchaseFromParent = await this.prisma.purchaseFromParent.findUnique({
-            where: { id: existingSale.relatedPurchaseFromParentId }
-          });
-
-          if (purchaseFromParent) {
-            // حذف الأسطر والإيصالات
-            await this.prisma.purchaseFromParentLine.deleteMany({ where: { purchaseId: purchaseFromParent.id } });
-            await this.prisma.purchaseFromParentReceipt.deleteMany({ where: { purchaseId: purchaseFromParent.id } });
-            await this.prisma.purchaseFromParent.delete({ where: { id: purchaseFromParent.id } });
-
-          }
-        }
-      }
-
-      // 2. إرجاع مخزون الفاتورة الأصلية
-
-      // 2. إرجاع مخزون الفاتورة الأصلية
-      const stockUpdates = [];
-
-      for (const line of existingSale.lines) {
-        // حساب الصناديق التي سترجع للمخزون
-        const boxesToIncrement = Number(line.qty);
-
-        // إضافة عملية التحديث للقائمة
-        stockUpdates.push(
-          this.prisma.stock.upsert({
-            where: {
-              companyId_productId: {
+              },
+              update: {
+                boxes: { increment: Number(line.qty) }
+              },
+              create: {
                 companyId: existingSale.companyId,
-                productId: line.productId
+                productId: line.productId,
+                boxes: Number(line.qty)
               }
-            },
-            update: {
-              boxes: {
-                increment: boxesToIncrement
-              }
-            },
-            create: {
-              companyId: existingSale.companyId,
-              productId: line.productId,
-              boxes: boxesToIncrement
+            });
+          }
+
+          // 3. معالجة الجوانب المالية (حساب العميل والخزينة)
+          const salePayments = await tx.salePayment.findMany({
+            where: { saleId: id },
+            select: { id: true }
+          });
+          const paymentIds = salePayments.map(p => p.id);
+
+          // أ. حذف قيود حساب العميل
+          await tx.customerAccount.deleteMany({
+            where: {
+              OR: [
+                { referenceType: 'SALE' as any, referenceId: id },
+                { referenceType: 'PAYMENT' as any, referenceId: id },
+                { referenceType: 'PAYMENT' as any, referenceId: { in: paymentIds } }
+              ]
             }
-          })
-        );
-      }
+          });
 
-      // تنفيذ جميع التحديثات دفعة واحدة
-      if (stockUpdates.length > 0 && existingSale.status === 'APPROVED') {
-        await this.prisma.$transaction(stockUpdates);
-      }
+          // ب. عكس حركات الخزينة
+          const treasuryTransactions = await tx.treasuryTransaction.findMany({
+            where: {
+              OR: [
+                { referenceType: 'Sale', referenceId: id },
+                { referenceType: 'SalePayment', referenceId: { in: paymentIds } }
+              ]
+            }
+          });
 
+          for (const ttx of treasuryTransactions) {
+            await tx.treasury.update({
+              where: { id: ttx.treasuryId },
+              data: {
+                balance: { decrement: ttx.amount }
+              }
+            });
+            await tx.treasuryTransaction.delete({ where: { id: ttx.id } });
+          }
 
-      // 3. حذف البنود والإيصالات
-      await this.prisma.saleLine.deleteMany({
-        where: { saleId: id }
+          // ج. حذف أوامر الصرف
+          await tx.dispatchOrder.deleteMany({ where: { saleId: id } });
+
+          // د. فك الارتباط بالفواتير الخارجية
+          await tx.externalStoreInvoice.updateMany({
+            where: { saleId: id },
+            data: { saleId: null }
+          });
+        }
+
+        // 4. تحديث العروض السعرية المحولة (فك الارتباط)
+        await tx.provisionalSale.updateMany({
+          where: { convertedSaleId: id },
+          data: {
+            convertedSaleId: null,
+            isConverted: false
+          }
+        });
+
+        // 5. حذف البنود والدفعات والفاتورة الأصلية
+        await tx.saleLine.deleteMany({ where: { saleId: id } });
+        await tx.salePayment.deleteMany({ where: { saleId: id } });
+        await tx.sale.delete({ where: { id } });
       });
 
-      await this.prisma.salePayment.deleteMany({
-        where: { saleId: id }
-      });
-
-      // 4. حذف الفاتورة الأصلية
-      await this.prisma.sale.delete({
-        where: { id }
-      });
-
-
-      return { message: 'تم حذف الفاتورة وجميع الفواتير المرتبطة بنجاح' };
+      return { message: 'تم حذف الفاتورة بجميع تبعاتها بنجاح' };
     } catch (error) {
       console.error('خطأ في حذف الفاتورة:', error);
       throw error;
@@ -1934,8 +1932,17 @@ export class SalesService {
 
         // ج. خصم المخزون
         for (const line of existingSale.lines) {
+          // إذا كان الصنف من الشركة الأم، لا نخصم المخزون هنا
+          // سيتم خصمه عندما يتم اعتماد الفاتورة التلقائية (Parent Sale)
+          console.log(`Processing Stock for Line ${line.id}: Product ${line.productId}, Qty ${line.qty}, isFromParent=${line.isFromParentCompany}, ParentCompanyId=${parentCompanyId}`);
+
+          if (line.isFromParentCompany && parentCompanyId) {
+            console.log(`Skipping stock deduction for line ${line.id} (Parent Item)`);
+            continue;
+          }
+
           const boxesToDecrement = Number(line.qty);
-          const stockCompanyId = line.isFromParentCompany && parentCompanyId ? parentCompanyId : existingSale.companyId;
+          const stockCompanyId = existingSale.companyId;
 
           await tx.stock.upsert({
             where: { companyId_productId: { companyId: stockCompanyId, productId: line.productId } },
@@ -2104,6 +2111,153 @@ export class SalesService {
   }
 
   /**
+   * إلغاء فاتورة مبيعات معتمدة (آجلة فقط ولم يتم استلام دفعات)
+   */
+  async cancelSale(id: number, userCompanyId: number, isSystemUser: boolean = false) {
+    try {
+      // 1. التحقق من وجود الفاتورة وحالتها
+      const existingSale = await this.prisma.sale.findFirst({
+        where: {
+          id,
+          ...(isSystemUser !== true && { companyId: userCompanyId })
+        },
+        include: {
+          lines: true,
+          payments: true
+        }
+      });
+
+      if (!existingSale) {
+        throw new Error('الفاتورة غير موجودة أو ليس لديك صلاحية لإلغائها');
+      }
+
+      // التحقق من الشروط: معتمدة، آجلة، لا توجد دفعات
+      if (existingSale.status !== 'APPROVED') {
+        throw new Error('لا يمكن إلغاء فاتورة غير معتمدة. يمكنك حذفها بدلاً من ذلك.');
+      }
+
+      if (existingSale.saleType !== 'CREDIT') {
+        throw new Error('لا يمكن إلغاء مبيعات نقدية من هذه الشاشة. يرجى مراجعة الإدارة.');
+      }
+
+      if (Number(existingSale.paidAmount) > 0 || existingSale.payments.length > 0) {
+        throw new Error('لا يمكن إلغاء فاتورة تم استلام دفعات عليها. يرجى حذف الدفعات أولاً إذا كان ذلك مسموحاً.');
+      }
+
+      // 2. معالجة الإلغاء في transaction
+      await this.prisma.$transaction(async (tx) => {
+        // أ. تحديث حالة الفاتورة
+        await tx.sale.update({
+          where: { id },
+          data: {
+            status: 'CANCELLED' as any,
+            notes: existingSale.notes ? `${existingSale.notes} | [تم الإلغاء في ${new Date().toLocaleString('ar-LY')}]` : `[تم الإلغاء في ${new Date().toLocaleString('ar-LY')}]`
+          }
+        });
+
+        // ب. إرجاع المخزون للفاتورة الأصلية
+        for (const line of existingSale.lines) {
+          await tx.stock.upsert({
+            where: {
+              companyId_productId: {
+                companyId: existingSale.companyId,
+                productId: line.productId
+              }
+            },
+            update: {
+              boxes: { increment: Number(line.qty) }
+            },
+            create: {
+              companyId: existingSale.companyId,
+              productId: line.productId,
+              boxes: Number(line.qty)
+            }
+          });
+        }
+
+        // ج. معالجة الفواتير المرتبطة (الفواتير التلقائية)
+        if (existingSale.relatedParentSaleId || existingSale.relatedBranchPurchaseId || existingSale.relatedPurchaseFromParentId) {
+
+          // 1. إرجاع مخزون الشركة الأم وتحديث فاتورتها
+          if (existingSale.relatedParentSaleId) {
+            const parentSale = await tx.sale.findUnique({
+              where: { id: existingSale.relatedParentSaleId },
+              include: { lines: true }
+            });
+
+            if (parentSale && parentSale.status === 'APPROVED') {
+              for (const line of parentSale.lines) {
+                await tx.stock.upsert({
+                  where: {
+                    companyId_productId: {
+                      companyId: parentSale.companyId,
+                      productId: line.productId
+                    }
+                  },
+                  update: { boxes: { increment: Number(line.qty) } },
+                  create: {
+                    companyId: parentSale.companyId,
+                    productId: line.productId,
+                    boxes: Number(line.qty)
+                  }
+                });
+              }
+              await tx.sale.update({
+                where: { id: parentSale.id },
+                data: { status: 'CANCELLED' as any }
+              });
+            }
+          }
+
+          // 2. تحديث فاتورة مشتريات الشركة التابعة
+          if (existingSale.relatedBranchPurchaseId) {
+            await tx.purchase.update({
+              where: { id: existingSale.relatedBranchPurchaseId },
+              data: { status: 'CANCELLED' as any }
+            });
+          }
+
+          // 3. تحديث سجل PurchaseFromParent
+          if (existingSale.relatedPurchaseFromParentId) {
+            // PurchaseFromParent does not have a status field. Since the sale is cancelled, 
+            // we should remove this inter-company debt record.
+
+            // Delete lines first (no cascade on model)
+            await tx.purchaseFromParentLine.deleteMany({
+              where: { purchaseId: existingSale.relatedPurchaseFromParentId }
+            });
+
+            // Delete the purchase record
+            await tx.purchaseFromParent.delete({
+              where: { id: existingSale.relatedPurchaseFromParentId }
+            });
+          }
+        }
+
+        // د. حذف قيود حساب العميل المرتبطة بهذه الفاتورة
+        await tx.customerAccount.deleteMany({
+          where: {
+            referenceType: 'SALE',
+            referenceId: id
+          }
+        });
+
+        // هـ. حذف أوامر الصرف المرتبطة بهذه الفاتورة (لإزالتها من شاشة المخزن)
+        await tx.dispatchOrder.deleteMany({
+          where: { saleId: id }
+        });
+
+        // ملاحظة: بما أنها مبيعات آجلة ولم يتم دفع شيء، لا نحتاج لتعديل الخزينة
+      });
+
+      return { message: 'تم إلغاء الفاتورة وجميع التبعات المرتبطة بنجاح' };
+    } catch (error) {
+      console.error('خطأ في إلغاء الفاتورة:', error);
+      throw error;
+    }
+  }
+
+  /**
    * إنشاء الفواتير التلقائية عند اعتماد فاتورة تحتوي على أصناف من الشركة الأم
    */
   private async createAutoGeneratedInvoices(
@@ -2166,10 +2320,8 @@ export class SalesService {
         paidAmount: 0,
         remainingAmount: parentSaleTotal,
         isFullyPaid: false,
-        status: 'APPROVED', // معتمدة مباشرة
+        status: 'DRAFT', // نبدأ بـ DRAFT ثم نعتمدها
         isAutoGenerated: true,
-        approvedAt: new Date(),
-        approvedBy: 'SYSTEM',
         lines: {
           create: linesFromParent.map(line => {
             const qty = Number(line.qty);
@@ -2186,19 +2338,17 @@ export class SalesService {
       }
     });
 
+    // اعتماد الفاتورة التلقائية لخصم المخزون وتسجيل القيود
+    await this.approveSale(
+      parentSale.id,
+      { saleType: 'CREDIT', paymentMethod: 'CASH' },
+      parentCompanyId,
+      'SYSTEM',
+      true,
+      true
+    );
 
-
-    // 3️⃣ تسجيل قيد محاسبي في حساب العميل (الإمارات كعميل للتقازي)
-    const CustomerAccountService = (await import('./CustomerAccountService')).default;
-    await CustomerAccountService.createAccountEntry({
-      customerId: branchAsCustomer.id,
-      transactionType: 'DEBIT', // عليه - دين الإمارات للتقازي
-      amount: parentSaleTotal,
-      referenceType: 'SALE',
-      referenceId: parentSale.id,
-      description: `فاتورة تلقائية من ${parentCompanyName} - ${parentSale.invoiceNumber}`,
-      transactionDate: new Date()
-    });
+    // ❌ (تمت الإزالة) لا نسجل قيد محاسبي يدوياً لأنه يتم داخل approveSale
 
 
 

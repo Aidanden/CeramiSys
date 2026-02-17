@@ -24,6 +24,7 @@ export default function SettingsPage() {
   const [enableLineDiscount, setEnableLineDiscount] = useState(true);
   const [enableInvoiceDiscount, setEnableInvoiceDiscount] = useState(true);
   const [costCalculationMethod, setCostCalculationMethod] = useState<'manual' | 'invoice'>('manual');
+  const [enableCancelDispatch, setEnableCancelDispatch] = useState(true);
   const { success, error } = useToast();
 
   // أسعار الصرف من قاعدة البيانات
@@ -82,6 +83,9 @@ export default function SettingsPage() {
 
     const savedCostMethod = localStorage.getItem('costCalculationMethod');
     setCostCalculationMethod((savedCostMethod as 'manual' | 'invoice') || 'manual');
+
+    const savedCancelDispatch = localStorage.getItem('enableCancelDispatch');
+    setEnableCancelDispatch(savedCancelDispatch === null ? true : savedCancelDispatch === 'true');
   }, [exchangeRates]);
 
   // حفظ إعدادات المخزون فقط
@@ -105,6 +109,7 @@ export default function SettingsPage() {
     try {
       localStorage.setItem('lowStockThreshold', threshold.toString());
       localStorage.setItem('profitMargin', margin.toString());
+      localStorage.setItem('enableCancelDispatch', enableCancelDispatch.toString());
       success('تم حفظ إعدادات المخزون بنجاح');
     } catch (err) {
       error('حدث خطأ أثناء حفظ إعدادات المخزون');
@@ -347,6 +352,22 @@ export default function SettingsPage() {
               <p className="mt-1 text-sm text-slate-500 dark:text-text-tertiary">
                 📊 مثال: إذا كان سعر الشركة الأم 100 د.ل وهامش الربح 20%، سيكون سعر البيع 120 د.ل
               </p>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-surface-secondary rounded-lg">
+              <div>
+                <h3 className="text-sm font-bold text-slate-800 dark:text-text-primary">إظهار زر إلغاء الأمر في المخزن</h3>
+                <p className="text-xs text-slate-500 dark:text-text-tertiary mt-1">تفعيل أو تعطيل خيار إلغاء أمر الصرف لموظفي المخزن</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={enableCancelDispatch}
+                  onChange={(e) => setEnableCancelDispatch(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-200 dark:bg-surface-elevated peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 dark:peer-focus:ring-orange-900/40 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
+              </label>
             </div>
 
             <button

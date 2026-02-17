@@ -638,6 +638,20 @@ export const salesApi = createApi({
         } catch { }
       },
     }),
+    /**
+     * إلغاء فاتورة معتمدة
+     */
+    cancelSale: builder.mutation<{ success: boolean; message: string }, number>({
+      query: (id) => ({
+        url: `sales/${id}/cancel`,
+        method: "PATCH",
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: "Sale", id },
+        { type: "Sales", id: "LIST" },
+        { type: "CustomerAccountSummary", id: "LIST" },
+      ],
+    }),
   }),
 });
 
@@ -654,6 +668,7 @@ export const {
   useGetCashSalesQuery,
   useIssueReceiptMutation,
   useApproveSaleMutation,
+  useCancelSaleMutation,
   // العملاء
   useGetCustomersQuery,
   useGetCustomerQuery,

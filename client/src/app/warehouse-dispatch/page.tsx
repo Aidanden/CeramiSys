@@ -21,7 +21,7 @@ import {
 } from '@/state/notificationsApi';
 import { useToast } from '@/components/ui/Toast';
 import { formatArabicNumber } from '@/utils/formatArabicNumbers';
-import { Bell, Trash2, X, Package } from 'lucide-react';
+import { Bell, Trash2, X, Package, Printer } from 'lucide-react';
 
 
 
@@ -48,6 +48,12 @@ export default function WarehouseDispatchPage() {
   // Notification state
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const [notificationTab, setNotificationTab] = useState<'all' | 'unread'>('unread');
+  const [enableCancelDispatch, setEnableCancelDispatch] = useState(true);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('enableCancelDispatch');
+    setEnableCancelDispatch(saved === null ? true : saved === 'true');
+  }, []);
 
   const { data: userData } = useGetCurrentUserQuery();
   const user = userData?.data;
@@ -307,6 +313,103 @@ export default function WarehouseDispatchPage() {
 
     // إذا لم تكن صندوق، اعرض الكمية بوحدتها
     return `${formatArabicNumber(qty)} ${product?.unit || 'قطعة'}`;
+  };
+
+  // دالة لطباعة الجدول
+  const handlePrintTable = () => {
+    const isDispatch = activeTab === 'dispatch';
+    const data = isDispatch ? ordersData?.data?.dispatchOrders : returnsData?.data?.returnOrders;
+
+    if (!data || data.length === 0) {
+      showError('لا توجد بيانات للطباعة');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const title = isDispatch ? 'تقرير أوامر الصرف' : 'تقرير استلام المردودات';
+
+    // إعداد محتوى الطباعة
+    const tableRows = data.map((item: any) => {
+      const orderId = formatArabicNumber(item.id);
+      const invoiceNum = isDispatch
+        ? (item.sale?.invoiceNumber || `#${item.saleId}`)
+        : (item.saleReturn?.returnNumber || '-');
+      const customer = isDispatch
+        ? (item.sale?.customer?.name || 'غير محدد')
+        : (item.saleReturn?.customer?.name || 'غير محدد');
+      const company = isDispatch
+        ? (item.sale?.company?.name || '-')
+        : (item.company?.name || '-');
+      const statusText = getStatusText(item.status);
+      const createDate = new Date(item.createdAt).toLocaleDateString('ar-LY');
+      const deliveryDate = item.completedAt ? new Date(item.completedAt).toLocaleDateString('ar-LY') : '-';
+
+      return `
+        <tr>
+          <td>${orderId}</td>
+          <td>${invoiceNum}</td>
+          <td>${customer}</td>
+          <td>${company}</td>
+          <td>${statusText}</td>
+          <td>${createDate}</td>
+          <td>${deliveryDate}</td>
+        </tr>
+      `;
+    }).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl">
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: 'Arial', sans-serif; padding: 20px; }
+            h1 { text-align: center; color: #333; margin-bottom: 20px; }
+            .meta { margin-bottom: 20px; color: #666; font-size: 14px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 10px; text-align: right; font-size: 14px; }
+            th { background-color: #f5f5f5; color: #333; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+            @media print {
+              .no-print { display: none; }
+              body { padding: 0; }
+              table { width: 100%; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${title}</h1>
+          <div class="meta">
+            <p>تاريخ الطباعة: ${new Date().toLocaleString('ar-LY')}</p>
+            ${statusFilter ? `<p>تصفية الحالة: ${getStatusText(statusFilter)}</p>` : ''}
+            ${startDate ? `<p>من تاريخ: ${startDate}</p>` : ''}
+            ${endDate ? `<p>إلى تاريخ: ${endDate}</p>` : ''}
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>رقم الآمر</th>
+                <th>رقم الفاتورة/المردود</th>
+                <th>العميل</th>
+                <th>الشركة</th>
+                <th>الحالة</th>
+                <th>تاريخ الإنشاء</th>
+                <th>تاريخ التسليم/الاستلام</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   return (
@@ -591,12 +694,21 @@ export default function WarehouseDispatchPage() {
 
       {/* Filters */}
       <div className="bg-white dark:bg-surface-primary p-6 rounded-lg shadow-sm border border-slate-200 dark:border-border-primary mb-6">
-        <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
-          <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
-          فلاتر البحث
-        </h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-text-primary flex items-center gap-2">
+            <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            فلاتر البحث
+          </h3>
+          <button
+            onClick={handlePrintTable}
+            className="flex items-center gap-2 bg-slate-600 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-all duration-200 shadow-sm"
+          >
+            <Printer className="w-5 h-5" />
+            طباعة التقرير
+          </button>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Search by Invoice Number */}
@@ -773,6 +885,9 @@ export default function WarehouseDispatchPage() {
                   التاريخ
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
+                  تاريخ التسليم
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
                   الإجراءات
                 </th>
               </tr>
@@ -780,7 +895,7 @@ export default function WarehouseDispatchPage() {
             <tbody className="bg-white dark:bg-surface-primary divide-y divide-gray-200 dark:divide-border-primary">
               {(activeTab === 'dispatch' ? isLoadingOrders : isLoadingReturns) ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-4 text-center text-gray-500 dark:text-text-tertiary">
+                  <td colSpan={8} className="px-6 py-4 text-center text-gray-500 dark:text-text-tertiary">
                     <div className="flex items-center justify-center gap-2">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600"></div>
                       جاري التحميل...
@@ -790,7 +905,7 @@ export default function WarehouseDispatchPage() {
               ) : activeTab === 'dispatch' ? (
                 !ordersData?.data?.dispatchOrders || ordersData?.data?.dispatchOrders?.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500 dark:text-text-tertiary">
+                    <td colSpan={8} className="px-6 py-4 text-center text-gray-500 dark:text-text-tertiary">
                       <p className="font-medium">لا توجد أوامر صرف</p>
                     </td>
                   </tr>
@@ -824,6 +939,9 @@ export default function WarehouseDispatchPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
                         {new Date(order.createdAt).toLocaleDateString('ar-LY')}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
+                        {order.completedAt ? new Date(order.completedAt).toLocaleDateString('ar-LY') : '-'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => {
@@ -845,7 +963,7 @@ export default function WarehouseDispatchPage() {
               ) : (
                 !returnsData?.data?.returnOrders || returnsData?.data?.returnOrders?.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500 dark:text-text-tertiary">
+                    <td colSpan={8} className="px-6 py-4 text-center text-gray-500 dark:text-text-tertiary">
                       <p className="font-medium">لا توجد طلبات استرجاع</p>
                     </td>
                   </tr>
@@ -878,6 +996,9 @@ export default function WarehouseDispatchPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
                         {new Date(order.createdAt).toLocaleDateString('ar-LY')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
+                        {order.completedAt ? new Date(order.completedAt).toLocaleDateString('ar-LY') : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
@@ -1040,7 +1161,7 @@ export default function WarehouseDispatchPage() {
             </div>
 
             {/* Notes */}
-            {selectedOrder.status !== 'COMPLETED' && selectedOrder.status !== 'CANCELLED' && (
+            {selectedOrder.status !== 'COMPLETED' && (
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 dark:text-text-secondary mb-2">ملاحظات (اختياري)</label>
                 <textarea
@@ -1066,6 +1187,7 @@ export default function WarehouseDispatchPage() {
                 إغلاق
               </button>
 
+              {/* إظهار أزرار الإجراءات في حالة معلق */}
               {selectedOrder.status === 'PENDING' && (
                 <>
                   <button
@@ -1075,14 +1197,27 @@ export default function WarehouseDispatchPage() {
                   >
                     تم التسليم
                   </button>
-                  <button
-                    onClick={() => handleUpdateStatus(selectedOrder.id, 'CANCELLED')}
-                    disabled={isUpdating}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-                  >
-                    إلغاء الأمر
-                  </button>
+                  {enableCancelDispatch && (
+                    <button
+                      onClick={() => handleUpdateStatus(selectedOrder.id, 'CANCELLED')}
+                      disabled={isUpdating}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                    >
+                      إلغاء الأمر
+                    </button>
+                  )}
                 </>
+              )}
+
+              {/* السماح بتغيير الحالة من ملغي إلى تم التسليم */}
+              {selectedOrder.status === 'CANCELLED' && (
+                <button
+                  onClick={() => handleUpdateStatus(selectedOrder.id, 'COMPLETED')}
+                  disabled={isUpdating}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  تغيير إلى تم التسليم
+                </button>
               )}
             </div>
           </div>

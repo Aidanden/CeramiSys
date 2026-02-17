@@ -404,6 +404,66 @@ export class ProductController {
   }
 
   /**
+   * إضافة رصيد افتتاحي للمخزون
+   */
+  async addToOpeningStock(req: Request, res: Response): Promise<void> {
+    try {
+      const { productId, companyId, quantity } = req.body;
+
+      if (!productId || !companyId || quantity === undefined) {
+        res.status(400).json({
+          success: false,
+          message: 'معرف الصنف ومعرف الشركة والكمية مطلوبة',
+        });
+        return;
+      }
+
+      const userCompanyId = (req as any).user?.companyId;
+      if (!userCompanyId) {
+        res.status(401).json({
+          success: false,
+          message: 'غير مصرح لك بالوصول',
+        });
+        return;
+      }
+
+      if (companyId !== userCompanyId) {
+        res.status(403).json({
+          success: false,
+          message: 'لا يمكنك إضافة مخزون لشركة أخرى',
+        });
+        return;
+      }
+
+      const stockData = {
+        productId: parseInt(productId),
+        companyId: parseInt(companyId),
+        quantity: parseFloat(quantity),
+      };
+
+      await this.productService.addToOpeningStock(stockData);
+
+      res.status(200).json({
+        success: true,
+        message: 'تم إضافة الكمية للمخزون بنجاح',
+      });
+    } catch (error: any) {
+      if (error.message.includes('غير موجود')) {
+        res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: error.message || 'خطأ في إضافة المخزون',
+        });
+      }
+    }
+  }
+
+
+  /**
    * تحديث السعر
    */
   async updatePrice(req: Request, res: Response): Promise<void> {

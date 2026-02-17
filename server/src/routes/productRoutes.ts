@@ -94,6 +94,14 @@ router.delete('/:id', (req, res) => productController.deleteProduct(req, res));
 router.put('/stock/update', (req, res) => productController.updateStock(req, res));
 
 /**
+ * @route PUT /api/products/stock/add
+ * @desc إضافة رصيد افتتاحي للمخزون
+ * @access Private
+ * @body productId, companyId, quantity
+ */
+router.put('/stock/add', (req, res) => productController.addToOpeningStock(req, res));
+
+/**
  * @route PUT /api/products/price/update
  * @desc تحديث السعر
  * @access Private

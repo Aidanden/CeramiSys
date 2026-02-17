@@ -255,6 +255,26 @@ export const productsApi = createApi({
       },
     }),
 
+    // إضافة رصيد افتتاحي للمخزون
+    addToOpeningStock: builder.mutation<{ success: boolean; message: string }, UpdateStockRequest>({
+      query: (stockData) => ({
+        url: "/products/stock/add",
+        method: "PUT",
+        body: stockData,
+      }),
+      invalidatesTags: (result, error, { productId }) => [
+        { type: 'Product', id: productId },
+        { type: 'Products', id: 'LIST' },
+        'ProductStats'
+      ],
+      async onQueryStarted({ productId, quantity }, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(productsApi.util.invalidateTags([{ type: 'Products', id: 'LIST' }]));
+        } catch { }
+      },
+    }),
+
     // تحديث السعر
     updatePrice: builder.mutation<{ success: boolean; message: string }, UpdatePriceRequest>({
       query: (priceData) => ({
@@ -376,6 +396,7 @@ export const {
   useUpdateProductMutation,
   useDeleteProductMutation,
   useUpdateStockMutation,
+  useAddToOpeningStockMutation,
   useUpdatePriceMutation,
   useUpdateCostMutation,
   useGetProductStatsQuery,

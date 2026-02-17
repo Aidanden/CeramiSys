@@ -247,7 +247,27 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
           {/* السعر */}
           <div className="flex flex-col sm:items-center min-w-[80px]">
             <span className="text-[9px] font-bold text-slate-400 dark:text-text-tertiary sm:hidden">السعر</span>
-            <span className="text-sm font-bold text-slate-600 dark:text-text-secondary">{formatArabicCurrency(line.unitPrice || 0)}</span>
+            <input
+              type="number"
+              step="0.01"
+              value={line.unitPrice || ''}
+              onChange={(e) => {
+                const newPrice = Number(e.target.value);
+                updateSaleLine(index, 'unitPrice', newPrice);
+
+                // عكس حساب هامش الربح إذا كان الصنف من الشركة الأم
+                if (line.isFromParentCompany) {
+                  const p = productsData?.data?.products?.find((item: any) => item.id === line.productId);
+                  const basePrice = Number(p?.price?.sellPrice || 0);
+                  if (basePrice > 0) {
+                    const newMargin = ((newPrice / basePrice) - 1) * 100;
+                    // نحدث الهامش بدقة 2 خانة عشرية
+                    updateSaleLine(index, 'profitMargin', Number(newMargin.toFixed(2)));
+                  }
+                }
+              }}
+              className="w-24 bg-white dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded px-1.5 py-1 text-sm text-center font-bold text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
+            />
           </div>
 
           {/* الخصم */}

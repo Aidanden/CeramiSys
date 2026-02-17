@@ -681,6 +681,57 @@ export class ProductService {
   }
 
   /**
+   * إضافة كمية للمخزون (رصيد أول المدة أو تسوية)
+   * هذه الدالة تضيف كمية للمخزون الحالي دون التحقق من وجود معاملات سابقة
+   * مما يجعلها تظهر كرصيد افتتاحي في تقرير حركة الصنف
+   */
+  async addToOpeningStock(data: UpdateStockDto): Promise<void> {
+    // التحقق من وجود الصنف
+    const product = await this.prisma.product.findUnique({
+      where: { id: data.productId }
+    });
+
+    if (!product) {
+      throw new Error('الصنف غير موجود');
+    }
+
+    // البحث عن المخزون - أولاً في شركة المستخدم، ثم في الشركة المالكة للصنف
+    let existingStock = await this.prisma.stock.findFirst({
+      where: {
+        companyId: data.companyId,
+        productId: data.productId,
+      }
+    });
+
+    // إذا لم يوجد في شركة المستخدم، ابحث في الشركة المالكة للصنف
+    if (!existingStock) {
+      existingStock = await this.prisma.stock.findFirst({
+        where: {
+          companyId: product.createdByCompanyId,
+          productId: data.productId,
+        }
+      });
+    }
+
+    if (!existingStock) {
+      // إذا لم يوجد سجل مخزون، نقوم بإنشائه
+      await this.prisma.stock.create({
+        data: {
+          companyId: data.companyId, // نستخدم الشركة المطلوبة (غالباً الحالية)
+          productId: data.productId,
+          boxes: data.quantity
+        }
+      });
+    } else {
+      // تحديث السطر الموجود بزيادة الكمية
+      await this.prisma.stock.update({
+        where: { id: existingStock.id },
+        data: { boxes: { increment: data.quantity } }
+      });
+    }
+  }
+
+  /**
    * تحديث السعر
    */
   async updatePrice(data: UpdatePriceDto): Promise<void> {

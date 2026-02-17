@@ -5,12 +5,12 @@
 
 import { Request, Response } from 'express';
 import { SalesService } from '../services/SalesService';
-import { 
-  CreateSaleDto, 
-  UpdateSaleDto, 
-  GetSalesQueryDto, 
-  CreateCustomerDto, 
-  UpdateCustomerDto, 
+import {
+  CreateSaleDto,
+  UpdateSaleDto,
+  GetSalesQueryDto,
+  CreateCustomerDto,
+  UpdateCustomerDto,
   GetCustomersQueryDto,
   CreateSaleDtoSchema,
   UpdateSaleDtoSchema,
@@ -36,7 +36,7 @@ export class SalesController {
     try {
       // التحقق من صحة البيانات باستخدام Zod
       const validationResult = CreateSaleDtoSchema.safeParse(req.body);
-      
+
       if (!validationResult.success) {
         res.status(400).json({
           success: false,
@@ -65,8 +65,8 @@ export class SalesController {
       // تحديد الشركة للفاتورة:
       // - System User: يمكنه تحديد أي شركة (إذا لم يحدد، يستخدم شركته)
       // - مستخدم عادي: يستخدم شركته فقط
-      const targetCompanyId = isSystemUser && saleData.companyId 
-        ? saleData.companyId 
+      const targetCompanyId = isSystemUser && saleData.companyId
+        ? saleData.companyId
         : userCompanyId;
 
       // Debug logging
@@ -699,6 +699,38 @@ export class SalesController {
           message: 'خطأ في الخادم الداخلي',
         });
       }
+    }
+  }
+  /**
+   * إلغاء فاتورة معتمدة
+   */
+  async cancelSale(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const user = (req as any).user;
+      const userCompanyId = user.CompanyId;
+      const isSystemUser = user.Role === 'ADMIN' || user.Role === 'SUPER_ADMIN';
+
+      if (!id) {
+        res.status(400).json({ success: false, message: 'معرف الفاتورة مطلوب' });
+        return;
+      }
+
+      const result = await this.salesService.cancelSale(
+        Number(id),
+        userCompanyId,
+        isSystemUser
+      );
+
+      res.status(200).json({
+        success: true,
+        message: result.message
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        success: false,
+        message: error.message || 'حدث خطأ أثناء إلغاء الفاتورة'
+      });
     }
   }
 }

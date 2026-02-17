@@ -107,6 +107,13 @@ router.post('/:id/issue-receipt', salesController.issueReceipt.bind(salesControl
 router.patch('/:id/approve', salesController.approveSale.bind(salesController));
 
 /**
+ * @route   PATCH /api/sales/:id/cancel
+ * @desc    إلغاء فاتورة معتمدة (آجلة بدون دفعات)
+ * @access  Private
+ */
+router.patch('/:id/cancel', salesController.cancelSale.bind(salesController));
+
+/**
  * @route   GET /api/sales/:id
  * @desc    الحصول على فاتورة مبيعات واحدة
  * @access  Private

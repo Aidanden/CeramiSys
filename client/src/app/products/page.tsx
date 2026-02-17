@@ -21,6 +21,7 @@ import {
   useUpdateProductMutation,
   useDeleteProductMutation,
   useUpdateStockMutation,
+  useAddToOpeningStockMutation,
   useUpdatePriceMutation,
   useUpdateCostMutation,
   Product,
@@ -67,6 +68,9 @@ const ProductsPage = () => {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
   const [isBulkPrintMode, setIsBulkPrintMode] = useState(false);
+  const [isAddOpeningStockModalOpen, setIsAddOpeningStockModalOpen] = useState(false);
+  const [showAddStockButton, setShowAddStockButton] = useState(false);
+  const [useAddToOpeningStock] = useAddToOpeningStockMutation();
 
   // وحدة القياس في نماذج الإضافة والتعديل
   const [createUnit, setCreateUnit] = useState<'صندوق' | 'قطعة' | 'كيس' | 'لتر'>('صندوق');
@@ -77,6 +81,14 @@ const ProductsPage = () => {
     const savedThreshold = localStorage.getItem('lowStockThreshold');
     if (savedThreshold) {
       setLowStockThreshold(parseInt(savedThreshold));
+    }
+  }, []);
+
+  // تحميل إعدادات زر المخزون الافتتاحي
+  useEffect(() => {
+    const savedShowStock = localStorage.getItem('showAddStockButton');
+    if (savedShowStock) {
+      setShowAddStockButton(savedShowStock === 'true');
     }
   }, []);
 
@@ -316,6 +328,24 @@ const ProductsPage = () => {
       setSelectedProduct(null);
     } catch (error: any) {
       notifications.custom.error('خطأ', error?.data?.message || 'فشل تحديث التكلفة');
+    }
+  };
+
+  // معالجة إضافة رصيد افتتاحي
+  const handleAddOpeningStock = async (quantity: number) => {
+    if (!selectedProduct || !currentUser?.companyId) return;
+
+    try {
+      await useAddToOpeningStock({
+        companyId: currentUser.companyId,
+        productId: selectedProduct.id,
+        quantity
+      }).unwrap();
+      notifications.custom.success('تمت الإضافة', `تم إضافة ${quantity} ${selectedProduct.unit || 'وحدة'} للمخزون بنجاح`);
+      setIsAddOpeningStockModalOpen(false);
+      setSelectedProduct(null);
+    } catch (error: any) {
+      notifications.custom.error('خطأ', error?.data?.message || 'فشل إضافة الرصيد الافتتاحي');
     }
   };
 
@@ -772,6 +802,22 @@ const ProductsPage = () => {
               <Plus className="w-5 h-5" />
               إضافة صنف جديد
             </button>
+            {(currentUser?.isSystemUser || currentUser?.permissions?.includes('screen.all') || currentUser?.permissions?.includes('screen.products')) && (
+              <button
+                onClick={() => {
+                  const newValue = !showAddStockButton;
+                  setShowAddStockButton(newValue);
+                  localStorage.setItem('showAddStockButton', String(newValue));
+                }}
+                className={`p-2 rounded-lg transition-all duration-200 shadow-md ${showAddStockButton
+                  ? 'bg-purple-600 text-white hover:bg-purple-700'
+                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                  }`}
+                title="إظهار/إخفاء زر الرصيد الافتتاحي"
+              >
+                <Store className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -1342,6 +1388,18 @@ const ProductsPage = () => {
                         >
                           <ShoppingBag className="w-4 h-4" />
                         </button>
+                        {showAddStockButton && (
+                          <button
+                            onClick={() => {
+                              setSelectedProduct(product);
+                              setIsAddOpeningStockModalOpen(true);
+                            }}
+                            className="text-teal-600 hover:text-teal-900 p-1.5 rounded-md hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors"
+                            title="إضافة رصيد افتتاحي"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        )}
 
                         {/* الأزرار الإضافية - تظهر في الشاشات المتوسطة وما فوق */}
                         <button
@@ -2451,6 +2509,81 @@ const ProductsPage = () => {
               >
                 إغلاق
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Opening Stock Modal */}
+      {isAddOpeningStockModalOpen && selectedProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">إضافة رصيد افتتاحي</h3>
+              <button
+                onClick={() => {
+                  setIsAddOpeningStockModalOpen(false);
+                  setSelectedProduct(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div className="bg-blue-50 p-3 rounded-md mb-4 border border-blue-200">
+                <p className="font-medium text-blue-900">{selectedProduct.name}</p>
+                <div className="text-sm text-blue-700 mt-1">
+                  الرصيد الحالي: {formatArabicQuantity(selectedProduct.stock?.[0]?.boxes || 0)} {selectedProduct.unit === 'صندوق' ? 'صندوق' : (selectedProduct.unit || 'وحدة')}
+                </div>
+                <p className="text-xs text-blue-600 mt-2">
+                  ملاحظة: هذه الكمية ستضاف مباشرة للمخزون دون تسجيل فاتورة شراء.
+                </p>
+              </div>
+
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const qty = Number(formData.get('quantity'));
+                if (qty > 0) {
+                  handleAddOpeningStock(qty);
+                }
+              }}>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    الكمية للإضافة ({selectedProduct.unit || 'وحدة'})
+                  </label>
+                  <input
+                    type="number"
+                    name="quantity"
+                    step="0.01"
+                    min="0.01"
+                    required
+                    className="w-full px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddOpeningStockModalOpen(false);
+                      setSelectedProduct(null);
+                    }}
+                    className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors"
+                  >
+                    إضافة للمخزون
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

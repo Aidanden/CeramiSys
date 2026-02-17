@@ -448,6 +448,38 @@ export class SalePaymentService {
         where: { id }
       });
 
+      // عكس العمليات المالية (حساب العميل والخزينة)
+      // 1. حذف قيد حساب العميل
+      await this.prisma.customerAccount.deleteMany({
+        where: {
+          referenceType: 'PAYMENT' as any,
+          referenceId: id
+        }
+      });
+
+      // 2. عكس حركة الخزينة
+      const treasuryTx = await this.prisma.treasuryTransaction.findFirst({
+        where: {
+          referenceType: 'SalePayment',
+          referenceId: id
+        }
+      });
+
+      if (treasuryTx) {
+        await this.prisma.treasury.update({
+          where: { id: treasuryTx.treasuryId },
+          data: {
+            balance: {
+              decrement: treasuryTx.amount
+            }
+          }
+        });
+
+        await this.prisma.treasuryTransaction.delete({
+          where: { id: treasuryTx.id }
+        });
+      }
+
       // تحديث المبالغ في الفاتورة
       const newPaidAmount = Number(payment.sale.paidAmount) - Number(payment.amount);
       const newRemainingAmount = Number(payment.sale.total) - newPaidAmount;

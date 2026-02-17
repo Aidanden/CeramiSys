@@ -361,8 +361,9 @@ export class WarehouseService {
       }
 
       // التحقق من إمكانية تغيير الحالة
-      if (existingOrder.status === 'COMPLETED' || existingOrder.status === 'CANCELLED') {
-        throw new Error('Cannot update a completed or cancelled dispatch order');
+      // السماح بتغيير الحالة من ملغي إلى تم التسليم بناءً على طلب المستخدم
+      if (existingOrder.status === 'COMPLETED' || (existingOrder.status === 'CANCELLED' && data.status !== 'COMPLETED')) {
+        throw new Error('لا يمكن تحديث أمر صرف مكتمل أو ملغي (إلا إذا كنت تريد تحويله من ملغي إلى تم التسليم)');
       }
 
       // تحديث البيانات
