@@ -545,6 +545,9 @@ export class SalesService {
           ...(isSystemUser !== true && { companyId: userCompanyId })
         },
         include: {
+          company: {
+            select: { id: true, name: true, parentId: true }
+          },
           lines: {
             include: {
               product: {
@@ -597,6 +600,8 @@ export class SalesService {
         // إرجاع المخزون للحالة السابقة
         // الحصول على بيانات الأصناف للبنود القديمة
         const oldProductIds = existingSale.lines.map(line => line.productId);
+        const parentCompanyId = existingSale.company.parentId || 1; // الافتراضي 1 إذا لم يكن هناك parentId
+
         const oldProducts = await this.prisma.product.findMany({
           where: {
             id: { in: oldProductIds }
@@ -626,7 +631,7 @@ export class SalesService {
             this.prisma.stock.upsert({
               where: {
                 companyId_productId: {
-                  companyId: userCompanyId,
+                  companyId: line.isFromParentCompany ? parentCompanyId : existingSale.companyId,
                   productId: line.productId
                 }
               },
@@ -636,7 +641,7 @@ export class SalesService {
                 }
               },
               create: {
-                companyId: userCompanyId,
+                companyId: line.isFromParentCompany ? parentCompanyId : existingSale.companyId,
                 productId: line.productId,
                 boxes: boxesToIncrement
               }
@@ -666,7 +671,12 @@ export class SalesService {
           include: {
             group: true,
             stocks: isSystemUser ? true : {
-              where: { companyId: existingSale.companyId }
+              where: {
+                OR: [
+                  { companyId: existingSale.companyId },
+                  { companyId: existingSale.company.parentId || 1 }
+                ]
+              }
             }
           }
         });
@@ -688,40 +698,53 @@ export class SalesService {
           const product = products.find((p: any) => p.id === line.productId);
           if (!product) continue;
 
-          // للـ System User: نبحث عن المخزون في الشركة المحددة
-          const stock = isSystemUser
-            ? product.stocks.find((s: any) => s.companyId === existingSale.companyId)
-            : product.stocks[0];
+          const isParentProduct = product.createdByCompanyId === 1;
+          const parentCompanyId = existingSale.company.parentId || 1;
+          const requiredBoxes = line.qty;
 
-          // حساب الصناديق المطلوبة:
-          // ملاحظة: line.qty دائماً يمثل عدد الصناديق (الواجهة الأمامية ترسل الكمية بالصناديق)
-          // السعر unitPrice يكون مضروباً في unitsPerBox للأصناف من نوع "صندوق"
-          let requiredBoxes = line.qty;
-          let actualUnitsToSell = line.qty;
+          // البحث عن المخزون المحلي
+          const localStock = product.stocks.find((s: any) => s.companyId === existingSale.companyId);
+          const localAvailable = Number(localStock?.boxes || 0);
 
-          if (product.unit === 'صندوق' && product.unitsPerBox && Number(product.unitsPerBox) > 0) {
-            // line.qty = عدد الصناديق المطلوبة
-            const unitsPerBox = Number(product.unitsPerBox);
-            // حساب إجمالي الوحدات (الأمتار) = عدد الصناديق × الوحدات في الصندوق
-            actualUnitsToSell = requiredBoxes * unitsPerBox;
-          }
+          // البحث عن مخزون الشركة الأم
+          const parentStock = product.stocks.find((s: any) => s.companyId === parentCompanyId);
+          const parentAvailable = Number(parentStock?.boxes || 0);
 
-          if (!stock || Number(stock.boxes) < requiredBoxes) {
-            const availableBoxes = Number(stock?.boxes || 0);
-            let availableUnits = '';
+          // تحديد ما إذا كان المستخدم يطلب صراحة من الشركة الأم
+          const requestedFromParent = line.isFromParentCompany;
 
-            if (product.unit === 'صندوق' && product.unitsPerBox) {
-              const availableMeters = availableBoxes * Number(product.unitsPerBox);
-              availableUnits = `${availableMeters.toFixed(2)} م² (${availableBoxes} صندوق)`;
-            } else {
-              availableUnits = `${availableBoxes} ${product.unit || 'وحدة'}`;
+          // التحقق
+          if (requestedFromParent) {
+            // إذا طلب من الشركة الأم، نتحقق من مخزون الشركة الأم فقط
+            if (parentAvailable < requiredBoxes) {
+              const availableUnits = product.unit === 'صندوق' && product.unitsPerBox
+                ? `${(parentAvailable * Number(product.unitsPerBox)).toFixed(2)} م² (${parentAvailable} صندوق)`
+                : `${parentAvailable} ${product.unit || 'وحدة'}`;
+
+              const requestedUnits = product.unit === 'صندوق' && product.unitsPerBox
+                ? `${(requiredBoxes * Number(product.unitsPerBox)).toFixed(2)} م² (${requiredBoxes} صندوق)`
+                : `${requiredBoxes} ${product.unit || 'وحدة'}`;
+
+              throw new Error(`المخزون غير كافي للصنف "${product.name}" في مخازن الشركة الأم. المتوفر: ${availableUnits}، المطلوب: ${requestedUnits}`);
             }
+          } else {
+            // إذا طلب محلياً، نتحقق من المحلي، وإذا لم يكفِ نتحقق من الأم (إذا كان المنتج لها)
+            if (localAvailable < requiredBoxes) {
+              if (isParentProduct && parentAvailable >= requiredBoxes) {
+                // مسموح (سيتم تحويله تلقائياً أو يدوياً لاحقاً)
+              } else {
+                const availableUnits = product.unit === 'صندوق' && product.unitsPerBox
+                  ? `${(localAvailable * Number(product.unitsPerBox)).toFixed(2)} م² (${localAvailable} صندوق)`
+                  : `${localAvailable} ${product.unit || 'وحدة'}`;
 
-            const requestedUnits = product.unit === 'صندوق' && product.unitsPerBox
-              ? `${actualUnitsToSell.toFixed(2)} م² (${requiredBoxes} صندوق)`
-              : `${requiredBoxes} ${product.unit || 'وحدة'}`;
+                const requestedUnits = product.unit === 'صندوق' && product.unitsPerBox
+                  ? `${(requiredBoxes * Number(product.unitsPerBox)).toFixed(2)} م² (${requiredBoxes} صندوق)`
+                  : `${requiredBoxes} ${product.unit || 'وحدة'}`;
 
-            throw new Error(`المخزون غير كافي للصنف: ${product.name}. المتوفر: ${availableUnits}، المطلوب: ${requestedUnits}`);
+                const extraMsg = isParentProduct ? ` (ولا في الشركة الأم: ${parentAvailable} صندوق)` : '';
+                throw new Error(`المخزون غير كافي للصنف "${product.name}". المتوفر محلياً: ${availableUnits}${extraMsg}، المطلوب: ${requestedUnits}`);
+              }
+            }
           }
         }
 
@@ -843,8 +866,9 @@ export class SalesService {
         });
 
         // 🟢 تحسين: جلب المخزون الحالي دفعة واحدة لتجنب N+1
+        const parentCompanyId = existingSale.company.parentId || 1;
         const stockKeys = data.lines.map(line => ({
-          companyId: existingSale.companyId,
+          companyId: line.isFromParentCompany ? parentCompanyId : existingSale.companyId,
           productId: line.productId
         }));
 
@@ -869,7 +893,8 @@ export class SalesService {
           let boxesToDecrement = Number(line.qty);
 
           // الحصول على المخزون الحالي من Map المحملة مسبقاً
-          const stockKey = `${existingSale.companyId}-${line.productId}`;
+          const targetCompanyId = line.isFromParentCompany ? parentCompanyId : existingSale.companyId;
+          const stockKey = `${targetCompanyId}-${line.productId}`;
           const currentStock = stocksMap.get(stockKey);
 
           const currentBoxes = currentStock ? Number(currentStock.boxes) : 0;
@@ -880,17 +905,17 @@ export class SalesService {
             this.prisma.stock.upsert({
               where: {
                 companyId_productId: {
-                  companyId: existingSale.companyId,
+                  companyId: targetCompanyId,
                   productId: line.productId
                 }
               },
               update: {
-                boxes: newBoxes
+                boxes: { decrement: boxesToDecrement } // استخدام decrement بدلاً من تعيين قيمة ثابتة لتجنب سباق البيانات
               },
               create: {
-                companyId: existingSale.companyId,
+                companyId: targetCompanyId,
                 productId: line.productId,
-                boxes: 0 // إذا لم يكن موجوداً، نبدأ من 0
+                boxes: -boxesToDecrement
               }
             })
           );
@@ -1035,10 +1060,14 @@ export class SalesService {
           productId: line.productId,
           product: {
             ...line.product,
-            unitsPerBox: line.product.unitsPerBox ? Number(line.product.unitsPerBox) : null
+            unitsPerBox: (line.product as any).unitsPerBox ? Number((line.product as any).unitsPerBox) : null
           },
           qty: Number(line.qty),
           unitPrice: Number(line.unitPrice),
+          isFromParentCompany: (line as any).isFromParentCompany || false,
+          parentUnitPrice: (line as any).parentUnitPrice ? Number((line as any).parentUnitPrice) : undefined,
+          branchUnitPrice: (line as any).branchUnitPrice ? Number((line as any).branchUnitPrice) : undefined,
+          profitMargin: (line as any).profitMargin ? Number((line as any).profitMargin) : undefined,
           discountPercentage: Number((line as any).discountPercentage || 0),
           discountAmount: Number((line as any).discountAmount || 0),
           subTotal: Number(line.subTotal)
