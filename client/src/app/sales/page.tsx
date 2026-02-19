@@ -53,6 +53,7 @@ interface LocalCreateSaleRequest {
   notes?: string;
   totalDiscountPercentage?: number;
   totalDiscountAmount?: number;
+  createdAt?: string;
   lines: LocalSaleLine[];
 }
 
@@ -106,6 +107,7 @@ const SalesPage = () => {
     notes: '', // ملاحظات اختيارية
     totalDiscountPercentage: 0,
     totalDiscountAmount: 0,
+    createdAt: new Date().toISOString().split('T')[0], // القيمة الافتراضية التاريخ الحالي
     lines: []
   });
 
@@ -802,7 +804,8 @@ const SalesPage = () => {
       customerSaleType: 'CREDIT', // آجل كما هو مطلوب
       customerPaymentMethod: 'CASH', // افتراضي
       totalDiscountPercentage: saleForm.totalDiscountPercentage || 0,
-      totalDiscountAmount: saleForm.totalDiscountAmount || 0
+      totalDiscountAmount: saleForm.totalDiscountAmount || 0,
+      createdAt: saleForm.createdAt
     };
 
     const result = await createComplexInterCompanySale(complexSaleRequest).unwrap();
@@ -877,7 +880,8 @@ const SalesPage = () => {
       setSaleForm({
         customerId: undefined,
         notes: '',
-        lines: []
+        lines: [],
+        createdAt: new Date().toISOString().split('T')[0]
       });
       setSelectedCustomerName('');
       setShowCustomerSuggestions(false);
@@ -995,6 +999,7 @@ const SalesPage = () => {
     const formData = new FormData(e.target as HTMLFormElement);
     const customerId = formData.get('customerId') ? Number(formData.get('customerId')) : undefined;
     const invoiceNumber = formData.get('invoiceNumber') as string;
+    const createdAt = formData.get('createdAt') as string;
 
     // التحقق من وجود أسطر
     if (editLines.length === 0) {
@@ -1040,6 +1045,7 @@ const SalesPage = () => {
         data: {
           customerId,
           invoiceNumber: invoiceNumber || undefined,
+          createdAt: createdAt || undefined,
           lines: processedLines,
           totalDiscountPercentage: editTotalDiscountPercentage || 0,
           totalDiscountAmount: editTotalDiscountAmount || 0
@@ -1990,6 +1996,22 @@ const SalesPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-text-secondary mb-1">
+                      📅 تاريخ الفاتورة *
+                    </label>
+                    <input
+                      type="date"
+                      value={saleForm.createdAt || ''}
+                      onChange={(e) => setSaleForm(prev => ({ ...prev, createdAt: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary outline-none transition-all"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      يمكنك اختيار تاريخ قديم إذا لزم الأمر
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-text-secondary mb-1">
                       رقم الفاتورة
                     </label>
                     <input
@@ -2814,6 +2836,22 @@ const SalesPage = () => {
                 </select>
               </div>
 
+              {/* التاريخ */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-700 dark:text-text-secondary mb-2">
+                  📅 تاريخ الفاتورة
+                </label>
+                <input
+                  type="date"
+                  name="createdAt"
+                  defaultValue={saleToEdit.createdAt ? new Date(saleToEdit.createdAt).toISOString().split('T')[0] : ''}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-border-primary rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary transition-all"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  يمكنك تعديل تاريخ الفاتورة إذا لزم الأمر
+                </p>
+              </div>
+
               {/* Product Search Filters */}
               <div className="mb-6 p-4 bg-gradient-to-r from-slate-50 to-blue-50 dark:from-slate-900/10 dark:to-blue-900/10 border-2 border-slate-200 dark:border-border-primary rounded-lg">
                 <div className="flex items-center justify-between mb-3">
@@ -3217,7 +3255,7 @@ const SalesPage = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div >
       )}
 
       <PrintModal
@@ -3230,7 +3268,7 @@ const SalesPage = () => {
         enableLineDiscount={enableLineDiscount}
         enableInvoiceDiscount={enableInvoiceDiscount}
       />
-    </div>
+    </div >
   );
 };
 

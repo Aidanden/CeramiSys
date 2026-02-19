@@ -152,6 +152,7 @@ export class SalesService {
           totalDiscountAmount: totalDiscountAmount,
           status: 'DRAFT', // فاتورة مبدئية
           notes: data.notes || null,
+          createdAt: data.createdAt ? new Date(data.createdAt) : undefined,
           // جميع الفواتير آجلة
           saleType: 'CREDIT', // ✅ آجلة دائماً
           paymentMethod: null,
@@ -809,6 +810,7 @@ export class SalesService {
           invoiceNumber: data.invoiceNumber,
           saleType: data.saleType,
           paymentMethod: data.paymentMethod,
+          createdAt: data.createdAt ? new Date(data.createdAt) : undefined,
           total: total,
           // ✅ حفظ قيم الخصم المرسلة مباشرة بدلاً من إعادة حسابها
           totalDiscountPercentage: data.totalDiscountPercentage !== undefined ? data.totalDiscountPercentage : existingSale.totalDiscountPercentage,
@@ -1111,12 +1113,71 @@ export class SalesService {
         select: { id: true, invoiceNumber: true }
       });
 
-      if (parentComplexSale) {
+      // إذا كانت الفاتورة تالفة (بدون أصناف)، نسمح بحذفها حتى لو كانت مرتبطة
+      const isBroken = existingSale.lines.length === 0;
+
+      if (parentComplexSale && !isBroken) {
         throw new Error(`⛔ لا يمكن حذف هذه الفاتورة مباشرة! هذه فاتورة تلقائية مرتبطة بالفاتورة رقم ${parentComplexSale.invoiceNumber}. يجب حذف الفاتورة الأصلية ليتم حذف هذه تلقائياً.`);
       }
 
       // تنفيذ الحذف كعملية ذرية واحدة
       await this.prisma.$transaction(async (tx) => {
+        // إذا كانت الفاتورة تالفة ومرتبطة، نقوم بفك الارتباط أولاً
+        if (isBroken && parentComplexSale) {
+          await tx.sale.updateMany({
+            where: {
+              OR: [
+                { relatedParentSaleId: id },
+                { relatedBranchPurchaseId: id }
+              ]
+            },
+            data: {
+              relatedParentSaleId: null,
+              relatedBranchPurchaseId: null
+            }
+          });
+        }
+
+        // 0. معالجة المرتجعات المرتبطة (إلغاؤها وإعادة خصم المخزون قبل حذف الفاتورة)
+        const saleReturns = await tx.saleReturn.findMany({
+          where: { saleId: id },
+          include: { lines: true }
+        });
+
+        for (const sr of saleReturns) {
+          // المرتجع قام بزيادة المخزون، لذا عند حذفه يجب إنقاص المخزون مجدداً
+          for (const srl of sr.lines) {
+            await tx.stock.upsert({
+              where: {
+                companyId_productId: {
+                  companyId: sr.companyId,
+                  productId: srl.productId
+                }
+              },
+              update: { boxes: { decrement: Number(srl.qty) } },
+              create: {
+                companyId: sr.companyId,
+                productId: srl.productId,
+                boxes: -Number(srl.qty)
+              }
+            });
+          }
+
+          // حذف قيود الحساب المتعلقة بالمرتجع (DEBIT للزبون لأنه استرجع قيمة)
+          await tx.customerAccount.deleteMany({
+            where: {
+              referenceType: 'RETURN' as any,
+              referenceId: sr.id
+            }
+          });
+
+          // حذف الدفعات/الاستردادات والبنود
+          await tx.returnPayment.deleteMany({ where: { saleReturnId: sr.id } });
+          await tx.saleReturnLine.deleteMany({ where: { saleReturnId: sr.id } });
+          await tx.returnOrder.deleteMany({ where: { saleReturnId: sr.id } });
+          await tx.saleReturn.delete({ where: { id: sr.id } });
+        }
+
         // 1. حذف الفواتير المرتبطة (Cascade Delete) إذا كانت فاتورة معقدة
         if (existingSale.relatedParentSaleId || existingSale.relatedBranchPurchaseId || existingSale.relatedPurchaseFromParentId) {
           // أ. حذف فاتورة الشركة الأم
@@ -1718,7 +1779,17 @@ export class SalesService {
       const existingCustomer = await this.prisma.customer.findUnique({
         where: { id },
         include: {
-          sales: true
+          _count: {
+            select: {
+              sales: true,
+              accountEntries: true,
+              provisionalSales: true,
+              saleReturns: true,
+              generalReceipts: true,
+              paymentReceipts: true,
+              externalStores: true
+            }
+          }
         }
       });
 
@@ -1726,8 +1797,17 @@ export class SalesService {
         throw new Error('العميل غير موجود');
       }
 
-      if (existingCustomer.sales.length > 0) {
-        throw new Error('لا يمكن حذف العميل لأن لديه فواتير مرتبطة');
+      const counts = existingCustomer._count;
+      const hasHistory = counts.sales > 0 ||
+        counts.accountEntries > 0 ||
+        counts.provisionalSales > 0 ||
+        counts.saleReturns > 0 ||
+        counts.generalReceipts > 0 ||
+        counts.paymentReceipts > 0 ||
+        counts.externalStores > 0;
+
+      if (hasHistory) {
+        throw new Error('لا يمكن حذف العميل لوجود سجل معاملات (فواتير، حسابات، إيصالات، أو محلات مرتبطة) مرتبطة به');
       }
 
       await this.prisma.customer.delete({
@@ -1786,7 +1866,7 @@ export class SalesService {
    */
   async approveSale(
     id: number,
-    approvalData: { saleType: 'CASH' | 'CREDIT'; paymentMethod?: 'CASH' | 'BANK' | 'CARD'; bankAccountId?: number },
+    approvalData: { saleType: 'CASH' | 'CREDIT'; paymentMethod?: 'CASH' | 'BANK' | 'CARD'; bankAccountId?: number; paymentDate?: string },
     userCompanyId: number,
     approvedBy: string,
     isSystemUser: boolean = false,
@@ -1944,11 +2024,11 @@ export class SalesService {
             paidAmount,
             remainingAmount,
             isFullyPaid,
-            approvedAt: new Date(),
+            approvedAt: approvalData.paymentDate ? new Date(approvalData.paymentDate) : new Date(),
             approvedBy,
             ...(shouldIssueReceipt ? {
               receiptIssued: true,
-              receiptIssuedAt: new Date(),
+              receiptIssuedAt: approvalData.paymentDate ? new Date(approvalData.paymentDate) : new Date(),
               receiptIssuedBy: approvedBy
             } : {})
           },
@@ -2007,7 +2087,7 @@ export class SalesService {
             referenceType: 'SALE',
             referenceId: approvedSale.id,
             description: `فاتورة مبيعات آجلة رقم ${approvedSale.invoiceNumber || approvedSale.id}`,
-            transactionDate: new Date()
+            transactionDate: approvalData.paymentDate ? new Date(approvalData.paymentDate) : new Date()
           });
         } else if (approvalData.saleType === 'CASH') {
           // مبيعات نقدية - قيد مديونية + قيد دفع لسدادها فوراً في كشف الحساب
@@ -2019,7 +2099,7 @@ export class SalesService {
             referenceType: 'SALE',
             referenceId: approvedSale.id,
             description: `فاتورة مبيعات نقدية رقم ${approvedSale.invoiceNumber || approvedSale.id}`,
-            transactionDate: new Date()
+            transactionDate: approvalData.paymentDate ? new Date(approvalData.paymentDate) : new Date()
           });
 
           // 2. قيد الدفع
@@ -2030,7 +2110,7 @@ export class SalesService {
             referenceType: 'PAYMENT',
             referenceId: approvedSale.id,
             description: `دفع نقداً مقابل فاتورة رقم ${approvedSale.invoiceNumber || approvedSale.id}`,
-            transactionDate: new Date()
+            transactionDate: approvalData.paymentDate ? new Date(approvalData.paymentDate) : new Date()
           });
         }
       }
@@ -2084,7 +2164,8 @@ export class SalesService {
               'Sale',
               approvedSale.id,
               description,
-              approvedBy
+              approvedBy,
+              approvalData.paymentDate ? new Date(approvalData.paymentDate) : undefined
             );
           } else {
             // No suitable treasury found

@@ -6,7 +6,9 @@ import {
   useGetCustomerAccountQuery,
   useGetCustomerOpenInvoicesQuery
 } from "@/state/customerAccountApi";
-import { User, Search, TrendingUp, TrendingDown, FileText, X, DollarSign, Calendar, Phone, Eye, Filter, RefreshCw } from "lucide-react";
+import { useDeleteCustomerMutation } from "@/state/salesApi";
+import { User, Search, TrendingUp, TrendingDown, FileText, X, DollarSign, Calendar, Phone, Eye, Filter, RefreshCw, Trash2 } from "lucide-react";
+import { useToast } from "@/components/ui/Toast";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { formatLibyanCurrency, formatArabicNumber, formatArabicDate, formatEnglishDate } from "@/utils/formatLibyanNumbers";
@@ -34,6 +36,9 @@ const CustomerAccountsPage = () => {
 
   // Current user for print header
   const currentUser = useAppSelector((state) => state.auth.user);
+
+  const { success, error: showError } = useToast();
+  const [deleteCustomer, { isLoading: isDeleting }] = useDeleteCustomerMutation();
 
   const { data: summaryData, isLoading, error } = useGetAllCustomersAccountSummaryQuery();
   const { data: accountData, isLoading: isLoadingAccount } = useGetCustomerAccountQuery(
@@ -130,6 +135,17 @@ const CustomerAccountsPage = () => {
     setAccountEndDate("");
     setInvoicesStartDate("");
     setInvoicesEndDate("");
+  };
+
+  const handleDeleteCustomer = async (id: number, name: string) => {
+    if (confirm(`هل أنت متأكد من حذف العميل "${name}" نهائياً من النظام؟\n\nلا يمكن التراجع عن هذه العملية.`)) {
+      try {
+        await deleteCustomer(id).unwrap();
+        success('تم حذف العميل بنجاح');
+      } catch (err: any) {
+        showError(err?.data?.message || 'حدث خطأ أثناء حذف العميل. تأكد من عدم وجود أي فواتير أو حركات مالية مسجلة باسمه.');
+      }
+    }
   };
 
   // مسح فلاتر كشف الحساب
@@ -778,6 +794,16 @@ const CustomerAccountsPage = () => {
                                 >
                                   <FileText className="w-4 h-4 ml-1" />
                                   الفواتير المفتوحة
+                                </button>
+                              )}
+                              {customer.totalDebit === 0 && customer.totalCredit === 0 && (
+                                <button
+                                  onClick={() => handleDeleteCustomer(customer.id, customer.name)}
+                                  disabled={isDeleting}
+                                  className="inline-flex items-center justify-center w-10 px-3 py-1.5 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition-colors disabled:opacity-50"
+                                  title="حذف العميل"
+                                >
+                                  <Trash2 className="w-4 h-4" />
                                 </button>
                               )}
                             </div>

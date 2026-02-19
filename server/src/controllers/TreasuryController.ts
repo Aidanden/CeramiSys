@@ -269,14 +269,14 @@ class TreasuryController {
      */
     async getAllTransactions(req: AuthRequest, res: Response) {
         try {
-            const { 
-                treasuryId, 
-                startDate, 
-                endDate, 
-                type, 
-                source, 
-                page = '1', 
-                limit = '50' 
+            const {
+                treasuryId,
+                startDate,
+                endDate,
+                type,
+                source,
+                page = '1',
+                limit = '50'
             } = req.query;
 
             const where: any = {};
@@ -567,7 +567,8 @@ class TreasuryController {
         referenceType: string,
         referenceId: number,
         description: string,
-        createdBy?: string
+        createdBy?: string,
+        transactionDate?: Date
     ) {
         const amountDecimal = new Decimal(amount);
 
@@ -595,6 +596,7 @@ class TreasuryController {
                     referenceType,
                     referenceId,
                     createdBy,
+                    createdAt: transactionDate || new Date()
                 },
             }),
             prisma.treasury.update({
@@ -616,7 +618,8 @@ class TreasuryController {
         referenceType: string,
         referenceId: number,
         description: string,
-        createdBy?: string
+        createdBy?: string,
+        transactionDate?: Date
     ) {
         const amountDecimal = new Decimal(amount);
 
@@ -648,6 +651,7 @@ class TreasuryController {
                     referenceType,
                     referenceId,
                     createdBy,
+                    createdAt: transactionDate || new Date()
                 },
             }),
             prisma.treasury.update({
@@ -702,7 +706,7 @@ class TreasuryController {
 
                     return {
                         treasuryId: treasury.id,
-                        name: treasury.type === 'BANK' 
+                        name: treasury.type === 'BANK'
                             ? `${treasury.name} - ${treasury.bankName || ''}`
                             : treasury.name,
                         type: treasury.type,
@@ -730,7 +734,7 @@ class TreasuryController {
 
                     return {
                         treasuryId: treasury.id,
-                        name: treasury.type === 'BANK' 
+                        name: treasury.type === 'BANK'
                             ? `${treasury.name} - ${treasury.bankName || ''}`
                             : treasury.name,
                         type: treasury.type,
@@ -758,10 +762,10 @@ class TreasuryController {
             });
         } catch (error: any) {
             console.error('Error fetching monthly treasury stats:', error);
-            return res.status(500).json({ 
+            return res.status(500).json({
                 success: false,
-                error: 'فشل في جلب إحصائيات الخزائن', 
-                details: error.message 
+                error: 'فشل في جلب إحصائيات الخزائن',
+                details: error.message
             });
         }
     }

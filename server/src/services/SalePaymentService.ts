@@ -304,7 +304,8 @@ export class SalePaymentService {
             'SalePayment',
             payment.id,
             description,
-            undefined // createdBy
+            undefined, // createdBy
+            data.paymentDate ? new Date(data.paymentDate) : undefined
           );
         } else {
           throw new Error(`لا توجد خزينة مناسبة للشركة ${userCompanyId}`);

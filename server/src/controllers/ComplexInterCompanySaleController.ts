@@ -29,7 +29,8 @@ export class ComplexInterCompanySaleController {
         lines,
         profitMargin,
         totalDiscountPercentage,
-        totalDiscountAmount
+        totalDiscountAmount,
+        createdAt
       } = req.body;
 
       // التحقق من صحة البيانات
@@ -52,7 +53,8 @@ export class ComplexInterCompanySaleController {
         lines,
         profitMargin,
         totalDiscountPercentage,
-        totalDiscountAmount
+        totalDiscountAmount,
+        createdAt
       }, userCompanyId, true);
 
       res.status(201).json({

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { useGetSalesQuery, useGetCashSalesQuery, useIssueReceiptMutation, useApproveSaleMutation, useUpdateSaleMutation, useCancelSaleMutation, Sale, salesApi } from '@/state/salesApi';
+import { useGetSalesQuery, useGetCashSalesQuery, useIssueReceiptMutation, useApproveSaleMutation, useUpdateSaleMutation, useCancelSaleMutation, useDeleteSaleMutation, Sale, salesApi } from '@/state/salesApi';
 import { useCreateDispatchOrderMutation } from '@/state/warehouseApi';
 import { useGetCurrentUserQuery } from '@/state/authApi';
 import { useGetProductsQuery } from '@/state/productsApi';
@@ -55,6 +55,7 @@ export default function AccountantWorkspace() {
     unitPrice: number;
   }>>([]);
 
+  const [deleteSale, { isLoading: isDeletingSale }] = useDeleteSaleMutation();
   const [cancelSale, { isLoading: isCancellingSale }] = useCancelSaleMutation();
 
   const handleCancelSale = async (sale: Sale) => {
@@ -64,6 +65,22 @@ export default function AccountantWorkspace() {
         success('تم إلغاء الفاتورة بنجاح');
       } catch (err: any) {
         showError(err?.data?.message || 'حدث خطأ أثناء إلغاء الفاتورة');
+      }
+    }
+  };
+
+  const handleDeleteSale = async (sale: Sale) => {
+    const isBroken = !sale.lines || sale.lines.length === 0;
+    const confirmMsg = isBroken
+      ? `🚨 تحذير: هذه الفاتورة تالفة (لا تحتوي على أصناف).\n\nهل أنت متأكد من حذفها نهائياً؟\n- سيتم إلغاء جميع الدفعات المالية المرتبطة بها.\n- سيتم تصفير حساب العميل الخاص بهذه الفاتورة.\n- سيتم حذف أمر صرف المخزن.`
+      : `⚠️ تحذير نهائي: هل أنت متأكد من حذف هذه الفاتورة (#${sale.invoiceNumber || sale.id})؟\n\n- سيتم إلغاء القيمة المالية تماماً.\n- سيتم حذف الدفعات.\n- سيتم حذف أمر الصرف.\nهذا الإجراء سيقوم بتنظيف شامل للفاتورة وتبعاتها.`;
+
+    if (window.confirm(confirmMsg)) {
+      try {
+        await deleteSale(sale.id).unwrap();
+        success('تم حذف الفاتورة وجميع تبعاتها المالية والمخزنية بنجاح');
+      } catch (err: any) {
+        showError(err?.data?.message || 'حدث خطأ أثناء حذف الفاتورة');
       }
     }
   };
@@ -321,7 +338,7 @@ export default function AccountantWorkspace() {
     }
 
     try {
-      await issueReceipt(sale.id).unwrap();
+      await issueReceipt({ saleId: sale.id }).unwrap();
       setIssuedReceipts(prev => new Set(prev).add(sale.id));
       success(`تم إصدار إيصال القبض للفاتورة ${sale.invoiceNumber || sale.id}`);
       printReceipt({ ...sale, receiptIssued: true });
@@ -597,6 +614,7 @@ ${itemsText}
     const saleType = formData.get('saleType') as "CASH" | "CREDIT";
     const paymentMethod = formData.get('paymentMethod') as "CASH" | "BANK" | "CARD" | undefined;
     const bankAccountId = formData.get('bankAccountId') as string | null;
+    const paymentDate = formData.get('paymentDate') as string | undefined;
 
     if (!saleType) {
       showError('يرجى اختيار نوع البيع');
@@ -619,7 +637,8 @@ ${itemsText}
         id: saleToApprove.id,
         saleType,
         paymentMethod: saleType === 'CASH' ? paymentMethod : undefined,
-        bankAccountId: bankAccountId ? Number(bankAccountId) : undefined
+        bankAccountId: bankAccountId ? Number(bankAccountId) : undefined,
+        paymentDate
       }).unwrap();
 
       success(`تم اعتماد الفاتورة ${saleToApprove.invoiceNumber || saleToApprove.id} وخصم المخزون بنجاح`);
@@ -753,6 +772,7 @@ ${itemsText}
     const bankAccountIdRaw = formData.get('bankAccountId') as string | null;
     const bankAccountId = bankAccountIdRaw ? Number(bankAccountIdRaw) : undefined;
     const notes = formData.get('notes') as string;
+    const paymentDate = formData.get('paymentDate') as string;
 
     const remainingAmount = selectedCreditSale.remainingAmount || 0;
 
@@ -781,7 +801,8 @@ ${itemsText}
         amount,
         paymentMethod,
         bankAccountId: (paymentMethod === 'BANK' || paymentMethod === 'CARD') ? bankAccountId : undefined,
-        notes: notes || undefined
+        notes: notes || undefined,
+        paymentDate: paymentDate || undefined
       }).unwrap();
 
       success('تم إنشاء إيصال القبض بنجاح');
@@ -1212,204 +1233,219 @@ ${itemsText}
                     </td>
                   </tr>
                 ) : (
-                  sales.map((sale: any) => (
-                    <tr key={sale.id} className="hover:bg-slate-50/80 dark:hover:bg-surface-hover transition-colors group">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
+                  sales.map((sale: any) => {
+                    const isBroken = !sale.lines || sale.lines.length === 0;
+                    return (
+                      <tr key={sale.id} className="hover:bg-slate-50/80 dark:hover:bg-surface-hover transition-colors group">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-black text-slate-900 dark:text-text-primary">
+                              {sale.invoiceNumber || `#${sale.id}`}
+                            </span>
+                            {sale.status === 'DRAFT' && (
+                              <span className="px-2 py-0.5 rounded-md bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-[10px] font-black uppercase">
+                                مبدئية
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-slate-700 dark:text-text-secondary transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                              {sale.customer?.name || 'عميل نقدي'}
+                            </span>
+                            {sale.customer?.phone && (
+                              <span className="text-xs text-slate-400 dark:text-text-tertiary flex items-center gap-1">
+                                {sale.customer.phone}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm font-black text-slate-900 dark:text-text-primary">
-                            {sale.invoiceNumber || `#${sale.id}`}
+                            {formatArabicCurrency(sale.total || 0)}
                           </span>
-                          {sale.status === 'DRAFT' && (
-                            <span className="px-2 py-0.5 rounded-md bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-[10px] font-black uppercase">
-                              مبدئية
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm font-black text-green-600 dark:text-green-400">
+                            {formatArabicCurrency(sale.paidAmount || 0)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm font-black text-orange-600 dark:text-orange-400">
+                            {formatArabicCurrency(sale.remainingAmount || 0)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-slate-700 dark:text-text-secondary">
+                              {new Date(sale.createdAt).toLocaleDateString('ar-LY')}
                             </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-slate-700 dark:text-text-secondary transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                            {sale.customer?.name || 'عميل نقدي'}
-                          </span>
-                          {sale.customer?.phone && (
-                            <span className="text-xs text-slate-400 dark:text-text-tertiary flex items-center gap-1">
-                              {sale.customer.phone}
+                            <span className="text-[10px] text-slate-400 dark:text-text-tertiary font-bold">
+                              {new Date(sale.createdAt).toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' })}
                             </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-black text-slate-900 dark:text-text-primary">
-                          {formatArabicCurrency(sale.total || 0)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-black text-green-600 dark:text-green-400">
-                          {formatArabicCurrency(sale.paidAmount || 0)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-black text-orange-600 dark:text-orange-400">
-                          {formatArabicCurrency(sale.remainingAmount || 0)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-slate-700 dark:text-text-secondary">
-                            {new Date(sale.createdAt).toLocaleDateString('ar-LY')}
-                          </span>
-                          <span className="text-[10px] text-slate-400 dark:text-text-tertiary font-bold">
-                            {new Date(sale.createdAt).toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-2">
-                          {sale.status === 'CANCELLED' ? (
-                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-lg text-xs font-bold border border-red-100 dark:border-red-900/30">
-                              <AlertCircle className="w-3.5 h-3.5" />
-                              ملغية
-                            </span>
-                          ) : sale.status === 'DRAFT' ? (
-                            <button
-                              onClick={() => {
-                                setSaleToApprove(sale);
-                                setShowApprovalModal(true);
-                              }}
-                              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-sm transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              اعتماد
-                            </button>
-                          ) : (
-                            <>
-                              {/* Cancel Approved Sale Button */}
-                              {sale.status === 'APPROVED' &&
-                                sale.saleType === 'CREDIT' &&
-                                (sale.paidAmount === 0 || !sale.paidAmount) &&
-                                (!sale.payments || sale.payments.length === 0) && (
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-2">
+                            {sale.status === 'CANCELLED' ? (
+                              <span className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-lg text-xs font-bold border border-red-100 dark:border-red-900/30">
+                                <AlertCircle className="w-3.5 h-3.5" />
+                                ملغية
+                              </span>
+                            ) : sale.status === 'DRAFT' ? (
+                              <button
+                                onClick={() => {
+                                  setSaleToApprove(sale);
+                                  setShowApprovalModal(true);
+                                }}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-sm transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                اعتماد
+                              </button>
+                            ) : (
+                              <>
+                                {/* Cancel Approved Sale Button */}
+                                {sale.status === 'APPROVED' &&
+                                  sale.saleType === 'CREDIT' &&
+                                  (sale.paidAmount === 0 || !sale.paidAmount) &&
+                                  (!sale.payments || sale.payments.length === 0) && (
+                                    <button
+                                      onClick={() => handleCancelSale(sale)}
+                                      disabled={isCancellingSale}
+                                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all disabled:opacity-50"
+                                      title="إلغاء الفاتورة (استرجاع المخزن وإلغاء القيد)"
+                                    >
+                                      <div className="relative">
+                                        <Trash2 className="w-5 h-5" />
+                                        <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                        </span>
+                                      </div>
+                                    </button>
+                                  )}
+
+                                {(sale.remainingAmount || 0) > 0 && (
                                   <button
-                                    onClick={() => handleCancelSale(sale)}
-                                    disabled={isCancellingSale}
-                                    className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all disabled:opacity-50"
-                                    title="إلغاء الفاتورة (استرجاع المخزن وإلغاء القيد)"
+                                    onClick={() => {
+                                      setSelectedCreditSale(sale);
+                                      setShowPaymentModal(true);
+                                    }}
+                                    className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-xl transition-all"
+                                    title="قبض مبلغ"
                                   >
-                                    <div className="relative">
-                                      <Trash2 className="w-5 h-5" />
-                                      <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                                      </span>
-                                    </div>
+                                    <DollarSign className="w-5 h-5" />
                                   </button>
                                 )}
 
-                              {(sale.remainingAmount || 0) > 0 && (
-                                <button
-                                  onClick={() => {
-                                    setSelectedCreditSale(sale);
-                                    setShowPaymentModal(true);
-                                  }}
-                                  className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-xl transition-all"
-                                  title="قبض مبلغ"
-                                >
-                                  <DollarSign className="w-5 h-5" />
-                                </button>
-                              )}
-
-                              {sale.payments && sale.payments.length > 0 && (
-                                <button
-                                  onClick={() => {
-                                    setSelectedCreditSale(sale);
-                                    setShowPrintHistoryModal(true);
-                                  }}
-                                  className="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-xl transition-all relative"
-                                  title="عرض الإيصالات"
-                                >
-                                  <FileText className="w-5 h-5" />
-                                  <span className="absolute -top-1 -right-1 bg-purple-600 dark:bg-purple-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                                    {sale.payments.length}
-                                  </span>
-                                </button>
-                              )}
-
-                              {!sale.isAutoGenerated && (
-                                sale.dispatchOrders && sale.dispatchOrders.length > 0 ? (
-                                  <div className="p-2 text-slate-300 dark:text-slate-700 cursor-not-allowed" title="تم إصدار أمر الصرف">
-                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                    </svg>
-                                  </div>
-                                ) : (
+                                {sale.payments && sale.payments.length > 0 && (
                                   <button
-                                    onClick={() => handleCreateDispatchOrder(sale)}
-                                    disabled={isCreatingDispatch}
-                                    className="p-2 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-xl transition-all disabled:opacity-50"
-                                    title="أمر صرف المخزن"
+                                    onClick={() => {
+                                      setSelectedCreditSale(sale);
+                                      setShowPrintHistoryModal(true);
+                                    }}
+                                    className="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-xl transition-all relative"
+                                    title="عرض الإيصالات"
+                                  >
+                                    <FileText className="w-5 h-5" />
+                                    <span className="absolute -top-1 -right-1 bg-purple-600 dark:bg-purple-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                                      {sale.payments.length}
+                                    </span>
+                                  </button>
+                                )}
+
+                                {!sale.isAutoGenerated && (
+                                  sale.dispatchOrders && sale.dispatchOrders.length > 0 ? (
+                                    <div className="p-2 text-slate-300 dark:text-slate-700 cursor-not-allowed" title="تم إصدار أمر الصرف">
+                                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                      </svg>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleCreateDispatchOrder(sale)}
+                                      disabled={isCreatingDispatch}
+                                      className="p-2 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-xl transition-all disabled:opacity-50"
+                                      title="أمر صرف المخزن"
+                                    >
+                                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                      </svg>
+                                    </button>
+                                  )
+                                )}
+
+                                <button
+                                  onClick={() => printInvoice(sale)}
+                                  className="p-2 text-slate-600 dark:text-text-secondary hover:bg-slate-100 dark:hover:bg-surface-hover rounded-xl transition-all"
+                                  title="طباعة الفاتورة"
+                                >
+                                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                </button>
+
+                                {sale.saleType === 'CASH' && (
+                                  <button
+                                    onClick={() => printReceipt(sale)}
+                                    className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all"
+                                    title="إعادة طباعة إيصال القبض"
                                   >
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                                     </svg>
                                   </button>
-                                )
-                              )}
+                                )}
 
-                              <button
-                                onClick={() => printInvoice(sale)}
-                                className="p-2 text-slate-600 dark:text-text-secondary hover:bg-slate-100 dark:hover:bg-surface-hover rounded-xl transition-all"
-                                title="طباعة الفاتورة"
-                              >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                              </button>
+                                {sale.saleType !== 'CASH' && sale.payments && sale.payments.length > 0 && (
+                                  <button
+                                    onClick={() => {
+                                      const lastPayment = sale.payments![sale.payments!.length - 1];
+                                      setSelectedPayment(lastPayment as any);
+                                      setSelectedCreditSale(sale);
+                                      setShowPrintReceiptModal(true);
+                                    }}
+                                    className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all"
+                                    title="إعادة طباعة آخر إيصال قبض"
+                                  >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                    </svg>
+                                  </button>
+                                )}
 
-                              {sale.saleType === 'CASH' && (
+                                {/* Force Delete Button for Broken Invoices or General Cleanup */}
+                                {(!sale.isAutoGenerated || isBroken) && (
+                                  <button
+                                    onClick={() => handleDeleteSale(sale)}
+                                    disabled={isDeletingSale}
+                                    className={`p-2 rounded-xl transition-all disabled:opacity-50 ${isBroken ? 'bg-red-100 text-red-600 hover:bg-red-200 animate-pulse border-2 border-red-500' : 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
+                                    title={isBroken ? "حذف فاتورة تالفة (بدون أصناف)" : "حذف نهائي للفاتورة وتبعاتها"}
+                                  >
+                                    <Trash2 className={`w-5 h-5 ${isBroken ? 'animate-bounce' : ''}`} />
+                                  </button>
+                                )}
+
                                 <button
-                                  onClick={() => printReceipt(sale)}
-                                  className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all"
-                                  title="إعادة طباعة إيصال القبض"
+                                  onClick={() => handleSendWhatsApp(sale)}
+                                  className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-xl transition-all"
+                                  title="إرسال على واتساب"
                                 >
-                                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                                   </svg>
                                 </button>
-                              )}
-
-                              {sale.saleType !== 'CASH' && sale.payments && sale.payments.length > 0 && (
-                                <button
-                                  onClick={() => {
-                                    const lastPayment = sale.payments![sale.payments!.length - 1];
-                                    setSelectedPayment(lastPayment as any);
-                                    setSelectedCreditSale(sale);
-                                    setShowPrintReceiptModal(true);
-                                  }}
-                                  className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all"
-                                  title="إعادة طباعة آخر إيصال قبض"
-                                >
-                                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                  </svg>
-                                </button>
-                              )}
-
-                              <button
-                                onClick={() => handleSendWhatsApp(sale)}
-                                className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-xl transition-all"
-                                title="إرسال على واتساب"
-                              >
-                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                                </svg>
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -1627,6 +1663,16 @@ ${itemsText}
                     </div>
                   </div>
 
+                  <div className="space-y-2.5">
+                    <label className="text-xs font-black text-slate-700 dark:text-text-secondary pr-1 block text-right uppercase">تاريخ العملية</label>
+                    <input
+                      type="date"
+                      name="paymentDate"
+                      defaultValue={getTodayDate()}
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-surface-secondary border-2 border-slate-100 dark:border-border-primary rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 dark:text-text-primary font-bold text-right transition-all"
+                    />
+                  </div>
+
                   {approvalSaleType === 'CASH' && (
                     <div className="space-y-4 animate-in fade-in slide-in-from-top-3 duration-300">
                       <div className="space-y-1.5">
@@ -1817,15 +1863,25 @@ ${itemsText}
                           className="w-full px-4 py-2.5 bg-slate-50 dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-emerald-400 text-slate-900 dark:text-text-primary font-bold transition-all appearance-none text-right text-sm"
                           disabled={isTreasuriesLoading}
                         >
-                          <option value="">اختر الحساب...</option>
+                          <option value="">-- اختر الحساب --</option>
                           {bankAccounts.map((account: any) => (
                             <option key={account.id} value={account.id}>
-                              {account.name} {account.bankName ? `- ${account.bankName}` : ''}
+                              {account.name} ({formatArabicCurrency(account.balance)})
                             </option>
                           ))}
                         </select>
                       </div>
                     )}
+
+                    <div className="space-y-1.5 md:col-span-2">
+                      <label className="text-xs font-black text-slate-700 dark:text-text-secondary pr-1 block text-right uppercase">تاريخ القبض</label>
+                      <input
+                        type="date"
+                        name="paymentDate"
+                        defaultValue={getTodayDate()}
+                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-emerald-400 text-slate-900 dark:text-text-primary font-bold transition-all text-right text-sm"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-1.5">

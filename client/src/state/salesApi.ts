@@ -500,12 +500,13 @@ export const salesApi = createApi({
     /**
      * إصدار إيصال قبض لفاتورة نقدية
      */
-    issueReceipt: builder.mutation<{ success: boolean; message: string; data: Sale }, number>({
-      query: (saleId) => ({
+    issueReceipt: builder.mutation<{ success: boolean; message: string; data: Sale }, { saleId: number; paymentDate?: string }>({
+      query: ({ saleId, paymentDate }) => ({
         url: `sales/${saleId}/issue-receipt`,
         method: "POST",
+        body: { paymentDate }
       }),
-      invalidatesTags: (result, error, saleId) => [
+      invalidatesTags: (result, error, { saleId }) => [
         { type: "Sale", id: saleId },
         { type: "Sales", id: "LIST" },
         { type: "Sales", id: "CASH_LIST" },
@@ -616,7 +617,7 @@ export const salesApi = createApi({
      */
     approveSale: builder.mutation<
       { success: boolean; message: string; data: Sale },
-      { id: number; saleType: "CASH" | "CREDIT"; paymentMethod?: "CASH" | "BANK" | "CARD"; bankAccountId?: number }
+      { id: number; saleType: "CASH" | "CREDIT"; paymentMethod?: "CASH" | "BANK" | "CARD"; bankAccountId?: number; paymentDate?: string }
     >({
       query: ({ id, ...data }) => ({
         url: `sales/${id}/approve`,

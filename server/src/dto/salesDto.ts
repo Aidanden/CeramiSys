@@ -51,6 +51,7 @@ export const CreateSaleDtoSchema = z.object({
   notes: z.string().optional(), // ملاحظات
   totalDiscountPercentage: z.number().min(0).max(100).optional(),
   totalDiscountAmount: z.number().min(0).optional(),
+  createdAt: z.string().optional(), // تاريخ الفاتورة (لإدخال فواتير قديمة)
   lines: z.array(CreateSaleLineDtoSchema).min(1, 'يجب إضافة بند واحد على الأقل')
   // ملاحظة: saleType و paymentMethod سيحددهما المحاسب لاحقاً
 });
@@ -62,6 +63,7 @@ export const UpdateSaleDtoSchema = z.object({
   paymentMethod: z.nativeEnum(PaymentMethod).optional(),
   totalDiscountPercentage: z.number().min(0).max(100).optional(),
   totalDiscountAmount: z.number().min(0).optional(),
+  createdAt: z.string().optional(),
   lines: z.array(CreateSaleLineDtoSchema).optional()
 });
 

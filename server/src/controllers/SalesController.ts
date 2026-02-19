@@ -631,7 +631,7 @@ export class SalesController {
   async approveSale(req: Request, res: Response): Promise<void> {
     try {
       const saleId = parseInt(req.params.id!);
-      const { saleType, paymentMethod, bankAccountId } = req.body;
+      const { saleType, paymentMethod, bankAccountId, paymentDate } = req.body;
       const userCompanyId = (req as any).user?.companyId;
       const isSystemUser = (req as any).user?.isSystemUser;
       const approvedBy = (req as any).user?.username || 'Unknown';
@@ -664,7 +664,7 @@ export class SalesController {
 
       const approvedSale = await this.salesService.approveSale(
         saleId,
-        { saleType, paymentMethod, bankAccountId: bankAccountId ? Number(bankAccountId) : undefined },
+        { saleType, paymentMethod, bankAccountId: bankAccountId ? Number(bankAccountId) : undefined, paymentDate },
         userCompanyId,
         approvedBy,
         isSystemUser

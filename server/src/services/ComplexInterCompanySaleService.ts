@@ -35,6 +35,7 @@ export interface CreateComplexInterCompanySaleRequest {
   customerPaymentMethod?: 'CASH' | 'BANK' | 'CARD'; // طريقة الدفع: كاش، حوالة، بطاقة
   totalDiscountPercentage?: number;
   totalDiscountAmount?: number;
+  createdAt?: string; // تاريخ الفاتورة
 }
 
 export interface ComplexInterCompanySaleResult {
@@ -157,6 +158,7 @@ export class ComplexInterCompanySaleService {
             totalDiscountPercentage: data.totalDiscountPercentage || 0,
             totalDiscountAmount: totalDiscountAmount,
             status: 'DRAFT', // مبدئية - في انتظار اعتماد المحاسب
+            createdAt: data.createdAt ? new Date(data.createdAt) : undefined,
             lines: {
               create: data.lines.map(line => ({
                 productId: line.productId,
