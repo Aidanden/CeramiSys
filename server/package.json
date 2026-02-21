@@ -17,7 +17,8 @@
     "fix:all-sequences": "ts-node scripts/fix-all-sequences.ts",
     "generate:qr": "ts-node src/scripts/generateQRForExistingProducts.ts",
     "convert:prices": "ts-node scripts/convert-prices-to-per-unit.ts",
-    "fix:divided-prices": "ts-node scripts/fix-divided-prices.ts"
+    "fix:divided-prices": "ts-node scripts/fix-divided-prices.ts",
+    "update:cost": "ts-node scripts/update-cost-from-file.ts"
   },
   "compilerOptions": {
     "types": [
