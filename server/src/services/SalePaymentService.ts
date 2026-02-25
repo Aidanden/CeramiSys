@@ -542,6 +542,7 @@ export class SalePaymentService {
     try {
       const where: any = {
         saleType: 'CREDIT',
+        status: { not: 'CANCELLED' } // استثناء الفواتير الملغية
       };
 
       // للمستخدمين العاديين: إظهار إحصائيات المبيعات التي شركتهم بائع أو مشتري

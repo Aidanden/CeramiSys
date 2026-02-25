@@ -11,12 +11,14 @@ interface InvoicePrintProps {
   sale: Sale;
   enableLineDiscount?: boolean;
   enableInvoiceDiscount?: boolean;
+  isProvisional?: boolean; // للتمييز بين الفواتير المبدئية والعادية
 }
 
 export const InvoicePrint: React.FC<InvoicePrintProps> = ({
   sale,
   enableLineDiscount = true,
-  enableInvoiceDiscount = true
+  enableInvoiceDiscount = true,
+  isProvisional = false
 }) => {
   // حساب المجموع الإجمالي للبنود قبل أي خصم
   const totalItemsBeforeDiscount = sale.lines.reduce((sum, line) => sum + (line.qty * line.unitPrice), 0);
@@ -45,8 +47,8 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
         <p style={{ fontSize: '12px', margin: '3px 0', color: '#666' }}>
           كود الشركة: {sale.company.code}
         </p>
-        <h2 style={{ fontSize: '20px', margin: '8px 0 0 0', color: '#2563eb' }}>
-          فاتورة مبيعات
+        <h2 style={{ fontSize: '20px', margin: '8px 0 0 0', color: isProvisional ? '#f59e0b' : '#2563eb' }}>
+          {isProvisional ? 'فاتورة مبيعات مبدئية' : 'فاتورة مبيعات'}
         </h2>
       </div>
 
@@ -84,15 +86,25 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
               <strong>الهاتف:</strong> {sale.customer.phone}
             </p>
           )}
-          <p style={{ margin: '5px 0', fontSize: '14px' }}>
-            <strong>نوع البيع:</strong> {sale.saleType === 'CASH' ? 'نقدي' : 'آجل'}
-          </p>
-          <p style={{ margin: '5px 0', fontSize: '14px' }}>
-            <strong>طريقة الدفع:</strong> {
-              sale.paymentMethod === 'CASH' ? 'كاش' :
-                sale.paymentMethod === 'BANK' ? 'حوالة بنكية' : 'بطاقة'
-            }
-          </p>
+          {isProvisional ? (
+            <p style={{ margin: '5px 0', fontSize: '14px' }}>
+              <strong>نوع الفاتورة:</strong> <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>مبدئية</span>
+            </p>
+          ) : (
+            <>
+              <p style={{ margin: '5px 0', fontSize: '14px' }}>
+                <strong>نوع البيع:</strong> {sale.saleType === 'CASH' ? 'نقدي' : 'آجل'}
+              </p>
+              <p style={{ margin: '5px 0', fontSize: '14px' }}>
+                <strong>طريقة الدفع:</strong> {
+                  sale.saleType === 'CREDIT' && (!sale.paidAmount || sale.paidAmount === 0) ? '-' :
+                    sale.paymentMethod === 'CASH' ? 'كاش' :
+                      sale.paymentMethod === 'BANK' ? 'حوالة بنكية' : 
+                        sale.paymentMethod === 'CARD' ? 'بطاقة' : '-'
+                }
+              </p>
+            </>
+          )}
         </div>
       </div>
 
@@ -210,6 +222,59 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
           <strong>ملاحظة:</strong> الأصناف المباعة بالصندوق تم عرضها بالأمتار المربعة (م²) مع سعر المتر للوضوح. تفاصيل الصناديق موضحة تحت اسم الصنف.
         </p>
       </div>
+
+      {/* قسم الدفعات (إن وجدت) */}
+      {sale.payments && sale.payments.length > 0 && (
+        <div style={{ marginTop: '20px', marginBottom: '15px' }}>
+          <h4 style={{ fontSize: '14px', margin: '0 0 10px 0', borderBottom: '1px solid #ddd', paddingBottom: '5px' }}>
+            تفاصيل الدفعات المسددة
+          </h4>
+          <table style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            fontSize: '11px'
+          }}>
+            <thead>
+              <tr style={{ backgroundColor: '#f3f4f6' }}>
+                <th style={{ padding: '6px', border: '1px solid #e5e7eb', textAlign: 'center' }}>م</th>
+                <th style={{ padding: '6px', border: '1px solid #e5e7eb', textAlign: 'right' }}>التاريخ</th>
+                <th style={{ padding: '6px', border: '1px solid #e5e7eb', textAlign: 'right' }}>رقم الإيصال</th>
+                <th style={{ padding: '6px', border: '1px solid #e5e7eb', textAlign: 'center' }}>طريقة الدفع</th>
+                <th style={{ padding: '6px', border: '1px solid #e5e7eb', textAlign: 'left' }}>المبلغ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sale.payments.map((payment, index) => (
+                <tr key={index}>
+                  <td style={{ padding: '6px', border: '1px solid #e5e7eb', textAlign: 'center' }}>{index + 1}</td>
+                  <td style={{ padding: '6px', border: '1px solid #e5e7eb', textAlign: 'right' }}>
+                    {new Date(payment.paymentDate).toLocaleDateString('ar-LY')}
+                  </td>
+                  <td style={{ padding: '6px', border: '1px solid #e5e7eb', textAlign: 'right' }}>
+                    {payment.receiptNumber || '-'}
+                  </td>
+                  <td style={{ padding: '6px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                    {payment.paymentMethod === 'CASH' ? 'كاش' :
+                      payment.paymentMethod === 'BANK' ? 'حوالة بنكية' :
+                        payment.paymentMethod === 'CARD' ? 'بطاقة' : '-'}
+                  </td>
+                  <td style={{ padding: '6px', border: '1px solid #e5e7eb', textAlign: 'left', fontWeight: 'bold' }}>
+                    {formatArabicCurrency(payment.amount)}
+                  </td>
+                </tr>
+              ))}
+              {sale.saleType === 'CREDIT' && (
+                <tr style={{ backgroundColor: '#f9fafb', fontWeight: 'bold' }}>
+                  <td colSpan={4} style={{ padding: '6px', border: '1px solid #e5e7eb', textAlign: 'left' }}>إجمالي المدفوع:</td>
+                  <td style={{ padding: '6px', border: '1px solid #e5e7eb', textAlign: 'left', color: '#16a34a' }}>
+                    {formatArabicCurrency(sale.paidAmount || 0)}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* التوقيعات */}
       <div style={{

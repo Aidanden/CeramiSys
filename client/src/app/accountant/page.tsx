@@ -21,7 +21,18 @@ import {
   useDeletePaymentMutation,
   SalePayment
 } from '@/state/salePaymentApi';
-import { Search, Filter, X, DollarSign, FileText, Edit, Plus, Package, Trash2, AlertCircle, Check } from 'lucide-react';
+import { 
+  FileText,
+  DollarSign,
+  Search,
+  Filter,
+  Package,
+  X,
+  AlertCircle,
+  Edit,
+  Trash2,
+  Plus
+} from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import html2canvas from 'html2canvas';
 import { useEffect } from 'react';
@@ -63,6 +74,7 @@ export default function AccountantWorkspace() {
       try {
         await cancelSale(sale.id).unwrap();
         success('تم إلغاء الفاتورة بنجاح');
+        refetchCreditStats();
       } catch (err: any) {
         showError(err?.data?.message || 'حدث خطأ أثناء إلغاء الفاتورة');
       }
@@ -79,6 +91,7 @@ export default function AccountantWorkspace() {
       try {
         await deleteSale(sale.id).unwrap();
         success('تم حذف الفاتورة وجميع تبعاتها المالية والمخزنية بنجاح');
+        refetchCreditStats();
       } catch (err: any) {
         showError(err?.data?.message || 'حدث خطأ أثناء حذف الفاتورة');
       }
@@ -149,7 +162,10 @@ export default function AccountantWorkspace() {
 
   // Credit sales API calls (استخدام نفس endpoint مع فلتر الشركة)
   // بما أن جميع الفواتير آجلة الآن، نستخدم salesData مباشرة
-  const { data: creditStatsData } = useGetCreditSalesStatsQuery();
+  const { data: creditStatsData, refetch: refetchCreditStats } = useGetCreditSalesStatsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true
+  });
   const [createPayment, { isLoading: isCreatingPayment }] = useCreatePaymentMutation();
   const [deletePayment] = useDeletePaymentMutation();
   const { data: companiesData } = useGetCompaniesQuery({ limit: 100 });
@@ -655,7 +671,7 @@ ${itemsText}
 
       // Refresh data
       refetch();
-
+      refetchCreditStats();
 
     } catch (err: any) {
       showError(err?.data?.message || 'حدث خطأ أثناء اعتماد الفاتورة');
@@ -713,7 +729,7 @@ ${itemsText}
 
       // Refresh data
       refetch();
-
+      refetchCreditStats();
 
     } catch (err: any) {
       showError(err?.data?.message || 'حدث خطأ أثناء تعديل الفاتورة');
@@ -807,6 +823,7 @@ ${itemsText}
 
       success('تم إنشاء إيصال القبض بنجاح');
       await refetch();
+      refetchCreditStats();
 
       const newPayment = result.data.payment;
       const updatedSale = result.data.sale;
@@ -832,6 +849,7 @@ ${itemsText}
         await deletePayment(payment.id).unwrap();
         success('تم حذف الدفعة بنجاح');
         refetch();
+        refetchCreditStats();
       } catch (err: any) {
         showError(err.data?.message || 'حدث خطأ أثناء حذف الدفعة');
       }
@@ -1521,12 +1539,26 @@ ${itemsText}
         className="fixed opacity-0 pointer-events-none"
         style={{
           position: 'fixed',
-          left: '-9999px',
-          top: '0',
+          top: '-10000px',
+          left: '-10000px',
           visibility: currentInvoiceToPrint ? 'visible' : 'hidden'
         }}
       >
-        {currentInvoiceToPrint && <InvoicePrint sale={currentInvoiceToPrint} />}
+        {currentInvoiceToPrint && <InvoicePrint sale={currentInvoiceToPrint} isProvisional={currentInvoiceToPrint.status === 'DRAFT'} />}
+      </div>
+
+      <div
+        ref={whatsappRef}
+        className="fixed opacity-0 pointer-events-none"
+        style={{
+          position: 'fixed',
+          top: '-10000px',
+          left: '-10000px',
+          visibility: currentSaleForWhatsApp ? 'visible' : 'hidden',
+          backgroundColor: 'white'
+        }}
+      >
+        {currentSaleForWhatsApp && <InvoicePrint sale={currentSaleForWhatsApp} isProvisional={currentSaleForWhatsApp.status === 'DRAFT'} />}
       </div>
 
       <div
@@ -1720,7 +1752,9 @@ ${itemsText}
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       ) : (
                         <>
-                          <Check className="w-4 h-4" />
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
                           تأكيد الاعتماد والخصم
                         </>
                       )}
@@ -1904,7 +1938,9 @@ ${itemsText}
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       ) : (
                         <>
-                          <Check className="w-4 h-4" />
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
                           تأكيد القبض وإصدار إيصال
                         </>
                       )}
@@ -2383,10 +2419,12 @@ ${itemsText}
                     {isUpdating ? (
                       <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     ) : (
-                      <>
-                        <Check className="w-5 h-5" />
-                        حفظ التعديلات النهائية
-                      </>
+                        <>
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          حفظ التعديلات
+                        </>
                     )}
                   </button>
                 </div>
