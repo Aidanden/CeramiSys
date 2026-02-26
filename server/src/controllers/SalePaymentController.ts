@@ -8,7 +8,8 @@ import { SalePaymentService } from '../services/SalePaymentService';
 import { 
   CreateSalePaymentDtoSchema, 
   GetSalePaymentsQueryDtoSchema,
-  GetCreditSalesQueryDtoSchema
+  GetCreditSalesQueryDtoSchema,
+  UpdatePaymentMethodDtoSchema
 } from '../dto/salePaymentDto';
 
 const salePaymentService = new SalePaymentService();
@@ -126,6 +127,36 @@ export const deletePayment = async (req: Request, res: Response): Promise<void> 
       success: false,
       message: error.message
     });
+  }
+};
+
+/**
+ * تغيير طريقة الدفع لدفعة موجودة
+ */
+export const updatePaymentMethod = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userCompanyId = (req as any).user?.companyId;
+    const isSystemUser = (req as any).user?.isSystemUser || false;
+    const { id } = req.params;
+
+    if (!userCompanyId && !isSystemUser) {
+      res.status(401).json({ success: false, message: 'غير مصرح - معرف الشركة مفقود' });
+      return;
+    }
+
+    const data = UpdatePaymentMethodDtoSchema.parse(req.body);
+    const result = await salePaymentService.updatePaymentMethod(
+      Number(id),
+      data.paymentMethod,
+      data.bankAccountId,
+      data.notes,
+      userCompanyId,
+      isSystemUser
+    );
+
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 

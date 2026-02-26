@@ -11,7 +11,8 @@ import {
   createPayment,
   getSalePayments,
   deletePayment,
-  getCreditSalesStats
+  getCreditSalesStats,
+  updatePaymentMethod
 } from '../controllers/SalePaymentController';
 
 const router = Router();
@@ -24,6 +25,7 @@ router.get('/credit-sales', authenticateToken, getCreditSales);
 // الدفعات
 router.get('/payments', authenticateToken, getSalePayments);
 router.post('/payments', authenticateToken, createPayment);
+router.patch('/payments/:id/method', authenticateToken, updatePaymentMethod);
 router.delete('/payments/:id', authenticateToken, deletePayment);
 
 export default router;

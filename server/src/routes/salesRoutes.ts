@@ -114,6 +114,13 @@ router.patch('/:id/approve', salesController.approveSale.bind(salesController));
 router.patch('/:id/cancel', salesController.cancelSale.bind(salesController));
 
 /**
+ * @route   PATCH /api/sales/:id/payment-method
+ * @desc    تغيير طريقة الدفع للفاتورة النقدية مع تسوية الخزينة
+ * @access  Private
+ */
+router.patch('/:id/payment-method', salesController.updateSalePaymentMethod.bind(salesController));
+
+/**
  * @route   GET /api/sales/:id
  * @desc    الحصول على فاتورة مبيعات واحدة
  * @access  Private

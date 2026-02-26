@@ -702,6 +702,36 @@ export class SalesController {
     }
   }
   /**
+   * تغيير طريقة الدفع للفاتورة النقدية
+   */
+  async updateSalePaymentMethod(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const user = (req as any).user;
+      const userCompanyId = user?.companyId;
+      const isSystemUser = user?.isSystemUser || false;
+      const { paymentMethod, bankAccountId } = req.body;
+
+      if (!paymentMethod || !['CASH', 'BANK', 'CARD'].includes(paymentMethod)) {
+        res.status(400).json({ success: false, message: 'طريقة الدفع غير صحيحة' });
+        return;
+      }
+
+      const result = await this.salesService.updateSalePaymentMethod(
+        Number(id),
+        paymentMethod,
+        bankAccountId ? Number(bankAccountId) : undefined,
+        userCompanyId,
+        isSystemUser
+      );
+
+      res.status(200).json(result);
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  /**
    * إلغاء فاتورة معتمدة
    */
   async cancelSale(req: Request, res: Response): Promise<void> {

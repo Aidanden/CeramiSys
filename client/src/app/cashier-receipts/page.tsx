@@ -1,19 +1,20 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { useGetCashSalesQuery, useIssueReceiptMutation, Sale } from '@/state/salesApi';
+import { useGetCashSalesQuery, useIssueReceiptMutation, useUpdateSalePaymentMethodMutation, Sale } from '@/state/salesApi';
 import { useCreateDispatchOrderMutation } from '@/state/warehouseApi';
 import { useGetCurrentUserQuery } from '@/state/authApi';
 import { useToast } from '@/components/ui/Toast';
 import { ReceiptPrint } from '@/components/sales/ReceiptPrint';
 import { InvoicePrint } from '@/components/sales/InvoicePrint';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, X, RefreshCw } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { 
   useGetCreditSalesQuery,
   useGetCreditSalesStatsQuery,
   useCreatePaymentMutation,
   useDeletePaymentMutation,
+  useUpdatePaymentMethodMutation,
   CreditSale,
   SalePayment
 } from '@/state/salePaymentApi';
@@ -129,6 +130,13 @@ export default function CashierReceiptsPage() {
 
   const [issueReceipt, { isLoading: isIssuing }] = useIssueReceiptMutation();
   const [createDispatchOrder, { isLoading: isCreatingDispatch }] = useCreateDispatchOrderMutation();
+  const [updateSalePaymentMethod, { isLoading: isUpdatingSalePaymentMethod }] = useUpdateSalePaymentMethodMutation();
+  
+  // States for changing cash sale payment method
+  const [showChangeCashMethodModal, setShowChangeCashMethodModal] = useState(false);
+  const [saleToChangeMethod, setSaleToChangeMethod] = useState<Sale | null>(null);
+  const [newCashPaymentMethod, setNewCashPaymentMethod] = useState<"CASH" | "BANK" | "CARD">("CASH");
+  const [newCashBankAccountId, setNewCashBankAccountId] = useState<number | "">("");
   
   // Credit sales API calls
   const { data: creditSalesData, isLoading: creditSalesLoading, refetch: refetchCreditSales } = useGetCreditSalesQuery({
@@ -227,6 +235,42 @@ export default function CashierReceiptsPage() {
       refetch();
     } catch (err: any) {
       showError(err?.data?.message || 'حدث خطأ أثناء إنشاء أمر الصرف');
+    }
+  };
+
+  const handleOpenChangeCashMethod = (sale: Sale) => {
+    setSaleToChangeMethod(sale);
+    setNewCashPaymentMethod(sale.paymentMethod || 'CASH');
+    setNewCashBankAccountId('');
+    setShowChangeCashMethodModal(true);
+  };
+
+  const handleChangeCashPaymentMethod = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!saleToChangeMethod) return;
+
+    if ((newCashPaymentMethod === 'BANK' || newCashPaymentMethod === 'CARD') && !newCashBankAccountId) {
+      showError('❌ يجب اختيار الحساب المصرفي عند اختيار حوالة أو بطاقة');
+      return;
+    }
+
+    try {
+      await updateSalePaymentMethod({
+        id: saleToChangeMethod.id,
+        paymentMethod: newCashPaymentMethod,
+        bankAccountId: (newCashPaymentMethod === 'BANK' || newCashPaymentMethod === 'CARD') ? Number(newCashBankAccountId) : undefined,
+      }).unwrap();
+
+      success('✅ تم تغيير طريقة الدفع وتسوية حركات الخزينة بنجاح');
+      setShowChangeCashMethodModal(false);
+      setSaleToChangeMethod(null);
+      setNewCashPaymentMethod('CASH');
+      setNewCashBankAccountId('');
+      refetch();
+      refetchPending();
+      refetchIssued();
+    } catch (err: any) {
+      showError(err?.data?.message || 'حدث خطأ أثناء تغيير طريقة الدفع');
     }
   };
 
@@ -867,6 +911,13 @@ ${itemsText}
                             </svg>
                           </button>
                           <button
+                            onClick={() => handleOpenChangeCashMethod(sale)}
+                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors"
+                            title="تغيير طريقة الدفع"
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                          </button>
+                          <button
                             onClick={() => handleCreateDispatchOrder(sale)}
                             disabled={isCreatingDispatch}
                             className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
@@ -991,6 +1042,136 @@ ${itemsText}
       >
         {currentSaleForWhatsApp && <InvoicePrint sale={currentSaleForWhatsApp} />}
       </div>
+
+      {/* مودال تغيير طريقة الدفع للفاتورة النقدية */}
+      {showChangeCashMethodModal && saleToChangeMethod && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md bg-white rounded-lg shadow-xl overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="w-5 h-5" />
+                  <div>
+                    <h3 className="text-lg font-bold">تغيير طريقة الدفع</h3>
+                    <p className="text-amber-50 text-xs">فاتورة رقم {saleToChangeMethod.invoiceNumber || saleToChangeMethod.id}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowChangeCashMethodModal(false);
+                    setSaleToChangeMethod(null);
+                    setNewCashPaymentMethod('CASH');
+                    setNewCashBankAccountId('');
+                  }}
+                  className="p-1 hover:bg-white/20 rounded transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {/* معلومات الفاتورة */}
+              <div className="mb-5 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-gray-500 text-xs block">المبلغ</span>
+                    <span className="text-green-600 font-bold">{saleToChangeMethod.total.toFixed(2)} د.ل</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 text-xs block">طريقة الدفع الحالية</span>
+                    <span className={`font-bold ${
+                      saleToChangeMethod.paymentMethod === 'CASH' ? 'text-green-600' :
+                      saleToChangeMethod.paymentMethod === 'BANK' ? 'text-blue-600' : 'text-purple-600'
+                    }`}>
+                      {saleToChangeMethod.paymentMethod === 'CASH' ? '💵 نقداً' :
+                       saleToChangeMethod.paymentMethod === 'BANK' ? '🏦 حوالة' : '💳 بطاقة'}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <p className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded">
+                    ⚠️ سيتم عكس حركة الخزينة القديمة وإضافة حركة جديدة
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleChangeCashPaymentMethod} className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">
+                    طريقة الدفع الجديدة <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={newCashPaymentMethod}
+                    onChange={(e) => {
+                      const v = e.target.value as "CASH" | "BANK" | "CARD";
+                      setNewCashPaymentMethod(v);
+                      if (v === 'CASH') setNewCashBankAccountId('');
+                    }}
+                    className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                  >
+                    <option value="CASH">💵 نقداً (كاش)</option>
+                    <option value="BANK">🏦 تحويل بنكي</option>
+                    <option value="CARD">💳 بطاقة مصرفية</option>
+                  </select>
+                </div>
+
+                {(newCashPaymentMethod === 'BANK' || newCashPaymentMethod === 'CARD') && (
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                    <label className="text-xs font-bold text-gray-700 block mb-1">
+                      الحساب المصرفي <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={newCashBankAccountId}
+                      onChange={(e) => setNewCashBankAccountId(e.target.value ? Number(e.target.value) : '')}
+                      required
+                      disabled={isTreasuriesLoading}
+                      className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                    >
+                      <option value="">-- اختر الحساب --</option>
+                      {bankAccounts.map((account: any) => (
+                        <option key={account.id} value={account.id}>
+                          {account.name} ({account.balance.toFixed(2)} د.ل)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={isUpdatingSalePaymentMethod}
+                    className="flex-1 bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isUpdatingSalePaymentMethod ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4" />
+                        تأكيد التغيير
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowChangeCashMethodModal(false);
+                      setSaleToChangeMethod(null);
+                      setNewCashPaymentMethod('CASH');
+                      setNewCashBankAccountId('');
+                    }}
+                    className="px-6 py-2.5 bg-gray-100 text-gray-600 rounded-lg font-bold text-sm transition-all hover:bg-gray-200"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
       </>
       )}
       

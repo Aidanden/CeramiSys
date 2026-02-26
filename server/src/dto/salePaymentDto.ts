@@ -45,8 +45,15 @@ export const GetCreditSalesQueryDtoSchema = z.object({
   endDate: z.string().optional()
 });
 
+export const UpdatePaymentMethodDtoSchema = z.object({
+  paymentMethod: z.nativeEnum(PaymentMethod, { message: 'طريقة الدفع غير صحيحة' }),
+  bankAccountId: z.number().int().positive().optional(),
+  notes: z.string().optional()
+});
+
 // Types من الـ schemas
 export type CreateSalePaymentDto = z.infer<typeof CreateSalePaymentDtoSchema>;
 export type UpdateSalePaymentDto = z.infer<typeof UpdateSalePaymentDtoSchema>;
+export type UpdatePaymentMethodDto = z.infer<typeof UpdatePaymentMethodDtoSchema>;
 export type GetSalePaymentsQueryDto = z.infer<typeof GetSalePaymentsQueryDtoSchema>;
 export type GetCreditSalesQueryDto = z.infer<typeof GetCreditSalesQueryDtoSchema>;

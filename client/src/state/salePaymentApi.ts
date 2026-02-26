@@ -73,6 +73,13 @@ export interface SalePayment {
   createdAt: string;
 }
 
+export interface UpdatePaymentMethodRequest {
+  id: number;
+  paymentMethod: "CASH" | "BANK" | "CARD";
+  bankAccountId?: number;
+  notes?: string;
+}
+
 export interface CreatePaymentRequest {
   saleId: number;
   amount: number;
@@ -182,6 +189,30 @@ export const salePaymentApi = createApi({
       providesTags: ["SalePayments"]
     }),
 
+    // تغيير طريقة الدفع
+    updatePaymentMethod: builder.mutation<any, UpdatePaymentMethodRequest>({
+      query: ({ id, ...body }) => ({
+        url: `/sale-payments/payments/${id}/method`,
+        method: "PATCH",
+        body
+      }),
+      invalidatesTags: [
+        "CreditSales",
+        "SalePayments",
+        { type: "CustomerAccountSummary", id: "LIST" },
+        { type: "Sales", id: "LIST" },
+        "Treasury",
+        "TreasuryTransaction",
+        "TreasuryStats"
+      ],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+        } catch { }
+      },
+    }),
+
     // حذف دفعة
     deletePayment: builder.mutation<any, number>({
       query: (id) => ({
@@ -212,6 +243,7 @@ export const {
   useGetCreditSaleByIdQuery,
   useGetCreditSalesStatsQuery,
   useCreatePaymentMutation,
+  useUpdatePaymentMethodMutation,
   useGetSalePaymentsQuery,
   useDeletePaymentMutation
 } = salePaymentApi;

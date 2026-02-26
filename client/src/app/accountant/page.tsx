@@ -18,6 +18,7 @@ import { PaymentsHistoryPrint } from '@/components/sales/PaymentsHistoryPrint';
 import {
   useGetCreditSalesStatsQuery,
   useCreatePaymentMutation,
+  useUpdatePaymentMethodMutation,
   useDeletePaymentMutation,
   SalePayment
 } from '@/state/salePaymentApi';
@@ -31,7 +32,8 @@ import {
   AlertCircle,
   Edit,
   Trash2,
-  Plus
+  Plus,
+  RefreshCw
 } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import html2canvas from 'html2canvas';
@@ -167,6 +169,7 @@ export default function AccountantWorkspace() {
     refetchOnFocus: true
   });
   const [createPayment, { isLoading: isCreatingPayment }] = useCreatePaymentMutation();
+  const [updatePaymentMethod, { isLoading: isUpdatingPaymentMethod }] = useUpdatePaymentMethodMutation();
   const [deletePayment] = useDeletePaymentMutation();
   const { data: companiesData } = useGetCompaniesQuery({ limit: 100 });
   // تحميل الحسابات المصرفية (جميع الحسابات المصرفية النشطة)
@@ -346,6 +349,12 @@ export default function AccountantWorkspace() {
 
   const [paymentMethodForReceipt, setPaymentMethodForReceipt] = useState<"CASH" | "BANK" | "CARD">("CASH");
   const [bankAccountIdForReceipt, setBankAccountIdForReceipt] = useState<number | "">("");
+
+  // States لتغيير طريقة الدفع
+  const [showChangeMethodModal, setShowChangeMethodModal] = useState(false);
+  const [paymentToChangeMethod, setPaymentToChangeMethod] = useState<SalePayment | null>(null);
+  const [newPaymentMethod, setNewPaymentMethod] = useState<"CASH" | "BANK" | "CARD">("CASH");
+  const [newBankAccountId, setNewBankAccountId] = useState<number | "">("");
 
   const handleIssueReceipt = async (sale: Sale) => {
     if (sale.receiptIssued) {
@@ -853,6 +862,41 @@ ${itemsText}
       } catch (err: any) {
         showError(err.data?.message || 'حدث خطأ أثناء حذف الدفعة');
       }
+    }
+  };
+
+  const handleOpenChangeMethod = (payment: SalePayment) => {
+    setPaymentToChangeMethod(payment);
+    setNewPaymentMethod(payment.paymentMethod);
+    setNewBankAccountId('');
+    setShowChangeMethodModal(true);
+  };
+
+  const handleChangePaymentMethod = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!paymentToChangeMethod) return;
+
+    if ((newPaymentMethod === 'BANK' || newPaymentMethod === 'CARD') && !newBankAccountId) {
+      showError('❌ يجب اختيار الحساب المصرفي عند اختيار حوالة أو بطاقة');
+      return;
+    }
+
+    try {
+      await updatePaymentMethod({
+        id: paymentToChangeMethod.id,
+        paymentMethod: newPaymentMethod,
+        bankAccountId: (newPaymentMethod === 'BANK' || newPaymentMethod === 'CARD') ? Number(newBankAccountId) : undefined,
+      }).unwrap();
+
+      success('✅ تم تغيير طريقة الدفع وتسوية حركات الخزينة بنجاح');
+      setShowChangeMethodModal(false);
+      setPaymentToChangeMethod(null);
+      setNewPaymentMethod('CASH');
+      setNewBankAccountId('');
+      refetch();
+      refetchCreditStats();
+    } catch (err: any) {
+      showError(err?.data?.message || 'حدث خطأ أثناء تغيير طريقة الدفع');
     }
   };
 
@@ -2148,6 +2192,7 @@ ${itemsText}
                             <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-text-tertiary uppercase">رقم الإيصال</th>
                             <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-text-tertiary uppercase">التاريخ</th>
                             <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-text-tertiary uppercase">المبلغ</th>
+                            <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-text-tertiary uppercase">طريقة الدفع</th>
                             <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-text-tertiary uppercase text-center">الإجراءات</th>
                           </tr>
                         </thead>
@@ -2158,6 +2203,16 @@ ${itemsText}
                               <td className="px-6 py-4 font-bold text-slate-600 dark:text-text-secondary">{new Date(payment.paymentDate).toLocaleDateString('ar-LY')}</td>
                               <td className="px-6 py-4 font-black text-green-600 dark:text-green-400">{formatArabicCurrency(payment.amount)}</td>
                               <td className="px-6 py-4">
+                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black ${
+                                  payment.paymentMethod === 'CASH' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' :
+                                  payment.paymentMethod === 'BANK' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400' :
+                                  'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400'
+                                }`}>
+                                  {payment.paymentMethod === 'CASH' ? '💵 نقداً' :
+                                   payment.paymentMethod === 'BANK' ? '🏦 حوالة' : '💳 بطاقة'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
                                 <div className="flex items-center justify-center gap-2">
                                   <button
                                     onClick={() => printCreditReceipt(payment, selectedCreditSale)}
@@ -2167,6 +2222,13 @@ ${itemsText}
                                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                                     </svg>
+                                  </button>
+                                  <button
+                                    onClick={() => handleOpenChangeMethod(payment)}
+                                    className="p-2 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-xl transition-all"
+                                    title="تغيير طريقة الدفع"
+                                  >
+                                    <RefreshCw className="w-4 h-4" />
                                   </button>
                                   <button
                                     onClick={() => handleDeletePayment(payment)}
@@ -2433,6 +2495,142 @@ ${itemsText}
           </div>
         )
       }
+
+      {/* مودال تغيير طريقة الدفع */}
+      {showChangeMethodModal && paymentToChangeMethod && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md bg-white dark:bg-surface-primary rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-border-primary">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-4">
+              <div className="flex items-center justify-between flex-row-reverse">
+                <div className="flex items-center gap-2.5 flex-row-reverse">
+                  <div className="p-1.5 bg-white/20 rounded-lg">
+                    <RefreshCw className="w-5 h-5" />
+                  </div>
+                  <div className="text-right">
+                    <h3 className="text-lg font-black">تغيير طريقة الدفع</h3>
+                    <p className="text-amber-50 text-[10px] font-bold opacity-80 uppercase tracking-wider">
+                      إيصال رقم {paymentToChangeMethod.receiptNumber}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowChangeMethodModal(false);
+                    setPaymentToChangeMethod(null);
+                    setNewPaymentMethod('CASH');
+                    setNewBankAccountId('');
+                  }}
+                  className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {/* معلومات الدفعة الحالية */}
+              <div className="mb-5 bg-slate-50 dark:bg-surface-secondary rounded-xl p-4 border border-slate-100 dark:border-border-primary">
+                <div className="grid grid-cols-2 gap-3 text-right text-sm">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-slate-500 dark:text-text-tertiary text-[10px] font-bold">المبلغ</span>
+                    <span className="text-green-600 dark:text-green-400 font-black">{formatArabicCurrency(paymentToChangeMethod.amount)}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-slate-500 dark:text-text-tertiary text-[10px] font-bold">طريقة الدفع الحالية</span>
+                    <span className={`font-black ${
+                      paymentToChangeMethod.paymentMethod === 'CASH' ? 'text-green-600 dark:text-green-400' :
+                      paymentToChangeMethod.paymentMethod === 'BANK' ? 'text-blue-600 dark:text-blue-400' :
+                      'text-purple-600 dark:text-purple-400'
+                    }`}>
+                      {paymentToChangeMethod.paymentMethod === 'CASH' ? '💵 نقداً' :
+                       paymentToChangeMethod.paymentMethod === 'BANK' ? '🏦 حوالة بنكية' : '💳 بطاقة مصرفية'}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-border-primary/50">
+                  <p className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 rounded-lg">
+                    ⚠️ سيتم عكس حركة الخزينة القديمة وإضافة حركة جديدة بطريقة الدفع المختارة
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleChangePaymentMethod} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black text-slate-700 dark:text-text-secondary pr-1 block text-right uppercase">
+                    طريقة الدفع الجديدة <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={newPaymentMethod}
+                    onChange={(e) => {
+                      const v = e.target.value as "CASH" | "BANK" | "CARD";
+                      setNewPaymentMethod(v);
+                      if (v === 'CASH') setNewBankAccountId('');
+                    }}
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-xl outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-slate-900 dark:text-text-primary font-bold transition-all appearance-none text-right text-sm"
+                  >
+                    <option value="CASH">💵 نقداً (كاش)</option>
+                    <option value="BANK">🏦 تحويل بنكي</option>
+                    <option value="CARD">💳 بطاقة مصرفية</option>
+                  </select>
+                </div>
+
+                {(newPaymentMethod === 'BANK' || newPaymentMethod === 'CARD') && (
+                  <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <label className="text-xs font-black text-slate-700 dark:text-text-secondary pr-1 block text-right uppercase">
+                      الحساب المصرفي <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={newBankAccountId}
+                      onChange={(e) => setNewBankAccountId(e.target.value ? Number(e.target.value) : '')}
+                      required
+                      disabled={isTreasuriesLoading}
+                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded-xl outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-slate-900 dark:text-text-primary font-bold transition-all appearance-none text-right text-sm"
+                    >
+                      <option value="">-- اختر الحساب --</option>
+                      {bankAccounts.map((account: any) => (
+                        <option key={account.id} value={account.id}>
+                          {account.name} ({formatArabicCurrency(account.balance)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={isUpdatingPaymentMethod}
+                    className="flex-1 bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isUpdatingPaymentMethod ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4" />
+                        تأكيد التغيير وتسوية الخزينة
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowChangeMethodModal(false);
+                      setPaymentToChangeMethod(null);
+                      setNewPaymentMethod('CASH');
+                      setNewBankAccountId('');
+                    }}
+                    className="px-6 py-3 bg-slate-100 dark:bg-surface-secondary text-slate-600 dark:text-text-secondary rounded-xl font-black text-sm transition-all hover:bg-slate-200"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

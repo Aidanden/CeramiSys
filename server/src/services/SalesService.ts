@@ -2554,4 +2554,140 @@ export class SalesService {
 
 
   }
+
+  /**
+   * تغيير طريقة الدفع للفاتورة النقدية المعتمدة
+   * - عكس حركة الخزينة القديمة
+   * - إضافة حركة جديدة في الخزينة الجديدة
+   * - تحديث paymentMethod في Sale
+   */
+  async updateSalePaymentMethod(
+    id: number,
+    newPaymentMethod: 'CASH' | 'BANK' | 'CARD',
+    newBankAccountId: number | undefined,
+    userCompanyId: number,
+    isSystemUser: boolean = false
+  ) {
+    const Decimal = (await import('decimal.js')).default;
+
+    // 1. جلب الفاتورة
+    const sale = await this.prisma.sale.findFirst({
+      where: {
+        id,
+        saleType: 'CASH',
+        status: 'APPROVED',
+        ...(isSystemUser !== true && { companyId: userCompanyId })
+      },
+      include: {
+        customer: { select: { id: true, name: true, phone: true } },
+        company: { select: { id: true, name: true, code: true } }
+      }
+    });
+
+    if (!sale) {
+      throw new Error('الفاتورة غير موجودة أو ليست فاتورة نقدية معتمدة أو ليس لديك صلاحية');
+    }
+
+    // 2. التحقق من بيانات الخزينة للطريقة الجديدة
+    if ((newPaymentMethod === 'BANK' || newPaymentMethod === 'CARD') && !newBankAccountId) {
+      throw new Error('يجب تحديد الحساب المصرفي عند اختيار حوالة أو بطاقة');
+    }
+
+    if (sale.paymentMethod === newPaymentMethod && !newBankAccountId) {
+      throw new Error('طريقة الدفع الجديدة هي نفس الحالية');
+    }
+
+    // 3. جلب حركة الخزينة القديمة
+    const oldTreasuryTx = await this.prisma.treasuryTransaction.findFirst({
+      where: {
+        referenceType: 'Sale',
+        referenceId: id
+      },
+      include: { treasury: true }
+    });
+
+    // 4. تحديد الخزينة الجديدة
+    let newTreasuryId: number;
+    let newTreasuryName = '';
+
+    if (newPaymentMethod === 'CASH') {
+      const companyTreasury = await this.prisma.treasury.findFirst({
+        where: { companyId: sale.companyId, type: 'COMPANY', isActive: true }
+      });
+      if (!companyTreasury) throw new Error('لا توجد خزينة نقدية نشطة للشركة');
+      newTreasuryId = companyTreasury.id;
+      newTreasuryName = companyTreasury.name;
+    } else {
+      const bankAccount = await this.prisma.treasury.findFirst({
+        where: { id: newBankAccountId, type: 'BANK', isActive: true }
+      });
+      if (!bankAccount) throw new Error('الحساب المصرفي المحدد غير موجود أو غير نشط');
+      newTreasuryId = bankAccount.id;
+      newTreasuryName = bankAccount.name;
+    }
+
+    const amount = Number(sale.total);
+    const customerInfo = sale.customer
+      ? `- الزبون: ${sale.customer.name}${sale.customer.phone ? ` (${sale.customer.phone})` : ''}`
+      : '';
+    const invoiceRef = sale.invoiceNumber || String(sale.id);
+
+    // 5. عكس حركة الخزينة القديمة إذا وجدت
+    if (oldTreasuryTx) {
+      const oldTreasury = oldTreasuryTx.treasury;
+      const newBalanceAfterReversal = new Decimal(oldTreasury.balance.toString()).sub(new Decimal(amount));
+
+      await this.prisma.$transaction([
+        this.prisma.treasury.update({
+          where: { id: oldTreasury.id },
+          data: { balance: newBalanceAfterReversal.toNumber() }
+        }),
+        this.prisma.treasuryTransaction.create({
+          data: {
+            treasuryId: oldTreasury.id,
+            type: 'WITHDRAWAL' as any,
+            source: 'RECEIPT' as any,
+            amount: amount,
+            balanceBefore: oldTreasury.balance,
+            balanceAfter: newBalanceAfterReversal.toNumber(),
+            description: `عكس فاتورة نقدية رقم ${invoiceRef} (تغيير طريقة الدفع) ${customerInfo}`.trim(),
+            referenceType: 'SalePaymentMethodChange',
+            referenceId: id
+          }
+        }),
+        this.prisma.treasuryTransaction.delete({
+          where: { id: oldTreasuryTx.id }
+        })
+      ]);
+    }
+
+    // 6. إضافة حركة في الخزينة الجديدة
+    const newDescription = `فاتورة نقدية رقم ${invoiceRef} - ${sale.company?.name || ''} ${customerInfo} [تغيير طريقة الدفع إلى ${newPaymentMethod === 'CASH' ? 'كاش' : newPaymentMethod === 'BANK' ? 'حوالة' : 'بطاقة'} - ${newTreasuryName}]`.trim();
+
+    await TreasuryController.addToTreasury(
+      newTreasuryId,
+      amount,
+      'RECEIPT',
+      'Sale',
+      id,
+      newDescription
+    );
+
+    // 7. تحديث paymentMethod في Sale
+    const updatedSale = await this.prisma.sale.update({
+      where: { id },
+      data: { paymentMethod: newPaymentMethod },
+      include: {
+        customer: true,
+        company: { select: { id: true, name: true, code: true } },
+        lines: { include: { product: true } }
+      }
+    });
+
+    return {
+      success: true,
+      message: `تم تغيير طريقة الدفع بنجاح إلى ${newPaymentMethod === 'CASH' ? 'كاش' : newPaymentMethod === 'BANK' ? 'حوالة بنكية' : 'بطاقة مصرفية'}`,
+      data: { sale: updatedSale }
+    };
+  }
 }

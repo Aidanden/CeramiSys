@@ -653,6 +653,33 @@ export const salesApi = createApi({
         { type: "CustomerAccountSummary", id: "LIST" },
       ],
     }),
+
+    /**
+     * تغيير طريقة الدفع للفاتورة النقدية
+     */
+    updateSalePaymentMethod: builder.mutation<
+      { success: boolean; message: string; data: { sale: Sale } },
+      { id: number; paymentMethod: "CASH" | "BANK" | "CARD"; bankAccountId?: number }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `sales/${id}/payment-method`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Sale", id },
+        { type: "Sales", id: "LIST" },
+        "Treasury",
+        "TreasuryTransaction",
+        "TreasuryStats",
+      ],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryTransaction', 'TreasuryStats'] as any));
+        } catch { }
+      },
+    }),
   }),
 });
 
@@ -670,6 +697,7 @@ export const {
   useIssueReceiptMutation,
   useApproveSaleMutation,
   useCancelSaleMutation,
+  useUpdateSalePaymentMethodMutation,
   // العملاء
   useGetCustomersQuery,
   useGetCustomerQuery,

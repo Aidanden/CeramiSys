@@ -6,6 +6,7 @@
 import prisma from '../models/prismaClient';
 import { CreateSalePaymentDto, UpdateSalePaymentDto, GetSalePaymentsQueryDto, GetCreditSalesQueryDto } from '../dto/salePaymentDto';
 import { TreasuryController } from '../controllers/TreasuryController';
+import Decimal from 'decimal.js';
 
 export class SalePaymentService {
   private prisma = prisma; // Use singleton
@@ -500,6 +501,169 @@ export class SalePaymentService {
       };
     } catch (error: any) {
       throw new Error(`خطأ في حذف الدفعة: ${error.message}`);
+    }
+  }
+
+  /**
+   * تغيير طريقة الدفع لدفعة موجودة
+   * - عكس حركة الخزينة القديمة
+   * - إضافة حركة جديدة في الخزينة الجديدة
+   * - تحديث paymentMethod في SalePayment
+   */
+  async updatePaymentMethod(
+    id: number,
+    newPaymentMethod: 'CASH' | 'BANK' | 'CARD',
+    newBankAccountId: number | undefined,
+    notes: string | undefined,
+    userCompanyId: number,
+    isSystemUser: boolean = false
+  ) {
+    try {
+      // 1. جلب الدفعة الحالية
+      const payment = await this.prisma.salePayment.findFirst({
+        where: {
+          id,
+          ...(isSystemUser !== true && { companyId: userCompanyId })
+        },
+        include: {
+          sale: {
+            include: {
+              customer: { select: { id: true, name: true, phone: true } },
+              company: { select: { id: true, name: true, code: true } }
+            }
+          }
+        }
+      });
+
+      if (!payment) {
+        throw new Error('الدفعة غير موجودة أو ليس لديك صلاحية للوصول إليها');
+      }
+
+      // 2. التحقق من بيانات الخزينة للطريقة الجديدة
+      if ((newPaymentMethod === 'BANK' || newPaymentMethod === 'CARD') && !newBankAccountId) {
+        throw new Error('يجب تحديد الحساب المصرفي عند اختيار حوالة أو بطاقة');
+      }
+
+      // 3. جلب حركة الخزينة القديمة المرتبطة بهذه الدفعة
+      const oldTreasuryTx = await this.prisma.treasuryTransaction.findFirst({
+        where: {
+          referenceType: 'SalePayment',
+          referenceId: id
+        },
+        include: {
+          treasury: true
+        }
+      });
+
+      // 4. تحديد الخزينة الجديدة
+      let newTreasuryId: number | null = null;
+      let newTreasuryName = '';
+
+      if (newPaymentMethod === 'CASH') {
+        const companyTreasury = await this.prisma.treasury.findFirst({
+          where: {
+            companyId: payment.sale.companyId,
+            type: 'COMPANY',
+            isActive: true
+          }
+        });
+        if (!companyTreasury) {
+          throw new Error('لا توجد خزينة نقدية نشطة للشركة');
+        }
+        newTreasuryId = companyTreasury.id;
+        newTreasuryName = companyTreasury.name;
+      } else if ((newPaymentMethod === 'BANK' || newPaymentMethod === 'CARD') && newBankAccountId) {
+        const bankAccount = await this.prisma.treasury.findFirst({
+          where: {
+            id: newBankAccountId,
+            type: 'BANK',
+            isActive: true
+          }
+        });
+        if (!bankAccount) {
+          throw new Error('الحساب المصرفي المحدد غير موجود أو غير نشط');
+        }
+        newTreasuryId = bankAccount.id;
+        newTreasuryName = bankAccount.name;
+      }
+
+      if (!newTreasuryId) {
+        throw new Error('لا توجد خزينة مناسبة لطريقة الدفع المختارة');
+      }
+
+      const amount = Number(payment.amount);
+      const sale = payment.sale;
+      const receiptNumber = payment.receiptNumber || String(payment.id);
+      const customerInfo = sale.customer
+        ? `- الزبون: ${sale.customer.name}${sale.customer.phone ? ` (${sale.customer.phone})` : ''}`
+        : '';
+
+      // 5. عكس حركة الخزينة القديمة (إذا وجدت)
+      if (oldTreasuryTx) {
+        const oldTreasury = oldTreasuryTx.treasury;
+        const newBalanceAfterReversal = oldTreasury.balance.sub(new Decimal(amount));
+
+        await this.prisma.$transaction([
+          this.prisma.treasury.update({
+            where: { id: oldTreasury.id },
+            data: { balance: newBalanceAfterReversal }
+          }),
+          this.prisma.treasuryTransaction.create({
+            data: {
+              treasuryId: oldTreasury.id,
+              type: 'WITHDRAWAL' as any,
+              source: 'RECEIPT' as any,
+              amount: amount,
+              balanceBefore: oldTreasury.balance,
+              balanceAfter: newBalanceAfterReversal,
+              description: `عكس إيصال قبض رقم ${receiptNumber} (تغيير طريقة الدفع) - فاتورة ${sale.invoiceNumber || sale.id} ${customerInfo}`.trim(),
+              referenceType: 'SalePaymentMethodChange',
+              referenceId: id
+            }
+          }),
+          this.prisma.treasuryTransaction.delete({
+            where: { id: oldTreasuryTx.id }
+          })
+        ]);
+      }
+
+      // 6. إضافة حركة في الخزينة الجديدة
+      const newDescription = `إيصال قبض رقم ${receiptNumber} - فاتورة ${sale.invoiceNumber || sale.id} - ${sale.company?.name || ''} ${customerInfo} [تم تغيير طريقة الدفع إلى ${newPaymentMethod === 'CASH' ? 'كاش' : newPaymentMethod === 'BANK' ? 'حوالة' : 'بطاقة'} - ${newTreasuryName}]`.trim();
+
+      await TreasuryController.addToTreasury(
+        newTreasuryId,
+        amount,
+        'RECEIPT',
+        'SalePayment',
+        id,
+        newDescription
+      );
+
+      // 7. تحديث الدفعة بطريقة الدفع الجديدة
+      const updatedPayment = await this.prisma.salePayment.update({
+        where: { id },
+        data: {
+          paymentMethod: newPaymentMethod,
+          notes: notes !== undefined ? notes : payment.notes
+        },
+        include: {
+          sale: {
+            include: {
+              customer: true,
+              company: { select: { id: true, name: true, code: true } }
+            }
+          },
+          company: { select: { id: true, name: true, code: true } }
+        }
+      });
+
+      return {
+        success: true,
+        message: `تم تغيير طريقة الدفع بنجاح إلى ${newPaymentMethod === 'CASH' ? 'كاش' : newPaymentMethod === 'BANK' ? 'حوالة بنكية' : 'بطاقة مصرفية'}`,
+        data: { payment: updatedPayment }
+      };
+    } catch (error: any) {
+      throw new Error(`خطأ في تغيير طريقة الدفع: ${error.message}`);
     }
   }
 
