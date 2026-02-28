@@ -148,6 +148,13 @@ export default function CashierReceiptsPage() {
   const { data: creditStatsData } = useGetCreditSalesStatsQuery();
   const [createPayment, { isLoading: isCreatingPayment }] = useCreatePaymentMutation();
   const [deletePayment] = useDeletePaymentMutation();
+  const [updatePaymentMethod, { isLoading: isUpdatingPaymentMethod }] = useUpdatePaymentMethodMutation();
+  
+  // States for changing payment method of a specific payment
+  const [showChangePaymentMethodModal, setShowChangePaymentMethodModal] = useState(false);
+  const [paymentToChangeMethod, setPaymentToChangeMethod] = useState<SalePayment | null>(null);
+  const [newPaymentMethod, setNewPaymentMethod] = useState<"CASH" | "BANK" | "CARD">("CASH");
+  const [newBankAccountId, setNewBankAccountId] = useState<number | "">("");
   const { data: companiesData } = useGetCompaniesQuery({ limit: 1000 });
 
   // تحميل الحسابات المصرفية (جميع الحسابات المصرفية النشطة)
@@ -269,6 +276,40 @@ export default function CashierReceiptsPage() {
       refetch();
       refetchPending();
       refetchIssued();
+    } catch (err: any) {
+      showError(err?.data?.message || 'حدث خطأ أثناء تغيير طريقة الدفع');
+    }
+  };
+
+  const handleOpenChangePaymentMethod = (payment: SalePayment) => {
+    setPaymentToChangeMethod(payment);
+    setNewPaymentMethod(payment.paymentMethod);
+    setNewBankAccountId('');
+    setShowChangePaymentMethodModal(true);
+  };
+
+  const handleChangePaymentMethod = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!paymentToChangeMethod) return;
+
+    if ((newPaymentMethod === 'BANK' || newPaymentMethod === 'CARD') && !newBankAccountId) {
+      showError('❌ يجب اختيار الحساب المصرفي عند اختيار حوالة أو بطاقة');
+      return;
+    }
+
+    try {
+      await updatePaymentMethod({
+        id: paymentToChangeMethod.id,
+        paymentMethod: newPaymentMethod,
+        bankAccountId: (newPaymentMethod === 'BANK' || newPaymentMethod === 'CARD') ? Number(newBankAccountId) : undefined,
+      }).unwrap();
+
+      success('✅ تم تغيير طريقة الدفع وتسوية حركات الخزينة بنجاح');
+      setShowChangePaymentMethodModal(false);
+      setPaymentToChangeMethod(null);
+      setNewPaymentMethod('CASH');
+      setNewBankAccountId('');
+      refetchCreditSales();
     } catch (err: any) {
       showError(err?.data?.message || 'حدث خطأ أثناء تغيير طريقة الدفع');
     }
@@ -868,7 +909,14 @@ ${itemsText}
                   </td>
                 </tr>
               ) : (
-                sales.map((sale: any) => (
+                sales.map((sale: any) => {
+                  // تحديد ما إذا كان يجب إظهار زر تعديل طريقة الدفع
+                  // يظهر الزر إذا: تم إصدار إيصال OR تم دفع أي مبلغ (للفواتير الآجلة)
+                  const hasPaidAmount = sale.paidAmount && sale.paidAmount > 0;
+                  const isIssued = sale.receiptIssued || issuedReceipts.has(sale.id);
+                  const shouldShowEditButton = isIssued || hasPaidAmount;
+                  
+                  return (
                   <tr key={sale.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {sale.invoiceNumber || `#${sale.id}`}
@@ -896,48 +944,62 @@ ${itemsText}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {sale.receiptIssued || issuedReceipts.has(sale.id) ? (
+                      {shouldShowEditButton ? (
                         <div className="flex items-center gap-2">
-                          <div className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-700 bg-green-100 rounded-md">
-                            تم الإصدار
-                          </div>
-                          <button
-                            onClick={() => printReceipt(sale)}
-                            className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                            title="إعادة طباعة الإيصال"
-                          >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                            </svg>
-                          </button>
+                          {isIssued && (
+                            <div className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-700 bg-green-100 rounded-md">
+                              تم الإصدار
+                            </div>
+                          )}
+                          {!isIssued && hasPaidAmount && (
+                            <div className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-md">
+                              تم الدفع جزئياً
+                            </div>
+                          )}
+                          {isIssued && (
+                            <button
+                              onClick={() => printReceipt(sale)}
+                              className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                              title="إعادة طباعة الإيصال"
+                            >
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                              </svg>
+                            </button>
+                          )}
                           <button
                             onClick={() => handleOpenChangeCashMethod(sale)}
-                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors"
+                            className="inline-flex items-center gap-1 px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors"
                             title="تغيير طريقة الدفع"
                           >
                             <RefreshCw className="h-4 w-4" />
+                            <span>تعديل الدفع</span>
                           </button>
-                          <button
-                            onClick={() => handleCreateDispatchOrder(sale)}
-                            disabled={isCreatingDispatch}
-                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
-                            title="إنشاء أمر صرف من المخزن"
-                          >
-                            <svg className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                            </svg>
-                            ارسال أمر صرف
-                          </button>
-                          <button
-                            onClick={() => handleSendWhatsApp(sale)}
-                            className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
-                            title="إرسال الفاتورة على الواتساب"
-                          >
-                            <svg className="h-4 w-4 ml-2" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                            </svg>
-                            واتساب
-                          </button>
+                          {isIssued && (
+                            <>
+                              <button
+                                onClick={() => handleCreateDispatchOrder(sale)}
+                                disabled={isCreatingDispatch}
+                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
+                                title="إنشاء أمر صرف من المخزن"
+                              >
+                                <svg className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                </svg>
+                                ارسال أمر صرف
+                              </button>
+                              <button
+                                onClick={() => handleSendWhatsApp(sale)}
+                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                                title="إرسال الفاتورة على الواتساب"
+                              >
+                                <svg className="h-4 w-4 ml-2" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                </svg>
+                                واتساب
+                              </button>
+                            </>
+                          )}
                         </div>
                       ) : (
                         <button
@@ -953,7 +1015,8 @@ ${itemsText}
                       )}
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -1518,7 +1581,12 @@ ${itemsText}
 
                 <div className="p-4">
                   <div id="history-print-content">
-                    <PaymentsHistoryPrint sale={selectedCreditSale} payments={selectedCreditSale.payments || []} />
+                    <PaymentsHistoryPrint 
+                    sale={selectedCreditSale} 
+                    payments={selectedCreditSale.payments || []}
+                    onEditPaymentMethod={handleOpenChangePaymentMethod}
+                    showEditButtons={true}
+                  />
                   </div>
 
                   <div className="flex items-center justify-end gap-2 pt-4 border-t mt-4">
@@ -1538,6 +1606,136 @@ ${itemsText}
                       طباعة
                     </button>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* مودال تغيير طريقة الدفع للدفعة المحددة */}
+          {showChangePaymentMethodModal && paymentToChangeMethod && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+              <div className="relative w-full max-w-md bg-white rounded-lg shadow-xl overflow-hidden">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-6 py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <RefreshCw className="w-5 h-5" />
+                      <div>
+                        <h3 className="text-lg font-bold">تعديل طريقة الدفع</h3>
+                        <p className="text-purple-50 text-xs">إيصال رقم {paymentToChangeMethod.receiptNumber}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowChangePaymentMethodModal(false);
+                        setPaymentToChangeMethod(null);
+                        setNewPaymentMethod('CASH');
+                        setNewBankAccountId('');
+                      }}
+                      className="p-1 hover:bg-white/20 rounded transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  {/* معلومات الدفعة */}
+                  <div className="mb-5 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-gray-500 text-xs block">المبلغ</span>
+                        <span className="text-green-600 font-bold">{formatArabicCurrency(paymentToChangeMethod.amount)}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 text-xs block">طريقة الدفع الحالية</span>
+                        <span className={`font-bold ${
+                          paymentToChangeMethod.paymentMethod === 'CASH' ? 'text-green-600' :
+                          paymentToChangeMethod.paymentMethod === 'BANK' ? 'text-blue-600' : 'text-purple-600'
+                        }`}>
+                          {paymentToChangeMethod.paymentMethod === 'CASH' ? '💵 نقداً' :
+                           paymentToChangeMethod.paymentMethod === 'BANK' ? '🏦 حوالة' : '💳 بطاقة'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <p className="text-xs text-purple-600 bg-purple-50 px-3 py-2 rounded">
+                        ⚠️ سيتم عكس حركة الخزينة القديمة وإضافة حركة جديدة
+                      </p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleChangePaymentMethod} className="space-y-4">
+                    <div>
+                      <label className="text-xs font-bold text-gray-700 block mb-1">
+                        طريقة الدفع الجديدة <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={newPaymentMethod}
+                        onChange={(e) => {
+                          const v = e.target.value as "CASH" | "BANK" | "CARD";
+                          setNewPaymentMethod(v);
+                          if (v === 'CASH') setNewBankAccountId('');
+                        }}
+                        className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                      >
+                        <option value="CASH">💵 نقداً (كاش)</option>
+                        <option value="BANK">🏦 تحويل بنكي</option>
+                        <option value="CARD">💳 بطاقة مصرفية</option>
+                      </select>
+                    </div>
+
+                    {(newPaymentMethod === 'BANK' || newPaymentMethod === 'CARD') && (
+                      <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                        <label className="text-xs font-bold text-gray-700 block mb-1">
+                          الحساب المصرفي <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={newBankAccountId}
+                          onChange={(e) => setNewBankAccountId(e.target.value ? Number(e.target.value) : '')}
+                          required
+                          disabled={isTreasuriesLoading}
+                          className="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                        >
+                          <option value="">-- اختر الحساب --</option>
+                          {bankAccounts.map((account: any) => (
+                            <option key={account.id} value={account.id}>
+                              {account.name} ({account.balance.toFixed(2)} د.ل)
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        type="submit"
+                        disabled={isUpdatingPaymentMethod}
+                        className="flex-1 bg-purple-500 hover:bg-purple-600 text-white px-6 py-2.5 rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isUpdatingPaymentMethod ? (
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <>
+                            <RefreshCw className="w-4 h-4" />
+                            تأكيد التعديل
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowChangePaymentMethodModal(false);
+                          setPaymentToChangeMethod(null);
+                          setNewPaymentMethod('CASH');
+                          setNewBankAccountId('');
+                        }}
+                        className="px-6 py-2.5 bg-gray-100 text-gray-600 rounded-lg font-bold text-sm transition-all hover:bg-gray-200"
+                      >
+                        إلغاء
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
             </div>

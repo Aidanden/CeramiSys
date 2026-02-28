@@ -7,9 +7,11 @@ import { formatArabicCurrency, formatArabicNumber } from '@/utils/formatArabicNu
 interface PaymentsHistoryPrintProps {
   sale: CreditSale;
   payments: SalePayment[];
+  onEditPaymentMethod?: (payment: SalePayment) => void;
+  showEditButtons?: boolean;
 }
 
-export const PaymentsHistoryPrint: React.FC<PaymentsHistoryPrintProps> = ({ sale, payments }) => {
+export const PaymentsHistoryPrint: React.FC<PaymentsHistoryPrintProps> = ({ sale, payments, onEditPaymentMethod, showEditButtons = false }) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ar-LY', {
       year: 'numeric',
@@ -76,6 +78,9 @@ export const PaymentsHistoryPrint: React.FC<PaymentsHistoryPrintProps> = ({ sale
                 <th style={{ border: '1px solid #6b7280', padding: '6px', fontSize: '11px' }}>المبلغ</th>
                 <th style={{ border: '1px solid #6b7280', padding: '6px', fontSize: '11px' }}>طريقة الدفع</th>
                 <th style={{ border: '1px solid #6b7280', padding: '6px', fontSize: '11px' }}>ملاحظات</th>
+                {showEditButtons && (
+                  <th style={{ border: '1px solid #6b7280', padding: '6px', fontSize: '11px' }}>إجراءات</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -99,6 +104,28 @@ export const PaymentsHistoryPrint: React.FC<PaymentsHistoryPrintProps> = ({ sale
                   <td style={{ border: '1px solid #d1d5db', padding: '5px', fontSize: '10px' }}>
                     {payment.notes || '-'}
                   </td>
+                  {showEditButtons && (
+                    <td style={{ border: '1px solid #d1d5db', padding: '5px', textAlign: 'center' }}>
+                      <button
+                        onClick={() => onEditPaymentMethod?.(payment)}
+                        style={{
+                          padding: '4px 8px',
+                          fontSize: '10px',
+                          backgroundColor: '#f59e0b',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '2px'
+                        }}
+                        title="تعديل طريقة الدفع"
+                      >
+                        🔄
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -110,7 +137,7 @@ export const PaymentsHistoryPrint: React.FC<PaymentsHistoryPrintProps> = ({ sale
                 <td style={{ border: '1px solid #6b7280', padding: '8px', textAlign: 'left', fontSize: '16px', fontWeight: 'bold', color: '#15803d' }}>
                   {formatArabicCurrency(payments.reduce((sum, p) => sum + p.amount, 0))}
                 </td>
-                <td colSpan={2} style={{ border: '1px solid #6b7280', padding: '8px' }}></td>
+                <td colSpan={showEditButtons ? 3 : 2} style={{ border: '1px solid #6b7280', padding: '8px' }}></td>
               </tr>
             </tfoot>
           </table>

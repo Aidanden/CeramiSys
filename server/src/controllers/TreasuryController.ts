@@ -88,7 +88,12 @@ class TreasuryController {
      */
     async createTreasury(req: AuthRequest, res: Response) {
         try {
+            console.log('📥 Request body:', JSON.stringify(req.body, null, 2));
+            
+            // استخراج الحقول المطلوبة فقط وتجاهل id وأي حقول أخرى غير مطلوبة
             const { name, type, companyId, bankName, accountNumber, openingBalance } = req.body;
+
+            console.log('📋 Extracted fields:', { name, type, companyId, bankName, accountNumber, openingBalance });
 
             // التحقق من البيانات المطلوبة
             if (!name || !type) {
@@ -104,16 +109,21 @@ class TreasuryController {
                 return res.status(400).json({ error: 'يجب تحديد اسم البنك للحساب المصرفي' });
             }
 
-            // إنشاء الخزينة
+            // البيانات التي سيتم إرسالها لـ Prisma
+            const treasuryData = {
+                name,
+                type: type as TreasuryType,
+                companyId: companyId ? Number(companyId) : null,
+                bankName: bankName || null,
+                accountNumber: accountNumber || null,
+                balance: openingBalance ? new Decimal(openingBalance) : new Decimal(0),
+            };
+
+            console.log('🔧 Treasury data to create:', JSON.stringify(treasuryData, null, 2));
+
+            // إنشاء الخزينة (لا نمرر id أبداً - يتم توليده تلقائياً)
             const treasury = await prisma.treasury.create({
-                data: {
-                    name,
-                    type: type as TreasuryType,
-                    companyId: companyId ? Number(companyId) : null,
-                    bankName: bankName || null,
-                    accountNumber: accountNumber || null,
-                    balance: openingBalance ? new Decimal(openingBalance) : new Decimal(0),
-                },
+                data: treasuryData,
                 include: {
                     company: {
                         select: {
