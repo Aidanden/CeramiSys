@@ -113,16 +113,16 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
         width: '100%',
         borderCollapse: 'collapse',
         marginBottom: '15px',
-        fontSize: '10px'
+        fontSize: '13px'
       }}>
         <thead>
-          <tr style={{ backgroundColor: '#1e40af', color: 'white' }}>
+          <tr style={{ backgroundColor: '#1e40af', color: 'white', fontSize: '14px' }}>
             <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>م</th>
             <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'right' }}>الصنف/الكود</th>
             <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>الكمية</th>
             <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>الكمية (متر)</th>
             <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>سعر الوحدة</th>
-            <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>المجموع الجمالي</th>
+            <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>المجموع الإجمالي</th>
             {enableLineDiscount && <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>الخصم</th>}
             <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>الصافي</th>
           </tr>
@@ -140,24 +140,24 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
 
             return (
               <tr key={line.id || index} style={{ borderBottom: '1px solid #ddd' }}>
-                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center', fontSize: '13px' }}>
                   {formatArabicNumber(index + 1)}
                 </td>
                 <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'right' }}>
-                  <div style={{ fontWeight: 'bold' }}>{line.product?.name || 'غير معروف'}</div>
-                  <div style={{ fontSize: '10px', color: '#666' }}>ID: {line.product?.sku || '-'}</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{line.product?.name || 'غير معروف'}</div>
+                  <div style={{ fontSize: '11px', color: '#666' }}>كود: {line.product?.sku || '-'}</div>
                   {isBox && unitsPerBox && (
                     <div style={{ fontSize: '9px', color: '#666', marginTop: '2px' }}>
                       ({formatArabicNumber(unitsPerBox)} م²/صندوق)
                     </div>
                   )}
                 </td>
-                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center', fontSize: '14px', fontWeight: 'bold' }}>
                   {formatArabicNumber(line.qty)} {line.product?.unit || 'وحدة'}
                 </td>
                 <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
                   {isBox && unitsPerBox ? (
-                    <div style={{ fontWeight: 'bold' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '14px' }}>
                       {formatArabicNumber((line.qty * unitsPerBox).toFixed(2))} م²
                     </div>
                   ) : (
@@ -165,10 +165,10 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
                   )}
                 </td>
                 <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
-                  <div>{formatArabicCurrency(displayPrice)}</div>
-                  {isBox && <div style={{ fontSize: '9px', color: '#666' }}>/م²</div>}
+                  <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{formatArabicCurrency(displayPrice)}</div>
+                  {isBox && <div style={{ fontSize: '11px', color: '#666' }}>/م²</div>}
                 </td>
-                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center', fontSize: '14px', fontWeight: 'bold' }}>
                   {formatArabicCurrency(lineBaseTotal)}
                 </td>
                 {enableLineDiscount && (
@@ -181,7 +181,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
                     ) : '-'}
                   </td>
                 )}
-                <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center', fontWeight: 'bold', color: '#1e40af' }}>
+                <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center', fontWeight: 'bold', color: '#1e40af', fontSize: '15px' }}>
                   {formatArabicCurrency(line.subTotal)}
                 </td>
               </tr>
@@ -189,7 +189,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
           })}
         </tbody>
         <tfoot>
-          <tr style={{ backgroundColor: '#f9fafb', fontWeight: 'bold', fontSize: '12px' }}>
+          <tr style={{ backgroundColor: '#f9fafb', fontWeight: 'bold', fontSize: '14px' }}>
             <td colSpan={enableLineDiscount ? 7 : 6} style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'left' }}>
               إجمالي الفاتورة
             </td>
@@ -197,7 +197,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
               {formatArabicCurrency(totalItemsBeforeDiscount)}
             </td>
           </tr>
-          <tr style={{ fontWeight: 'normal', fontSize: '11px', color: '#ef4444' }}>
+          <tr style={{ fontWeight: 'normal', fontSize: '13px', color: '#ef4444' }}>
             <td colSpan={enableLineDiscount ? 7 : 6} style={{ padding: '6px 8px', border: '1px solid #ddd', textAlign: 'left' }}>
               قيمة الخصم
             </td>
@@ -205,7 +205,7 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
               -{formatArabicCurrency(totalLineDiscounts + (Number(sale.totalDiscountAmount) || 0))}
             </td>
           </tr>
-          <tr style={{ backgroundColor: '#f3f4f6', fontWeight: 'bold', fontSize: '14px' }}>
+          <tr style={{ backgroundColor: '#f3f4f6', fontWeight: 'bold', fontSize: '17px' }}>
             <td colSpan={enableLineDiscount ? 7 : 6} style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>
               الإجمالي بعد الخصم
             </td>

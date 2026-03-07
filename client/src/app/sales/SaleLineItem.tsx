@@ -202,7 +202,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
                           setIsManualPrice(false); // إعادة تعيين السعر اليدوي لحساب السعر من الهامش
                           updateSaleLine(index, 'profitMargin', Number(e.target.value));
                         }}
-                        className="w-12 bg-white dark:bg-surface-primary border border-orange-200 dark:border-orange-800/30 rounded px-1 text-xs font-black text-orange-800 dark:text-orange-300 outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50"
+                        className="w-16 bg-white dark:bg-surface-primary border border-orange-200 dark:border-orange-800/30 rounded px-1.5 py-1 text-sm font-black text-orange-800 dark:text-orange-300 outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50"
                       />
                       <span className="text-[10px] font-black text-orange-700 dark:text-orange-300">%</span>
                     </div>
@@ -253,7 +253,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
                 type="number"
                 value={localQty}
                 onChange={(e) => setLocalQty(e.target.value)}
-                className="w-14 bg-white dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded px-1.5 py-1 text-sm text-center font-black text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
+                className="w-16 bg-white dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded px-1.5 py-1.5 text-base text-center font-black text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
               />
               {selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox && (
                 <div className="flex flex-col items-center px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded border border-emerald-100 dark:border-emerald-800/30 min-w-[50px]">
@@ -289,7 +289,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
                   }
                 }
               }}
-              className="w-24 bg-white dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded px-1.5 py-1 text-sm text-center font-bold text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
+              className={`bg-white dark:bg-surface-secondary border rounded px-2 py-1.5 text-center font-bold outline-none focus:ring-2 transition-all ${line.isFromParentCompany ? 'w-28 text-base text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700 focus:ring-orange-200 dark:focus:ring-orange-800/50' : 'w-24 text-base text-slate-800 dark:text-text-primary border-slate-200 dark:border-border-primary focus:ring-blue-100 dark:focus:ring-blue-900/50'}`}
             />
           </div>
 
@@ -321,7 +321,7 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
           {/* الصافي */}
           <div className="flex flex-col sm:items-end min-w-[100px] col-span-2 sm:col-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-border-primary">
             <span className="text-[9px] font-bold text-slate-400 dark:text-text-tertiary sm:hidden text-left w-full block">الصافي</span>
-            <span className="text-base font-black text-blue-600 dark:text-blue-400">
+            <span className="text-lg font-black text-blue-600 dark:text-blue-400">
               {formatArabicCurrency(calculateLineTotal(line))}
             </span>
           </div>
