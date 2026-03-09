@@ -137,6 +137,11 @@ export const ReceiptPrint: React.FC<ReceiptPrintProps> = ({ sale }) => {
           <p style={{ fontSize: '12px', margin: '3px 0', color: '#666' }}>
             كود الشركة: {sale.company.code}
           </p>
+          {(sale.company.name === 'صالة الامارات' || sale.company.name === 'صالة الإمارات') && (
+            <p style={{ fontSize: '13px', margin: '4px 0', color: '#444', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+              📞 0922122285 &nbsp;|&nbsp; 0922122287
+            </p>
+          )}
           <h2 style={{
             fontSize: '20px',
             margin: '8px 0 0 0',
