@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Plus,
@@ -13,7 +13,9 @@ import {
   Eye,
   Shield,
   Store,
-  Info
+  Info,
+  QrCode,
+  X
 } from 'lucide-react';
 import {
   useGetProductsQuery,
@@ -72,6 +74,11 @@ const ProductsPage = () => {
   const [showAddStockButton, setShowAddStockButton] = useState(false);
   const [useAddToOpeningStock] = useAddToOpeningStockMutation();
 
+  // QR Scanner state
+  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+  const qrScannerRef = useRef<any>(null);
+  const qrContainerRef = useRef<HTMLDivElement>(null);
+
   // وحدة القياس في نماذج الإضافة والتعديل
   const [createUnit, setCreateUnit] = useState<'صندوق' | 'قطعة' | 'كيس' | 'لتر'>('صندوق');
   const [editUnit, setEditUnit] = useState<'صندوق' | 'قطعة' | 'كيس' | 'لتر'>('صندوق');
@@ -99,6 +106,39 @@ const ProductsPage = () => {
       setEditUnit(unit);
     }
   }, [isEditModalOpen, selectedProduct]);
+
+  // تشغيل ماسح QR عند فتح الـ modal
+  useEffect(() => {
+    if (!isQRScannerOpen) return;
+    let scanner: any = null;
+    const startScanner = async () => {
+      try {
+        const { Html5Qrcode } = await import('html5-qrcode');
+        scanner = new Html5Qrcode('qr-scanner-container');
+        qrScannerRef.current = scanner;
+        await scanner.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          (decodedText: string) => {
+            setSearchSKU(decodedText);
+            setIsQRScannerOpen(false);
+          },
+          undefined
+        );
+      } catch (err) {
+        notifications.error('تعذّر فتح الكاميرا');
+        setIsQRScannerOpen(false);
+      }
+    };
+    startScanner();
+    return () => {
+      if (qrScannerRef.current) {
+        qrScannerRef.current.stop().catch(() => {});
+        qrScannerRef.current = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isQRScannerOpen]);
 
   // إعادة تعيين الصفحة إلى الأولى عند تغيير الفلاتر
   useEffect(() => {
@@ -740,7 +780,7 @@ const ProductsPage = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto" dir="rtl">
+    <div className="p-6 w-full" dir="rtl">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
@@ -915,7 +955,7 @@ const ProductsPage = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-7 gap-4">
           {/* Search by Name */}
           <div className="relative">
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-tertiary w-5 h-5" />
@@ -939,29 +979,39 @@ const ProductsPage = () => {
             )}
           </div>
 
-          {/* Search by SKU */}
-          <div className="relative">
-            <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-tertiary w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-            </svg>
-            <input
-              type="text"
-              placeholder="البحث بالكود..."
-              value={searchSKU}
-              onChange={(e) => setSearchSKU(e.target.value)}
-              className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200 ${searchSKU ? 'border-blue-500 ring-2 ring-blue-100' : 'border-border-primary'
-                }`}
-            />
-            {searchSKU && (
-              <button
-                onClick={() => setSearchSKU('')}
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
+          {/* Search by SKU + QR Scanner */}
+          <div className="flex gap-2 xl:col-span-2">
+            <div className="relative flex-1">
+              <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-tertiary w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+              </svg>
+              <input
+                type="text"
+                placeholder="البحث بالكود..."
+                value={searchSKU}
+                onChange={(e) => setSearchSKU(e.target.value)}
+                className={`w-full pr-10 pl-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-border-focus focus:border-border-focus bg-background-secondary text-text-primary placeholder-text-muted transition-all duration-200 ${searchSKU ? 'border-blue-500 ring-2 ring-blue-100' : 'border-border-primary'
+                  }`}
+              />
+              {searchSKU && (
+                <button
+                  onClick={() => setSearchSKU('')}
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            <button
+              onClick={() => setIsQRScannerOpen(true)}
+              title="مسح QR / باركود"
+              className="flex items-center gap-1.5 px-3 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all duration-200 font-medium text-sm whitespace-nowrap shadow-sm"
+            >
+              <QrCode className="w-5 h-5" />
+              مسح QR
+            </button>
           </div>
 
           {/* Company Filter */}
@@ -1188,8 +1238,11 @@ const ProductsPage = () => {
                 <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden sm:table-cell" style={{ width: '5%' }}>
                   الوحدة
                 </th>
-                <th className="px-2 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '7%' }}>
+                <th className="px-2 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '6%' }}>
                   العبوة
+                </th>
+                <th className="px-1 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '7%' }}>
+                  إجمالي العبوة
                 </th>
                 <th className="px-1 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '8%' }}>
                   إجمالي المخزون
@@ -1309,6 +1362,15 @@ const ProductsPage = () => {
                       {product.unit === 'صندوق' && product.unitsPerBox ? (
                         <span className="font-bold text-blue-600 truncate block">
                           {formatArabicArea(product.unitsPerBox)} م²
+                        </span>
+                      ) : '-'}
+                    </td>
+                    <td className="px-1 py-3 text-center">
+                      {product.unit === 'صندوق' && product.unitsPerBox ? (
+                        <span className="inline-flex px-1.5 py-0.5 text-xs font-bold rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
+                          {formatArabicArea(
+                            Math.max(0, (product.stock?.[0]?.boxes || 0) + (product.externalStoreStock || 0)) * product.unitsPerBox
+                          )} م²
                         </span>
                       ) : '-'}
                     </td>
@@ -2584,6 +2646,42 @@ const ProductsPage = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* QR Scanner Modal */}
+      {isQRScannerOpen && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            {/* Header */}
+            <div className="bg-indigo-600 px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-white">
+                <QrCode className="w-5 h-5" />
+                <h3 className="font-bold text-lg">مسح QR / باركود</h3>
+              </div>
+              <button
+                onClick={() => setIsQRScannerOpen(false)}
+                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scanner Area */}
+            <div className="p-5">
+              <p className="text-sm text-center text-gray-500 dark:text-text-secondary mb-4">
+                وجّه الكاميرا نحو QR code أو الباركود للبحث عن الصنف تلقائياً
+              </p>
+              <div className="rounded-xl overflow-hidden border-2 border-indigo-200 bg-black">
+                <div id="qr-scanner-container" ref={qrContainerRef} style={{ width: '100%', minHeight: '280px' }} />
+              </div>
+              <button
+                onClick={() => setIsQRScannerOpen(false)}
+                className="mt-4 w-full py-2.5 border border-gray-300 dark:border-border-primary rounded-lg text-gray-700 dark:text-text-primary hover:bg-gray-50 dark:hover:bg-surface-hover transition-colors font-medium"
+              >
+                إلغاء
+              </button>
             </div>
           </div>
         </div>

@@ -315,6 +315,145 @@ export default function WarehouseDispatchPage() {
     return `${formatArabicNumber(qty)} ${product?.unit || 'قطعة'}`;
   };
 
+  // دالة لطباعة أذن الصرف لأمر واحد
+  const handlePrintDispatchOrder = (order: DispatchOrder) => {
+    const printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) {
+      showError('يرجى السماح بفتح النوافذ المنبثقة للطباعة');
+      return;
+    }
+
+    const itemRows = order.sale?.lines?.map((line, idx) => {
+      const isBox = line.product?.unit === 'صندوق';
+      const unitsPerBox = line.product?.unitsPerBox ? Number(line.product.unitsPerBox) : 0;
+      const qtyDisplay = `${line.qty} ${line.product?.unit || 'صندوق'}`;
+      const totalUnits = isBox && unitsPerBox > 0
+        ? `${(line.qty * unitsPerBox).toFixed(2)} م²`
+        : qtyDisplay;
+      const source = line.isFromParentCompany ? 'التقازي' : (order.sale?.company?.name || '-');
+      return `
+        <tr style="background:${idx % 2 === 0 ? '#fff' : '#f9fafb'}">
+          <td style="padding:8px 12px;border:1px solid #ddd;text-align:center">${idx + 1}</td>
+          <td style="padding:8px 12px;border:1px solid #ddd;">${line.product?.name || '-'}</td>
+          <td style="padding:8px 12px;border:1px solid #ddd;text-align:center;font-family:monospace">${line.product?.sku || '-'}</td>
+          <td style="padding:8px 12px;border:1px solid #ddd;text-align:center">${source}</td>
+          <td style="padding:8px 12px;border:1px solid #ddd;text-align:center;font-weight:bold;color:#c2410c">${qtyDisplay}</td>
+          <td style="padding:8px 12px;border:1px solid #ddd;text-align:center;font-weight:bold;color:#1d4ed8">${totalUnits}</td>
+        </tr>
+      `;
+    }).join('') || '<tr><td colspan="6" style="text-align:center;padding:12px">لا توجد أصناف</td></tr>';
+
+    const statusText = order.status === 'PENDING' ? 'معلق' : order.status === 'COMPLETED' ? 'تم التسليم' : 'ملغي';
+    const statusColor = order.status === 'PENDING' ? '#d97706' : order.status === 'COMPLETED' ? '#16a34a' : '#dc2626';
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="UTF-8">
+        <title>أذن صرف #${order.id}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; direction: rtl; padding: 20px; color: #111; }
+          @media print { body { padding: 0; } @page { size: A4; margin: 15mm; } }
+          .header { text-align: center; border-bottom: 3px solid #ea580c; padding-bottom: 16px; margin-bottom: 20px; }
+          .header h1 { font-size: 26px; color: #111; margin-bottom: 4px; }
+          .header h2 { font-size: 18px; color: #ea580c; margin: 8px 0 4px; }
+          .header p { font-size: 13px; color: #555; }
+          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; padding: 14px; background: #fff7ed; border-radius: 8px; border: 1px solid #fed7aa; }
+          .info-item label { font-size: 11px; color: #666; display: block; margin-bottom: 3px; }
+          .info-item p { font-size: 14px; font-weight: bold; color: #111; }
+          .status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 13px; font-weight: bold; background: ${statusColor}20; color: ${statusColor}; border: 1px solid ${statusColor}; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          thead tr { background: #ea580c; color: white; }
+          th { padding: 12px 14px; text-align: right; font-size: 16px; }
+          td { font-size: 15px; }
+          .signatures { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 40px; margin-top: 30px; padding-top: 16px; border-top: 1px solid #ddd; }
+          .sig-box { text-align: center; }
+          .sig-line { border-top: 2px solid #333; margin-top: 40px; padding-top: 8px; }
+          .sig-box p { font-size: 13px; font-weight: bold; }
+          .sig-box span { font-size: 11px; color: #666; }
+          .footer { text-align: center; margin-top: 20px; font-size: 11px; color: #888; border-top: 1px solid #ddd; padding-top: 8px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>${order.sale?.company?.name || 'الشركة'}</h1>
+          <h2>أذن صرف بضاعة</h2>
+          <p>رقم الأمر: <strong>#${order.id}</strong> &nbsp;|&nbsp; التاريخ: <strong>${new Date(order.createdAt).toLocaleDateString('ar-LY')}</strong></p>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-item">
+            <label>رقم الفاتورة</label>
+            <p>${order.sale?.invoiceNumber || '#' + order.saleId}</p>
+          </div>
+          <div class="info-item">
+            <label>العميل</label>
+            <p>${order.sale?.customer?.name || 'عميل نقدي'}</p>
+          </div>
+          <div class="info-item">
+            <label>الشركة</label>
+            <p>${order.sale?.company?.name || '-'}</p>
+          </div>
+          <div class="info-item">
+            <label>الحالة</label>
+            <span class="status-badge">${statusText}</span>
+          </div>
+          ${order.sale?.customer?.phone ? `<div class="info-item"><label>هاتف العميل</label><p>${order.sale.customer.phone}</p></div>` : ''}
+          ${order.completedAt ? `<div class="info-item"><label>تاريخ التسليم</label><p>${new Date(order.completedAt).toLocaleDateString('ar-LY')}</p></div>` : ''}
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40px;text-align:center">م</th>
+              <th>اسم الصنف</th>
+              <th style="text-align:center">الكود</th>
+              <th style="text-align:center">المصدر</th>
+              <th style="text-align:center">الكمية (صندوق)</th>
+              <th style="text-align:center">إجمالي الوحدات</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemRows}
+          </tbody>
+        </table>
+
+        ${order.notes ? `<div style="padding:10px;background:#f9fafb;border:1px solid #ddd;border-radius:6px;margin-bottom:20px"><strong>ملاحظات:</strong> ${order.notes}</div>` : ''}
+
+        <div class="signatures">
+          <div class="sig-box">
+            <div class="sig-line">
+              <p>أمين المخزن</p>
+              <span>الاسم والتوقيع</span>
+            </div>
+          </div>
+          <div class="sig-box">
+            <div class="sig-line">
+              <p>المستلم</p>
+              <span>الاسم والتوقيع</span>
+            </div>
+          </div>
+          <div class="sig-box">
+            <div class="sig-line">
+              <p>المدير</p>
+              <span>الاسم والتوقيع</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">
+          <p>تم الطباعة بتاريخ: ${new Date().toLocaleString('ar-LY')}</p>
+        </div>
+
+        <script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }<\/script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   // دالة لطباعة الجدول
   const handlePrintTable = () => {
     const isDispatch = activeTab === 'dispatch';
@@ -943,19 +1082,28 @@ export default function WarehouseDispatchPage() {
                         {order.completedAt ? new Date(order.completedAt).toLocaleDateString('ar-LY') : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => {
-                            setSelectedOrder(order);
-                            setShowDetailsModal(true);
-                          }}
-                          className="text-orange-600 hover:text-orange-900 p-1 rounded"
-                          title="عرض التفاصيل"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setShowDetailsModal(true);
+                            }}
+                            className="text-orange-600 hover:text-orange-900 p-1 rounded"
+                            title="عرض التفاصيل"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handlePrintDispatchOrder(order)}
+                            className="text-blue-600 hover:text-blue-900 p-1 rounded"
+                            title="طباعة أذن الصرف"
+                          >
+                            <Printer className="w-5 h-5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -1185,6 +1333,13 @@ export default function WarehouseDispatchPage() {
                 className="px-4 py-2 border border-gray-300 dark:border-border-primary rounded-lg bg-white dark:bg-surface-secondary text-gray-700 dark:text-text-primary hover:bg-gray-50 dark:hover:bg-surface-hover transition-colors"
               >
                 إغلاق
+              </button>
+              <button
+                onClick={() => handlePrintDispatchOrder(selectedOrder)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Printer className="w-4 h-4" />
+                طباعة أذن الصرف
               </button>
 
               {/* إظهار أزرار الإجراءات في حالة معلق */}

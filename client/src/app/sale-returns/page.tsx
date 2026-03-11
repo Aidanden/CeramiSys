@@ -201,6 +201,21 @@ const SaleReturnsPage = () => {
     }));
   };
 
+  // Handle unit price change for return line
+  const handleLinePriceChange = (index: number, displayPrice: number) => {
+    const extras = (window as any).returnFormExtras?.[index] || {};
+    const isBox = extras.unit === 'صندوق' && extras.unitsPerBox;
+    const unitsPerBox = Number(extras.unitsPerBox || 0);
+    // إذا كان الصنف بصناديق، السعر المُدخل هو سعر المتر، نحوّله لسعر الصندوق
+    const storedPrice = (isBox && unitsPerBox > 0) ? displayPrice * unitsPerBox : displayPrice;
+    setReturnForm((prev: CreateSaleReturnDto) => ({
+      ...prev,
+      lines: prev.lines.map((line, i) =>
+        i === index ? { ...line, unitPrice: storedPrice } : line
+      )
+    }));
+  };
+
   // Handle create return
   const handleCreateReturn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -853,13 +868,22 @@ const SaleReturnsPage = () => {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-text-primary">
                                 {(() => {
-                                  // السعر في قاعدة البيانات هو سعر الصندوق
-                                  // لغرض العرض، نظهر سعر المتر (بقسمة سعر الصندوق على عدد الأمتار)
                                   const unitsPerBox = Number(extras.unitsPerBox || 0);
                                   const displayPrice = (isBox && unitsPerBox > 0) ? (line.unitPrice / unitsPerBox) : line.unitPrice;
-                                  return formatArabicCurrency(displayPrice);
+                                  return (
+                                    <div className="flex flex-col items-center gap-1">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={displayPrice || ''}
+                                        onChange={(e) => handleLinePriceChange(index, parseFloat(e.target.value) || 0)}
+                                        className="w-24 px-2 py-1 text-center border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50 text-blue-900 font-bold"
+                                      />
+                                      {isBox && <div className="text-[10px] text-text-tertiary">/م²</div>}
+                                    </div>
+                                  );
                                 })()}
-                                {isBox && <div className="text-[10px] text-text-tertiary">/م²</div>}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center">
                                 <input
