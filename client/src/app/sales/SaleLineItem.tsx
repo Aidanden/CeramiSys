@@ -209,36 +209,53 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
                   )}
                 </div>
               )}
-              {selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox && (
-                <span className="text-[9px] font-bold text-slate-400 dark:text-text-tertiary">عبوة: {selectedProduct.unitsPerBox}</span>
-              )}
-              {/* عرض معلومات المخزون */}
-              {selectedProduct && selectedProduct.stock && Array.isArray(selectedProduct.stock) && selectedProduct.stock.length > 0 && (() => {
-                // البحث عن مخزون الشركة المستهدفة أولاً
-                let stockInfo = selectedProduct.stock.find((s: any) => s.companyId === currentCompanyId);
-                let source = 'محلي';
-
-                // إذا لم يوجد مخزون في الشركة المستهدفة، نبحث في الشركة الأم (التقازي)
-                if ((!stockInfo || stockInfo.boxes === 0) && currentCompanyId !== 1) {
-                  stockInfo = selectedProduct.stock.find((s: any) => s.companyId === 1);
-                  source = 'التقازي';
-                }
-
-                if (stockInfo && stockInfo.boxes > 0) {
-                  return (
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${stockInfo.boxes > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                      }`}>
-                      📦 {stockInfo.boxes} {selectedProduct.unit || 'وحدة'}
-                      {selectedProduct.unit === 'صندوق' && selectedProduct.unitsPerBox && (
-                        <span className="text-[8px]"> ({stockInfo.quantity?.toFixed(2)} م²)</span>
-                      )}
-                      <span className="text-[8px] opacity-70"> • {source}</span>
-                    </span>
-                  );
-                }
-                return null;
-              })()}
             </div>
+
+            {/* بيانات الصنف البارزة: عبوة، مخزون، إجمالي م² */}
+            {line.productId > 0 && selectedProduct && (
+              <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                {selectedProduct.unit === 'صندوق' && selectedProduct.unitsPerBox && (
+                  <div className="flex items-center gap-1 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/30 rounded-md px-2.5 py-1">
+                    <span className="text-xs font-semibold text-purple-500 dark:text-purple-400">العبوة:</span>
+                    <span className="text-sm font-black text-purple-700 dark:text-purple-300">{selectedProduct.unitsPerBox} م²/صندوق</span>
+                  </div>
+                )}
+                {selectedProduct.stock && Array.isArray(selectedProduct.stock) && (() => {
+                  let stockInfo = selectedProduct.stock.find((s: any) => s.companyId === currentCompanyId);
+                  let source = 'محلي';
+                  if ((!stockInfo || stockInfo.boxes === 0) && currentCompanyId !== 1) {
+                    stockInfo = selectedProduct.stock.find((s: any) => s.companyId === 1);
+                    source = 'التقازي';
+                  }
+                  if (!stockInfo) return null;
+                  return (
+                    <div className={`flex items-center gap-1 border rounded-md px-2.5 py-1 ${
+                      stockInfo.boxes > 0
+                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/30'
+                        : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/30'
+                    }`}>
+                      <span className={`text-xs font-semibold ${
+                        stockInfo.boxes > 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'
+                      }`}>📦 المخزون ({source}):</span>
+                      <span className={`text-sm font-black ${
+                        stockInfo.boxes > 0 ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'
+                      }`}>{stockInfo.boxes} {selectedProduct.unit || 'وحدة'}</span>
+                      {selectedProduct.unit === 'صندوق' && selectedProduct.unitsPerBox && (
+                        <span className={`text-xs font-bold ${
+                          stockInfo.boxes > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                        }`}>= {stockInfo.quantity?.toFixed(1)} م²</span>
+                      )}
+                    </div>
+                  );
+                })()}
+                {selectedProduct.unit === 'صندوق' && selectedProduct.unitsPerBox && Number(localQty) > 0 && (
+                  <div className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 rounded-md px-2.5 py-1">
+                    <span className="text-xs font-semibold text-blue-500 dark:text-blue-400">الإجمالي:</span>
+                    <span className="text-sm font-black text-blue-700 dark:text-blue-300">{(Number(localQty) * Number(selectedProduct.unitsPerBox)).toFixed(2)} م²</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -255,12 +272,6 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
                 onChange={(e) => setLocalQty(e.target.value)}
                 className="w-16 bg-white dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded px-1.5 py-1.5 text-base text-center font-black text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
               />
-              {selectedProduct?.unit === 'صندوق' && selectedProduct?.unitsPerBox && (
-                <div className="flex flex-col items-center px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded border border-emerald-100 dark:border-emerald-800/30 min-w-[50px]">
-                  <span className="text-[10px] font-black">{(Number(localQty || 0) * Number(selectedProduct.unitsPerBox)).toFixed(2)}</span>
-                  <span className="text-[8px] font-bold uppercase">م²</span>
-                </div>
-              )}
             </div>
           </div>
 

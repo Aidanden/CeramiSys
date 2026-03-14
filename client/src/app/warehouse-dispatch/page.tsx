@@ -21,7 +21,13 @@ import {
 } from '@/state/notificationsApi';
 import { useToast } from '@/components/ui/Toast';
 import { formatArabicNumber } from '@/utils/formatArabicNumbers';
-import { Bell, Trash2, X, Package, Printer } from 'lucide-react';
+import { Bell, Trash2, X, Package } from 'lucide-react';
+
+const PrinterIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+  </svg>
+);
 
 
 
@@ -844,7 +850,7 @@ export default function WarehouseDispatchPage() {
             onClick={handlePrintTable}
             className="flex items-center gap-2 bg-slate-600 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-all duration-200 shadow-sm"
           >
-            <Printer className="w-5 h-5" />
+            <PrinterIcon />
             طباعة التقرير
           </button>
         </div>
@@ -1005,28 +1011,28 @@ export default function WarehouseDispatchPage() {
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-surface-secondary">
               <tr>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
                   رقم الأمر
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
                   رقم الفاتورة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
                   العميل
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
                   الشركة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
                   الحالة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
                   التاريخ
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
                   تاريخ التسليم
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-tertiary uppercase tracking-wider">
                   الإجراءات
                 </th>
               </tr>
@@ -1051,37 +1057,37 @@ export default function WarehouseDispatchPage() {
                 ) : (
                   ordersData?.data?.dispatchOrders?.map((order) => (
                     <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-surface-hover">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-text-primary">
+                      <td className="px-6 py-4 whitespace-nowrap text-base font-semibold text-gray-900 dark:text-text-primary">
                         #{formatArabicNumber(order.id)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
+                      <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900 dark:text-text-primary">
                         {order.sale?.invoiceNumber || `#${order.saleId}`}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
+                      <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900 dark:text-text-primary">
                         {order.sale?.customer?.name || 'غير محدد'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
+                      <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900 dark:text-text-primary">
                         <div className="flex flex-col">
                           <span className="font-medium text-orange-600">{order.sale?.company?.name}</span>
-                          <span className="text-xs text-gray-500 dark:text-text-tertiary">{order.sale?.company?.code}</span>
+                          <span className="text-sm text-gray-500 dark:text-text-tertiary">{order.sale?.company?.code}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                          className={`inline-flex items-center gap-1 px-2 py-1 text-sm font-semibold rounded-full ${getStatusBadge(
                             order.status
                           )}`}
                         >
                           {getStatusText(order.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
+                      <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900 dark:text-text-primary">
                         {new Date(order.createdAt).toLocaleDateString('ar-LY')}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
+                      <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900 dark:text-text-primary">
                         {order.completedAt ? new Date(order.completedAt).toLocaleDateString('ar-LY') : '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap text-base font-medium">
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => {
@@ -1101,7 +1107,7 @@ export default function WarehouseDispatchPage() {
                             className="text-blue-600 hover:text-blue-900 p-1 rounded"
                             title="طباعة أذن الصرف"
                           >
-                            <Printer className="w-5 h-5" />
+                            <PrinterIcon />
                           </button>
                         </div>
                       </td>
@@ -1118,37 +1124,37 @@ export default function WarehouseDispatchPage() {
                 ) : (
                   returnsData?.data?.returnOrders?.map((order) => (
                     <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-surface-hover">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-text-primary">
+                      <td className="px-6 py-4 whitespace-nowrap text-base font-semibold text-gray-900 dark:text-text-primary">
                         #{formatArabicNumber(order.id)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
+                      <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900 dark:text-text-primary">
                         {order.saleReturn?.returnNumber || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
+                      <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900 dark:text-text-primary">
                         {order.saleReturn?.customer?.name || 'غير محدد'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
+                      <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900 dark:text-text-primary">
                         <div className="flex flex-col">
                           <span className="font-medium text-blue-600">{order.company?.name}</span>
-                          <span className="text-xs text-gray-500 dark:text-text-tertiary">{order.company?.code}</span>
+                          <span className="text-sm text-gray-500 dark:text-text-tertiary">{order.company?.code}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                          className={`inline-flex items-center gap-1 px-2 py-1 text-sm font-semibold rounded-full ${getStatusBadge(
                             order.status
                           )}`}
                         >
                           {getStatusText(order.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
+                      <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900 dark:text-text-primary">
                         {new Date(order.createdAt).toLocaleDateString('ar-LY')}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
+                      <td className="px-6 py-4 whitespace-nowrap text-base text-gray-900 dark:text-text-primary">
                         {order.completedAt ? new Date(order.completedAt).toLocaleDateString('ar-LY') : '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap text-base font-medium">
                         <button
                           onClick={() => {
                             setSelectedReturnOrder(order);
@@ -1219,9 +1225,9 @@ export default function WarehouseDispatchPage() {
       {/* Details Modal */}
       {showDetailsModal && selectedOrder && (
         <div className="fixed inset-0 bg-gray-600 dark:bg-black/50 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border border-slate-200 dark:border-border-primary w-11/12 max-w-4xl shadow-lg rounded-md bg-white dark:bg-surface-primary">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-text-primary">تفاصيل أمر الصرف #{formatArabicNumber(selectedOrder.id)}</h3>
+          <div className="relative top-10 mx-auto p-6 border border-slate-200 dark:border-border-primary w-11/12 max-w-5xl shadow-lg rounded-md bg-white dark:bg-surface-primary">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-text-primary">تفاصيل أمر الصرف #{formatArabicNumber(selectedOrder.id)}</h3>
               <button
                 onClick={() => {
                   setShowDetailsModal(false);
@@ -1240,21 +1246,21 @@ export default function WarehouseDispatchPage() {
             <div className="mb-6 bg-gray-50 dark:bg-surface-secondary p-4 rounded-lg">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-text-secondary">رقم الفاتورة</p>
-                  <p className="font-semibold dark:text-text-primary">{selectedOrder.sale?.invoiceNumber || `#${selectedOrder.saleId}`}</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-text-secondary">رقم الفاتورة</p>
+                  <p className="text-base font-bold dark:text-text-primary mt-0.5">{selectedOrder.sale?.invoiceNumber || `#${selectedOrder.saleId}`}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-text-secondary">العميل</p>
-                  <p className="font-semibold dark:text-text-primary">{selectedOrder.sale?.customer?.name || 'غير محدد'}</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-text-secondary">العميل</p>
+                  <p className="text-base font-bold dark:text-text-primary mt-0.5">{selectedOrder.sale?.customer?.name || 'غير محدد'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-text-secondary">الشركة</p>
-                  <p className="font-semibold dark:text-text-primary">{selectedOrder.sale?.company?.name}</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-text-secondary">الشركة</p>
+                  <p className="text-base font-bold dark:text-text-primary mt-0.5">{selectedOrder.sale?.company?.name}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-text-secondary">الحالة</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-text-secondary">الحالة</p>
                   <span
-                    className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                    className={`inline-flex items-center gap-1 px-2 py-1 text-sm font-semibold rounded-full mt-0.5 ${getStatusBadge(
                       selectedOrder.status
                     )}`}
                   >
@@ -1271,33 +1277,33 @@ export default function WarehouseDispatchPage() {
                 <table className="w-full">
                   <thead className="bg-gradient-to-r from-orange-50 dark:from-orange-900/20 to-orange-100 dark:to-orange-900/30">
                     <tr>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-text-secondary uppercase tracking-wider">الصنف</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-text-secondary uppercase tracking-wider">الكود</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-text-secondary uppercase tracking-wider">الشركة المصدرة</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-text-secondary uppercase tracking-wider">الكمية بالصناديق</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 dark:text-text-secondary uppercase tracking-wider">إجمالي الوحدات</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 dark:text-text-secondary uppercase tracking-wider">الصنف</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 dark:text-text-secondary uppercase tracking-wider">الكود</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 dark:text-text-secondary uppercase tracking-wider">الشركة المصدرة</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 dark:text-text-secondary uppercase tracking-wider">الكمية بالصناديق</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 dark:text-text-secondary uppercase tracking-wider">إجمالي الوحدات</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-border-primary bg-white dark:bg-surface-primary">
                     {selectedOrder.sale?.lines?.map((line, idx) => (
                       <tr key={line.id} className={`hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors ${idx % 2 === 0 ? 'bg-white dark:bg-surface-primary' : 'bg-gray-50 dark:bg-surface-secondary'}`}>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-text-primary">{line.product?.name}</td>
+                        <td className="px-4 py-3 text-base font-semibold text-gray-900 dark:text-text-primary">{line.product?.name}</td>
                         <td className="px-4 py-3 text-sm text-gray-600 dark:text-text-secondary font-mono">{line.product?.sku}</td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${line.isFromParentCompany
+                        <td className="px-4 py-3 text-base">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-sm font-semibold ${line.isFromParentCompany
                             ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
                             : 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-400'
                             }`}>
                             {line.isFromParentCompany ? 'التقازي' : selectedOrder.sale?.company?.name || 'الإمارات'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className="font-bold text-orange-600 text-base">
+                        <td className="px-4 py-3 text-base">
+                          <span className="font-bold text-orange-600 text-lg">
                             {formatQuantityDisplay(line.qty, line.product)}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className="font-semibold text-blue-600">
+                        <td className="px-4 py-3 text-base">
+                          <span className="font-semibold text-blue-600 text-base">
                             {formatTotalUnits(line.qty, line.product)}
                           </span>
                         </td>
@@ -1338,7 +1344,7 @@ export default function WarehouseDispatchPage() {
                 onClick={() => handlePrintDispatchOrder(selectedOrder)}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                <Printer className="w-4 h-4" />
+                <PrinterIcon />
                 طباعة أذن الصرف
               </button>
 
@@ -1381,9 +1387,9 @@ export default function WarehouseDispatchPage() {
       {/* Return Order Details Modal */}
       {showReturnDetailsModal && selectedReturnOrder && (
         <div className="fixed inset-0 bg-gray-600 dark:bg-black/50 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border border-slate-200 dark:border-border-primary w-11/12 max-w-4xl shadow-lg rounded-md bg-white dark:bg-surface-primary">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold dark:text-text-primary">تفاصيل استلام المردودات</h3>
+          <div className="relative top-10 mx-auto p-6 border border-slate-200 dark:border-border-primary w-11/12 max-w-5xl shadow-lg rounded-md bg-white dark:bg-surface-primary">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-2xl font-bold dark:text-text-primary">تفاصيل استلام المردودات</h3>
               <button
                 onClick={() => {
                   setShowReturnDetailsModal(false);
@@ -1400,20 +1406,20 @@ export default function WarehouseDispatchPage() {
 
             <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 dark:bg-surface-secondary rounded-lg text-right">
               <div>
-                <p className="text-sm text-gray-600 dark:text-text-secondary">رقم المردود</p>
-                <p className="font-bold dark:text-text-primary">{selectedReturnOrder.saleReturn?.returnNumber || `#${selectedReturnOrder.saleReturnId}`}</p>
+                <p className="text-sm font-medium text-gray-500 dark:text-text-secondary">رقم المردود</p>
+                <p className="text-base font-bold dark:text-text-primary mt-0.5">{selectedReturnOrder.saleReturn?.returnNumber || `#${selectedReturnOrder.saleReturnId}`}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-text-secondary">العميل</p>
-                <p className="font-bold dark:text-text-primary">{selectedReturnOrder.saleReturn?.customer?.name || 'غير محدد'}</p>
+                <p className="text-sm font-medium text-gray-500 dark:text-text-secondary">العميل</p>
+                <p className="text-base font-bold dark:text-text-primary mt-0.5">{selectedReturnOrder.saleReturn?.customer?.name || 'غير محدد'}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-text-secondary">الفاتورة الأصلية</p>
-                <p className="font-bold dark:text-text-primary">{selectedReturnOrder.saleReturn?.sale?.invoiceNumber || '-'}</p>
+                <p className="text-sm font-medium text-gray-500 dark:text-text-secondary">الفاتورة الأصلية</p>
+                <p className="text-base font-bold dark:text-text-primary mt-0.5">{selectedReturnOrder.saleReturn?.sale?.invoiceNumber || '-'}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-text-secondary">الشركة</p>
-                <p className="font-bold text-blue-600 dark:text-blue-400">{selectedReturnOrder.company?.name}</p>
+                <p className="text-sm font-medium text-gray-500 dark:text-text-secondary">الشركة</p>
+                <p className="text-base font-bold text-blue-600 dark:text-blue-400 mt-0.5">{selectedReturnOrder.company?.name}</p>
               </div>
             </div>
 
@@ -1422,17 +1428,17 @@ export default function WarehouseDispatchPage() {
               <table className="w-full text-right">
                 <thead className="bg-blue-50 dark:bg-blue-900/20">
                   <tr>
-                    <th className="px-4 py-2 border-b border-slate-200 dark:border-border-primary dark:text-text-secondary">الصنف</th>
-                    <th className="px-4 py-2 border-b border-slate-200 dark:border-border-primary dark:text-text-secondary">الكود</th>
-                    <th className="px-4 py-2 border-b border-slate-200 dark:border-border-primary dark:text-text-secondary">الكمية</th>
+                    <th className="px-4 py-3 text-sm font-semibold border-b border-slate-200 dark:border-border-primary dark:text-text-secondary">الصنف</th>
+                    <th className="px-4 py-3 text-sm font-semibold border-b border-slate-200 dark:border-border-primary dark:text-text-secondary">الكود</th>
+                    <th className="px-4 py-3 text-sm font-semibold border-b border-slate-200 dark:border-border-primary dark:text-text-secondary">الكمية</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-surface-primary">
                   {selectedReturnOrder.saleReturn?.lines?.map((line) => (
                     <tr key={line.id} className="border-b border-slate-200 dark:border-border-primary">
-                      <td className="px-4 py-2 dark:text-text-primary">{line.product?.name}</td>
-                      <td className="px-4 py-2 font-mono dark:text-text-secondary">{line.product?.sku}</td>
-                      <td className="px-4 py-2 font-bold text-blue-600 dark:text-blue-400">
+                      <td className="px-4 py-3 text-base font-semibold dark:text-text-primary">{line.product?.name}</td>
+                      <td className="px-4 py-3 text-sm font-mono dark:text-text-secondary">{line.product?.sku}</td>
+                      <td className="px-4 py-3 text-base font-bold text-blue-600 dark:text-blue-400">
                         {formatArabicNumber(Number(line.qty))} {line.product?.unit || 'صندوق'}
                       </td>
                     </tr>

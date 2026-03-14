@@ -1333,7 +1333,7 @@ const SalesPage = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 w-full">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
@@ -1635,28 +1635,28 @@ const SalesPage = () => {
           <table className="w-full min-w-full">
             <thead className="bg-slate-50 dark:bg-surface-secondary">
               <tr>
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase tracking-wider w-32">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-slate-500 dark:text-text-secondary uppercase tracking-wider w-32">
                   رقم الفاتورة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider w-40">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-secondary uppercase tracking-wider w-40">
                   الشركة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider w-48">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-secondary uppercase tracking-wider w-48">
                   العميل
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider w-32">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-secondary uppercase tracking-wider w-32">
                   المجموع
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider w-28">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-secondary uppercase tracking-wider w-28">
                   الحالة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider min-w-[200px]">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-secondary uppercase tracking-wider min-w-[200px]">
                   الملاحظات
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider w-32">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-secondary uppercase tracking-wider w-32">
                   التاريخ
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase tracking-wider w-40">
+                <th className="px-6 py-3 text-right text-sm font-semibold text-slate-500 dark:text-text-secondary uppercase tracking-wider w-40">
                   الإجراءات
                 </th>
               </tr>
@@ -1691,25 +1691,25 @@ const SalesPage = () => {
                   })
                   ?.map((sale) => (
                     <tr key={sale.id} className="hover:bg-slate-50 dark:hover:bg-surface-hover transition-colors">
-                      <td className="px-6 py-4 text-sm font-medium text-slate-800 dark:text-text-primary">
+                      <td className="px-6 py-4 text-base font-semibold text-slate-800 dark:text-text-primary">
                         {sale.invoiceNumber || `#${sale.id}`}
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-800 dark:text-text-primary">
+                      <td className="px-6 py-4 text-base text-slate-800 dark:text-text-primary">
                         <div className="flex flex-col">
                           <span className="font-medium text-blue-600 dark:text-blue-400">{sale.company?.name}</span>
                           <span className="text-xs text-slate-500 dark:text-text-tertiary">{sale.company?.code}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-800 dark:text-text-primary">
+                      <td className="px-6 py-4 text-base text-slate-800 dark:text-text-primary">
                         {sale.customer?.name || 'غير محدد'}
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-800 dark:text-text-primary">
+                      <td className="px-6 py-4 text-base text-slate-800 dark:text-text-primary">
                         <span className="font-semibold text-green-600 dark:text-green-400">
                           {formatArabicCurrency(sale.total)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${sale.status === 'DRAFT'
+                        <span className={`inline-flex px-2 py-1 text-sm font-semibold rounded-full ${sale.status === 'DRAFT'
                           ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400'
                           : sale.status === 'APPROVED'
                             ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
@@ -1719,10 +1719,10 @@ const SalesPage = () => {
                             sale.status === 'APPROVED' ? 'معتمدة' : 'ملغية'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-800 dark:text-text-primary break-words">
+                      <td className="px-6 py-4 text-base text-slate-800 dark:text-text-primary break-words">
                         {sale.notes || <span className="text-slate-400 dark:text-text-tertiary">-</span>}
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-800 dark:text-text-primary">
+                      <td className="px-6 py-4 text-base text-slate-800 dark:text-text-primary">
                         {new Date(sale.createdAt).toLocaleDateString('en-US')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -1839,7 +1839,7 @@ const SalesPage = () => {
       {/* Create Sale Modal */}
       {showCreateSaleModal && selectedCompanyId && (
         <div className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-6 border dark:border-border-primary w-11/12 max-w-7xl shadow-lg rounded-md bg-white dark:bg-surface-primary min-h-[90vh]">
+          <div className="relative top-4 mx-auto p-6 border dark:border-border-primary w-[98%] max-w-[1800px] shadow-lg rounded-md bg-white dark:bg-surface-primary min-h-[95vh]">
             <div className="mt-3">
               <h3 className="text-lg font-medium text-slate-800 dark:text-text-primary mb-4">إنشاء فاتورة مبيعات جديدة</h3>
 
@@ -2623,9 +2623,9 @@ const SalesPage = () => {
       {/* Sale Details Modal */}
       {selectedSale && (
         <div className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border dark:border-border-primary w-11/12 max-w-2xl shadow-lg rounded-md bg-white dark:bg-surface-primary">
+          <div className="relative top-10 mx-auto p-7 border dark:border-border-primary w-11/12 max-w-5xl shadow-lg rounded-md bg-white dark:bg-surface-primary">
             <div className="mt-3">
-              <h3 className="text-lg font-medium text-slate-800 dark:text-text-primary mb-4">
+              <h3 className="text-2xl font-bold text-slate-800 dark:text-text-primary mb-5">
                 تفاصيل الفاتورة #{selectedSale!.invoiceNumber || selectedSale!.id}
               </h3>
 
@@ -2633,22 +2633,22 @@ const SalesPage = () => {
                 {/* معلومات الشركة */}
                 <div className="bg-blue-50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-200 dark:border-blue-800/30">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-blue-900 dark:text-blue-300">الشركة:</span>
-                    <span className="text-sm font-semibold text-blue-700 dark:text-blue-400">{selectedSale!.company?.name}</span>
-                    <span className="text-xs text-blue-600 dark:text-blue-500">({selectedSale!.company?.code})</span>
+                    <span className="text-base font-medium text-blue-900 dark:text-blue-300">الشركة:</span>
+                    <span className="text-base font-semibold text-blue-700 dark:text-blue-400">{selectedSale!.company?.name}</span>
+                    <span className="text-sm text-blue-600 dark:text-blue-500">({selectedSale!.company?.code})</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-slate-800 dark:text-text-primary">
+                <div className="grid grid-cols-2 gap-4 text-base text-slate-800 dark:text-text-primary">
                   <div>
-                    <span className="font-medium text-slate-500 dark:text-text-secondary">العميل:</span> {selectedSale!.customer?.name || 'غير محدد'}
+                    <span className="font-semibold text-slate-500 dark:text-text-secondary">العميل:</span> {selectedSale!.customer?.name || 'غير محدد'}
                   </div>
                   <div>
-                    <span className="font-medium text-slate-500 dark:text-text-secondary">التاريخ:</span> {new Date(selectedSale!.createdAt).toLocaleDateString('en-US')}
+                    <span className="font-semibold text-slate-500 dark:text-text-secondary">التاريخ:</span> {new Date(selectedSale!.createdAt).toLocaleDateString('en-US')}
                   </div>
                   <div>
-                    <span className="font-medium text-slate-500 dark:text-text-secondary">الحالة:</span>
-                    <span className={`ml-2 px-2 py-1 text-xs font-semibold rounded-full ${selectedSale!.status === 'DRAFT'
+                    <span className="font-semibold text-slate-500 dark:text-text-secondary">الحالة:</span>
+                    <span className={`ml-2 px-2 py-1 text-sm font-semibold rounded-full ${selectedSale!.status === 'DRAFT'
                       ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400'
                       : selectedSale!.status === 'APPROVED'
                         ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
@@ -2660,24 +2660,24 @@ const SalesPage = () => {
                   </div>
                   {selectedSale!.notes && (
                     <div className="col-span-2">
-                      <span className="font-medium text-slate-500 dark:text-text-secondary">الملاحظات:</span> {selectedSale!.notes}
+                      <span className="font-semibold text-slate-500 dark:text-text-secondary">الملاحظات:</span> {selectedSale!.notes}
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <h4 className="font-medium text-slate-800 dark:text-text-primary mb-2">بنود الفاتورة:</h4>
+                  <h4 className="text-lg font-bold text-slate-800 dark:text-text-primary mb-3">بنود الفاتورة:</h4>
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-slate-200 dark:divide-border-primary">
                       <thead className="bg-slate-50 dark:bg-surface-secondary">
                         <tr>
-                          <th className="px-4 py-2 text-right text-xs font-medium text-slate-500 dark:text-text-secondary">كود الصنف</th>
-                          <th className="px-4 py-2 text-right text-xs font-medium text-slate-500 dark:text-text-secondary">الصنف</th>
-                          <th className="px-4 py-2 text-right text-xs font-medium text-slate-500 dark:text-text-secondary">الكمية</th>
-                          <th className="px-4 py-2 text-right text-xs font-medium text-slate-500 dark:text-text-secondary">سعر الوحدة</th>
-                          <th className="px-4 py-2 text-right text-xs font-medium text-slate-500 dark:text-text-secondary">الإجمالي</th>
-                          {enableLineDiscount && <th className="px-4 py-2 text-right text-xs font-medium text-slate-500 dark:text-text-secondary">الخصم</th>}
-                          <th className="px-4 py-2 text-right text-xs font-medium text-slate-500 dark:text-text-secondary">الصافي</th>
+                          <th className="px-4 py-2 text-right text-sm font-semibold text-slate-500 dark:text-text-secondary">كود الصنف</th>
+                          <th className="px-4 py-2 text-right text-sm font-semibold text-slate-500 dark:text-text-secondary">الصنف</th>
+                          <th className="px-4 py-2 text-right text-sm font-semibold text-slate-500 dark:text-text-secondary">الكمية</th>
+                          <th className="px-4 py-2 text-right text-sm font-semibold text-slate-500 dark:text-text-secondary">سعر الوحدة</th>
+                          <th className="px-4 py-2 text-right text-sm font-semibold text-slate-500 dark:text-text-secondary">الإجمالي</th>
+                          {enableLineDiscount && <th className="px-4 py-2 text-right text-sm font-semibold text-slate-500 dark:text-text-secondary">الخصم</th>}
+                          <th className="px-4 py-2 text-right text-sm font-semibold text-slate-500 dark:text-text-secondary">الصافي</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200 dark:divide-border-primary">
@@ -2693,7 +2693,7 @@ const SalesPage = () => {
                           return (
                             <tr key={index} className="text-slate-800 dark:text-text-primary">
                               <td className="px-4 py-2 text-sm font-mono text-slate-500 dark:text-text-tertiary">{line.product?.sku}</td>
-                              <td className="px-4 py-2 text-sm">
+                              <td className="px-4 py-2 text-base font-semibold">
                                 {line.product?.name}
                                 {isBox && unitsPerBox && (
                                   <span className="block text-xs text-slate-500 dark:text-text-tertiary mt-0.5">
@@ -2701,7 +2701,7 @@ const SalesPage = () => {
                                   </span>
                                 )}
                               </td>
-                              <td className="px-4 py-2 text-sm">
+                              <td className="px-4 py-2 text-base">
                                 <span className="font-medium text-blue-600 dark:text-blue-400">{formatArabicNumber(line.qty)}</span>
                                 <span className="text-slate-500 dark:text-text-tertiary mr-1">{line.product?.unit || 'وحدة'}</span>
                                 {isBox && unitsPerBox && (
@@ -2710,15 +2710,15 @@ const SalesPage = () => {
                                   </span>
                                 )}
                               </td>
-                              <td className="px-4 py-2 text-sm">
+                              <td className="px-4 py-2 text-base">
                                 <span className="font-medium">{formatArabicCurrency(displayPrice)}</span>
                                 {isBox && <span className="text-slate-500 dark:text-text-tertiary text-xs block">/م²</span>}
                               </td>
-                              <td className="px-4 py-2 text-sm">
+                              <td className="px-4 py-2 text-base">
                                 {formatArabicCurrency(line.qty * line.unitPrice)}
                               </td>
                               {enableLineDiscount && (
-                                <td className="px-4 py-2 text-sm text-red-600 dark:text-red-400">
+                                <td className="px-4 py-2 text-base text-red-600 dark:text-red-400">
                                   {line.discountAmount && line.discountAmount > 0 ? (
                                     <>
                                       <span>{formatArabicCurrency(line.discountAmount)}</span>
@@ -2727,7 +2727,7 @@ const SalesPage = () => {
                                   ) : '-'}
                                 </td>
                               )}
-                              <td className="px-4 py-2 text-sm font-medium text-green-600 dark:text-green-400">{formatArabicCurrency(line.subTotal)}</td>
+                              <td className="px-4 py-2 text-base font-medium text-green-600 dark:text-green-400">{formatArabicCurrency(line.subTotal)}</td>
                             </tr>
                           );
                         })}
@@ -2737,18 +2737,18 @@ const SalesPage = () => {
                 </div>
 
                 <div className="border-t dark:border-border-primary pt-4 space-y-2">
-                  <div className="flex justify-between items-center text-slate-800 dark:text-text-primary text-sm font-bold">
+                  <div className="flex justify-between items-center text-slate-800 dark:text-text-primary text-base font-bold">
                     <span>إجمالي الفاتورة:</span>
                     <span>{formatArabicCurrency(Math.max(0, selectedSale!.lines.reduce((sum, line) => sum + (Math.max(0, Number(line.qty)) * Math.max(0, Number(line.unitPrice))), 0)))}</span>
                   </div>
-                  <div className="flex justify-between items-center text-red-600 dark:text-red-400 text-sm">
+                  <div className="flex justify-between items-center text-red-600 dark:text-red-400 text-base">
                     <span className="font-medium">قيمة الخصم:</span>
                     <span>-{formatArabicCurrency(Math.max(0,
                       selectedSale!.lines.reduce((sum, line) => sum + Math.max(0, Number(line.discountAmount || 0)), 0) + Math.max(0, Number(selectedSale!.totalDiscountAmount || 0))
                     ))}</span>
                   </div>
 
-                  <div className="flex justify-between items-center text-lg font-bold border-t-2 border-double border-blue-600 dark:border-blue-500 pt-2 mt-2 text-blue-700 dark:text-blue-400">
+                  <div className="flex justify-between items-center text-xl font-bold border-t-2 border-double border-blue-600 dark:border-blue-500 pt-3 mt-2 text-blue-700 dark:text-blue-400">
                     <span>الصافي النهائي:</span>
                     <span>{formatArabicCurrency(Math.max(0, Number(selectedSale!.total)))}</span>
                   </div>
@@ -2757,7 +2757,7 @@ const SalesPage = () => {
                 <div className="flex justify-end pt-4">
                   <button
                     onClick={() => setSelectedSale(null)}
-                    className="px-4 py-2 bg-slate-600 dark:bg-surface-secondary text-white dark:text-text-primary rounded-md hover:bg-slate-700 dark:hover:bg-surface-hover transition-colors"
+                    className="px-5 py-2.5 text-base bg-slate-600 dark:bg-surface-secondary text-white dark:text-text-primary rounded-md hover:bg-slate-700 dark:hover:bg-surface-hover transition-colors"
                   >
                     إغلاق
                   </button>
@@ -2772,7 +2772,7 @@ const SalesPage = () => {
       {/* Sale Edit Modal */}
       {showEditModal && saleToEdit && (
         <div className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-surface-primary rounded-lg shadow-xl max-w-4xl w-full my-8 max-h-[90vh] overflow-y-auto border dark:border-border-primary">
+          <div className="bg-white dark:bg-surface-primary rounded-lg shadow-xl max-w-[1600px] w-[96%] my-4 max-h-[95vh] overflow-y-auto border dark:border-border-primary">
             <div className="bg-gradient-to-r from-orange-600 to-orange-700 text-white px-6 py-4 flex justify-between items-center sticky top-0 z-10">
               <h2 className="text-xl font-bold">✏️ تعديل الفاتورة</h2>
               <button

@@ -1229,40 +1229,40 @@ const ProductsPage = () => {
                     />
                   </th>
                 )}
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '16%' }}>
+                <th className="px-2 py-3 text-right text-sm font-semibold text-text-secondary uppercase tracking-wider" style={{ width: '16%' }}>
                   الصنف
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '6%' }}>
+                <th className="px-2 py-3 text-right text-sm font-semibold text-text-secondary uppercase tracking-wider" style={{ width: '6%' }}>
                   الرمز
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden sm:table-cell" style={{ width: '5%' }}>
+                <th className="px-2 py-3 text-right text-sm font-semibold text-text-secondary uppercase tracking-wider hidden sm:table-cell" style={{ width: '5%' }}>
                   الوحدة
                 </th>
-                <th className="px-2 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '6%' }}>
+                <th className="px-2 py-3 text-center text-sm font-semibold text-text-secondary uppercase tracking-wider" style={{ width: '6%' }}>
                   العبوة
                 </th>
-                <th className="px-1 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '7%' }}>
+                <th className="px-1 py-3 text-center text-sm font-semibold text-text-secondary uppercase tracking-wider" style={{ width: '7%' }}>
                   إجمالي العبوة
                 </th>
-                <th className="px-1 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '8%' }}>
+                <th className="px-1 py-3 text-center text-sm font-semibold text-text-secondary uppercase tracking-wider" style={{ width: '8%' }}>
                   إجمالي المخزون
                 </th>
-                <th className="px-1 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '8%' }}>
+                <th className="px-1 py-3 text-center text-sm font-semibold text-text-secondary uppercase tracking-wider" style={{ width: '8%' }}>
                   في المستودع
                 </th>
-                <th className="px-1 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '8%' }}>
+                <th className="px-1 py-3 text-center text-sm font-semibold text-text-secondary uppercase tracking-wider" style={{ width: '8%' }}>
                   في المحلات
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '8%' }}>
+                <th className="px-2 py-3 text-right text-sm font-semibold text-text-secondary uppercase tracking-wider" style={{ width: '8%' }}>
                   السعر
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden md:table-cell" style={{ width: '8%' }}>
+                <th className="px-2 py-3 text-right text-sm font-semibold text-text-secondary uppercase tracking-wider hidden md:table-cell" style={{ width: '8%' }}>
                   التكلفة
                 </th>
-                <th className="px-2 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider hidden lg:table-cell" style={{ width: '11%' }}>
+                <th className="px-2 py-3 text-right text-sm font-semibold text-text-secondary uppercase tracking-wider hidden lg:table-cell" style={{ width: '11%' }}>
                   الشركة
                 </th>
-                <th className="px-2 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider" style={{ width: '15%' }}>
+                <th className="px-2 py-3 text-center text-sm font-semibold text-text-secondary uppercase tracking-wider" style={{ width: '15%' }}>
                   الإجراءات
                 </th>
               </tr>
@@ -1339,7 +1339,7 @@ const ProductsPage = () => {
                           </div>
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="text-xs font-medium text-text-primary whitespace-normal break-words" title={product.name}>
+                          <div className="text-base font-semibold text-text-primary whitespace-normal break-words" title={product.name}>
                             {product.name}
                           </div>
                           <div className="text-xs text-text-secondary sm:hidden">
@@ -1349,12 +1349,12 @@ const ProductsPage = () => {
                       </div>
                     </td>
                     <td className="px-2 py-3 text-sm text-text-primary">
-                      <code className="bg-background-tertiary px-1.5 py-0.5 rounded text-xs font-mono">
+                      <code className="bg-background-tertiary px-1.5 py-0.5 rounded text-sm font-mono">
                         {product.sku}
                       </code>
                     </td>
                     <td className="px-2 py-3 text-sm text-text-primary hidden sm:table-cell">
-                      <span className="inline-flex px-1.5 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-800 rounded-full">
+                      <span className="inline-flex px-1.5 py-0.5 text-sm font-medium bg-gray-100 dark:bg-gray-800 rounded-full">
                         {product.unit || '-'}
                       </span>
                     </td>
@@ -1367,7 +1367,7 @@ const ProductsPage = () => {
                     </td>
                     <td className="px-1 py-3 text-center">
                       {product.unit === 'صندوق' && product.unitsPerBox ? (
-                        <span className="inline-flex px-1.5 py-0.5 text-xs font-bold rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
+                        <span className="inline-flex px-1.5 py-0.5 text-sm font-bold rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
                           {formatArabicArea(
                             Math.max(0, (product.stock?.[0]?.boxes || 0) + (product.externalStoreStock || 0)) * product.unitsPerBox
                           )} م²
@@ -1375,7 +1375,7 @@ const ProductsPage = () => {
                       ) : '-'}
                     </td>
                     <td className="px-1 py-3 text-center">
-                      <span className={`inline-flex px-1.5 py-0.5 text-xs font-bold rounded-full ${Math.max(0, (product.stock?.[0]?.boxes || 0) + (product.externalStoreStock || 0)) > 0
+                      <span className={`inline-flex px-1.5 py-0.5 text-sm font-bold rounded-full ${Math.max(0, (product.stock?.[0]?.boxes || 0) + (product.externalStoreStock || 0)) > 0
                         ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
                         : 'bg-error-100 dark:bg-error-900/30 text-error-800 dark:text-error-200'
                         }`}>
@@ -1383,7 +1383,7 @@ const ProductsPage = () => {
                       </span>
                     </td>
                     <td className="px-1 py-3 text-center">
-                      <span className={`inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full ${Math.max(0, product.stock?.[0]?.boxes || 0) > 0
+                      <span className={`inline-flex px-1.5 py-0.5 text-sm font-semibold rounded-full ${Math.max(0, product.stock?.[0]?.boxes || 0) > 0
                         ? 'bg-success-100 dark:bg-success-900/30 text-success-800 dark:text-success-200'
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
                         }`}>
@@ -1391,7 +1391,7 @@ const ProductsPage = () => {
                       </span>
                     </td>
                     <td className="px-1 py-3 text-center">
-                      <span className={`inline-flex px-1.5 py-0.5 text-xs font-semibold rounded-full ${Math.max(0, product.externalStoreStock || 0) > 0
+                      <span className={`inline-flex px-1.5 py-0.5 text-sm font-semibold rounded-full ${Math.max(0, product.externalStoreStock || 0) > 0
                         ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200'
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
                         }`}>
@@ -1413,7 +1413,7 @@ const ProductsPage = () => {
                       </div>
                     </td>
                     <td className="px-2 py-3 text-sm text-gray-900 hidden lg:table-cell">
-                      <span className="inline-block max-w-full px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full truncate" title={product.createdByCompany.name}>
+                      <span className="inline-block max-w-full px-2 py-1 text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full truncate" title={product.createdByCompany.name}>
                         {product.createdByCompany.name}
                       </span>
                     </td>
