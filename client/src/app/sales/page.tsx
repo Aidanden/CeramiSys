@@ -79,6 +79,7 @@ const SalesPage = () => {
   const [showCreateSaleModal, setShowCreateSaleModal] = useState(false);
   const [showCreateCustomerModal, setShowCreateCustomerModal] = useState(false);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [selectedDetailLine, setSelectedDetailLine] = useState<number | null>(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -1740,7 +1741,7 @@ const SalesPage = () => {
                             </svg>
                           </button>
                           <button
-                            onClick={() => setSelectedSale(sale)}
+                            onClick={() => { setSelectedSale(sale); setSelectedDetailLine(null); }}
                             className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 p-1 rounded"
                             title="عرض التفاصيل"
                           >
@@ -2683,9 +2684,18 @@ const SalesPage = () => {
                           // السعر: إذا صندوق نعرض سعر المتر، وإلا نعرض سعر الوحدة
                           // ملاحظة: السعر المحفوظ في قاعدة البيانات هو سعر الصندوق للصناديق
                           const displayPrice = isBox && unitsPerBox ? line.unitPrice / unitsPerBox : line.unitPrice;
+                          const isSelected = selectedDetailLine === index;
 
                           return (
-                            <tr key={index} className="text-slate-800 dark:text-text-primary">
+                            <tr
+                              key={index}
+                              onClick={() => setSelectedDetailLine(isSelected ? null : index)}
+                              className={`text-slate-800 dark:text-text-primary cursor-pointer transition-colors ${
+                                isSelected
+                                  ? 'bg-blue-50 dark:bg-blue-900/20'
+                                  : 'hover:bg-slate-50 dark:hover:bg-surface-hover'
+                              }`}
+                            >
                               <td className="px-4 py-2 text-sm font-mono text-slate-500 dark:text-text-tertiary">{line.product?.sku}</td>
                               <td className="px-4 py-2 text-base font-semibold">
                                 {line.product?.name}
@@ -2730,6 +2740,74 @@ const SalesPage = () => {
                   </div>
                 </div>
 
+                {/* بانر معلومات الصنف المحدد */}
+                {selectedDetailLine !== null && (() => {
+                  const line = selectedSale!.lines[selectedDetailLine];
+                  const productId = line.product?.id;
+                  const fullProduct = productsData?.data?.products?.find((p: any) => p.id === productId);
+                  const isBox = line.product?.unit === 'صندوق';
+                  const unitsPerBox = line.product?.unitsPerBox ? Number(line.product.unitsPerBox) : null;
+                  const totalArea = isBox && unitsPerBox ? line.qty * unitsPerBox : null;
+
+                  // المخزون
+                  let stockInfo: { boxes: number; quantity: number; source: string } | null = null;
+                  if (fullProduct?.stock && Array.isArray(fullProduct.stock) && fullProduct.stock.length > 0) {
+                    const companyStock = fullProduct.stock.find((s: any) => s.companyId === selectedSale!.companyId);
+                    const parentStock = fullProduct.stock.find((s: any) => s.companyId === 1);
+                    const chosen = companyStock || parentStock;
+                    if (chosen) {
+                      stockInfo = {
+                        boxes: chosen.boxes || 0,
+                        quantity: chosen.quantity || 0,
+                        source: companyStock ? 'المخزن المحلي' : 'مخزن التقازي'
+                      };
+                    }
+                  }
+
+                  const stockBoxes = stockInfo?.boxes ?? 0;
+                  const stockArea = isBox && unitsPerBox && stockInfo ? stockInfo.quantity : null;
+
+                  return (
+                    <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-border-primary shadow-sm">
+                      <div className="flex items-center justify-between px-4 py-2 bg-slate-700 dark:bg-surface-secondary text-white">
+                        <span className="font-bold text-sm">{line.product?.name}</span>
+                        <span className="text-xs opacity-70">{line.product?.sku}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-0 divide-x divide-x-reverse divide-slate-100 dark:divide-border-primary">
+                        {/* الكمية في المخزن */}
+                        <div className={`flex flex-col items-center justify-center py-4 px-4 ${
+                          stockBoxes > 0 ? 'bg-green-50 dark:bg-green-900/10' : 'bg-red-50 dark:bg-red-900/10'
+                        }`}>
+                          <span className={`text-xs mb-1 ${stockBoxes > 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+                            المخزون الحالي {stockInfo ? `(${stockInfo.source})` : ''}
+                          </span>
+                          <span className={`text-2xl font-black ${stockBoxes > 0 ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
+                            {stockBoxes}
+                          </span>
+                          <span className={`text-xs ${stockBoxes > 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+                            {line.product?.unit || 'وحدة'}
+                          </span>
+                        </div>
+                        {/* إجمالي العبوة في المخزن */}
+                        {stockArea !== null ? (
+                          <div className={`flex flex-col items-center justify-center py-4 px-4 ${
+                            stockBoxes > 0 ? 'bg-purple-50 dark:bg-purple-900/10' : 'bg-red-50 dark:bg-red-900/10'
+                          }`}>
+                            <span className="text-xs text-purple-500 dark:text-purple-400 mb-1">إجمالي العبوة</span>
+                            <span className="text-2xl font-black text-purple-700 dark:text-purple-300">{stockArea.toFixed(1)}</span>
+                            <span className="text-xs text-purple-400">م²</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-4 px-4 bg-slate-50 dark:bg-surface-secondary">
+                            <span className="text-xs text-slate-400 mb-1">إجمالي العبوة</span>
+                            <span className="text-lg text-slate-400">—</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div className="border-t dark:border-border-primary pt-4 space-y-2">
                   <div className="flex justify-between items-center text-slate-800 dark:text-text-primary text-base font-bold">
                     <span>إجمالي الفاتورة:</span>
@@ -2750,7 +2828,7 @@ const SalesPage = () => {
 
                 <div className="flex justify-end pt-4">
                   <button
-                    onClick={() => setSelectedSale(null)}
+                    onClick={() => { setSelectedSale(null); setSelectedDetailLine(null); }}
                     className="px-5 py-2.5 text-base bg-slate-600 dark:bg-surface-secondary text-white dark:text-text-primary rounded-md hover:bg-slate-700 dark:hover:bg-surface-hover transition-colors"
                   >
                     إغلاق
