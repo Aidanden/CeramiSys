@@ -1839,7 +1839,7 @@ const SalesPage = () => {
       {/* Create Sale Modal */}
       {showCreateSaleModal && selectedCompanyId && (
         <div className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
-          <div className="relative top-4 mx-auto p-6 border dark:border-border-primary w-[98%] max-w-[1800px] shadow-lg rounded-md bg-white dark:bg-surface-primary min-h-[95vh]">
+          <div className="relative top-4 mx-auto p-6 border dark:border-border-primary w-[95%] max-w-[1100px] shadow-lg rounded-md bg-white dark:bg-surface-primary min-h-[95vh]">
             <div className="mt-3">
               <h3 className="text-lg font-medium text-slate-800 dark:text-text-primary mb-4">إنشاء فاتورة مبيعات جديدة</h3>
 
@@ -2388,16 +2388,7 @@ const SalesPage = () => {
                             </div>
                           );
                         } else {
-                          return (
-                            <div className="mt-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10 border-2 border-green-300 dark:border-border-primary rounded-lg">
-                              <div className="flex items-center gap-2">
-                                <span className="text-green-600 dark:text-green-400">✅</span>
-                                <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                                  فاتورة بسيطة - من الشركة الحالية فقط
-                                </span>
-                              </div>
-                            </div>
-                          );
+                          return null;
                         }
                       })()}
 
@@ -2463,31 +2454,34 @@ const SalesPage = () => {
                       )}
 
                       {/* المجموع الإجمالي */}
-                      <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/10 dark:to-blue-900/10 border-2 border-green-300 dark:border-border-primary rounded-lg">
-                        <div className="flex flex-col gap-2">
-                          <div className="flex justify-between items-center text-sm text-slate-800 dark:text-text-primary font-bold">
-                            <span>إجمالي الفاتورة:</span>
-                            <span>{formatArabicCurrency(saleForm.lines.reduce((sum, line) => {
-                              // استخدام calculateLineTotal للحساب الصحيح (يأخذ بعين الاعتبار الأصناف من الشركة الأم)
-                              const lineTotal = calculateLineTotal({ ...line, discountAmount: 0 }); // بدون خصم هنا
+                      <div className="mt-4 rounded-xl overflow-hidden shadow-md border border-slate-200 dark:border-border-primary">
+                        {/* إجمالي الفاتورة */}
+                        <div className="flex justify-between items-center px-4 py-3 bg-slate-50 dark:bg-surface-secondary border-b border-slate-200 dark:border-border-primary">
+                          <span className="text-sm font-semibold text-slate-600 dark:text-text-secondary">إجمالي الفاتورة</span>
+                          <span className="text-sm font-bold text-slate-800 dark:text-text-primary">
+                            {formatArabicCurrency(saleForm.lines.reduce((sum, line) => {
+                              const lineTotal = calculateLineTotal({ ...line, discountAmount: 0 });
                               return sum + lineTotal;
-                            }, 0))}</span>
-                          </div>
-                          <div className="flex justify-between items-center text-sm text-red-600 font-medium">
-                            <span>قيمة الخصم:</span>
-                            <span>-{formatArabicCurrency(Math.max(0,
+                            }, 0))}
+                          </span>
+                        </div>
+                        {/* قيمة الخصم */}
+                        <div className="flex justify-between items-center px-4 py-3 bg-red-50 dark:bg-red-900/10 border-b border-red-100 dark:border-border-primary">
+                          <span className="text-sm font-semibold text-red-600 dark:text-red-400">قيمة الخصم</span>
+                          <span className="text-sm font-bold text-red-600 dark:text-red-400">
+                            -{formatArabicCurrency(Math.max(0,
                               saleForm.lines.reduce((sum, line) => sum + Math.max(0, Number(line.discountAmount || 0)), 0) + Math.max(0, Number(saleForm.totalDiscountAmount || 0))
-                            ))}</span>
-                          </div>
-
-                          <div className="flex justify-between items-center pt-2 border-t border-green-200 dark:border-border-primary">
-                            <span className="text-lg font-bold text-slate-700 dark:text-text-secondary">الصافي النهائي:</span>
-                            <span className="text-2xl font-bold text-green-600 dark:text-green-400">
-                              {formatArabicCurrency(Math.max(0,
-                                saleForm.lines.reduce((sum, line) => sum + calculateLineTotal(line), 0) - Math.max(0, Number(saleForm.totalDiscountAmount || 0))
-                              ))}
-                            </span>
-                          </div>
+                            ))}
+                          </span>
+                        </div>
+                        {/* الصافي النهائي */}
+                        <div className="flex justify-between items-center px-5 py-4 bg-gradient-to-l from-emerald-600 to-green-500">
+                          <span className="text-base font-bold text-white">الصافي النهائي</span>
+                          <span className="text-2xl font-extrabold text-white tracking-wide">
+                            {formatArabicCurrency(Math.max(0,
+                              saleForm.lines.reduce((sum, line) => sum + calculateLineTotal(line), 0) - Math.max(0, Number(saleForm.totalDiscountAmount || 0))
+                            ))}
+                          </span>
                         </div>
                       </div>
                     </>

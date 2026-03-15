@@ -41,9 +41,12 @@ export const InvoicePrint: React.FC<InvoicePrintProps> = ({
     }}>
       {/* رأس الفاتورة */}
       <div style={{ textAlign: 'center', marginBottom: '15px', borderBottom: '2px solid #333', paddingBottom: '10px' }}>
-        <h1 style={{ fontSize: '26px', margin: '0 0 5px 0', color: '#333' }}>
+        <h1 style={{ fontSize: '32px', margin: '0 0 4px 0', color: '#333', fontWeight: 'bold' }}>
           {sale.company.name}
         </h1>
+        <p style={{ fontSize: '15px', margin: '2px 0 6px 0', color: '#555', fontWeight: '600', letterSpacing: '0.5px' }}>
+          سيراميك وبورسلين
+        </p>
         <p style={{ fontSize: '12px', margin: '3px 0', color: '#666' }}>
           كود الشركة: {sale.company.code}
         </p>
