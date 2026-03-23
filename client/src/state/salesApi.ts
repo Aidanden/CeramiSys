@@ -680,6 +680,35 @@ export const salesApi = createApi({
         } catch { }
       },
     }),
+    /**
+     * إضافة أصناف / زيادة كميات على فاتورة معتمدة (في نفس اليوم فقط)
+     */
+    appendSale: builder.mutation<
+      { success: boolean; message: string; data: Sale },
+      {
+        id: number;
+        lines: Array<{
+          productId: number;
+          qty: number;
+          unitPrice: number;
+          isFromParentCompany?: boolean;
+          discountPercentage?: number;
+          discountAmount?: number;
+        }>;
+      }
+    >({
+      query: ({ id, lines }) => ({
+        url: `sales/${id}/append`,
+        method: 'PATCH',
+        body: { lines },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Sale', id },
+        { type: 'Sales', id: 'LIST' },
+        { type: 'SalesStats', id: 'STATS' },
+        { type: 'CustomerAccountSummary', id: 'LIST' },
+      ],
+    }),
   }),
 });
 
@@ -698,6 +727,7 @@ export const {
   useApproveSaleMutation,
   useCancelSaleMutation,
   useUpdateSalePaymentMethodMutation,
+  useAppendSaleMutation,
   // العملاء
   useGetCustomersQuery,
   useGetCustomerQuery,

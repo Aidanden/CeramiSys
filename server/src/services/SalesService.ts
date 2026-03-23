@@ -1082,6 +1082,417 @@ export class SalesService {
   }
 
   /**
+   * إضافة أصناف أو زيادة كميات على فاتورة معتمدة (في نفس اليوم فقط)
+   *
+   * القواعد:
+   * - الفاتورة يجب أن تكون بحالة APPROVED
+   * - يجب أن يكون تاريخ اليوم نفس يوم الاعتماد (approvedAt)
+   * - لا يمكن تقليل الكميات أو حذف أصناف موجودة
+   * - يمكن إضافة أصناف جديدة أو زيادة كميات موجودة
+   * - يتم خصم الفرق فقط من المخزون
+   * - يتم تحديث المجموع والمتبقي وكافة السجلات المرتبطة
+   */
+  async appendToApprovedSale(
+    id: number,
+    newLines: Array<{
+      productId: number;
+      qty: number;
+      unitPrice: number;
+      isFromParentCompany?: boolean;
+      discountPercentage?: number;
+      discountAmount?: number;
+    }>,
+    userCompanyId: number,
+    isSystemUser: boolean = false
+  ) {
+    try {
+      // ── 1. جلب الفاتورة الموجودة ──────────────────────────────────────────
+      const existingSale = await this.prisma.sale.findFirst({
+        where: {
+          id,
+          ...(isSystemUser !== true && { companyId: userCompanyId })
+        },
+        include: {
+          company: { select: { id: true, name: true, parentId: true } },
+          lines: {
+            include: {
+              product: {
+                select: { id: true, name: true, createdByCompanyId: true, unit: true, unitsPerBox: true }
+              }
+            }
+          }
+        }
+      });
+
+      if (!existingSale) {
+        throw new Error('الفاتورة غير موجودة أو ليس لديك صلاحية لتعديلها');
+      }
+
+      // ── 2. التحقق من الحالة ────────────────────────────────────────────────
+      if (existingSale.status !== 'APPROVED') {
+        throw new Error('لا يمكن تعديل هذه الفاتورة لأنها ليست في حالة معتمدة (APPROVED)');
+      }
+
+      // ── 3. التحقق من نفس اليوم ────────────────────────────────────────────
+      const approvedAt = existingSale.approvedAt;
+      if (!approvedAt) {
+        throw new Error('لا يمكن تعديل هذه الفاتورة: تاريخ الاعتماد غير موجود');
+      }
+
+      const approvedDate = new Date(approvedAt);
+      const today = new Date();
+      const sameDay =
+        approvedDate.getFullYear() === today.getFullYear() &&
+        approvedDate.getMonth() === today.getMonth() &&
+        approvedDate.getDate() === today.getDate();
+
+      if (!sameDay) {
+        const approvedStr = approvedDate.toLocaleDateString('ar-LY');
+        throw new Error(
+          `لا يمكن تعديل الفاتورة بعد مرور يوم على اعتمادها. تاريخ الاعتماد: ${approvedStr}. التعديل مسموح فقط في نفس يوم الاعتماد.`
+        );
+      }
+
+      // ── 4. التحقق من عدم وجود فاتورة تقازي تابعة ────────────────────────
+      const parentComplexSale = await this.prisma.sale.findFirst({
+        where: {
+          OR: [
+            { relatedParentSaleId: id },
+            { relatedBranchPurchaseId: id }
+          ]
+        },
+        select: { id: true, invoiceNumber: true }
+      });
+
+      if (parentComplexSale) {
+        throw new Error(
+          `⛔ لا يمكن تعديل هذه الفاتورة مباشرة! هي مرتبطة بفاتورة تلقائية رقم ${parentComplexSale.invoiceNumber}. عدّل الفاتورة الأصلية.`
+        );
+      }
+
+      // ── 5. تحقق من القواعد الإضافية: لا حذف، لا تقليل كميات ───────────────
+      const existingLinesMap = new Map(existingSale.lines.map(l => [l.productId, l]));
+
+      for (const existingLine of existingSale.lines) {
+        const newLine = newLines.find(nl => nl.productId === existingLine.productId);
+        if (!newLine) {
+          // الصنف موجود في الفاتورة لكن غير موجود في القائمة الجديدة → حذف مرفوض
+          throw new Error(
+            `لا يمكن حذف الصنف "${existingLine.product.name}" من الفاتورة المعتمدة. يسمح فقط بالإضافة أو زيادة الكمية.`
+          );
+        }
+        if (Number(newLine.qty) < Number(existingLine.qty)) {
+          throw new Error(
+            `لا يمكن تقليل كمية الصنف "${existingLine.product.name}" من ${Number(existingLine.qty)} إلى ${newLine.qty}. يسمح فقط بالزيادة.`
+          );
+        }
+      }
+
+      // ── 6. التحقق من المخزون للكميات الإضافية فقط ────────────────────────
+      const parentCompanyId = existingSale.company.parentId || 1;
+      const productIds = newLines.map(nl => nl.productId);
+
+      const products = await this.prisma.product.findMany({
+        where: {
+          id: { in: productIds },
+          ...(isSystemUser !== true && {
+            OR: [
+              { createdByCompanyId: userCompanyId },
+              { createdByCompanyId: 1 }
+            ]
+          })
+        },
+        include: {
+          group: true,
+          stocks: {
+            where: {
+              OR: [
+                { companyId: existingSale.companyId },
+                { companyId: parentCompanyId }
+              ]
+            }
+          }
+        }
+      });
+
+      // حساب الكميات الإضافية المطلوبة من المخزون
+      const deltaMap = new Map<number, number>(); // productId -> delta boxes
+      for (const newLine of newLines) {
+        const existingLine = existingLinesMap.get(newLine.productId);
+        const oldQty = existingLine ? Number(existingLine.qty) : 0;
+        const delta = newLine.qty - oldQty;
+        deltaMap.set(newLine.productId, delta);
+      }
+
+      for (const newLine of newLines) {
+        const product = products.find((p: any) => p.id === newLine.productId);
+        if (!product) {
+          throw new Error(`الصنف بمعرف ${newLine.productId} غير موجود أو ليس لديك صلاحية للوصول إليه`);
+        }
+        const delta = deltaMap.get(newLine.productId) || 0;
+        if (delta <= 0) continue; // لا حاجة للتحقق إذا لم تزد الكمية
+
+        const isParentProduct = (product as any).createdByCompanyId === 1;
+        const requestedFromParent = newLine.isFromParentCompany;
+        const localStock = (product as any).stocks.find((s: any) => s.companyId === existingSale.companyId);
+        const parentStock = (product as any).stocks.find((s: any) => s.companyId === parentCompanyId);
+        const localAvailable = Number(localStock?.boxes || 0);
+        const parentAvailable = Number(parentStock?.boxes || 0);
+
+        if (requestedFromParent) {
+          if (parentAvailable < delta) {
+            throw new Error(
+              `المخزون غير كافي للصنف "${product.name}" في مخازن الشركة الأم. المتوفر: ${parentAvailable}، الكمية الإضافية المطلوبة: ${delta}`
+            );
+          }
+        } else {
+          if (localAvailable < delta) {
+            if (isParentProduct && parentAvailable >= delta) {
+              // مسموح - ستُخصم من الأم
+            } else {
+              const extraMsg = isParentProduct ? ` (ولا في الشركة الأم: ${parentAvailable})` : '';
+              throw new Error(
+                `المخزون غير كافي للصنف "${(product as any).name}". المتوفر محلياً: ${localAvailable}${extraMsg}، الكمية الإضافية المطلوبة: ${delta}`
+              );
+            }
+          }
+        }
+      }
+
+      // ── 7. تحديث أسطر الفاتورة في قاعدة البيانات ─────────────────────────
+      await this.prisma.$transaction(async (tx) => {
+        for (const newLine of newLines) {
+          const existingLine = existingLinesMap.get(newLine.productId);
+          const delta = deltaMap.get(newLine.productId) || 0;
+
+          if (existingLine) {
+            // تحديث سطر موجود (زيادة الكمية + تحديث السعر والمجموع)
+            const newSubTotal = (newLine.qty * newLine.unitPrice) - (newLine.discountAmount || 0);
+            await tx.saleLine.update({
+              where: { id: existingLine.id },
+              data: {
+                qty: newLine.qty,
+                unitPrice: newLine.unitPrice,
+                subTotal: newSubTotal,
+                discountPercentage: newLine.discountPercentage || (existingLine as any).discountPercentage || 0,
+                discountAmount: newLine.discountAmount || (existingLine as any).discountAmount || 0
+              }
+            });
+          } else {
+            // إنشاء سطر جديد
+            const newSubTotal = (newLine.qty * newLine.unitPrice) - (newLine.discountAmount || 0);
+            await tx.saleLine.create({
+              data: {
+                saleId: id,
+                productId: newLine.productId,
+                qty: newLine.qty,
+                unitPrice: newLine.unitPrice,
+                subTotal: newSubTotal,
+                isFromParentCompany: newLine.isFromParentCompany || false,
+                discountPercentage: newLine.discountPercentage || 0,
+                discountAmount: newLine.discountAmount || 0
+              }
+            });
+          }
+
+          // خصم الكمية الإضافية فقط من المخزون
+          if (delta > 0) {
+            const targetCompanyId = newLine.isFromParentCompany ? parentCompanyId : existingSale.companyId;
+            await tx.stock.upsert({
+              where: { companyId_productId: { companyId: targetCompanyId, productId: newLine.productId } },
+              update: { boxes: { decrement: delta } },
+              create: { companyId: targetCompanyId, productId: newLine.productId, boxes: -delta }
+            });
+          }
+        }
+      });
+
+      // ── 8. إعادة حساب المجموع الجديد وتحديث الفاتورة ──────────────────────
+      // جلب الأسطر المحدثة
+      const updatedLines = await this.prisma.saleLine.findMany({
+        where: { saleId: id },
+        include: {
+          product: {
+            select: { id: true, sku: true, name: true, unit: true, unitsPerBox: true, createdByCompanyId: true }
+          }
+        }
+      });
+
+      let newSubTotal = 0;
+      for (const line of updatedLines) {
+        newSubTotal += Number(line.subTotal);
+      }
+
+      const discountAmount = Number(existingSale.totalDiscountAmount || 0);
+      const newTotal = newSubTotal - discountAmount;
+      const currentPaidAmount = Number(existingSale.paidAmount || 0);
+      const newRemainingAmount = newTotal - currentPaidAmount;
+
+      const updatedSale = await this.prisma.sale.update({
+        where: { id },
+        data: {
+          total: newTotal,
+          remainingAmount: newRemainingAmount,
+          isFullyPaid: newRemainingAmount <= 0
+        },
+        include: {
+          customer: true,
+          company: { select: { id: true, name: true, code: true } },
+          lines: {
+            include: {
+              product: {
+                select: { id: true, sku: true, name: true, unit: true, unitsPerBox: true, createdByCompanyId: true }
+              }
+            }
+          }
+        }
+      });
+
+      // ── 9. تحديث قيد حساب العميل (الفرق فقط) ────────────────────────────
+      const oldTotal = Number(existingSale.total);
+      const totalDelta = newTotal - oldTotal;
+
+      if (existingSale.customerId && totalDelta !== 0) {
+        try {
+          const CustomerAccountService = (await import('./CustomerAccountService')).default;
+          await CustomerAccountService.createAccountEntry({
+            customerId: existingSale.customerId,
+            transactionType: 'DEBIT',
+            amount: totalDelta,
+            referenceType: 'SALE',
+            referenceId: id,
+            description: `إضافة أصناف على فاتورة مبيعات رقم ${existingSale.invoiceNumber || id}`,
+            transactionDate: new Date()
+          });
+        } catch (err: any) {
+          console.error('⚠️ خطأ في تسجيل قيد حساب العميل:', err.message);
+        }
+      }
+
+      // ── 10. تحديث فاتورة التقازي المرتبطة ──────────────────────────────────
+      if (existingSale.relatedParentSaleId) {
+        try {
+          const oldParentSale = await this.prisma.sale.findUnique({
+            where: { id: existingSale.relatedParentSaleId },
+            include: { lines: true }
+          });
+
+          if (oldParentSale) {
+            // أصناف من الشركة الأم فقط
+            const parentLines = updatedLines.filter(
+              (l: any) => l.product && l.product.createdByCompanyId === 1
+            );
+
+            if (parentLines.length > 0) {
+              // حذف الأسطر القديمة من فاتورة التقازي
+              await this.prisma.saleLine.deleteMany({
+                where: { saleId: existingSale.relatedParentSaleId }
+              });
+
+              // الأسعار الأصلية من فاتورة التقازي
+              const priceRecords = await this.prisma.companyProductPrice.findMany({
+                where: {
+                  companyId: 1,
+                  productId: { in: parentLines.map((l: any) => l.productId) }
+                }
+              });
+              const pricesMap = new Map(priceRecords.map(p => [p.productId, Number(p.sellPrice)]));
+
+              let parentSaleTotal = 0;
+              const parentSaleNewLines = [];
+
+              for (const line of parentLines) {
+                const oldLine = oldParentSale.lines.find((l: any) => l.productId === line.productId);
+                const originalPrice = oldLine
+                  ? Number(oldLine.unitPrice)
+                  : (pricesMap.get(line.productId) ?? Number(line.unitPrice));
+
+                const lineTotal = Number(line.qty) * originalPrice;
+                parentSaleTotal += lineTotal;
+
+                parentSaleNewLines.push({
+                  productId: line.productId,
+                  qty: Number(line.qty),
+                  unitPrice: originalPrice,
+                  subTotal: lineTotal
+                });
+              }
+
+              await this.prisma.sale.update({
+                where: { id: existingSale.relatedParentSaleId },
+                data: {
+                  total: parentSaleTotal,
+                  remainingAmount: parentSaleTotal,
+                  lines: { create: parentSaleNewLines }
+                }
+              });
+
+              // تحديث فاتورة المشتريات المرتبطة
+              if (existingSale.relatedBranchPurchaseId) {
+                await this.prisma.purchaseLine.deleteMany({
+                  where: { purchaseId: existingSale.relatedBranchPurchaseId }
+                });
+                await this.prisma.purchase.update({
+                  where: { id: existingSale.relatedBranchPurchaseId },
+                  data: {
+                    total: parentSaleTotal,
+                    remainingAmount: parentSaleTotal,
+                    lines: {
+                      create: parentSaleNewLines.map(l => ({
+                        productId: l.productId,
+                        qty: l.qty,
+                        unitPrice: l.unitPrice,
+                        subTotal: l.subTotal
+                      }))
+                    }
+                  }
+                });
+              }
+            }
+          }
+        } catch (err: any) {
+          console.error('⚠️ خطأ في تحديث فاتورة التقازي المرتبطة:', err.message);
+        }
+      }
+
+      return {
+        id: updatedSale.id,
+        companyId: updatedSale.companyId,
+        company: updatedSale.company,
+        customerId: updatedSale.customerId,
+        customer: updatedSale.customer,
+        invoiceNumber: updatedSale.invoiceNumber,
+        total: Number(updatedSale.total),
+        totalDiscountPercentage: Number(updatedSale.totalDiscountPercentage || 0),
+        totalDiscountAmount: Number(updatedSale.totalDiscountAmount || 0),
+        status: updatedSale.status,
+        saleType: updatedSale.saleType,
+        paymentMethod: updatedSale.paymentMethod,
+        paidAmount: Number(updatedSale.paidAmount || 0),
+        remainingAmount: Number(updatedSale.remainingAmount || 0),
+        isFullyPaid: updatedSale.isFullyPaid,
+        approvedAt: updatedSale.approvedAt,
+        createdAt: updatedSale.createdAt,
+        updatedAt: updatedSale.updatedAt,
+        lines: updatedSale.lines.map((line: any) => ({
+          id: line.id,
+          productId: line.productId,
+          product: { ...line.product, unitsPerBox: line.product.unitsPerBox ? Number(line.product.unitsPerBox) : null },
+          qty: Number(line.qty),
+          unitPrice: Number(line.unitPrice),
+          isFromParentCompany: line.isFromParentCompany || false,
+          discountPercentage: Number(line.discountPercentage || 0),
+          discountAmount: Number(line.discountAmount || 0),
+          subTotal: Number(line.subTotal)
+        }))
+      };
+    } catch (error) {
+      console.error('خطأ في إضافة أصناف للفاتورة المعتمدة:', error);
+      throw error;
+    }
+  }
+
+  /**
    * حذف فاتورة مبيعات (مع الحذف المتسلسل للفواتير المرتبطة)
    */
   async deleteSale(id: number, userCompanyId: number, isSystemUser: boolean = false) {

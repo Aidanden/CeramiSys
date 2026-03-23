@@ -107,6 +107,13 @@ router.post('/:id/issue-receipt', salesController.issueReceipt.bind(salesControl
 router.patch('/:id/approve', salesController.approveSale.bind(salesController));
 
 /**
+ * @route   PATCH /api/sales/:id/append
+ * @desc    إضافة أصناف أو زيادة كميات على فاتورة معتمدة (في نفس اليوم فقط)
+ * @access  Private
+ */
+router.patch('/:id/append', salesController.appendSale.bind(salesController));
+
+/**
  * @route   PATCH /api/sales/:id/cancel
  * @desc    إلغاء فاتورة معتمدة (آجلة بدون دفعات)
  * @access  Private

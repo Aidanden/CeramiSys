@@ -732,6 +732,67 @@ export class SalesController {
   }
 
   /**
+   * إضافة أصناف / زيادة كميات على فاتورة معتمدة (في نفس اليوم فقط)
+   */
+  async appendSale(req: Request, res: Response): Promise<void> {
+    try {
+      const saleId = parseInt(req.params.id!);
+
+      if (isNaN(saleId)) {
+        res.status(400).json({ success: false, message: 'معرف الفاتورة غير صالح' });
+        return;
+      }
+
+      const userCompanyId = (req as any).user?.companyId;
+      const isSystemUser = (req as any).user?.isSystemUser;
+
+      if (!userCompanyId) {
+        res.status(401).json({ success: false, message: 'غير مصرح لك بالوصول' });
+        return;
+      }
+
+      const { lines } = req.body;
+
+      if (!lines || !Array.isArray(lines) || lines.length === 0) {
+        res.status(400).json({ success: false, message: 'يجب إرسال قائمة الأصناف' });
+        return;
+      }
+
+      const result = await this.salesService.appendToApprovedSale(
+        saleId,
+        lines,
+        userCompanyId,
+        isSystemUser
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'تم تعديل الفاتورة المعتمدة بنجاح (إضافة أصناف)',
+        data: result
+      });
+    } catch (error: any) {
+      console.error('خطأ في إضافة أصناف للفاتورة المعتمدة:', error);
+
+      if (
+        error.message.includes('يوم الاعتماد') ||
+        error.message.includes('بعد مرور يوم') ||
+        error.message.includes('ليست في حالة معتمدة') ||
+        error.message.includes('لا يمكن حذف الصنف') ||
+        error.message.includes('لا يمكن تقليل كمية') ||
+        error.message.includes('لا يمكن تعديل هذه الفاتورة')
+      ) {
+        res.status(400).json({ success: false, message: error.message });
+      } else if (error.message.includes('غير كافي')) {
+        res.status(400).json({ success: false, message: error.message });
+      } else if (error.message.includes('غير موجود') || error.message.includes('ليس لديك صلاحية')) {
+        res.status(404).json({ success: false, message: error.message });
+      } else {
+        res.status(500).json({ success: false, message: error.message || 'خطأ في الخادم الداخلي' });
+      }
+    }
+  }
+
+  /**
    * إلغاء فاتورة معتمدة
    */
   async cancelSale(req: Request, res: Response): Promise<void> {
