@@ -7,11 +7,12 @@ import {
   useGetCustomerOpenInvoicesQuery
 } from "@/state/customerAccountApi";
 import { useDeleteCustomerMutation } from "@/state/salesApi";
-import { User, Search, TrendingUp, TrendingDown, FileText, X, DollarSign, Calendar, Phone, Eye, Filter, RefreshCw, Trash2 } from "lucide-react";
+import { User, Search, TrendingUp, TrendingDown, FileText, X, DollarSign, Calendar, Phone, Eye, Filter, RefreshCw, Trash2, Plus } from "lucide-react";
 import { useToast } from "@/components/ui/Toast";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { formatLibyanCurrency, formatArabicNumber, formatArabicDate, formatEnglishDate } from "@/utils/formatLibyanNumbers";
+import OpeningBalanceModal from "@/components/shared/OpeningBalanceModal";
 import { useAppSelector } from "@/app/redux";
 
 type ViewMode = 'summary' | 'account' | 'invoices';
@@ -30,6 +31,10 @@ const CustomerAccountsPage = () => {
   // فلاتر الفواتير المفتوحة
   const [invoicesStartDate, setInvoicesStartDate] = useState("");
   const [invoicesEndDate, setInvoicesEndDate] = useState("");
+
+  // الرصيد الافتتاحي
+  const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(false);
+  const [targetCustomer, setTargetCustomer] = useState<{ id: number; name: string } | null>(null);
 
   // Reference للطباعة
   const printRef = useRef<HTMLDivElement>(null);
@@ -70,6 +75,17 @@ const CustomerAccountsPage = () => {
       console.log("Total Returns:", (account as any).totalReturns); // Check if totalReturns is present
     }
   }, [account]);
+
+  // ترتيب المعاملات تنازلياً (الأحدث أولاً)
+  const sortedEntries = React.useMemo(() => {
+    if (!account?.entries) return [];
+    return [...account.entries].sort((a, b) => {
+      const dateA = new Date(a.transactionDate).getTime();
+      const dateB = new Date(b.transactionDate).getTime();
+      if (dateB !== dateA) return dateB - dateA;
+      return b.id - a.id; // ترتيب المرجع الأكبر أولاً في حال تساوي التاريخ
+    });
+  }, [account?.entries]);
 
   // تصفية العملاء بناءً على البحث
   const filteredCustomers = customers.filter((customer) =>
@@ -135,6 +151,11 @@ const CustomerAccountsPage = () => {
     setAccountEndDate("");
     setInvoicesStartDate("");
     setInvoicesEndDate("");
+  };
+
+  const handleOpenOpeningBalanceModal = (id: number, name: string) => {
+    setTargetCustomer({ id, name });
+    setShowOpeningBalanceModal(true);
   };
 
   const handleDeleteCustomer = async (id: number, name: string) => {
@@ -345,7 +366,7 @@ const CustomerAccountsPage = () => {
           </div>
         </div>
         
-        ${account.entries.length > 0 ? `
+        ${sortedEntries.length > 0 ? `
           <table>
             <thead>
               <tr>
@@ -358,7 +379,7 @@ const CustomerAccountsPage = () => {
               </tr>
             </thead>
             <tbody>
-              ${account.entries.map((entry, index) => `
+              ${sortedEntries.map((entry, index) => `
                 <tr>
                   <td>${index + 1}</td>
                   <td>${formatEnglishDate(entry.transactionDate)}</td>
@@ -806,6 +827,13 @@ const CustomerAccountsPage = () => {
                                   <Trash2 className="w-4 h-4" />
                                 </button>
                               )}
+                              <button
+                                onClick={() => handleOpenOpeningBalanceModal(customer.id, customer.name)}
+                                className="inline-flex items-center justify-center w-40 px-3 py-1.5 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-colors shadow-sm"
+                              >
+                                <Plus className="w-4 h-4 ml-1" />
+                                إضافة رصيد مرحل
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -1090,12 +1118,12 @@ const CustomerAccountsPage = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-surface-primary divide-y divide-gray-200 dark:divide-border-primary">
-                    {account.entries.length === 0 ? (
+                    {sortedEntries.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-6 py-8 text-center text-slate-500 dark:text-text-tertiary">لا توجد معاملات</td>
                       </tr>
                     ) : (
-                      account.entries.map((entry) => (
+                      sortedEntries.map((entry) => (
                         <tr key={entry.id} className="hover:bg-gray-50 dark:hover:bg-surface-hover">
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">
                             {formatEnglishDate(entry.transactionDate)}
@@ -1286,6 +1314,19 @@ const CustomerAccountsPage = () => {
           </div>
         )}
       </div>
+      {/* مودال الرصيد الافتتاحي */}
+      {targetCustomer && (
+        <OpeningBalanceModal
+          isOpen={showOpeningBalanceModal}
+          onClose={() => {
+            setShowOpeningBalanceModal(false);
+            setTargetCustomer(null);
+          }}
+          customerId={targetCustomer.id}
+          name={targetCustomer.name}
+          type="customer"
+        />
+      )}
     </div>
   );
 };

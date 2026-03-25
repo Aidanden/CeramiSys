@@ -39,6 +39,7 @@ import badDebtRoutes from "./routes/badDebtRoutes";
 import generalReceiptRoutes from "./routes/generalReceipt.routes";
 import dashboardRoutes from "./routes/dashboardRoutes";
 import supplierProductsReportRoutes from "./routes/supplierProductsReportRoutes";
+import openingBalanceRoutes from "./routes/openingBalanceRoutes";
 
 
 /*CONFIGRATION*/
@@ -140,6 +141,7 @@ app.use('/api/payroll', payrollRoutes);
 app.use('/api/bad-debts', badDebtRoutes);
 app.use('/api/general', generalReceiptRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/opening-balances', openingBalanceRoutes);
 app.use('/api', screensRoute);
 // External Stores Routes moved up
 

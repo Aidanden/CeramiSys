@@ -7,7 +7,7 @@ export interface CustomerAccountEntry {
   transactionType: 'DEBIT' | 'CREDIT';
   amount: number;
   balance: number;
-  referenceType: 'SALE' | 'PAYMENT' | 'ADJUSTMENT' | 'RETURN';
+  referenceType: 'SALE' | 'PAYMENT' | 'ADJUSTMENT' | 'RETURN' | 'GENERAL_RECEIPT' | 'OPENING_BALANCE';
   referenceId: number;
   description?: string;
   transactionDate: string;
@@ -142,7 +142,20 @@ export const customerAccountApi = createApi({
         };
       },
       providesTags: (_result, _error, { customerId }) => [{ type: 'CustomerAccount', id: customerId }]
-    })
+    }),
+ 
+    // إضافة رصيد افتتاحي
+    createOpeningBalance: build.mutation<{ success: boolean; data: any }, any>({
+      query: (data) => ({
+        url: "/opening-balances",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: (_result, _error, { customerId }) => [
+        { type: 'CustomerAccount', id: customerId },
+        { type: 'CustomerAccountSummary', id: 'LIST' }
+      ]
+    }),
   })
 });
 
@@ -150,6 +163,7 @@ export const {
   useGetCustomerAccountQuery,
   useGetAllCustomersAccountSummaryQuery,
   useGetCustomerBalanceQuery,
-  useGetCustomerOpenInvoicesQuery
+  useGetCustomerOpenInvoicesQuery,
+  useCreateOpeningBalanceMutation
 } = customerAccountApi;
 

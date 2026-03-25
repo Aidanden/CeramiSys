@@ -38,6 +38,7 @@ model Company {
   treasuries          Treasury[]
   users               Users[]
   notifications       Notification[]
+  openingBalances     OpeningBalance[]
 }
 
 model Product {
@@ -212,6 +213,7 @@ model Customer {
   sales            Sale[]
   saleReturns      SaleReturn[]
   paymentReceipts  SupplierPaymentReceipt[]
+  openingBalances  OpeningBalance[]
 }
 
 model CustomerAccount {
@@ -490,6 +492,7 @@ model Supplier {
   purchaseExpenses      PurchaseExpense[]
   accountEntries        SupplierAccount[]
   paymentReceipts       SupplierPaymentReceipt[]
+  openingBalances       OpeningBalance[]
 }
 
 model SupplierAccount {
@@ -924,6 +927,34 @@ model GlobalSettings {
   updatedAt DateTime @updatedAt
 }
 
+model OpeningBalance {
+  id                Int                @id @default(autoincrement())
+  customerId        Int?
+  supplierId        Int?
+  amount            Decimal            @db.Decimal(18, 4)
+  currency          String             @default("LYD")
+  transactionType   OpeningBalanceType
+  transactionDate   DateTime           @default(now())
+  description       String?
+  previousSystemRef String?
+  companyId         Int?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  
+  customer          Customer?          @relation(fields: [customerId], references: [id])
+  supplier          Supplier?          @relation(fields: [supplierId], references: [id])
+  company           Company?           @relation(fields: [companyId], references: [id])
+
+  @@index([customerId])
+  @@index([supplierId])
+  @@index([companyId])
+}
+
+enum OpeningBalanceType {
+  DEBIT
+  CREDIT
+}
+
 model FinancialContact {
   id              Int                       @id @default(autoincrement())
   name            String
@@ -1176,6 +1207,7 @@ enum CustomerReferenceType {
   ADJUSTMENT
   RETURN
   GENERAL_RECEIPT
+  OPENING_BALANCE
 }
 
 enum SupplierTransactionType {
@@ -1189,6 +1221,7 @@ enum SupplierReferenceType {
   ADJUSTMENT
   RETURN
   GENERAL_RECEIPT
+  OPENING_BALANCE
 }
 
 enum SupplierPaymentType {

@@ -12,7 +12,6 @@ import {
   TrendingUp,
   TrendingDown,
   FileText,
-  DollarSign,
   Calendar,
   Phone,
   Home
@@ -21,6 +20,8 @@ import {
   formatLibyanCurrencyEnglish,
   formatEnglishDate
 } from "@/utils/formatLibyanNumbers";
+import OpeningBalanceModal from "@/components/shared/OpeningBalanceModal";
+import { Plus } from "lucide-react";
 
 type ViewMode = 'summary' | 'account' | 'purchases';
 
@@ -31,6 +32,10 @@ const SupplierAccountsPage = () => {
   const accountPrintRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // الرصيد الافتتاحي
+  const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(false);
+  const [targetSupplier, setTargetSupplier] = useState<{ id: number; name: string } | null>(null);
 
   const { data: summaryData, isLoading, error, refetch: refetchSummary } = useGetAllSuppliersAccountSummaryQuery();
   const { data: accountData, isLoading: isLoadingAccount, refetch: refetchAccount } = useGetSupplierAccountQuery(selectedSupplierId ?? 0, {
@@ -111,6 +116,11 @@ const SupplierAccountsPage = () => {
   const handleBackToSummary = () => {
     setSelectedSupplierId(null);
     setViewMode('summary');
+  };
+
+  const handleOpenOpeningBalanceModal = (id: number, name: string) => {
+    setTargetSupplier({ id, name });
+    setShowOpeningBalanceModal(true);
   };
 
   const selectedSupplier = suppliers.find((s) => s.id === selectedSupplierId);
@@ -396,6 +406,13 @@ const SupplierAccountsPage = () => {
                             >
                               <FileText className="w-4 h-4 ml-1" />
                               كشف الحساب
+                            </button>
+                            <button
+                              onClick={() => handleOpenOpeningBalanceModal(supplier.id, supplier.name)}
+                              className="inline-flex items-center px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-colors ml-2 shadow-sm"
+                            >
+                              <Plus className="w-4 h-4 ml-1" />
+                              إضافة رصيد مرحل
                             </button>
                           </td>
                         </tr>
@@ -739,6 +756,19 @@ const SupplierAccountsPage = () => {
           </div>
         )}
       </div>
+      {/* مودال الرصيد الافتتاحي */}
+      {targetSupplier && (
+        <OpeningBalanceModal
+          isOpen={showOpeningBalanceModal}
+          onClose={() => {
+            setShowOpeningBalanceModal(false);
+            setTargetSupplier(null);
+          }}
+          supplierId={targetSupplier.id}
+          name={targetSupplier.name}
+          type="supplier"
+        />
+      )}
     </div>
   );
 };

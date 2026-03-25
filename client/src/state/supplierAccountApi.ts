@@ -7,7 +7,7 @@ export interface SupplierAccountEntry {
   transactionType: 'DEBIT' | 'CREDIT';
   amount: number;
   balance: number;
-  referenceType: 'PURCHASE' | 'PAYMENT' | 'ADJUSTMENT' | 'RETURN';
+  referenceType: 'PURCHASE' | 'PAYMENT' | 'ADJUSTMENT' | 'RETURN' | 'GENERAL_RECEIPT' | 'OPENING_BALANCE';
   referenceId: number;
   description?: string;
   transactionDate: string;
@@ -106,6 +106,19 @@ export const supplierAccountApi = createApi({
       ],
       keepUnusedDataFor: 0, // عدم الاحتفاظ بالبيانات القديمة
     }),
+ 
+    // إضافة رصيد افتتاحي للمورد
+    createOpeningBalance: build.mutation<{ success: boolean; data: any }, any>({
+      query: (data) => ({
+        url: "/opening-balances",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { supplierId }) => [
+        { type: "SupplierAccount", id: supplierId },
+        "SupplierAccounts"
+      ]
+    }),
   }),
 });
 
@@ -113,4 +126,5 @@ export const {
   useGetAllSuppliersAccountSummaryQuery,
   useGetSupplierAccountQuery,
   useGetSupplierOpenPurchasesQuery,
+  useCreateOpeningBalanceMutation
 } = supplierAccountApi;

@@ -10,6 +10,7 @@ import {
   Customer,
   CreateCustomerRequest
 } from '@/state/salesApi';
+import OpeningBalanceModal from "@/components/shared/OpeningBalanceModal";
 import { useToast } from '@/components/ui/Toast';
 import {
   Users,
@@ -42,6 +43,10 @@ const CustomersPage = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+
+  // Opening Balance Modal State
+  const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(false);
+  const [targetCustomer, setTargetCustomer] = useState<{ id: number, name: string } | null>(null);
 
   // Form states
   const [formData, setFormData] = useState<CreateCustomerRequest>({
@@ -257,6 +262,13 @@ const CustomersPage = () => {
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
+                        <button
+                          onClick={() => openOpeningBalanceModal(customer.id, customer.name)}
+                          className="p-2 text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 rounded-xl transition-all"
+                          title="إضافة رصيد مرحل"
+                        >
+                          <TrendingUp className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -435,6 +447,20 @@ const CustomersPage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Opening Balance Modal */}
+      {targetCustomer && (
+        <OpeningBalanceModal
+          isOpen={showOpeningBalanceModal}
+          onClose={() => {
+            setShowOpeningBalanceModal(false);
+            setTargetCustomer(null);
+          }}
+          customerId={targetCustomer.id}
+          name={targetCustomer.name}
+          type="customer"
+        />
       )}
     </div>
   );

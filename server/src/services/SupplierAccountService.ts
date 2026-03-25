@@ -1,4 +1,4 @@
-import { SupplierTransactionType, SupplierReferenceType } from '@prisma/client';
+import { Prisma, SupplierTransactionType, SupplierReferenceType } from '@prisma/client';
 import prisma from '../models/prismaClient';
 
 interface CreateSupplierAccountEntryInput {
@@ -18,7 +18,7 @@ export interface SupplierAccountEntry {
   transactionType: 'DEBIT' | 'CREDIT';
   amount: number; // المبلغ بالعملة الأصلية
   balance: number;
-  referenceType: 'PURCHASE' | 'PAYMENT' | 'ADJUSTMENT' | 'RETURN';
+  referenceType: 'PURCHASE' | 'PAYMENT' | 'ADJUSTMENT' | 'RETURN' | 'OPENING_BALANCE';
   referenceId: number;
   description?: string;
   transactionDate: Date;
@@ -77,14 +77,15 @@ class SupplierAccountService {
    * إنشاء قيد في حساب المورد
    * Create an entry in supplier account
    */
-  async createAccountEntry(data: CreateSupplierAccountEntryInput) {
+  async createAccountEntry(data: CreateSupplierAccountEntryInput, tx?: Prisma.TransactionClient) {
     const { supplierId, transactionType, amount, referenceType, referenceId, description, transactionDate, currency } = data;
+    const db = tx || prisma;
 
     const entryCurrency = currency || 'LYD';
 
     // جلب آخر رصيد للمورد **بنفس العملة**
     // Get the latest balance for the supplier in the same currency
-    const lastEntry = await prisma.supplierAccount.findFirst({
+    const lastEntry = await db.supplierAccount.findFirst({
       where: { 
         supplierId,
         currency: entryCurrency 
@@ -107,7 +108,7 @@ class SupplierAccountService {
 
     // إنشاء القيد
     // Create the entry
-    const entry = await prisma.supplierAccount.create({
+    const entry = await db.supplierAccount.create({
       data: {
         supplierId,
         transactionType,
@@ -203,7 +204,7 @@ class SupplierAccountService {
         transactionType: entry.transactionType as 'DEBIT' | 'CREDIT',
         amount: Number(entry.amount), // المبلغ بالعملة الأصلية
         balance: Number(entry.balance),
-        referenceType: entry.referenceType as 'PURCHASE' | 'PAYMENT' | 'ADJUSTMENT' | 'RETURN',
+        referenceType: entry.referenceType as 'PURCHASE' | 'PAYMENT' | 'ADJUSTMENT' | 'RETURN' | 'OPENING_BALANCE',
         referenceId: entry.referenceId,
         description: entry.description || undefined,
         transactionDate: entry.transactionDate,
