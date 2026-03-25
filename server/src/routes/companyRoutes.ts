@@ -33,7 +33,14 @@ router.post(
  */
 router.get(
   '/companies',
-  authorizePermissions([SCREEN_PERMISSIONS.COMPANIES]),
+  authorizePermissions([
+    SCREEN_PERMISSIONS.COMPANIES,
+    SCREEN_PERMISSIONS.SALES,
+    SCREEN_PERMISSIONS.ACCOUNTANT,
+    SCREEN_PERMISSIONS.PURCHASES,
+    SCREEN_PERMISSIONS.WAREHOUSE_DISPATCH,
+    SCREEN_PERMISSIONS.ALL
+  ]),
   companyController.getCompanies
 );
 

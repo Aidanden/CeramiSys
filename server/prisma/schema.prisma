@@ -13,11 +13,13 @@ model Company {
   code                String                   @unique
   isParent            Boolean                  @default(false)
   parentId            Int?
+  badDebtCategories   BadDebtCategory[]
   parent              Company?                 @relation("CompanyChildren", fields: [parentId], references: [id])
   children            Company[]                @relation("CompanyChildren")
   prices              CompanyProductPrice[]
   damageReports       DamageReport[]
   dispatchOrders      DispatchOrder[]
+  employees           Employee[]
   products            Product[]                @relation("ProductsCreated")
   provisionalSales    ProvisionalSale[]
   purchases           Purchase[]
@@ -32,12 +34,10 @@ model Company {
   salePayments        SalePayment[]
   saleReturns         SaleReturn[]
   stocks              Stock[]
+  paymentReceipts     SupplierPaymentReceipt[]
   treasuries          Treasury[]
   users               Users[]
   notifications       Notification[]
-  employees           Employee[]
-  badDebtCategories   BadDebtCategory[]
-  paymentReceipts     SupplierPaymentReceipt[]
 }
 
 model Product {
@@ -51,11 +51,13 @@ model Product {
   unitsPerBox               Decimal?                   @db.Decimal(10, 4)
   qrCode                    String?
   cost                      Decimal?                   @db.Decimal(18, 4)
+  groupId                   Int?
   prices                    CompanyProductPrice[]
   damageReportLines         DamageReportLine[]
   externalStoreInvoiceLines ExternalStoreInvoiceLine[]
   externalStoreProducts     ExternalStoreProduct[]
   createdByCompany          Company                    @relation("ProductsCreated", fields: [createdByCompanyId], references: [id])
+  group                     ProductGroup?              @relation(fields: [groupId], references: [id])
   costUpdates               ProductCostLog[]
   provisionalSaleLines      ProvisionalSaleLine[]
   purchaseLines             PurchaseFromParentLine[]
@@ -63,8 +65,6 @@ model Product {
   saleLines                 SaleLine[]
   saleReturnLines           SaleReturnLine[]
   stocks                    Stock[]
-  groupId                   Int?
-  group                     ProductGroup?              @relation(fields: [groupId], references: [id])
 
   @@unique([sku, createdByCompanyId])
   @@index([createdByCompanyId])
@@ -77,13 +77,13 @@ model ProductGroup {
   id                    Int                    @id @default(autoincrement())
   name                  String                 @unique
   maxDiscountPercentage Decimal?               @db.Decimal(5, 2)
-  supplierId            Int?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
   currency              String?                @default("USD")
+  supplierId            Int?
   products              Product[]
   supplier              Supplier?              @relation("PrimarySupplier", fields: [supplierId], references: [id])
   suppliers             ProductGroupSupplier[]
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
 
   @@index([supplierId])
 }
@@ -93,9 +93,9 @@ model ProductGroupSupplier {
   productGroupId Int
   supplierId     Int
   isPrimary      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
   productGroup   ProductGroup @relation(fields: [productGroupId], references: [id], onDelete: Cascade)
   supplier       Supplier     @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  createdAt      DateTime     @default(now())
 
   @@unique([productGroupId, supplierId])
   @@index([productGroupId])
@@ -152,6 +152,7 @@ model Users {
   Email                   String?          @unique
   Phone                   String?
   RoleID                  String?
+  Permissions             Json?
   IsActive                Boolean          @default(true)
   LastLogin               DateTime?
   PasswordChangedAt       DateTime?
@@ -161,7 +162,6 @@ model Users {
   UpdatedAt               DateTime         @updatedAt
   CompanyID               Int
   IsSystemUser            Boolean          @default(false)
-  Permissions             Json?
   damageReports           DamageReport[]
   completedDispatchOrders DispatchOrder[]
   costUpdates             ProductCostLog[]
@@ -201,17 +201,17 @@ model Customer {
   id               Int                      @id @default(autoincrement())
   name             String
   phone            String?
-  phone2           String?
-  address          String?
   notes            String?                  @map("note")
   createdAt        DateTime                 @default(now())
+  address          String?
+  phone2           String?
   accountEntries   CustomerAccount[]
+  externalStores   ExternalStore[]
+  generalReceipts  GeneralReceipt[]
   provisionalSales ProvisionalSale[]
   sales            Sale[]
   saleReturns      SaleReturn[]
-  generalReceipts  GeneralReceipt[]
-  externalStores   ExternalStore[] // المحلات الخارجية المرتبطة بهذا العميل
-  paymentReceipts  SupplierPaymentReceipt[] // Added
+  paymentReceipts  SupplierPaymentReceipt[]
 }
 
 model CustomerAccount {
@@ -254,17 +254,17 @@ model Sale {
   isAutoGenerated             Boolean                @default(false)
   relatedParentSaleId         Int?
   relatedBranchPurchaseId     Int?
-  totalDiscountPercentage     Decimal?               @default(0) @db.Decimal(5, 2)
-  totalDiscountAmount         Decimal?               @default(0) @db.Decimal(18, 4)
   relatedPurchaseFromParentId Int?
+  totalDiscountAmount         Decimal?               @default(0) @db.Decimal(18, 4)
+  totalDiscountPercentage     Decimal?               @default(0) @db.Decimal(5, 2)
   dispatchOrders              DispatchOrder[]
+  externalStoreInvoices       ExternalStoreInvoice[] @relation("ExternalStoreInvoiceToSale")
   provisionalSaleConverted    ProvisionalSale[]
   company                     Company                @relation(fields: [companyId], references: [id])
   customer                    Customer?              @relation(fields: [customerId], references: [id])
   lines                       SaleLine[]
   payments                    SalePayment[]
   returns                     SaleReturn[]
-  externalStoreInvoices       ExternalStoreInvoice[] @relation("ExternalStoreInvoiceToSale")
 
   @@index([companyId])
   @@index([relatedParentSaleId])
@@ -288,9 +288,9 @@ model SaleLine {
   isFromParentCompany Boolean? @default(false)
   parentUnitPrice     Decimal? @db.Decimal(18, 4)
   branchUnitPrice     Decimal? @db.Decimal(18, 4)
-  profitMargin        Decimal? @db.Decimal(5, 2)
-  discountPercentage  Decimal? @default(0) @db.Decimal(5, 2)
   discountAmount      Decimal? @default(0) @db.Decimal(18, 4)
+  discountPercentage  Decimal? @default(0) @db.Decimal(5, 2)
+  profitMargin        Decimal? @db.Decimal(5, 2)
   product             Product  @relation(fields: [productId], references: [id])
   sale                Sale     @relation(fields: [saleId], references: [id])
 }
@@ -331,11 +331,11 @@ model SaleReturn {
   processedAt     DateTime?
   returnOrders    ReturnOrder[]
   payments        ReturnPayment[]
-  paymentReceipts SupplierPaymentReceipt[] // Added
   company         Company                  @relation(fields: [companyId], references: [id])
   customer        Customer?                @relation(fields: [customerId], references: [id])
   sale            Sale                     @relation(fields: [saleId], references: [id])
   lines           SaleReturnLine[]
+  paymentReceipts SupplierPaymentReceipt[]
 
   @@index([saleId])
   @@index([companyId])
@@ -420,15 +420,14 @@ model Purchase {
   isFullyPaid           Boolean                  @default(false)
   status                PurchaseStatus           @default(DRAFT)
   affectsInventory      Boolean                  @default(true)
-  createdAt             DateTime                 @default(now())
-  relatedCustomerSaleId Int?
+  isApproved            Boolean                  @default(false)
   approvedAt            DateTime?
   approvedBy            String?
-  finalTotal            Decimal                  @default(0) @db.Decimal(18, 4)
-  isApproved            Boolean                  @default(false)
   totalExpenses         Decimal                  @default(0) @db.Decimal(18, 4)
+  finalTotal            Decimal                  @default(0) @db.Decimal(18, 4)
+  createdAt             DateTime                 @default(now())
+  relatedCustomerSaleId Int?
   currency              Currency                 @default(LYD)
-  // ❌ تم إزالة exchangeRate و totalForeign - سعر الصرف يُحدد فقط عند الدفع
   costUpdates           ProductCostLog[]
   company               Company                  @relation(fields: [companyId], references: [id])
   supplier              Supplier?                @relation(fields: [supplierId], references: [id])
@@ -484,20 +483,20 @@ model Supplier {
   note                  String?
   createdAt             DateTime                  @default(now())
   expenseCategories     ExpenseCategorySupplier[]
+  generalReceipts       GeneralReceipt[]
+  primaryProductGroups  ProductGroup[]            @relation("PrimarySupplier")
+  productGroupSuppliers ProductGroupSupplier[]
   purchases             Purchase[]
   purchaseExpenses      PurchaseExpense[]
   accountEntries        SupplierAccount[]
   paymentReceipts       SupplierPaymentReceipt[]
-  generalReceipts       GeneralReceipt[]
-  primaryProductGroups  ProductGroup[]            @relation("PrimarySupplier")
-  productGroupSuppliers ProductGroupSupplier[]
 }
 
 model SupplierAccount {
   id              Int                     @id @default(autoincrement())
   supplierId      Int
   transactionType SupplierTransactionType
-  amount          Decimal                 @db.Decimal(18, 4) // المبلغ بالعملة الأصلية فقط
+  amount          Decimal                 @db.Decimal(18, 4)
   balance         Decimal                 @db.Decimal(18, 4)
   referenceType   SupplierReferenceType
   referenceId     Int
@@ -505,7 +504,6 @@ model SupplierAccount {
   transactionDate DateTime                @default(now())
   createdAt       DateTime                @default(now())
   currency        String                  @default("LYD")
-  // ❌ تم إزالة amountForeign و exchangeRate - سعر الصرف يُحدد فقط عند الدفع
   supplier        Supplier                @relation(fields: [supplierId], references: [id])
 
   @@index([supplierId])
@@ -626,11 +624,8 @@ model Notification {
 
 model SupplierPaymentReceipt {
   id            Int                         @id @default(autoincrement())
-  supplierId    Int? // Modified to optional
+  supplierId    Int?
   purchaseId    Int?
-  saleReturnId  Int? // Added
-  customerId    Int? // Added
-  companyId     Int
   amount        Decimal                     @db.Decimal(18, 4)
   type          SupplierPaymentType
   description   String?
@@ -642,17 +637,20 @@ model SupplierPaymentReceipt {
   amountForeign Decimal?                    @db.Decimal(18, 4)
   currency      String                      @default("LYD")
   exchangeRate  Decimal                     @default(1) @db.Decimal(18, 6)
+  companyId     Int
+  customerId    Int?
+  saleReturnId  Int?
   installments  PaymentReceiptInstallment[]
   company       Company                     @relation(fields: [companyId], references: [id])
+  customer      Customer?                   @relation(fields: [customerId], references: [id])
   purchase      Purchase?                   @relation(fields: [purchaseId], references: [id])
-  saleReturn    SaleReturn?                 @relation(fields: [saleReturnId], references: [id]) // Added
-  customer      Customer?                   @relation(fields: [customerId], references: [id]) // Added
-  supplier      Supplier?                   @relation(fields: [supplierId], references: [id]) // Modified to optional
+  saleReturn    SaleReturn?                 @relation(fields: [saleReturnId], references: [id])
+  supplier      Supplier?                   @relation(fields: [supplierId], references: [id])
 
   @@index([supplierId])
   @@index([purchaseId])
-  @@index([saleReturnId]) // Added
-  @@index([customerId]) // Added
+  @@index([saleReturnId])
+  @@index([customerId])
   @@index([companyId])
   @@index([status])
   @@index([type])
@@ -686,12 +684,11 @@ model PurchaseExpense {
   purchaseId      Int
   categoryId      Int
   supplierId      Int?
-  amount          Decimal                 @db.Decimal(18, 4) // المبلغ بالعملة الأصلية فقط
+  amount          Decimal                 @db.Decimal(18, 4)
   notes           String?
   createdAt       DateTime                @default(now())
-  // ❌ تم إزالة amountForeign و exchangeRate - سعر الصرف يُحدد فقط عند الدفع
   currency        Currency                @default(LYD)
-  isActualExpense Boolean                 @default(true) // true = مصروف فعلي (يؤثر على حساب المورد), false = مصروف تقديري (لتوزيع التكلفة فقط)
+  isActualExpense Boolean                 @default(true)
   category        PurchaseExpenseCategory @relation(fields: [categoryId], references: [id])
   purchase        Purchase                @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
   supplier        Supplier?               @relation(fields: [supplierId], references: [id])
@@ -776,11 +773,11 @@ model ExternalStore {
   phone2             String?
   address            String?
   googleMapsUrl      String?
-  customerId         Int? // العميل المرتبط بالمحل
   isActive           Boolean                @default(true)
-  showPrices         Boolean                @default(true) // إظهار الأسعار في بوابة المحل
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt
+  showPrices         Boolean                @default(true)
+  customerId         Int?
   customer           Customer?              @relation(fields: [customerId], references: [id])
   invoices           ExternalStoreInvoice[]
   productAssignments ExternalStoreProduct[]
@@ -830,8 +827,8 @@ model ExternalStoreProduct {
   id        Int           @id @default(autoincrement())
   storeId   Int
   productId Int
-  quantity  Decimal       @default(0) @db.Decimal(20, 4)
   createdAt DateTime      @default(now())
+  quantity  Decimal       @default(0) @db.Decimal(20, 4)
   product   Product       @relation(fields: [productId], references: [id])
   store     ExternalStore @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
@@ -841,23 +838,22 @@ model ExternalStoreProduct {
 }
 
 model ExternalStoreInvoice {
-  id              Int                   @id @default(autoincrement())
-  storeId         Int
-  invoiceNumber   String?
-  total           Decimal               @default(0) @db.Decimal(18, 4)
-  status          ExternalInvoiceStatus @default(PENDING)
-  notes           String?
-  rejectionReason String?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  reviewedAt      DateTime?
-  reviewedBy      String?
-  saleId          Int?
-  dispatchOrderId Int?
-
-  store                ExternalStore              @relation(fields: [storeId], references: [id])
-  relatedSale          Sale?                      @relation("ExternalStoreInvoiceToSale", fields: [saleId], references: [id])
+  id                   Int                        @id @default(autoincrement())
+  storeId              Int
+  invoiceNumber        String?
+  total                Decimal                    @default(0) @db.Decimal(18, 4)
+  status               ExternalInvoiceStatus      @default(PENDING)
+  notes                String?
+  rejectionReason      String?
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
+  reviewedAt           DateTime?
+  reviewedBy           String?
+  dispatchOrderId      Int?
+  saleId               Int?
   relatedDispatchOrder DispatchOrder?             @relation("ExternalStoreInvoiceToDispatch", fields: [dispatchOrderId], references: [id])
+  relatedSale          Sale?                      @relation("ExternalStoreInvoiceToSale", fields: [saleId], references: [id])
+  store                ExternalStore              @relation(fields: [storeId], references: [id])
   lines                ExternalStoreInvoiceLine[]
 
   @@index([storeId])
@@ -890,9 +886,9 @@ model Treasury {
   isActive       Boolean               @default(true)
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
+  salaryPayments SalaryPayment[]
   company        Company?              @relation(fields: [companyId], references: [id])
   transactions   TreasuryTransaction[]
-  salaryPayments SalaryPayment[]
 
   @@index([companyId])
   @@index([type])
@@ -926,6 +922,179 @@ model GlobalSettings {
   key       String   @unique
   value     String
   updatedAt DateTime @updatedAt
+}
+
+model FinancialContact {
+  id              Int                       @id @default(autoincrement())
+  name            String
+  phone           String?
+  note            String?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  isActive        Boolean                   @default(true)
+  accountEntries  FinancialContactAccount[]
+  generalReceipts GeneralReceipt[]
+}
+
+model FinancialContactAccount {
+  id              Int              @id @default(autoincrement())
+  contactId       Int
+  transactionType TransactionType
+  amount          Decimal          @db.Decimal(18, 4)
+  balance         Decimal          @db.Decimal(18, 4)
+  referenceType   String
+  referenceId     Int
+  description     String?
+  transactionDate DateTime         @default(now())
+  createdAt       DateTime         @default(now())
+  contact         FinancialContact @relation(fields: [contactId], references: [id])
+
+  @@index([contactId])
+  @@index([transactionDate])
+}
+
+model GeneralReceipt {
+  id            Int               @id @default(autoincrement())
+  contactId     Int?
+  treasuryId    Int
+  type          TransactionType
+  amount        Decimal           @db.Decimal(18, 4)
+  description   String?
+  notes         String?
+  receiptNumber String?
+  paymentDate   DateTime          @default(now())
+  createdBy     String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  customerId    Int?
+  employeeId    Int?
+  supplierId    Int?
+  contact       FinancialContact? @relation(fields: [contactId], references: [id])
+  customer      Customer?         @relation(fields: [customerId], references: [id])
+  employee      Employee?         @relation(fields: [employeeId], references: [id])
+  supplier      Supplier?         @relation(fields: [supplierId], references: [id])
+
+  @@index([contactId])
+  @@index([customerId])
+  @@index([supplierId])
+  @@index([employeeId])
+  @@index([treasuryId])
+  @@index([paymentDate])
+}
+
+model Employee {
+  id               Int               @id @default(autoincrement())
+  name             String
+  jobTitle         String?
+  phone            String?
+  email            String?
+  baseSalary       Decimal           @db.Decimal(18, 4)
+  companyId        Int
+  isActive         Boolean           @default(true)
+  hireDate         DateTime?
+  notes            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  company          Company           @relation(fields: [companyId], references: [id])
+  employeeAccounts EmployeeAccount[]
+  bonuses          EmployeeBonus[]
+  generalReceipts  GeneralReceipt[]
+  salaryPayments   SalaryPayment[]
+
+  @@index([companyId])
+  @@index([isActive])
+}
+
+model EmployeeAccount {
+  id              Int                     @id @default(autoincrement())
+  employeeId      Int
+  transactionType EmployeeTransactionType
+  amount          Decimal                 @db.Decimal(18, 4)
+  balance         Decimal                 @db.Decimal(18, 4)
+  referenceType   EmployeeReferenceType
+  referenceId     Int
+  description     String?
+  transactionDate DateTime                @default(now())
+  createdAt       DateTime                @default(now())
+  employee        Employee                @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+  @@index([transactionDate])
+  @@index([referenceType])
+}
+
+model SalaryPayment {
+  id            Int               @id @default(autoincrement())
+  employeeId    Int
+  amount        Decimal           @db.Decimal(18, 4)
+  month         Int
+  year          Int
+  treasuryId    Int
+  receiptNumber String?
+  paymentDate   DateTime          @default(now())
+  notes         String?
+  createdBy     String?
+  createdAt     DateTime          @default(now())
+  type          SalaryPaymentType @default(PARTIAL)
+  employee      Employee          @relation(fields: [employeeId], references: [id])
+  treasury      Treasury          @relation(fields: [treasuryId], references: [id])
+
+  @@index([employeeId])
+  @@index([month, year])
+  @@index([treasuryId])
+}
+
+model EmployeeBonus {
+  id            Int       @id @default(autoincrement())
+  employeeId    Int
+  type          BonusType
+  amount        Decimal   @db.Decimal(18, 4)
+  reason        String?
+  treasuryId    Int
+  receiptNumber String?
+  paymentDate   DateTime  @default(now())
+  effectiveDate DateTime?
+  notes         String?
+  createdBy     String?
+  createdAt     DateTime  @default(now())
+  employee      Employee  @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+  @@index([type])
+  @@index([paymentDate])
+}
+
+model BadDebtCategory {
+  id          Int              @id @default(autoincrement())
+  name        String
+  description String?
+  companyId   Int?
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  company     Company?         @relation(fields: [companyId], references: [id])
+  expenses    BadDebtExpense[]
+
+  @@index([companyId])
+  @@index([isActive])
+}
+
+model BadDebtExpense {
+  id            Int             @id @default(autoincrement())
+  categoryId    Int
+  amount        Decimal         @db.Decimal(18, 4)
+  description   String?
+  treasuryId    Int
+  receiptNumber String?
+  paymentDate   DateTime        @default(now())
+  notes         String?
+  createdBy     String?
+  createdAt     DateTime        @default(now())
+  category      BadDebtCategory @relation(fields: [categoryId], references: [id])
+
+  @@index([categoryId])
+  @@index([treasuryId])
+  @@index([paymentDate])
 }
 
 enum SaleStatus {
@@ -1055,227 +1224,37 @@ enum TransactionType {
 enum TransactionSource {
   RECEIPT
   PAYMENT
+  SALE
   MANUAL
   TRANSFER_IN
   TRANSFER_OUT
   OPENING_BALANCE
-  SALE
   SALARY
   BONUS
   BAD_DEBT
   GENERAL_RECEIPT
 }
 
-// ========== نظام الإيصلات العامة والقروض المتبادلة ==========
-
-// جهات الاتصال المالية (تجار، أشخاص مقرضين، إلخ)
-model FinancialContact {
-  id              Int                       @id @default(autoincrement())
-  name            String
-  phone           String?
-  note            String?
-  createdAt       DateTime                  @default(now())
-  updatedAt       DateTime                  @updatedAt
-  isActive        Boolean                   @default(true)
-  accountEntries  FinancialContactAccount[]
-  generalReceipts GeneralReceipt[]
-}
-
-// كشف حساب جهة الاتصال المالية
-model FinancialContactAccount {
-  id              Int              @id @default(autoincrement())
-  contactId       Int
-  transactionType TransactionType // DEPOSIT (له) / WITHDRAWAL (عليه)
-  amount          Decimal          @db.Decimal(18, 4)
-  balance         Decimal          @db.Decimal(18, 4)
-  referenceType   String // "GENERAL_RECEIPT"
-  referenceId     Int
-  description     String?
-  transactionDate DateTime         @default(now())
-  createdAt       DateTime         @default(now())
-  contact         FinancialContact @relation(fields: [contactId], references: [id])
-
-  @@index([contactId])
-  @@index([transactionDate])
-}
-
-// الإيصالات العامة (قبض / صرف)
-model GeneralReceipt {
-  id            Int               @id @default(autoincrement())
-  contactId     Int?
-  customerId    Int?
-  supplierId    Int?
-  employeeId    Int?
-  treasuryId    Int
-  type          TransactionType // DEPOSIT (قبض) / WITHDRAWAL (صرف)
-  amount        Decimal           @db.Decimal(18, 4)
-  description   String?
-  notes         String?
-  receiptNumber String?
-  paymentDate   DateTime          @default(now())
-  createdBy     String?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  contact       FinancialContact? @relation(fields: [contactId], references: [id])
-  customer      Customer?         @relation(fields: [customerId], references: [id])
-  supplier      Supplier?         @relation(fields: [supplierId], references: [id])
-  employee      Employee?         @relation(fields: [employeeId], references: [id])
-
-  @@index([contactId])
-  @@index([customerId])
-  @@index([supplierId])
-  @@index([employeeId])
-  @@index([treasuryId])
-  @@index([paymentDate])
-}
-
-// ========== نظام المرتبات ==========
-
-// الموظف
-model Employee {
-  id               Int               @id @default(autoincrement())
-  name             String
-  jobTitle         String? // المسمى الوظيفي
-  phone            String?
-  email            String?
-  baseSalary       Decimal           @db.Decimal(18, 4) // الراتب الأساسي
-  companyId        Int
-  isActive         Boolean           @default(true)
-  hireDate         DateTime? // تاريخ التعيين
-  notes            String?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  company          Company           @relation(fields: [companyId], references: [id])
-  salaryPayments   SalaryPayment[]
-  bonuses          EmployeeBonus[]
-  generalReceipts  GeneralReceipt[]
-  employeeAccounts EmployeeAccount[]
-
-  @@index([companyId])
-  @@index([isActive])
-}
-
-// حساب الموظف (سلف ومدفوعات)
-model EmployeeAccount {
-  id              Int                     @id @default(autoincrement())
-  employeeId      Int
-  transactionType EmployeeTransactionType // DEBIT (سلفة) أو CREDIT (دفع)
-  amount          Decimal                 @db.Decimal(18, 4)
-  balance         Decimal                 @db.Decimal(18, 4) // الرصيد بعد العملية
-  referenceType   EmployeeReferenceType // نوع المرجع
-  referenceId     Int // معرف المرجع (SalaryPayment, EmployeeBonus, etc.)
-  description     String?
-  transactionDate DateTime                @default(now())
-  createdAt       DateTime                @default(now())
-  employee        Employee                @relation(fields: [employeeId], references: [id])
-
-  @@index([employeeId])
-  @@index([transactionDate])
-  @@index([referenceType])
-}
-
-// صرف مرتب
-model SalaryPayment {
-  id            Int               @id @default(autoincrement())
-  employeeId    Int
-  amount        Decimal           @db.Decimal(18, 4) // المبلغ المصروف
-  month         Int // الشهر (1-12)
-  year          Int // السنة
-  type          SalaryPaymentType @default(PARTIAL) // نوع الحركة: دفعة جزئية / تسوية نهائية
-  treasuryId    Int // الخزينة المستخدمة
-  receiptNumber String? // رقم إيصال الصرف
-  paymentDate   DateTime          @default(now())
-  notes         String?
-  createdBy     String?
-  createdAt     DateTime          @default(now())
-  employee      Employee          @relation(fields: [employeeId], references: [id])
-  treasury      Treasury          @relation(fields: [treasuryId], references: [id])
-
-  @@index([employeeId])
-  @@index([month, year])
-  @@index([treasuryId])
-}
-
-// المكافآت والزيادات
-model EmployeeBonus {
-  id            Int       @id @default(autoincrement())
-  employeeId    Int
-  type          BonusType // نوع: مكافأة أو زيادة
-  amount        Decimal   @db.Decimal(18, 4)
-  reason        String? // سبب المكافأة/الزيادة
-  treasuryId    Int
-  receiptNumber String?
-  paymentDate   DateTime  @default(now())
-  effectiveDate DateTime? // تاريخ السريان (للزيادات)
-  notes         String?
-  createdBy     String?
-  createdAt     DateTime  @default(now())
-  employee      Employee  @relation(fields: [employeeId], references: [id])
-
-  @@index([employeeId])
-  @@index([type])
-  @@index([paymentDate])
-}
-
-// ========== نظام المصروفات المعدومة ==========
-
-// بند المصروف المعدوم
-model BadDebtCategory {
-  id          Int              @id @default(autoincrement())
-  name        String // اسم البند
-  description String?
-  companyId   Int?
-  isActive    Boolean          @default(true)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  company     Company?         @relation(fields: [companyId], references: [id])
-  expenses    BadDebtExpense[]
-
-  @@index([companyId])
-  @@index([isActive])
-}
-
-// صرف مصروف معدوم
-model BadDebtExpense {
-  id            Int             @id @default(autoincrement())
-  categoryId    Int
-  amount        Decimal         @db.Decimal(18, 4)
-  description   String?
-  treasuryId    Int
-  receiptNumber String?
-  paymentDate   DateTime        @default(now())
-  notes         String?
-  createdBy     String?
-  createdAt     DateTime        @default(now())
-  category      BadDebtCategory @relation(fields: [categoryId], references: [id])
-
-  @@index([categoryId])
-  @@index([treasuryId])
-  @@index([paymentDate])
-}
-
-// ========== التعدادات الجديدة ==========
-
 enum BonusType {
-  BONUS // مكافأة
-  RAISE // زيادة راتب
-  INCENTIVE // حافز
-  OVERTIME // إضافي
+  BONUS
+  RAISE
+  INCENTIVE
+  OVERTIME
 }
 
 enum SalaryPaymentType {
-  PARTIAL // دفعة جزئية (سلفة)
-  FINAL // تسوية نهائية
+  PARTIAL
+  FINAL
 }
 
 enum EmployeeTransactionType {
-  DEBIT // مدين (يزيد رصيد الموظف - سلفة)
-  CREDIT // دائن (يخفض رصيد الموظف - دفع راتب)
+  DEBIT
+  CREDIT
 }
 
 enum EmployeeReferenceType {
-  SALARY_PAYMENT // صرف راتب
-  BONUS_PAYMENT // صرف مكافأة
-  GENERAL_RECEIPT // إيصال عام
-  ADJUSTMENT // تسوية
+  SALARY_PAYMENT
+  BONUS_PAYMENT
+  GENERAL_RECEIPT
+  ADJUSTMENT
 }

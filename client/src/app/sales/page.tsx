@@ -1447,36 +1447,40 @@ const SalesPage = () => {
           disabled={!user?.isSystemUser}
           className="w-full px-4 py-3 border-2 border-blue-300 dark:border-blue-800/30 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-surface-secondary text-slate-800 dark:text-text-primary text-lg font-medium disabled:bg-slate-100 dark:disabled:bg-surface-elevated disabled:cursor-not-allowed relative z-50 outline-none transition-all"
         >
-          {user?.isSystemUser && <option value="">-- اختر الشركة أولاً --</option>}
-          {companiesLoading ? (
-            <option disabled>جاري تحميل الشركات...</option>
-          ) : companiesData?.data?.companies && companiesData.data.companies.length > 0 ? (
-            // عرض الشركات حسب صلاحية المستخدم
-            companiesData.data.companies
-              .filter((company) => {
-                // مستخدمو النظام يرون جميع الشركات
-                if (user?.isSystemUser) {
-                  return true;
-                }
-                // المستخدمون العاديون يرون شركتهم فقط
-                return company.id === user?.companyId;
-              })
-              .map((company) => (
-                <option
-                  key={company.id}
-                  value={company.id}
-                >
-                  {company.name} ({company.code})
-                  {company.id === user?.companyId ? ' - شركتك' : ''}
-                </option>
-              ))
-          ) : (
-            <option disabled>
-              {user?.isSystemUser
-                ? 'لا توجد شركات في النظام'
-                : 'لا يمكن العثور على شركتك'}
-            </option>
-          )}
+          {(() => {
+            const filteredCompanies = (companiesData?.data?.companies || []).filter((company) => {
+              if (user?.isSystemUser) return true;
+              return company.id === user?.companyId;
+            });
+
+            if (companiesLoading || userLoading) {
+              return <option disabled>جاري تحميل قائمة الشركات والبيانات...</option>;
+            }
+
+            if (!companiesData?.data?.companies || companiesData.data.companies.length === 0) {
+              return <option disabled>لا توجد شركات في النظام</option>;
+            }
+
+            if (filteredCompanies.length === 0) {
+              return <option disabled>ليس لديك صلاحية للوصول لأي شركة حالياً</option>;
+            }
+
+            return (
+              <>
+                {user?.isSystemUser && <option value="" className="text-slate-900 bg-white">-- اختر الشركة للعمل عليها --</option>}
+                {filteredCompanies.map((company) => (
+                  <option
+                    key={company.id}
+                    value={company.id}
+                    className="text-slate-900 bg-white py-2"
+                  >
+                    {company.name} ({company.code})
+                    {company.id === user?.companyId ? ' - شركتك' : ''}
+                  </option>
+                ))}
+              </>
+            );
+          })()}
         </select>
         {!selectedCompanyId && (
           <p className="text-sm text-blue-700 mt-2 font-medium">
