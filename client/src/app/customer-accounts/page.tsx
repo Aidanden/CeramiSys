@@ -13,7 +13,10 @@ import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { formatLibyanCurrency, formatArabicNumber, formatArabicDate, formatEnglishDate } from "@/utils/formatLibyanNumbers";
 import OpeningBalanceModal from "@/components/shared/OpeningBalanceModal";
+import SettleOpeningBalanceModal from "@/components/shared/SettleOpeningBalanceModal";
 import { useAppSelector } from "@/app/redux";
+import { useLazyGetGeneralReceiptQuery } from "@/state/generalReceiptApi";
+import { printCustomerSettleReceipt } from "@/utils/printUtils";
 
 type ViewMode = 'summary' | 'account' | 'invoices';
 
@@ -32,8 +35,10 @@ const CustomerAccountsPage = () => {
   const [invoicesStartDate, setInvoicesStartDate] = useState("");
   const [invoicesEndDate, setInvoicesEndDate] = useState("");
 
-  // الرصيد الافتتاحي
+  // الرصيد الافتتاحي و تسويته
   const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(false);
+  const [showSettleModal, setShowSettleModal] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<any>(null);
   const [targetCustomer, setTargetCustomer] = useState<{ id: number; name: string } | null>(null);
 
   // Reference للطباعة
@@ -156,6 +161,23 @@ const CustomerAccountsPage = () => {
   const handleOpenOpeningBalanceModal = (id: number, name: string) => {
     setTargetCustomer({ id, name });
     setShowOpeningBalanceModal(true);
+  };
+
+  const handleSettleOpeningBalance = (entry: any) => {
+    setSelectedEntry(entry);
+    setShowSettleModal(true);
+  };
+
+  const [triggerGetGeneralReceipt] = useLazyGetGeneralReceiptQuery();
+
+  const handlePrintGeneralReceipt = async (receiptId: number) => {
+    try {
+      const result = await triggerGetGeneralReceipt(receiptId).unwrap();
+      printCustomerSettleReceipt(result, selectedCustomer?.name || '');
+    } catch (err) {
+      console.error('Error fetching receipt data:', err);
+      alert('حدث خطأ أثناء محاولة جلب بيانات الإيصال');
+    }
   };
 
   const handleDeleteCustomer = async (id: number, name: string) => {
@@ -349,16 +371,16 @@ const CustomerAccountsPage = () => {
         <div class="summary">
           <div class="summary-card debit">
             <label>المتبقي عليه (الديون)</label>
-            <div class="value">${Math.max(0, account.currentBalance).toFixed(2)} د.ل</div>
+            <div class="value">${Math.max(0, Number(account.currentBalance)).toFixed(2)} د.ل</div>
           </div>
           <div class="summary-card credit">
             <label>إجمالي المدفوعات</label>
-            <div class="value">${account.totalPayments.toFixed(2)} د.ل</div>
+            <div class="value">${Number(account.totalPayments).toFixed(2)} د.ل</div>
           </div>
           <div class="summary-card balance">
             <label>صافي الرصيد</label>
             <div class="value" style="color: ${account.currentBalance > 0 ? '#dc2626' : account.currentBalance < 0 ? '#16a34a' : '#374151'}">
-              ${account.currentBalance.toFixed(2)} د.ل
+              ${Number(account.currentBalance).toFixed(2)} د.ل
               <small style="font-size: 11px; font-weight: normal; display: block;">
                 ${account.currentBalance > 0 ? '(مدين) - مطلوب منه' : account.currentBalance < 0 ? '(دائن) - له رصيد' : '(متوازن)'}
               </small>
@@ -390,10 +412,10 @@ const CustomerAccountsPage = () => {
                     </span>
                   </td>
                   <td class="${entry.transactionType === 'DEBIT' ? 'debit' : 'credit'}">
-                    ${entry.transactionType === 'DEBIT' ? '+' : '-'} ${entry.amount.toFixed(2)} د.ل
+                    ${entry.transactionType === 'DEBIT' ? '+' : '-'} ${Number(entry.amount).toFixed(2)} د.ل
                   </td>
                   <td class="${entry.balance > 0 ? 'debit' : entry.balance < 0 ? 'credit' : ''}">
-                    ${entry.balance.toFixed(2)} د.ل
+                    ${Number(entry.balance).toFixed(2)} د.ل
                   </td>
                 </tr>
               `).join('')}
@@ -759,29 +781,29 @@ const CustomerAccountsPage = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-red-600 font-medium">
-                              {customer.totalDebit.toFixed(2)} د.ل
+                              {Number(customer.totalDebit).toFixed(2)} د.ل
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-blue-600 font-medium">
-                              {customer.totalPayments.toFixed(2)} د.ل
+                              {Number(customer.totalPayments).toFixed(2)} د.ل
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-blue-600">
                             <div className="text-sm font-medium">
-                              {customer.totalReturns.toFixed(2)} د.ل
+                              {Number(customer.totalReturns).toFixed(2)} د.ل
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className={`text-sm font-bold ${customer.remainingDebt > 0 ? 'text-red-700 dark:text-red-400' : 'text-gray-400 dark:text-text-tertiary'}`}>
-                              {customer.remainingDebt.toFixed(2)} د.ل
+                              {Number(customer.remainingDebt).toFixed(2)} د.ل
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className={`text-sm font-bold ${customer.currentBalance > 0 ? 'text-red-600 dark:text-red-400' :
                               customer.currentBalance < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-text-primary'
                               }`}>
-                              {customer.currentBalance.toFixed(2)} د.ل
+                              {Number(customer.currentBalance).toFixed(2)} د.ل
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -1040,7 +1062,7 @@ const CustomerAccountsPage = () => {
                   <div>
                     <p className="text-sm text-slate-600 dark:text-text-secondary mb-1">المتبقي عليه</p>
                     <p className={`text-2xl font-bold ${account.currentBalance > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-text-tertiary'}`}>
-                      {Math.max(0, account.currentBalance).toFixed(2)} د.ل
+                      {Math.max(0, Number(account.currentBalance)).toFixed(2)} د.ل
                     </p>
                     <p className="text-xs text-slate-500 dark:text-text-tertiary mt-1">الديون المستحقة</p>
                   </div>
@@ -1054,7 +1076,7 @@ const CustomerAccountsPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-slate-600 dark:text-text-secondary mb-1">إجمالي المدفوعات</p>
-                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{account.totalPayments.toFixed(2)} د.ل</p>
+                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{Number(account.totalPayments).toFixed(2)} د.ل</p>
                     <p className="text-xs text-slate-500 dark:text-text-tertiary mt-1">المبالغ المسددة</p>
                   </div>
                   <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
@@ -1067,7 +1089,7 @@ const CustomerAccountsPage = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-slate-600 dark:text-text-secondary mb-1">إجمالي له</p>
-                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">{account.totalOtherCredits.toFixed(2)} د.ل</p>
+                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">{Number(account.totalOtherCredits).toFixed(2)} د.ل</p>
                     <p className="text-xs text-slate-500 dark:text-text-tertiary mt-1">مردودات وتصحيحات</p>
                   </div>
                   <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-full">
@@ -1083,7 +1105,7 @@ const CustomerAccountsPage = () => {
                     <p className={`text-2xl font-bold ${account.currentBalance > 0 ? 'text-red-600 dark:text-red-400' :
                       account.currentBalance < 0 ? 'text-green-600 dark:text-green-400' : 'text-slate-600 dark:text-text-secondary'
                       }`}>
-                      {account.currentBalance.toFixed(2)} د.ل
+                      {Number(account.currentBalance).toFixed(2)} د.ل
                     </p>
                     <p className="text-xs text-slate-500 dark:text-text-tertiary mt-1">
                       {account.currentBalance > 0 ? '(مدين) - مطلوب منه' :
@@ -1143,15 +1165,37 @@ const CustomerAccountsPage = () => {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`text-sm font-semibold ${entry.transactionType === 'DEBIT' ? 'text-red-600' : 'text-green-600'
                               }`}>
-                              {entry.transactionType === 'DEBIT' ? '+' : '-'} {entry.amount.toFixed(2)} د.ل
+                              {entry.transactionType === 'DEBIT' ? '+' : '-'} {Number(entry.amount).toFixed(2)} د.ل
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`text-sm font-semibold ${entry.balance > 0 ? 'text-red-600' :
-                              entry.balance < 0 ? 'text-green-600' : 'text-slate-600 dark:text-text-secondary'
-                              }`}>
-                              {entry.balance.toFixed(2)} د.ل
-                            </span>
+                          <td className="px-6 py-4 whitespace-nowrap text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <span className={`text-sm font-semibold ${entry.balance > 0 ? 'text-red-600' :
+                                entry.balance < 0 ? 'text-green-600' : 'text-slate-600 dark:text-text-secondary'
+                                }`}>
+                                {Number(entry.balance).toFixed(2)} د.ل
+                              </span>
+                              {entry.referenceType === 'OPENING_BALANCE' && entry.transactionType === 'DEBIT' && (
+                                <button
+                                  onClick={() => handleSettleOpeningBalance(entry)}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-xs font-bold shadow-sm active:scale-95"
+                                  title="تسوية هذا الدين"
+                                >
+                                  <TrendingUp className="w-3.5 h-3.5" />
+                                  تسوية (قبض)
+                                </button>
+                              )}
+                              {entry.referenceType === 'GENERAL_RECEIPT' && (
+                                <button
+                                  onClick={() => handlePrintGeneralReceipt(entry.referenceId)}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 dark:bg-surface-secondary text-slate-800 dark:text-text-primary rounded-lg hover:bg-slate-300 transition-all text-xs font-bold shadow-sm active:scale-95"
+                                  title="إعادة طباعة الإيصال"
+                                >
+                                  <Printer className="w-3.5 h-3.5" />
+                                  طباعة
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -1325,6 +1369,22 @@ const CustomerAccountsPage = () => {
           customerId={targetCustomer.id}
           name={targetCustomer.name}
           type="customer"
+        />
+      )}
+      {/* مودال تسوية الرصيد */}
+      {selectedEntry && selectedCustomer && (
+        <SettleOpeningBalanceModal
+          isOpen={showSettleModal}
+          onClose={() => {
+            setShowSettleModal(false);
+            setSelectedEntry(null);
+          }}
+          entityId={selectedCustomer.id}
+          entityName={selectedCustomer.name}
+          type="customer"
+          initialAmount={Number(selectedEntry.amount)}
+          initialCurrency="LYD"
+          initialDescription={`تسوية رصيد مرحل - مرجع ${selectedEntry.previousSystemRef || selectedEntry.id}`}
         />
       )}
     </div>

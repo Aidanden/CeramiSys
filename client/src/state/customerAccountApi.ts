@@ -156,6 +156,19 @@ export const customerAccountApi = createApi({
         { type: 'CustomerAccountSummary', id: 'LIST' }
       ]
     }),
+
+    // تسوية رصيد افتتاحي (قبض)
+    settleCustomerOpeningBalance: build.mutation<{ success: boolean; data: any }, any>({
+      query: (data) => ({
+        url: "/opening-balances/settle-customer",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: (_result, _error, { customerId }) => [
+        { type: 'CustomerAccount', id: customerId },
+        { type: 'CustomerAccountSummary', id: 'LIST' }
+      ]
+    }),
   })
 });
 
@@ -164,6 +177,7 @@ export const {
   useGetAllCustomersAccountSummaryQuery,
   useGetCustomerBalanceQuery,
   useGetCustomerOpenInvoicesQuery,
-  useCreateOpeningBalanceMutation
+  useCreateOpeningBalanceMutation,
+  useSettleCustomerOpeningBalanceMutation
 } = customerAccountApi;
 

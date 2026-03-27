@@ -16,4 +16,10 @@ router.get('/customer/:customerId', OpeningBalanceController.getCustomerOpeningB
 // جلب الأرصدة الافتتاحية لمورد
 router.get('/supplier/:supplierId', OpeningBalanceController.getSupplierOpeningBalances);
 
+// تسوية رصيد افتتاحي لمورد (دفع)
+router.post('/settle-supplier', OpeningBalanceController.settleSupplierOpeningBalance);
+
+// تسوية رصيد افتتاحي لعميل (قبض)
+router.post('/settle-customer', OpeningBalanceController.settleCustomerOpeningBalance);
+
 export default router;

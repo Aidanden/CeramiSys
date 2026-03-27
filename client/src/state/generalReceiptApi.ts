@@ -130,6 +130,10 @@ export const generalReceiptApi = createApi({
             query: (id) => `/general/contacts/${id}/statement`,
             providesTags: (result, error, id) => [{ type: "FinancialContactStatement", id }],
         }),
+        getGeneralReceipt: build.query<GeneralReceipt, number>({
+            query: (id) => `/general/receipts/${id}`,
+            providesTags: (result, error, id) => [{ type: "GeneralReceipts", id }],
+        }),
     }),
 });
 
@@ -139,6 +143,8 @@ export const {
     useCreateFinancialContactMutation,
     useUpdateFinancialContactMutation,
     useGetGeneralReceiptsQuery,
+    useGetGeneralReceiptQuery,
+    useLazyGetGeneralReceiptQuery,
     useCreateGeneralReceiptMutation,
     useGetContactStatementQuery,
 } = generalReceiptApi;

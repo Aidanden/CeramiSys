@@ -99,6 +99,101 @@ class OpeningBalanceController {
       });
     }
   }
+  /**
+   * تسوية رصيد افتتاحي لمورد (دفع)
+   * POST /api/opening-balances/settle-supplier
+   */
+  async settleSupplierOpeningBalance(req: Request, res: Response) {
+    try {
+      const {
+        supplierId,
+        amount,
+        amountForeign,
+        currency,
+        exchangeRate,
+        treasuryId,
+        companyId,
+        description,
+        notes
+      } = req.body;
+
+      if (!supplierId || !amount || !treasuryId || !companyId) {
+        return res.status(400).json({
+          success: false,
+          message: 'كافة الحقول المطلوبة (المورد، المبلغ، الخزينة، الشركة) يجب توفرها'
+        });
+      }
+
+      const result = await OpeningBalanceService.settleSupplierOpeningBalance({
+        supplierId: Number(supplierId),
+        amount: Number(amount),
+        amountForeign: amountForeign ? Number(amountForeign) : undefined,
+        currency: currency || 'LYD',
+        exchangeRate: Number(exchangeRate || 1),
+        treasuryId: Number(treasuryId),
+        companyId: Number(companyId),
+        description,
+        notes
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'تمت عملية التسوية بنجاح',
+        data: result
+      });
+    } catch (error: any) {
+      console.error('Error in settleSupplierOpeningBalance:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'حدث خطأ أثناء عملية التسوية'
+      });
+    }
+  }
+
+  /**
+   * تسوية رصيد افتتاحي لعميل (قبض)
+   * POST /api/opening-balances/settle-customer
+   */
+  async settleCustomerOpeningBalance(req: Request, res: Response) {
+    try {
+      const {
+        customerId,
+        amount,
+        treasuryId,
+        companyId,
+        description,
+        notes
+      } = req.body;
+
+      if (!customerId || !amount || !treasuryId || !companyId) {
+        return res.status(400).json({
+          success: false,
+          message: 'كافة الحقول المطلوبة (العميل، المبلغ، الخزينة، الشركة) يجب توفرها'
+        });
+      }
+
+      const result = await OpeningBalanceService.settleCustomerOpeningBalance({
+        customerId: Number(customerId),
+        amount: Number(amount),
+        treasuryId: Number(treasuryId),
+        companyId: Number(companyId),
+        description,
+        notes
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: 'تمت عملية التسوية بنجاح',
+        data: result
+      });
+    } catch (error: any) {
+      console.error('Error in settleCustomerOpeningBalance:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'حدث خطأ أثناء عملية التسوية'
+      });
+    }
+  }
 }
 
 export default new OpeningBalanceController();

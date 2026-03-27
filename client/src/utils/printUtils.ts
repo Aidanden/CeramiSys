@@ -239,3 +239,165 @@ export const printReceipt = (receipt: any, installment?: any, isFullPayment: boo
     };
   }
 };
+
+/**
+ * طباعة إيصال تسوية مورد (دفع)
+ */
+export const printSupplierSettleReceipt = (receipt: any, supplierName: string) => {
+  const printWindow = window.open('', '_blank', 'width=800,height=900');
+  if (!printWindow) {
+    alert('يرجى السماح بفتح النوافذ المنبثقة للطباعة');
+    return;
+  }
+
+  const receiptHTML = `
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <title>إيصال دفع تسوية - ${supplierName}</title>
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; direction: rtl; }
+        .receipt-container { border: 2px solid #333; padding: 30px; max-width: 800px; margin: 0 auto; }
+        .header { text-align: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
+        .header h1 { margin: 0; color: #1a56db; font-size: 28px; }
+        .header p { margin: 5px 0; color: #666; }
+        .detail-item { display: flex; border-bottom: 1px dotted #ccc; padding: 10px 0; }
+        .label { font-weight: bold; width: 140px; color: #444; }
+        .value { flex: 1; font-weight: 500; }
+        .amount-box { background: #f8fafc; border: 2px solid #1e40af; padding: 20px; text-align: center; border-radius: 12px; margin: 20px 0; }
+        .amount-lyd { font-size: 32px; font-weight: 900; color: #1e40af; }
+        .amount-foreign { font-size: 18px; color: #64748b; margin-top: 5px; }
+        .footer { margin-top: 50px; text-align: center; border-top: 2px solid #eee; padding-top: 20px; display: flex; justify-content: space-between; }
+        .signature { border-top: 1px solid #333; width: 200px; padding-top: 10px; margin-top: 40px; }
+        @media print {
+          .no-print { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="receipt-container">
+        <div class="header">
+          <h1>إيصال دفع مالي</h1>
+          <p>تسوية رصيد سابق / مديونية مرحلة</p>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+          <div><strong>رقم الإيصال:</strong> ${receipt.id}</div>
+          <div><strong>التاريخ:</strong> ${new Date(receipt.paidAt || new Date()).toLocaleDateString('ar-LY')}</div>
+        </div>
+
+        <div class="detail-item"><span class="label">يصرف للسيد/ة:</span><span class="value">${supplierName}</span></div>
+        <div class="detail-item"><span class="label">مقابل:</span><span class="value">${receipt.description || 'تسوية رصيد مرحل'}</span></div>
+        
+        <div class="amount-box">
+          <div class="amount-lyd">${Number(receipt.amount).toFixed(2)} د.ل</div>
+          ${receipt.currency !== 'LYD' ? `
+            <div class="amount-foreign">
+              المعادل: ${Number(receipt.amountForeign).toFixed(2)} ${receipt.currency} 
+              (بسعر صرف: ${Number(receipt.exchangeRate).toFixed(4)})
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="detail-item"><span class="label">ملاحظات:</span><span class="value">${receipt.notes || '-'}</span></div>
+
+        <div class="footer">
+          <div>
+            <p>توقيع المستلم</p>
+            <div class="signature"></div>
+          </div>
+          <div>
+            <p>توقيع المحاسب</p>
+            <div class="signature"></div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align: center; margin-top: 20px;" class="no-print">
+        <button onclick="window.print()" style="padding: 10px 20px; background: #1a56db; color: white; border: none; border-radius: 5px; cursor: pointer;">طباعة</button>
+      </div>
+    </body>
+    </html>
+  `;
+
+  printWindow.document.write(receiptHTML);
+  printWindow.document.close();
+};
+
+/**
+ * طباعة إيصال تسوية عميل (قبض)
+ */
+export const printCustomerSettleReceipt = (receipt: any, customerName: string) => {
+  const printWindow = window.open('', '_blank', 'width=800,height=900');
+  if (!printWindow) {
+    alert('يرجى السماح بفتح النوافذ المنبثقة للطباعة');
+    return;
+  }
+
+  const receiptHTML = `
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <title>إيصال قبض تسوية - ${customerName}</title>
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; direction: rtl; }
+        .receipt-container { border: 2px solid #333; padding: 30px; max-width: 800px; margin: 0 auto; }
+        .header { text-align: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
+        .header h1 { margin: 0; color: #059669; font-size: 28px; }
+        .header p { margin: 5px 0; color: #666; }
+        .detail-item { display: flex; border-bottom: 1px dotted #ccc; padding: 10px 0; }
+        .label { font-weight: bold; width: 140px; color: #444; }
+        .value { flex: 1; font-weight: 500; }
+        .amount-box { background: #f0fdf4; border: 2px solid #059669; padding: 20px; text-align: center; border-radius: 12px; margin: 20px 0; }
+        .amount-lyd { font-size: 32px; font-weight: 900; color: #059669; }
+        .footer { margin-top: 50px; text-align: center; border-top: 2px solid #eee; padding-top: 20px; display: flex; justify-content: space-between; }
+        .signature { border-top: 1px solid #333; width: 200px; padding-top: 10px; margin-top: 40px; }
+        @media print {
+          .no-print { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="receipt-container">
+        <div class="header">
+          <h1>إيصال قبض مالي</h1>
+          <p>تسوية رصيد سابق / مديونية مرحلة</p>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+          <div><strong>رقم الإيصال:</strong> ${receipt.id}</div>
+          <div><strong>التاريخ:</strong> ${new Date(receipt.createdAt || receipt.paymentDate || new Date()).toLocaleDateString('ar-LY')}</div>
+        </div>
+
+        <div class="detail-item"><span class="label">وصلنا من السيد/ة:</span><span class="value">${customerName}</span></div>
+        <div class="detail-item"><span class="label">مبلغ وقدره:</span><span class="value">${Number(receipt.amount).toFixed(2)} دينار ليبي فقط لا غير</span></div>
+        <div class="detail-item"><span class="label">مقابل:</span><span class="value">${receipt.description || 'تسوية رصيد مرحل'}</span></div>
+        
+        <div class="amount-box">
+          <div class="amount-lyd">${Number(receipt.amount).toFixed(2)} د.ل</div>
+        </div>
+
+        <div class="detail-item"><span class="label">ملاحظات:</span><span class="value">${receipt.notes || '-'}</span></div>
+
+        <div class="footer">
+          <div>
+            <p>توقيع المستلم</p>
+            <div class="signature"></div>
+          </div>
+          <div>
+            <p>توقيع المسلم</p>
+            <div class="signature"></div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align: center; margin-top: 20px;" class="no-print">
+        <button onclick="window.print()" style="padding: 10px 20px; background: #059669; color: white; border: none; border-radius: 5px; cursor: pointer;">طباعة</button>
+      </div>
+    </body>
+    </html>
+  `;
+
+  printWindow.document.write(receiptHTML);
+  printWindow.document.close();
+};

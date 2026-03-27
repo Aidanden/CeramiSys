@@ -119,6 +119,26 @@ export const supplierAccountApi = createApi({
         "SupplierAccounts"
       ]
     }),
+
+    // تسوية رصيد مرحل للمورد (دفع)
+    settleSupplierOpeningBalance: build.mutation<{ success: boolean; data: any }, any>({
+      query: (data) => ({
+        url: "/opening-balances/settle-supplier",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: (result, error, { supplierId }) => [
+        { type: "SupplierAccount", id: supplierId },
+        "SupplierAccounts",
+        "OpenPurchases"
+      ]
+    }),
+
+    // جلب إيصال دفع واحد
+    getSupplierPaymentReceipt: build.query<any, number>({
+      query: (id) => `/payment-receipts/${id}`,
+      providesTags: (result, error, id) => [{ type: "SupplierAccount", id: id }]
+    }),
   }),
 });
 
@@ -126,5 +146,8 @@ export const {
   useGetAllSuppliersAccountSummaryQuery,
   useGetSupplierAccountQuery,
   useGetSupplierOpenPurchasesQuery,
-  useCreateOpeningBalanceMutation
+  useGetSupplierPaymentReceiptQuery,
+  useLazyGetSupplierPaymentReceiptQuery,
+  useCreateOpeningBalanceMutation,
+  useSettleSupplierOpeningBalanceMutation
 } = supplierAccountApi;

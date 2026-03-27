@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   useGetAllSuppliersAccountSummaryQuery,
   useGetSupplierAccountQuery,
-  useGetSupplierOpenPurchasesQuery
+  useGetSupplierOpenPurchasesQuery,
+  useLazyGetSupplierPaymentReceiptQuery
 } from "@/state/supplierAccountApi";
 import {
   User,
@@ -14,14 +15,18 @@ import {
   FileText,
   Calendar,
   Phone,
-  Home
+  Home,
+  Plus,
+  Printer
 } from "lucide-react";
 import {
   formatLibyanCurrencyEnglish,
   formatEnglishDate
 } from "@/utils/formatLibyanNumbers";
 import OpeningBalanceModal from "@/components/shared/OpeningBalanceModal";
-import { Plus } from "lucide-react";
+import SettleOpeningBalanceModal from "@/components/shared/SettleOpeningBalanceModal";
+import { printSupplierSettleReceipt } from "@/utils/printUtils";
+// Combined with import at line 18
 
 type ViewMode = 'summary' | 'account' | 'purchases';
 
@@ -35,7 +40,9 @@ const SupplierAccountsPage = () => {
 
   // الرصيد الافتتاحي
   const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(false);
+  const [showSettleModal, setShowSettleModal] = useState(false);
   const [targetSupplier, setTargetSupplier] = useState<{ id: number; name: string } | null>(null);
+  const [selectedEntry, setSelectedEntry] = useState<any>(null);
 
   const { data: summaryData, isLoading, error, refetch: refetchSummary } = useGetAllSuppliersAccountSummaryQuery();
   const { data: accountData, isLoading: isLoadingAccount, refetch: refetchAccount } = useGetSupplierAccountQuery(selectedSupplierId ?? 0, {
@@ -123,6 +130,23 @@ const SupplierAccountsPage = () => {
     setShowOpeningBalanceModal(true);
   };
 
+  const handleSettleOpeningBalance = (entry: any) => {
+    setSelectedEntry(entry);
+    setShowSettleModal(true);
+  };
+
+  const [triggerGetSupplierPaymentReceipt] = useLazyGetSupplierPaymentReceiptQuery();
+
+  const handlePrintSupplierPayment = async (receiptId: number) => {
+    try {
+      const result = await triggerGetSupplierPaymentReceipt(receiptId).unwrap();
+      printSupplierSettleReceipt(result, selectedSupplier?.name || '');
+    } catch (err) {
+      console.error('Error fetching receipt data:', err);
+      alert('حدث خطأ أثناء محاولة جلب بيانات الإيصال');
+    }
+  };
+
   const selectedSupplier = suppliers.find((s) => s.id === selectedSupplierId);
 
   const handlePrintAccount = () => {
@@ -145,7 +169,7 @@ const SupplierAccountsPage = () => {
           <td>${entry.transactionDate ? formatEnglishDate(entry.transactionDate) : ''}</td>
           <td>${entry.description || `${entry.referenceType} #${entry.referenceId}`}</td>
           <td>${entry.transactionType === 'DEBIT' ? 'دفعة' : 'دين'}</td>
-          <td><strong>${entry.amount.toFixed(2)} ${entry.currency || 'LYD'}</strong></td>
+          <td><strong>${Number(entry.amount).toFixed(2)} ${entry.currency || 'LYD'}</strong></td>
           <td>${getOperationDescription(entry.transactionType)}</td>
         </tr>
       `).join('');
@@ -160,13 +184,13 @@ const SupplierAccountsPage = () => {
         .map(([currency, totals]) => `
             <div style="border: 1px solid #ddd; padding: 12px; border-radius: 4px; background: #f9fafb;">
               <h4 style="margin: 0 0 8px 0; color: #1f2937;">حساب ${currency}</h4>
-              <p style="margin: 4px 0;"><strong>الرصيد:</strong> ${Math.abs(totals.balance).toFixed(2)} ${currency} 
+              <p style="margin: 4px 0;"><strong>الرصيد:</strong> ${Math.abs(Number(totals.balance)).toFixed(2)} ${currency} 
                 <span style="color: ${totals.balance > 0 ? '#dc2626' : totals.balance < 0 ? '#16a34a' : '#6b7280'};">
                   (${totals.balance > 0 ? 'مستحق عليك' : totals.balance < 0 ? 'مدين لك' : 'متوازن'})
                 </span>
               </p>
-              <p style="margin: 4px 0;"><strong>الديون:</strong> ${totals.credit.toFixed(2)} ${currency}</p>
-              <p style="margin: 4px 0;"><strong>المدفوع:</strong> ${totals.debit.toFixed(2)} ${currency}</p>
+              <p style="margin: 4px 0;"><strong>الديون:</strong> ${Number(totals.credit).toFixed(2)} ${currency}</p>
+              <p style="margin: 4px 0;"><strong>المدفوع:</strong> ${Number(totals.debit).toFixed(2)} ${currency}</p>
             </div>
           `).join('')
       : '<p>لا توجد حركات مالية</p>';
@@ -605,7 +629,7 @@ const SupplierAccountsPage = () => {
                             <div className="mb-4 pb-3 border-b-2 border-slate-200 dark:border-border-primary">
                               <p className="text-xs text-slate-600 dark:text-text-secondary mb-1">الرصيد الحالي</p>
                               <p className={`text-3xl font-extrabold ${totals.balance > 0 ? 'text-red-700 dark:text-red-400' : totals.balance < 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-700 dark:text-text-primary'}`}>
-                                {Math.abs(totals.balance).toFixed(2)} {currency}
+                                {Math.abs(Number(totals.balance)).toFixed(2)} {currency}
                               </p>
                               <p className={`text-xs font-semibold mt-1 ${totals.balance > 0 ? 'text-red-600 dark:text-red-400' : totals.balance < 0 ? 'text-green-600 dark:text-green-400' : 'text-slate-600 dark:text-text-secondary'}`}>
                                 {totals.balance > 0 ? '🔴 مستحق عليك' : totals.balance < 0 ? '🟢 مدين لك' : '⚪ متوازن'}
@@ -616,11 +640,11 @@ const SupplierAccountsPage = () => {
                             <div className="grid grid-cols-2 gap-3">
                               <div className="bg-white dark:bg-surface-secondary bg-opacity-60 rounded-md p-2">
                                 <p className="text-[10px] text-slate-600 dark:text-text-secondary mb-0.5">إجمالي الديون</p>
-                                <p className="text-base font-bold text-red-700 dark:text-red-400">{totals.credit.toFixed(2)}</p>
+                                <p className="text-base font-bold text-red-700 dark:text-red-400">{Number(totals.credit).toFixed(2)}</p>
                               </div>
                               <div className="bg-white dark:bg-surface-secondary bg-opacity-60 rounded-md p-2">
                                 <p className="text-[10px] text-slate-600 dark:text-text-secondary mb-0.5">إجمالي المدفوع</p>
-                                <p className="text-base font-bold text-green-700 dark:text-green-400">{totals.debit.toFixed(2)}</p>
+                                <p className="text-base font-bold text-green-700 dark:text-green-400">{Number(totals.debit).toFixed(2)}</p>
                               </div>
                             </div>
                           </div>
@@ -651,8 +675,9 @@ const SupplierAccountsPage = () => {
                           <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">التاريخ</th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">البيان</th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">النوع</th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">المبلغ والعملة</th>
+                           <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">المبلغ والعملة</th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">العملية</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">الإجراءات</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white dark:bg-surface-primary divide-y divide-gray-200 dark:divide-border-primary">
@@ -679,7 +704,7 @@ const SupplierAccountsPage = () => {
                                 <div className="flex items-center gap-2">
                                   <span className={`text-base font-bold ${entry.transactionType === 'DEBIT' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
                                     }`}>
-                                    {entry.amount.toFixed(2)}
+                                    {Number(entry.amount).toFixed(2)}
                                   </span>
                                   <span className={`px-2 py-0.5 text-xs font-bold rounded ${entry.currency === 'LYD' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' :
                                       entry.currency === 'USD' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
@@ -691,6 +716,28 @@ const SupplierAccountsPage = () => {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-text-secondary">
                                 {getOperationDescription(entry.transactionType)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                {entry.referenceType === 'OPENING_BALANCE' && entry.transactionType === 'CREDIT' && (
+                                  <button
+                                    onClick={() => handleSettleOpeningBalance(entry)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all text-xs font-bold shadow-sm active:scale-95"
+                                    title="تسوية هذا الدين"
+                                  >
+                                    <TrendingDown className="w-3.5 h-3.5" />
+                                    تسوية (دفع)
+                                  </button>
+                                )}
+                                {entry.referenceType === 'PAYMENT' && (
+                                  <button
+                                    onClick={() => handlePrintSupplierPayment(entry.referenceId)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 dark:bg-surface-secondary text-slate-800 dark:text-text-primary rounded-lg hover:bg-slate-300 transition-all text-xs font-bold shadow-sm active:scale-95"
+                                    title="إعادة طباعة الإيصال"
+                                  >
+                                    <Printer className="w-3.5 h-3.5" />
+                                    طباعة
+                                  </button>
+                                )}
                               </td>
                             </tr>
                           ))
@@ -767,6 +814,23 @@ const SupplierAccountsPage = () => {
           supplierId={targetSupplier.id}
           name={targetSupplier.name}
           type="supplier"
+        />
+      )}
+
+      {/* مودال تسوية الرصيد المرحل */}
+      {selectedEntry && selectedSupplier && (
+        <SettleOpeningBalanceModal
+          isOpen={showSettleModal}
+          onClose={() => {
+            setShowSettleModal(false);
+            setSelectedEntry(null);
+          }}
+          entityId={selectedSupplier.id}
+          entityName={selectedSupplier.name}
+          type="supplier"
+          initialAmount={Number(selectedEntry.amount)}
+          initialCurrency={selectedEntry.currency || 'LYD'}
+          initialDescription={`تسوية ${selectedEntry.description || 'الرصيد المرحل'}`}
         />
       )}
     </div>
