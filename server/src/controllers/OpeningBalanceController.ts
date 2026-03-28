@@ -151,6 +151,37 @@ class OpeningBalanceController {
   }
 
   /**
+   * حذف رصيد افتتاحي (قبل التسوية فقط)
+   * DELETE /api/opening-balances/:id
+   */
+  async deleteOpeningBalance(req: Request, res: Response) {
+    try {
+      const openingBalanceId = Number(req.params.id);
+
+      if (!openingBalanceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'معرف الرصيد المرحل مطلوب'
+        });
+      }
+
+      const result = await OpeningBalanceService.deleteOpeningBalance(openingBalanceId);
+
+      return res.status(200).json({
+        success: true,
+        message: 'تم حذف الرصيد المرحل بنجاح',
+        data: result
+      });
+    } catch (error: any) {
+      console.error('Error in deleteOpeningBalance:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message || 'حدث خطأ أثناء حذف الرصيد المرحل'
+      });
+    }
+  }
+
+  /**
    * تسوية رصيد افتتاحي لعميل (قبض)
    * POST /api/opening-balances/settle-customer
    */

@@ -139,6 +139,18 @@ export const supplierAccountApi = createApi({
       query: (id) => `/payment-receipts/${id}`,
       providesTags: (result, error, id) => [{ type: "SupplierAccount", id: id }]
     }),
+
+    // حذف رصيد مرحل (قبل التسوية فقط)
+    deleteOpeningBalance: build.mutation<{ success: boolean; message: string }, { id: number; supplierId: number }>({
+      query: ({ id }) => ({
+        url: `/opening-balances/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (result, error, { supplierId }) => [
+        { type: "SupplierAccount", id: supplierId },
+        "SupplierAccounts"
+      ]
+    }),
   }),
 });
 
@@ -149,5 +161,6 @@ export const {
   useGetSupplierPaymentReceiptQuery,
   useLazyGetSupplierPaymentReceiptQuery,
   useCreateOpeningBalanceMutation,
-  useSettleSupplierOpeningBalanceMutation
+  useSettleSupplierOpeningBalanceMutation,
+  useDeleteOpeningBalanceMutation
 } = supplierAccountApi;

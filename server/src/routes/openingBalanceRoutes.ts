@@ -22,4 +22,7 @@ router.post('/settle-supplier', OpeningBalanceController.settleSupplierOpeningBa
 // تسوية رصيد افتتاحي لعميل (قبض)
 router.post('/settle-customer', OpeningBalanceController.settleCustomerOpeningBalance);
 
+// حذف رصيد افتتاحي (قبل التسوية فقط)
+router.delete('/:id', OpeningBalanceController.deleteOpeningBalance);
+
 export default router;

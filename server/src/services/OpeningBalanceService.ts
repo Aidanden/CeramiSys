@@ -199,6 +199,80 @@ class OpeningBalanceService {
   }
 
   /**
+   * حذف رصيد افتتاحي (قبل التسوية فقط)
+   */
+  async deleteOpeningBalance(openingBalanceId: number) {
+    return await prisma.$transaction(async (tx) => {
+      // 1. جلب الرصيد الافتتاحي
+      const openingBalance = await (tx as any).openingBalance.findUnique({
+        where: { id: openingBalanceId }
+      });
+
+      if (!openingBalance) {
+        throw new Error('الرصيد المرحل غير موجود');
+      }
+
+      // 2. التحقق من أنه لم يتم تسويته بعد
+      // نتحقق من وجود حركة دفع/قبض مرتبطة بهذا الرصيد
+      let hasSettlement = false;
+
+      if (openingBalance.supplierId) {
+        // التحقق من وجود دفعة للمورد
+        const supplierEntry = await tx.supplierAccount.findFirst({
+          where: {
+            referenceType: 'PAYMENT',
+            supplierId: openingBalance.supplierId,
+            description: {
+              contains: `رصيد مرحل`
+            }
+          }
+        });
+        if (supplierEntry) hasSettlement = true;
+      } else if (openingBalance.customerId) {
+        // التحقق من وجود قبض من العميل
+        const customerEntry = await tx.customerAccount.findFirst({
+          where: {
+            referenceType: 'GENERAL_RECEIPT',
+            customerId: openingBalance.customerId,
+            description: {
+              contains: `رصيد مرحل`
+            }
+          }
+        });
+        if (customerEntry) hasSettlement = true;
+      }
+
+      if (hasSettlement) {
+        throw new Error('لا يمكن حذف رصيد مرحل تم تسويته بالفعل');
+      }
+
+      // 3. حذف القيد من كشف الحساب
+      if (openingBalance.supplierId) {
+        await tx.supplierAccount.deleteMany({
+          where: {
+            referenceType: 'OPENING_BALANCE',
+            referenceId: openingBalanceId
+          }
+        });
+      } else if (openingBalance.customerId) {
+        await tx.customerAccount.deleteMany({
+          where: {
+            referenceType: 'OPENING_BALANCE',
+            referenceId: openingBalanceId
+          }
+        });
+      }
+
+      // 4. حذف سجل الرصيد الافتتاحي
+      await (tx as any).openingBalance.delete({
+        where: { id: openingBalanceId }
+      });
+
+      return { success: true, message: 'تم حذف الرصيد المرحل بنجاح' };
+    });
+  }
+
+  /**
    * تسوية رصيد افتتاحي لعميل (قبض)
    */
   async settleCustomerOpeningBalance(data: {

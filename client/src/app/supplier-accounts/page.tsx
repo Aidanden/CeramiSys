@@ -5,7 +5,8 @@ import {
   useGetAllSuppliersAccountSummaryQuery,
   useGetSupplierAccountQuery,
   useGetSupplierOpenPurchasesQuery,
-  useLazyGetSupplierPaymentReceiptQuery
+  useLazyGetSupplierPaymentReceiptQuery,
+  useDeleteOpeningBalanceMutation
 } from "@/state/supplierAccountApi";
 import {
   User,
@@ -17,7 +18,7 @@ import {
   Phone,
   Home,
   Plus,
-  Printer
+  Trash2
 } from "lucide-react";
 import {
   formatLibyanCurrencyEnglish,
@@ -136,6 +137,7 @@ const SupplierAccountsPage = () => {
   };
 
   const [triggerGetSupplierPaymentReceipt] = useLazyGetSupplierPaymentReceiptQuery();
+  const [deleteOpeningBalance] = useDeleteOpeningBalanceMutation();
 
   const handlePrintSupplierPayment = async (receiptId: number) => {
     try {
@@ -144,6 +146,30 @@ const SupplierAccountsPage = () => {
     } catch (err) {
       console.error('Error fetching receipt data:', err);
       alert('حدث خطأ أثناء محاولة جلب بيانات الإيصال');
+    }
+  };
+
+  const handleDeleteOpeningBalance = async (entryId: number) => {
+    if (!selectedSupplierId) return;
+
+    const confirmed = window.confirm(
+      '⚠️ هل أنت متأكد من حذف هذا الرصيد المرحل؟\n\nلن تتمكن من التراجع عن هذا الإجراء.'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await deleteOpeningBalance({ 
+        id: entryId, 
+        supplierId: selectedSupplierId 
+      }).unwrap();
+      
+      alert('✅ تم حذف الرصيد المرحل بنجاح');
+      refetchAccount();
+      refetchSummary();
+    } catch (err: any) {
+      console.error('Error deleting opening balance:', err);
+      alert(`❌ ${err?.data?.message || 'حدث خطأ أثناء حذف الرصيد المرحل'}`);
     }
   };
 
@@ -719,14 +745,24 @@ const SupplierAccountsPage = () => {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm">
                                 {entry.referenceType === 'OPENING_BALANCE' && entry.transactionType === 'CREDIT' && (
-                                  <button
-                                    onClick={() => handleSettleOpeningBalance(entry)}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all text-xs font-bold shadow-sm active:scale-95"
-                                    title="تسوية هذا الدين"
-                                  >
-                                    <TrendingDown className="w-3.5 h-3.5" />
-                                    تسوية (دفع)
-                                  </button>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => handleSettleOpeningBalance(entry)}
+                                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all text-xs font-bold shadow-sm active:scale-95"
+                                      title="تسوية هذا الدين"
+                                    >
+                                      <TrendingDown className="w-3.5 h-3.5" />
+                                      تسوية (دفع)
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteOpeningBalance(entry.referenceId)}
+                                      className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all text-xs font-bold shadow-sm active:scale-95"
+                                      title="حذف هذا الرصيد المرحل"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                      حذف
+                                    </button>
+                                  </div>
                                 )}
                                 {entry.referenceType === 'PAYMENT' && (
                                   <button
@@ -734,7 +770,7 @@ const SupplierAccountsPage = () => {
                                     className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 dark:bg-surface-secondary text-slate-800 dark:text-text-primary rounded-lg hover:bg-slate-300 transition-all text-xs font-bold shadow-sm active:scale-95"
                                     title="إعادة طباعة الإيصال"
                                   >
-                                    <Printer className="w-3.5 h-3.5" />
+                                    <FileText className="w-3.5 h-3.5" />
                                     طباعة
                                   </button>
                                 )}
