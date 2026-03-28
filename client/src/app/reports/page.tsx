@@ -1433,20 +1433,20 @@ export default function ReportsPage() {
             </div>
 
             {/* Stock Table */}
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white dark:bg-surface-primary rounded-xl shadow overflow-hidden border border-slate-200 dark:border-border-primary">
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-surface-secondary">
                     <tr>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">كود الصنف</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الصنف</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الصناديق</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">إجمالي الكمية</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">السعر</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">القيمة</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">كود الصنف</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">الصنف</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">الصناديق</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">إجمالي الكمية</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">السعر</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">القيمة</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-surface-primary divide-y divide-gray-200 dark:divide-border-primary">
                     {(() => {
                       const filteredStocks = stockReport.data.stocks.filter((stock: any) => {
                         // البحث بالكود (SKU)
@@ -1460,7 +1460,7 @@ export default function ReportsPage() {
                         const unitLabel = isDimensional ? "متر" : "قطعة";
 
                         return (
-                          <tr key={stock.id} className="hover:bg-gray-50 print:hover:bg-white">
+                          <tr key={stock.id} className="hover:bg-gray-50 dark:hover:bg-surface-hover print:hover:bg-white transition-colors">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-mono rounded">
                                 {stock.product.sku || "-"}
@@ -1535,19 +1535,19 @@ export default function ReportsPage() {
             </div>
 
             {/* Customers Table */}
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white dark:bg-surface-primary rounded-xl shadow overflow-hidden border border-slate-200 dark:border-border-primary">
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-surface-secondary">
                     <tr>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">العميل</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الهاتف</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">إجمالي المشتريات</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">عدد المبيعات</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">متوسط الشراء</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">العميل</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">الهاتف</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">إجمالي المشتريات</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">عدد المبيعات</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">متوسط الشراء</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-surface-primary divide-y divide-gray-200 dark:divide-border-primary">
                     {(() => {
                       const filteredCustomers = customerReport.data.customers.filter((customer: any) => {
                         if (filters.customerName && !textSearch(customer.name, filters.customerName)) return false;
@@ -1555,7 +1555,7 @@ export default function ReportsPage() {
                         return true;
                       });
                       return paginateData(filteredCustomers).map((customer: any) => (
-                        <tr key={customer.id} className="hover:bg-gray-50 print:hover:bg-white">
+                        <tr key={customer.id} className="hover:bg-gray-50 dark:hover:bg-surface-hover print:hover:bg-white transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {customer.name}
                           </td>
@@ -1629,25 +1629,25 @@ export default function ReportsPage() {
             </div>
 
             {/* Suppliers Table - أعمدة حسب العملة */}
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white dark:bg-surface-primary rounded-xl shadow overflow-hidden border border-slate-200 dark:border-border-primary">
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-surface-secondary">
                     <tr>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">المورد</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الهاتف</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">إجمالي المشتريات <span className="text-amber-600">(د.ل)</span></th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">إجمالي المشتريات <span className="text-green-600">($)</span></th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">إجمالي المشتريات <span className="text-indigo-600">(€)</span></th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">المدفوع (د.ل)</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">المدفوع ($)</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">المدفوع (€)</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الرصيد (د.ل)</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الرصيد ($)</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الرصيد (€)</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">المورد</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">الهاتف</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">إجمالي المشتريات <span className="text-amber-600">(د.ل)</span></th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">إجمالي المشتريات <span className="text-green-600">($)</span></th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">إجمالي المشتريات <span className="text-indigo-600">(€)</span></th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">المدفوع (د.ل)</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">المدفوع ($)</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">المدفوع (€)</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">الرصيد (د.ل)</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">الرصيد ($)</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">الرصيد (€)</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-surface-primary divide-y divide-gray-200 dark:divide-border-primary">
                     {(() => {
                       const filteredSuppliers = supplierReport.data.suppliers.filter((supplier: any) => {
                         if (filters.supplierReportName && !textSearch(supplier.name, filters.supplierReportName)) return false;
@@ -1656,7 +1656,7 @@ export default function ReportsPage() {
                       });
                       const fmt = (v: number) => (v ?? 0).toLocaleString("ar-LY", { minimumFractionDigits: 2 });
                       return paginateData(filteredSuppliers).map((supplier: any) => (
-                        <tr key={supplier.id} className="hover:bg-gray-50 print:hover:bg-white">
+                        <tr key={supplier.id} className="hover:bg-gray-50 dark:hover:bg-surface-hover print:hover:bg-white transition-colors">
                           <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{supplier.name}</td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{supplier.phone || "-"}</td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{fmt(supplier.totalPurchasesByCurrency?.LYD)}</td>
@@ -1756,19 +1756,19 @@ export default function ReportsPage() {
             </div>
 
             {/* Purchases Table */}
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white dark:bg-surface-primary rounded-xl shadow overflow-hidden border border-slate-200 dark:border-border-primary">
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-surface-secondary">
                     <tr>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">رقم الفاتورة</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">التاريخ</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المورد</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المشتريات</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المصروفات</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">رقم الفاتورة</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">التاريخ</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">المورد</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">المشتريات</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">المصروفات</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-surface-primary divide-y divide-gray-200 dark:divide-border-primary">
                     {(() => {
                       const filteredPurchases = purchaseReport.data.purchases.filter((purchase: any) => {
                         if (filters.invoiceNumber && !textSearch(purchase.invoiceNumber, filters.invoiceNumber)) return false;
@@ -1782,7 +1782,7 @@ export default function ReportsPage() {
                       return paginateData(filteredPurchases).map((purchase: any) => {
                         const currencySymbol = purchase.currency === 'USD' ? '$' : purchase.currency === 'EUR' ? '€' : 'د.ل';
                         return (
-                          <tr key={purchase.id} className="hover:bg-gray-50 print:hover:bg-white">
+                          <tr key={purchase.id} className="hover:bg-gray-50 dark:hover:bg-surface-hover print:hover:bg-white transition-colors">
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {purchase.invoiceNumber || "-"}
                             </td>
@@ -1866,19 +1866,19 @@ export default function ReportsPage() {
             </div>
 
             {/* Top Products Table */}
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white dark:bg-surface-primary rounded-xl shadow overflow-hidden border border-slate-200 dark:border-border-primary">
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-surface-secondary">
                     <tr>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الترتيب</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المنتج</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الكمية المباعة</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الإيرادات</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">عدد المبيعات</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">الترتيب</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">المنتج</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">الكمية المباعة</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">الإيرادات</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">عدد المبيعات</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white dark:bg-surface-primary divide-y divide-gray-200 dark:divide-border-primary">
                     {(() => {
                       const filteredProducts = topProductsReport.data.topProducts.filter((item: any) => {
                         if (filters.productName && !textSearch(item.product.name, filters.productName)) return false;
@@ -1888,7 +1888,7 @@ export default function ReportsPage() {
                       return paginateData(filteredProducts).map((item: any, index: number) => {
                         const actualIndex = (currentPage - 1) * itemsPerPage + index;
                         return (
-                          <tr key={item.product.id} className="hover:bg-gray-50 print:hover:bg-white">
+                          <tr key={item.product.id} className="hover:bg-gray-50 dark:hover:bg-surface-hover print:hover:bg-white transition-colors">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${actualIndex === 0 ? "bg-yellow-100 text-yellow-800" :
                                 actualIndex === 1 ? "bg-gray-100 text-gray-800" :

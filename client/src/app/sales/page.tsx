@@ -1636,32 +1636,32 @@ const SalesPage = () => {
 
       {/* Sales Table */}
       <div className="bg-white dark:bg-surface-primary rounded-lg shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden">
-        <div className="overflow-x-auto w-full">
-          <table className="w-full min-w-full">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200 dark:divide-border-primary">
             <thead className="bg-slate-50 dark:bg-surface-secondary">
               <tr>
-                <th className="px-6 py-3 text-right text-sm font-semibold text-slate-500 dark:text-text-secondary uppercase tracking-wider w-32">
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase w-32">
                   رقم الفاتورة
                 </th>
-                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-secondary uppercase tracking-wider w-40">
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase w-40">
                   الشركة
                 </th>
-                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-secondary uppercase tracking-wider w-48">
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase w-48">
                   العميل
                 </th>
-                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-secondary uppercase tracking-wider w-32">
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase w-32">
                   المجموع
                 </th>
-                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-secondary uppercase tracking-wider w-28">
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase w-28">
                   الحالة
                 </th>
-                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-secondary uppercase tracking-wider min-w-[200px]">
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase min-w-[200px]">
                   الملاحظات
                 </th>
-                <th className="px-6 py-3 text-right text-sm font-semibold text-gray-500 dark:text-text-secondary uppercase tracking-wider w-32">
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase w-32">
                   التاريخ
                 </th>
-                <th className="px-6 py-3 text-right text-sm font-semibold text-slate-500 dark:text-text-secondary uppercase tracking-wider w-40">
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase w-40">
                   الإجراءات
                 </th>
               </tr>

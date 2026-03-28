@@ -16,8 +16,7 @@ import {
   Calendar,
   Phone,
   Home,
-  Plus,
-  Printer
+  Plus
 } from "lucide-react";
 import {
   formatLibyanCurrencyEnglish,
@@ -734,8 +733,8 @@ const SupplierAccountsPage = () => {
                                     className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 dark:bg-surface-secondary text-slate-800 dark:text-text-primary rounded-lg hover:bg-slate-300 transition-all text-xs font-bold shadow-sm active:scale-95"
                                     title="إعادة طباعة الإيصال"
                                   >
-                                    <Printer className="w-3.5 h-3.5" />
-                                    طباعة
+                                    <FileText className="w-3.5 h-3.5" />
+                                    إعادة طباعة الإيصال
                                   </button>
                                 )}
                               </td>
@@ -830,7 +829,7 @@ const SupplierAccountsPage = () => {
           type="supplier"
           initialAmount={Number(selectedEntry.amount)}
           initialCurrency={selectedEntry.currency || 'LYD'}
-          initialDescription={`تسوية ${selectedEntry.description || 'الرصيد المرحل'}`}
+          initialDescription={`تسوية رصيد مرحل`}
         />
       )}
     </div>

@@ -75,7 +75,7 @@ class OpeningBalanceService {
           currency: currency || "LYD",
           referenceType: 'OPENING_BALANCE' as any,
           referenceId: openingBalance.id,
-          description: description || `رصيد مرحل من النظام السابق${previousSystemRef ? ` (مرجع: ${previousSystemRef})` : ''}`,
+          description: description || `رصيد مرحل من النظام السابق`,
           transactionDate: transactionDate || new Date()
         }, tx);
       }
@@ -215,9 +215,8 @@ class OpeningBalanceService {
       // 1. إنشاء إيصال قبض (GeneralReceipt) لتوثيق العملية
       const receipt = await (tx.generalReceipt as any).create({
         data: {
-          customerId,
-          companyId,
-          treasuryId,
+          customer: { connect: { id: customerId } },
+          treasuryId: treasuryId,
           amount: new Prisma.Decimal(amount),
           type: 'DEPOSIT',
           description: description || 'تسوية رصيد مرحل (قبض)',

@@ -98,10 +98,18 @@ export const generalReceiptApi = createApi({
             async onQueryStarted(arg, { dispatch, queryFulfilled }) {
                 try {
                     await queryFulfilled;
-                    // تحديث الخزائن والحركات في الذاكرة المؤقتة التابعة لـ treasuryApi
+                    // تحديث كافة البيانات المتعلقة بالخزينة والجهات الأخرى في الـ APIs المختلفة
                     dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryStats', 'TreasuryTransaction']));
+                    
+                    const { salesApi } = await import('./salesApi');
+                    const { purchaseApi } = await import('./purchaseApi');
+                    const { payrollApi } = await import('./payrollApi');
+                    
+                    dispatch(salesApi.util.invalidateTags(['Customers']));
+                    dispatch(purchaseApi.util.invalidateTags(['Supplier']));
+                    dispatch(payrollApi.util.invalidateTags(['Employees']));
                 } catch (err) {
-                    // Error updating treasury cache
+                    // Error updating caches
                 }
             },
             invalidatesTags: (result, error, { contactId, customerId, supplierId, employeeId }) => {
@@ -134,6 +142,31 @@ export const generalReceiptApi = createApi({
             query: (id) => `/general/receipts/${id}`,
             providesTags: (result, error, id) => [{ type: "GeneralReceipts", id }],
         }),
+        deleteGeneralReceipt: build.mutation<{ success: boolean }, number>({
+            query: (id) => ({
+                url: `/general/receipts/${id}`,
+                method: "DELETE",
+            }),
+            async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+                try {
+                    await queryFulfilled;
+                    // تحديث كافة البيانات المتعلقة بالخزينة، العملاء، الموردين، والرواتب في الـ APIs الأخرى
+                    dispatch(treasuryApi.util.invalidateTags(['Treasury', 'TreasuryStats', 'TreasuryTransaction']));
+                    
+                    // استيراد الـ APIs الأخرى بشكل ديناميكي لتجنب مشاكل الاعتماد المتبادل
+                    const { salesApi } = await import('./salesApi');
+                    const { purchaseApi } = await import('./purchaseApi');
+                    const { payrollApi } = await import('./payrollApi');
+                    
+                    dispatch(salesApi.util.invalidateTags(['Customers']));
+                    dispatch(purchaseApi.util.invalidateTags(['Supplier']));
+                    dispatch(payrollApi.util.invalidateTags(['Employees']));
+                } catch (err) {
+                    // Error updating caches
+                }
+            },
+            invalidatesTags: ["GeneralReceipts", "FinancialContacts", "Treasury", "Customers", "Suppliers", "Employees", "FinancialContactStatement"],
+        }),
     }),
 });
 
@@ -146,5 +179,6 @@ export const {
     useGetGeneralReceiptQuery,
     useLazyGetGeneralReceiptQuery,
     useCreateGeneralReceiptMutation,
+    useDeleteGeneralReceiptMutation,
     useGetContactStatementQuery,
 } = generalReceiptApi;

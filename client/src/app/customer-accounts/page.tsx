@@ -81,15 +81,34 @@ const CustomerAccountsPage = () => {
     }
   }, [account]);
 
-  // ترتيب المعاملات تنازلياً (الأحدث أولاً)
+  // ترتيب المعاملات وإعادة حساب الأرصدة
   const sortedEntries = React.useMemo(() => {
     if (!account?.entries) return [];
-    return [...account.entries].sort((a, b) => {
+    
+    // 1. ترتيب تصاعدي (من الأقدم للأحدث) لحساب الأرصدة بشكل صحيح
+    const sortedAsc = [...account.entries].sort((a, b) => {
       const dateA = new Date(a.transactionDate).getTime();
       const dateB = new Date(b.transactionDate).getTime();
-      if (dateB !== dateA) return dateB - dateA;
-      return b.id - a.id; // ترتيب المرجع الأكبر أولاً في حال تساوي التاريخ
+      if (dateA !== dateB) return dateA - dateB;
+      return a.id - b.id;
     });
+    
+    // 2. إعادة حساب الأرصدة التراكمية من الأقدم للأحدث
+    let runningBalance = 0;
+    const entriesWithCorrectBalance = sortedAsc.map(entry => {
+      if (entry.transactionType === 'DEBIT') {
+        runningBalance += Number(entry.amount);
+      } else {
+        runningBalance -= Number(entry.amount);
+      }
+      return {
+        ...entry,
+        balance: runningBalance
+      };
+    });
+    
+    // 3. عكس الترتيب للعرض (الأحدث أولاً)
+    return entriesWithCorrectBalance.reverse();
   }, [account?.entries]);
 
   // تصفية العملاء بناءً على البحث
@@ -1191,8 +1210,8 @@ const CustomerAccountsPage = () => {
                                   className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-200 dark:bg-surface-secondary text-slate-800 dark:text-text-primary rounded-lg hover:bg-slate-300 transition-all text-xs font-bold shadow-sm active:scale-95"
                                   title="إعادة طباعة الإيصال"
                                 >
-                                  <Printer className="w-3.5 h-3.5" />
-                                  طباعة
+                                  <FileText className="w-3.5 h-3.5" />
+                                  إعادة طباعة الإيصال
                                 </button>
                               )}
                             </div>
@@ -1384,7 +1403,7 @@ const CustomerAccountsPage = () => {
           type="customer"
           initialAmount={Number(selectedEntry.amount)}
           initialCurrency="LYD"
-          initialDescription={`تسوية رصيد مرحل - مرجع ${selectedEntry.previousSystemRef || selectedEntry.id}`}
+          initialDescription={`تسوية رصيد مرحل`}
         />
       )}
     </div>

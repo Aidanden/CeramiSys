@@ -47,6 +47,16 @@ class GeneralReceiptController {
             res.status(400).json({ error: error.message });
         }
     }
+
+    async delete(req: Request, res: Response) {
+        try {
+            const id = parseInt(req.params.id || '0');
+            const result = await generalReceiptService.deleteReceipt(id);
+            res.json(result);
+        } catch (error: any) {
+            res.status(500).json({ error: error.message });
+        }
+    }
 }
 
 export default new GeneralReceiptController();

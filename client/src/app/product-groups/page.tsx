@@ -331,36 +331,36 @@ const ProductGroupsPage = () => {
             </p>
           </div>
         ) : (
-          <div className="bg-white dark:bg-surface-primary rounded-lg shadow overflow-hidden">
+          <div className="bg-white dark:bg-surface-primary rounded-lg shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-surface-secondary">
+              <table className="min-w-full divide-y divide-slate-200 dark:divide-border-primary">
+                <thead className="bg-slate-50 dark:bg-surface-secondary">
                   <tr>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase">
                       اسم المجموعة
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase">
                       المورد
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase">
                       العملة
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase">
                       عدد الأصناف
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase">
                       الخصم الأقصى
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-text-secondary uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase">
                       الإجراءات
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-border-primary">
+                <tbody className="bg-white dark:bg-surface-primary divide-y divide-slate-200 dark:divide-border-primary">
                   {filteredGroups.map((group) => (
                     <tr
                       key={group.id}
-                      className="hover:bg-gray-50 dark:hover:bg-surface-hover transition-colors"
+                      className="hover:bg-slate-50 dark:hover:bg-surface-hover transition-colors"
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">

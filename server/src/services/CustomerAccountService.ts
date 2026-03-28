@@ -152,25 +152,36 @@ class CustomerAccountService {
     // الرصيد الحالي الكلي = آخر رصيد مسجل
     const currentBalance = Number(lastEntry?.balance || 0);
 
-    // حساب إجمالي الديون (DEBIT) وإجمالي الدفعات (CREDIT)
-    const [totalDebit, totalPaymentsSum, totalAllCredit] = await Promise.all([
+    // حساب الإحصائيات
+    const [
+      totalSalesDebit,        // إجمالي المبيعات (DEBIT - SALE)
+      totalPaymentsCredit,    // إجمالي المدفوعات من العميل (CREDIT - PAYMENT)
+      totalReturnPaymentsDebit, // إجمالي دفعات المردودات للعميل (DEBIT - PAYMENT)
+      totalAllCredit          // إجمالي كل CREDIT
+    ] = await Promise.all([
+      // المبيعات فقط
       prisma.customerAccount.aggregate({
-        where: { customerId, transactionType: 'DEBIT' },
+        where: { customerId, transactionType: 'DEBIT', referenceType: { not: 'PAYMENT' } },
         _sum: { amount: true }
       }),
-      // إجمالي المدفوعات الفعلية فقط
+      // المدفوعات من العميل (CREDIT)
       prisma.customerAccount.aggregate({
         where: { customerId, transactionType: 'CREDIT', referenceType: 'PAYMENT' },
         _sum: { amount: true }
       }),
-      // إجمالي كل الائتمانات (مدفوعات + مردودات + تسويات)
+      // دفعات المردودات للعميل (DEBIT - PAYMENT)
+      prisma.customerAccount.aggregate({
+        where: { customerId, transactionType: 'DEBIT', referenceType: 'PAYMENT' },
+        _sum: { amount: true }
+      }),
+      // إجمالي كل CREDIT
       prisma.customerAccount.aggregate({
         where: { customerId, transactionType: 'CREDIT' },
         _sum: { amount: true }
       })
     ]);
 
-    // جلب إيصالات المردودات المعلقة (التي لم يتم صرفها مالياً بعد ولكنها سجلت على الشركة)
+    // جلب إيصالات المردودات المعلقة
     const pendingReturnReceipts = await prisma.supplierPaymentReceipt.findMany({
       where: {
         customerId,
@@ -182,23 +193,32 @@ class CustomerAccountService {
 
     const pendingReturnsAmount = pendingReturnReceipts.reduce((sum, r) => sum + Number(r.amount), 0);
 
-    const debitAmount = Number(totalDebit._sum.amount || 0);
-    const paymentsAmount = Number(totalPaymentsSum._sum.amount || 0);
-    const confirmedCreditAmount = Number(totalAllCredit._sum.amount || 0);
+    const salesAmount = Number(totalSalesDebit._sum.amount || 0);
+    const paymentsFromCustomer = Number(totalPaymentsCredit._sum.amount || 0);
+    const returnPaymentsToCustomer = Number(totalReturnPaymentsDebit._sum.amount || 0);
+    const allCreditAmount = Number(totalAllCredit._sum.amount || 0);
 
-    // الإجمالي الدائن يشمل الآن المردودات المعلقة لأن العميل يطالب بها
-    const totalCreditAmount = confirmedCreditAmount + pendingReturnsAmount;
-    const otherCreditsAmount = totalCreditAmount - paymentsAmount;
-
-    // الرصيد الحالي المعدل (يخصم منه المردودات المعلقة)
-    // الرصيد في الداتابيس لا يشمل المعلق، لذا نطرحه منه
-    const adjustedCurrentBalance = currentBalance - pendingReturnsAmount;
+    // الحسابات الصحيحة:
+    // - إجمالي العليه (DEBIT) = المبيعات + دفعات المردودات المدفوعة + المردودات المعلقة
+    const totalDebitAmount = salesAmount + returnPaymentsToCustomer + pendingReturnsAmount;
+    // - إجمالي المدفوعات = المدفوعات من العميل فقط (CREDIT)
+    const totalPaymentsAmount = paymentsFromCustomer;
+    // - إجمالي المردودات (للعرض في الكروت) = المعلقة فقط (المدفوعة مسجلة في الكشف)
+    const totalReturnsAmount = pendingReturnsAmount;
+    // - إجمالي الخصومات = المدفوعات + جميع المردودات (مدفوعة + معلقة) + تسويات أخرى
+    const totalCreditAmount = allCreditAmount + returnPaymentsToCustomer + pendingReturnsAmount;
+    // - الرصيد الحالي = المبيعات - المدفوعات + دفعات المردودات + المعلقة
+    const adjustedCurrentBalance = currentBalance + pendingReturnsAmount;
 
     console.log(`[DEBUG] Customer Account ID: ${customerId}`);
-    console.log(`[DEBUG] Total Debit: ${debitAmount}`);
-    console.log(`[DEBUG] Confirmed Credit: ${confirmedCreditAmount}`);
+    console.log(`[DEBUG] Sales Amount: ${salesAmount}`);
+    console.log(`[DEBUG] Payments From Customer: ${paymentsFromCustomer}`);
+    console.log(`[DEBUG] Return Payments To Customer: ${returnPaymentsToCustomer}`);
     console.log(`[DEBUG] Pending Returns: ${pendingReturnsAmount}`);
-    console.log(`[DEBUG] Total Credit (Adjusted): ${totalCreditAmount}`);
+    console.log(`[DEBUG] Total Debit: ${totalDebitAmount}`);
+    console.log(`[DEBUG] Total Payments: ${totalPaymentsAmount}`);
+    console.log(`[DEBUG] Total Returns: ${totalReturnsAmount}`);
+    console.log(`[DEBUG] Total Credit: ${totalCreditAmount}`);
     console.log(`[DEBUG] Current Balance (DB): ${currentBalance}`);
     console.log(`[DEBUG] Current Balance (Adjusted): ${adjustedCurrentBalance}`);
 
@@ -210,35 +230,22 @@ class CustomerAccountService {
     }));
 
     // تحويل المردودات المعلقة إلى قيود عرض
-    // نفترض أنها أحدث عمليات، فنضعها في البداية
-    const pendingEntries = pendingReturnReceipts.map((r, index) => {
-      // الرصيد لهذه العملية الافتراضية
-      // بما أنها "فوق" آخر رصيد مسجل، وهي عملية CREDIT (تخفض الرصيد)
-      // الرصيد بعدها = الرصيد الفعلي - (مجموع المردودات التي قبلها وهذه المردودات)
-      // لكن للتبسيط، سنعرض الرصيد التراكمي من آخر رصيد مسجل نزولاً
-
-      // لنحسبها بشكل بسيط: نعرضها كقائمة في الأعلى.
-      // الرصيد الظاهر بجانبها:
-      // أول واحد (الأحدث) = adjustedCurrentBalance
-      // الذي يليه = adjustedCurrentBalance + amount (لأننا نرجع للوراء باتجاه الرصيد القديم)
-
-      // ولكن هنا لدينا قائمة مفصولة.
-      // سنقوم بدمجها في `mappedEntries` لاحقاً إذا أردنا ترتيب دقيق، 
-      // لكن بما أن تاريخها `createdAt` موجود، يمكننا دمجها وفرزها.
-
+    // المردودات المعلقة = إيصالات لم تُدفع بعد، لكن نريد عرضها في كشف الحساب
+    const pendingEntries = pendingReturnReceipts.map((r) => {
       return {
-        id: -r.id, // ID سالب لتمييزها
+        id: -r.id, // ID سالب لتمييزها عن القيود الفعلية
         customerId,
-        transactionType: 'CREDIT' as const,
+        transactionType: 'DEBIT' as const, // DEBIT لأنها ستُدفع للعميل (دين له على الشركة)
         amount: Number(r.amount),
         balance: 0, // سنحسبه بعد الفرز
-        referenceType: 'RETURN' as const,
-        referenceId: r.saleReturnId || 0,
-        description: `مردود مبيعات (معلق) - ${r.description || ''}`,
+        referenceType: 'PAYMENT' as const, // نوع دفع مردود
+        referenceId: r.id, // مرجع لإيصال الدفع نفسه
+        description: `إيصال مردود معلق #${r.id} - ${r.description || r.notes || 'مردود مبيعات'}`,
         transactionDate: r.createdAt,
         createdAt: r.createdAt,
         customer,
-        isPending: true // حقل إضافي للتميز في الفرونت إند إذا لزم
+        isPending: true, // حقل إضافي للتميز في الفرونت إند
+        receiptStatus: 'PENDING' as const // حالة الإيصال
       };
     });
 
@@ -280,7 +287,7 @@ class CustomerAccountService {
     const pendingWithBalancesMap = new Map<number, number>(); // ID -> Balance
 
     for (const entry of pendingSortedAsc) {
-      runningBalance = runningBalance - entry.amount; // CREDIT decreases balance
+      runningBalance = runningBalance + entry.amount; // DEBIT increases balance (دين للعميل على الشركة)
       pendingWithBalancesMap.set(entry.id, runningBalance);
     }
 
@@ -295,11 +302,11 @@ class CustomerAccountService {
     return {
       customer,
       entries: finalEntries,
-      totalDebit: debitAmount,
+      totalDebit: totalDebitAmount,
       totalCredit: totalCreditAmount,
-      totalPayments: paymentsAmount,
-      totalReturns: otherCreditsAmount,
-      totalOtherCredits: otherCreditsAmount,
+      totalPayments: totalPaymentsAmount,
+      totalReturns: totalReturnsAmount,
+      totalOtherCredits: totalReturnsAmount,
       currentBalance: adjustedCurrentBalance
     };
   }
