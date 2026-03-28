@@ -288,7 +288,7 @@ export const printSupplierSettleReceipt = (receipt: any, supplierName: string) =
         </div>
 
         <div class="detail-item"><span class="label">يصرف للسيد/ة:</span><span class="value">${supplierName}</span></div>
-        <div class="detail-item"><span class="label">مقابل:</span><span class="value">${receipt.description || 'تسوية رصيد مرحل'}</span></div>
+        <div class="detail-item"><span class="label">مقابل:</span><span class="value">${(receipt.description || 'تسوية رصيد مرحل').replace('من المنظومة القديمة التقازي', '').trim()}</span></div>
         
         <div class="amount-box">
           <div class="amount-lyd">${Number(receipt.amount).toFixed(2)} د.ل</div>
@@ -372,7 +372,7 @@ export const printCustomerSettleReceipt = (receipt: any, customerName: string) =
 
         <div class="detail-item"><span class="label">وصلنا من السيد/ة:</span><span class="value">${customerName}</span></div>
         <div class="detail-item"><span class="label">مبلغ وقدره:</span><span class="value">${Number(receipt.amount).toFixed(2)} دينار ليبي فقط لا غير</span></div>
-        <div class="detail-item"><span class="label">مقابل:</span><span class="value">${receipt.description || 'تسوية رصيد مرحل'}</span></div>
+        <div class="detail-item"><span class="label">مقابل:</span><span class="value">${(receipt.description || 'تسوية رصيد مرحل').replace('من المنظومة القديمة التقازي', '').trim()}</span></div>
         
         <div class="amount-box">
           <div class="amount-lyd">${Number(receipt.amount).toFixed(2)} د.ل</div>

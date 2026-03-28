@@ -1,16 +1,31 @@
 #!/bin/bash
 
-export PGPASSWORD='1Mohmaed120@'
+# ===============================
+# PostgreSQL Backup Script
+# ===============================
 
-DATE=$(date +%Y-%m-%d_%H-%M)
+# Database Config
+DB_USER="postgres"
+DB_PASSWORD="4455"
+DB_HOST="localhost"
+DB_PORT="5432"
+DB_NAME="CeramiSys"
 
-BACKUP_PATH="/run/media/shark/033e2f56-34e7-4428-b4ef-bf76d5c4b6fb/CODE/CeramiSys"
+# Backup directory
+BACKUP_DIR="G:\Code\CeramiSys\CeramiSys"
+DATE=$(date +"%Y-%m-%d_%H-%M-%S")
 
-pg_dump -U postgres -h localhost -p 5432 \
--d CeramiSys \
--F c \
--b \
--f $BACKUP_PATH/CeramiSys_$DATE.dump
+# Create backup directory if not exists
+mkdir -p $BACKUP_DIR
 
-echo "Backup Completed Successfully at $DATE"
+# Export password
+export PGPASSWORD=$DB_PASSWORD
+
+# Run backup
+pg_dump -h $DB_HOST -p $DB_PORT -U $DB_USER -F c -b -v -f "$BACKUP_DIR/${DB_NAME}_$DATE.backup" $DB_NAME
+
+# Unset password
+unset PGPASSWORD
+
+echo "Backup completed: $BACKUP_DIR/${DB_NAME}_$DATE.backup"
 

@@ -6,17 +6,7 @@ import { useSettleCustomerOpeningBalanceMutation } from '@/state/customerAccount
 import { useGetTreasuriesQuery } from '@/state/treasuryApi';
 import { useGetCompaniesQuery } from '@/state/companyApi';
 import { useToast } from '@/components/ui/Toast';
-import { 
-  X, 
-  Calendar, 
-  FileText, 
-  Wallet,
-  Coins,
-  TrendingDown,
-  TrendingUp,
-  Building2,
-  Printer
-} from 'lucide-react';
+import { User, Search, TrendingUp, TrendingDown, FileText, X, DollarSign, Calendar, Phone, Eye, Filter, RefreshCw, Trash2, Plus, Wallet, Coins, Building2 } from "lucide-react";
 import { printSupplierSettleReceipt, printCustomerSettleReceipt } from '@/utils/printUtils';
 
 interface SettleOpeningBalanceModalProps {
@@ -30,10 +20,10 @@ interface SettleOpeningBalanceModalProps {
   initialDescription?: string;
 }
 
-const SettleOpeningBalanceModal = ({ 
-  isOpen, 
-  onClose, 
-  entityId, 
+const SettleOpeningBalanceModal = ({
+  isOpen,
+  onClose,
+  entityId,
   entityName,
   type,
   initialAmount = 0,
@@ -41,13 +31,13 @@ const SettleOpeningBalanceModal = ({
   initialDescription = ''
 }: SettleOpeningBalanceModalProps) => {
   const { success, error: showError } = useToast();
-  
+
   const [settleSupplierDebt, { isLoading: isSupplierSettling }] = useSettleSupplierOpeningBalanceMutation();
   const [settleCustomerDebt, { isLoading: isCustomerSettling }] = useSettleCustomerOpeningBalanceMutation();
-  
+
   const { data: treasuries = [] } = useGetTreasuriesQuery({ isActive: true });
   const { data: companiesData } = useGetCompaniesQuery({ limit: 100 });
-  
+
   const companies = companiesData?.data?.companies || [];
   const isSettling = isSupplierSettling || isCustomerSettling;
 
@@ -58,7 +48,7 @@ const SettleOpeningBalanceModal = ({
     amountLYD: initialAmount > 0 ? initialAmount.toString() : '',
     treasuryId: '',
     companyId: '',
-    description: initialDescription || 'تسوية رصيد مرحل',
+    description: initialDescription || 'رصيد مرحل من النظام السابق',
     notes: ''
   });
 
@@ -66,7 +56,7 @@ const SettleOpeningBalanceModal = ({
   useEffect(() => {
     const foreign = parseFloat(formData.amountForeign);
     const rate = parseFloat(formData.exchangeRate);
-    
+
     if (!isNaN(foreign) && !isNaN(rate)) {
       const lyDAmount = foreign * rate;
       setFormData(prev => ({ ...prev, amountLYD: lyDAmount.toFixed(2) }));
@@ -84,7 +74,7 @@ const SettleOpeningBalanceModal = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const amountLYD = parseFloat(formData.amountLYD);
     const amountForeign = parseFloat(formData.amountForeign);
     const exchangeRate = parseFloat(formData.exchangeRate);
@@ -130,14 +120,6 @@ const SettleOpeningBalanceModal = ({
       }
 
       success('تمت عملية تسوية الرصيد بنجاح');
-      
-      // طباعة الإيصال آلياً
-      if (type === 'supplier') {
-        printSupplierSettleReceipt(result, entityName);
-      } else {
-        printCustomerSettleReceipt(result, entityName);
-      }
-
       onClose();
     } catch (err: any) {
       showError(err.data?.message || 'حدث خطأ أثناء عملية التسوية');

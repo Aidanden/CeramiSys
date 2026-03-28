@@ -146,21 +146,34 @@ class CustomerAccountService {
     // جلب آخر رصيد كلي للعميل (بدون فلترة)
     const lastEntry = await prisma.customerAccount.findFirst({
       where: { customerId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: [
+        { transactionDate: 'desc' },
+        { id: 'desc' }
+      ]
     });
 
     // الرصيد الحالي الكلي = آخر رصيد مسجل
     const currentBalance = Number(lastEntry?.balance || 0);
 
     // حساب إجمالي الديون (DEBIT) وإجمالي الدفعات (CREDIT)
-    const [totalDebit, totalPaymentsSum, totalAllCredit] = await Promise.all([
+    const [totalDebit, totalPaymentsSum, totalReturnsSum, totalReturnPaymentsSum, totalAllCredit] = await Promise.all([
       prisma.customerAccount.aggregate({
         where: { customerId, transactionType: 'DEBIT' },
         _sum: { amount: true }
       }),
-      // إجمالي المدفوعات الفعلية فقط
+      // إجمالي المدفوعات الفعلية فقط (CREDIT + PAYMENT)
       prisma.customerAccount.aggregate({
         where: { customerId, transactionType: 'CREDIT', referenceType: 'PAYMENT' },
+        _sum: { amount: true }
+      }),
+      // إجمالي المردودات المسجلة (CREDIT + RETURN)
+      prisma.customerAccount.aggregate({
+        where: { customerId, transactionType: 'CREDIT', referenceType: 'RETURN' },
+        _sum: { amount: true }
+      }),
+      // إجمالي دفعات المردودات (DEBIT + PAYMENT) - لخصمها من المردودات
+      prisma.customerAccount.aggregate({
+        where: { customerId, transactionType: 'DEBIT', referenceType: 'PAYMENT' },
         _sum: { amount: true }
       }),
       // إجمالي كل الائتمانات (مدفوعات + مردودات + تسويات)
@@ -184,11 +197,14 @@ class CustomerAccountService {
 
     const debitAmount = Number(totalDebit._sum.amount || 0);
     const paymentsAmount = Number(totalPaymentsSum._sum.amount || 0);
+    const returnsAmount = Number(totalReturnsSum._sum.amount || 0);
+    const returnPaymentsAmount = Number(totalReturnPaymentsSum._sum.amount || 0);
     const confirmedCreditAmount = Number(totalAllCredit._sum.amount || 0);
 
     // الإجمالي الدائن يشمل الآن المردودات المعلقة لأن العميل يطالب بها
     const totalCreditAmount = confirmedCreditAmount + pendingReturnsAmount;
-    const otherCreditsAmount = totalCreditAmount - paymentsAmount;
+    // إجمالي المردودات غير المدفوعة = المردودات المسجلة - المدفوع منها + المعلقة
+    const totalReturnsAmount = returnsAmount - returnPaymentsAmount + pendingReturnsAmount;
 
     // الرصيد الحالي المعدل (يخصم منه المردودات المعلقة)
     // الرصيد في الداتابيس لا يشمل المعلق، لذا نطرحه منه
@@ -298,8 +314,8 @@ class CustomerAccountService {
       totalDebit: debitAmount,
       totalCredit: totalCreditAmount,
       totalPayments: paymentsAmount,
-      totalReturns: otherCreditsAmount,
-      totalOtherCredits: otherCreditsAmount,
+      totalReturns: totalReturnsAmount,
+      totalOtherCredits: totalReturnsAmount,
       currentBalance: adjustedCurrentBalance
     };
   }
@@ -346,41 +362,47 @@ class CustomerAccountService {
     });
 
     // تحويل التجميعات إلى ماب للبحث السريع
-    const statsMap: Record<number, { debit: number; payments: number; otherCredits: number }> = {};
+    const statsMap: Record<number, { debit: number; payments: number; returns: number; returnPayments: number }> = {};
 
     aggregates.forEach(agg => {
       if (!statsMap[agg.customerId]) {
-        statsMap[agg.customerId] = { debit: 0, payments: 0, otherCredits: 0 };
+        statsMap[agg.customerId] = { debit: 0, payments: 0, returns: 0, returnPayments: 0 };
       }
 
       const stats = statsMap[agg.customerId]!;
       const amount = Number(agg._sum.amount || 0);
 
       if (agg.transactionType === 'DEBIT') {
-        stats.debit += amount;
+        // DEBIT
+        if (agg.referenceType === 'PAYMENT') {
+          // دفعات المردودات (DEBIT + PAYMENT)
+          stats.returnPayments += amount;
+        } else {
+          // باقي الديون (فواتير، إلخ)
+          stats.debit += amount;
+        }
       } else {
-        // CREDIT - Match logic in getCustomerAccount
-        // هناك، الـ totalPaymentsSum يحسب فقط referenceType: 'PAYMENT' و 'GENERAL_RECEIPT'
-        // والـ totalAllCredit يحسب كل شيء (مدفوعات + مردودات + تسويات + مردودات معلقة)
+        // CREDIT
         if (agg.referenceType === 'PAYMENT' || agg.referenceType === 'GENERAL_RECEIPT') {
           stats.payments += amount;
-        } else {
-          // مردودات وتعديلات مسجلة في الـ ledger
-          stats.otherCredits += amount;
+        } else if (agg.referenceType === 'RETURN') {
+          // المردودات فقط
+          stats.returns += amount;
         }
+        // نتجاهل أي أنواع أخرى (ADJUSTMENT, إلخ)
       }
     });
 
     return customers.map(customer => {
-      const stats = statsMap[customer.id] || { debit: 0, payments: 0, otherCredits: 0 };
+      const stats = statsMap[customer.id] || { debit: 0, payments: 0, returns: 0, returnPayments: 0 };
       const pendingReturnsAmount = pendingReturnsMap[customer.id] || 0;
 
-      // إجمالي الخصومات (مدفوعات + مردودات + تسويات + مردودات معلقة)
-      const totalAllCredit = stats.payments + stats.otherCredits + pendingReturnsAmount;
-      // إجمالي المردودات/التسويات (مسجلة + معلقة) لمواءمة totalReturns في getCustomerAccount
-      const totalReturns = stats.otherCredits + pendingReturnsAmount;
-      // الرصيد الصافي (يجب أن يطابق تماماً كشف الحساب بعد المردودات المعلقة)
-      const currentBalance = stats.debit - totalAllCredit;
+      // إجمالي الخصومات (مدفوعات + مردودات + مردودات معلقة)
+      const totalAllCredit = stats.payments + stats.returns + pendingReturnsAmount;
+      // إجمالي المردودات غير المدفوعة = المردودات المسجلة - المدفوع منها + المعلقة
+      const totalReturns = stats.returns - stats.returnPayments + pendingReturnsAmount;
+      // الرصيد الصافي = (الديون + دفعات المردودات) - الخصومات
+      const currentBalance = (stats.debit + stats.returnPayments) - totalAllCredit;
 
       return {
         id: customer.id,

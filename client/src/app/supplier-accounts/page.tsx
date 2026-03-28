@@ -764,6 +764,16 @@ const SupplierAccountsPage = () => {
                                     </button>
                                   </div>
                                 )}
+                                {entry.referenceType === 'OPENING_BALANCE' && entry.transactionType === 'DEBIT' && (
+                                  <button
+                                    onClick={() => handleDeleteOpeningBalance(entry.referenceId)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all text-xs font-bold shadow-sm active:scale-95"
+                                    title="حذف هذا الرصيد المرحل"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    حذف
+                                  </button>
+                                )}
                                 {entry.referenceType === 'PAYMENT' && (
                                   <button
                                     onClick={() => handlePrintSupplierPayment(entry.referenceId)}
@@ -866,7 +876,7 @@ const SupplierAccountsPage = () => {
           type="supplier"
           initialAmount={Number(selectedEntry.amount)}
           initialCurrency={selectedEntry.currency || 'LYD'}
-          initialDescription={`تسوية ${selectedEntry.description || 'الرصيد المرحل'}`}
+          initialDescription={`تسوية رصيد مرحل`}
         />
       )}
     </div>

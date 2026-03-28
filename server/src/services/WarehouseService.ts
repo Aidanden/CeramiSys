@@ -83,7 +83,25 @@ export class WarehouseService {
                 lines: {
                   include: {
                     product: {
-                      select: { id: true, name: true, sku: true, unit: true, unitsPerBox: true }
+                      select: { 
+                        id: true, 
+                        name: true, 
+                        sku: true, 
+                        unit: true, 
+                        unitsPerBox: true,
+                        createdByCompanyId: true,
+                        createdByCompany: {
+                          select: {
+                            parentId: true
+                          }
+                        },
+                        stocks: {
+                          select: {
+                            companyId: true,
+                            boxes: true
+                          }
+                        }
+                      }
                     }
                   }
                 }

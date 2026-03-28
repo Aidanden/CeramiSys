@@ -140,7 +140,7 @@ class GeneralReceiptService {
             });
 
             // 3. تحديث كشف الحساب حسب نوع الجهة
-            
+
             if (data.contactId) {
                 // تحديث كشف حساب جهة الاتصال العامة
                 const lastContactEntry = await tx.financialContactAccount.findFirst({
@@ -176,11 +176,11 @@ class GeneralReceiptService {
             if (data.customerId) {
                 // تحديث كشف حساب العميل
                 const CustomerAccountService = (await import('./CustomerAccountService')).default;
-                
+
                 // DEPOSIT (قبض من العميل) => العميل يسدد دين (CREDIT - له)
                 // WITHDRAWAL (صرف للعميل) => العميل يستدين (DEBIT - عليه)
                 const transactionType = data.type === 'DEPOSIT' ? 'CREDIT' : 'DEBIT';
-                
+
                 await CustomerAccountService.createAccountEntry({
                     customerId: data.customerId,
                     transactionType: transactionType as any,
@@ -195,11 +195,11 @@ class GeneralReceiptService {
             if (data.supplierId) {
                 // تحديث كشف حساب المورد
                 const SupplierAccountService = (await import('./SupplierAccountService')).default;
-                
+
                 // DEPOSIT (قبض من المورد) => المورد يسدد دين (DEBIT - له/يصبح أقل مديونية)
                 // WITHDRAWAL (صرف للمورد) => المورد ندفع له دين (CREDIT - عليه/نسدد له)
                 const transactionType = data.type === 'DEPOSIT' ? 'DEBIT' : 'CREDIT';
-                
+
                 await SupplierAccountService.createAccountEntry({
                     supplierId: data.supplierId,
                     transactionType: transactionType as any,
@@ -263,6 +263,162 @@ class GeneralReceiptService {
                 supplier: true,
                 employee: true
             }
+        });
+    }
+
+    async deleteReceipt(id: number) {
+        return await prisma.$transaction(async (tx) => {
+            const receipt = await tx.generalReceipt.findUnique({
+                where: { id }
+            });
+
+            if (!receipt) throw new Error('الإيصال غير موجود');
+
+            const amountDecimal = receipt.amount;
+
+            // 1. عكس رصيد الخزينة وتسجيل حركة تصحيح (قيد عكسي)
+            const treasury = await tx.treasury.findUnique({
+                where: { id: receipt.treasuryId }
+            });
+
+            if (!treasury) throw new Error('الخزينة غير موجودة');
+
+            const balanceBeforeTreasury = treasury.balance;
+            let newTreasuryBalance: Prisma.Decimal;
+            let reversalType: TransactionType;
+
+            if (receipt.type === 'DEPOSIT') {
+                newTreasuryBalance = balanceBeforeTreasury.minus(amountDecimal);
+                reversalType = 'WITHDRAWAL';
+            } else {
+                newTreasuryBalance = balanceBeforeTreasury.plus(amountDecimal);
+                reversalType = 'DEPOSIT';
+            }
+
+            await tx.treasury.update({
+                where: { id: receipt.treasuryId },
+                data: { balance: newTreasuryBalance }
+            });
+
+            // تسجيل القيد العكسي في الخزينة بدلاً من حذف العملية القديمة
+            // وذلك للحفاظ على منطقية تسلسل الرصيد في حركة الخزينة
+            await tx.treasuryTransaction.create({
+                data: {
+                    treasuryId: receipt.treasuryId,
+                    type: reversalType,
+                    source: 'GENERAL_RECEIPT',
+                    amount: amountDecimal,
+                    balanceBefore: balanceBeforeTreasury,
+                    balanceAfter: newTreasuryBalance,
+                    description: `قيد عكسي/إلغاء لعملية: ${receipt.description || 'بدون بيان'} (رقم الإيصال: ${receipt.receiptNumber || receipt.id})`,
+                    referenceType: 'GeneralReceipt',
+                    referenceId: receipt.id,
+                    createdBy: receipt.createdBy || 'SYSTEM'
+                }
+            });
+
+            // 3. حذف قيود الحسابات وإعادة الحساب (لتختفي من التقارير والكشوفات كما في الطلب الأول)
+            if (receipt.contactId) {
+                // حذف من كشف حساب جهة الاتصال
+                await tx.financialContactAccount.deleteMany({
+                    where: {
+                        referenceType: 'GENERAL_RECEIPT',
+                        referenceId: receipt.id
+                    }
+                });
+
+                // إعادة حساب الأرصدة التراكمية لجهة الاتصال (اختياري ولكن يفضل ليكون الحساب دقيقاً)
+                const remainingEntries = await tx.financialContactAccount.findMany({
+                    where: { contactId: receipt.contactId },
+                    orderBy: [{ transactionDate: 'asc' }, { createdAt: 'asc' }]
+                });
+
+                let runningBalance = 0;
+                for (const entry of remainingEntries) {
+                    if (entry.transactionType === 'DEPOSIT') {
+                        runningBalance += Number(entry.amount);
+                    } else {
+                        runningBalance -= Number(entry.amount);
+                    }
+                    await tx.financialContactAccount.update({
+                        where: { id: entry.id },
+                        data: { balance: new Prisma.Decimal(runningBalance) }
+                    });
+                }
+            }
+
+            if (receipt.customerId) {
+                // حذف من كشف حساب العميل
+                await tx.customerAccount.deleteMany({
+                    where: {
+                        referenceType: 'GENERAL_RECEIPT',
+                        referenceId: receipt.id
+                    }
+                });
+
+                // إعادة حساب الأرصدة التراكمية للعميل
+                const remainingEntries = await tx.customerAccount.findMany({
+                    where: { customerId: receipt.customerId },
+                    orderBy: [{ transactionDate: 'asc' }, { createdAt: 'asc' }]
+                });
+
+                let runningBalance = 0;
+                for (const entry of remainingEntries) {
+                    if (entry.transactionType === 'DEBIT') {
+                        runningBalance += Number(entry.amount);
+                    } else {
+                        runningBalance -= Number(entry.amount);
+                    }
+                    await tx.customerAccount.update({
+                        where: { id: entry.id },
+                        data: { balance: new Prisma.Decimal(runningBalance) }
+                    });
+                }
+            }
+
+            if (receipt.supplierId) {
+                // حذف من كشف حساب المورد
+                await tx.supplierAccount.deleteMany({
+                    where: {
+                        referenceType: 'GENERAL_RECEIPT',
+                        referenceId: receipt.id
+                    }
+                });
+
+                // إعادة حساب الأرصدة التراكمية للمورد (حسب كل عملة)
+                const currencies = await tx.supplierAccount.findMany({
+                    where: { supplierId: receipt.supplierId },
+                    distinct: ['currency'],
+                    select: { currency: true }
+                });
+
+                for (const { currency } of currencies) {
+                    const remainingEntries = await tx.supplierAccount.findMany({
+                        where: { supplierId: receipt.supplierId, currency },
+                        orderBy: [{ transactionDate: 'asc' }, { createdAt: 'asc' }]
+                    });
+
+                    let runningBalance = 0;
+                    for (const entry of remainingEntries) {
+                        if (entry.transactionType === 'CREDIT') {
+                            runningBalance += Number(entry.amount);
+                        } else {
+                            runningBalance -= Number(entry.amount);
+                        }
+                        await tx.supplierAccount.update({
+                            where: { id: entry.id },
+                            data: { balance: new Prisma.Decimal(runningBalance) }
+                        });
+                    }
+                }
+            }
+
+            // 4. حذف الإيصال نفسه
+            await tx.generalReceipt.delete({
+                where: { id }
+            });
+
+            return { success: true };
         });
     }
 }

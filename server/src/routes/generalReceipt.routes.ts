@@ -19,5 +19,6 @@ router.get('/contacts/:id/statement', financialContactController.getStatement);
 router.get('/receipts', generalReceiptController.getAll);
 router.get('/receipts/:id', generalReceiptController.getById);
 router.post('/receipts', generalReceiptController.create);
+router.delete('/receipts/:id', generalReceiptController.delete);
 
 export default router;

@@ -6,6 +6,7 @@ import {
     useGetGeneralReceiptsQuery,
     useCreateFinancialContactMutation,
     useCreateGeneralReceiptMutation,
+    useDeleteGeneralReceiptMutation,
     useGetContactStatementQuery,
 } from '@/state/generalReceiptApi';
 import { useGetTreasuriesQuery } from '@/state/treasuryApi';
@@ -34,6 +35,7 @@ import {
     Printer,
     ChevronLeft,
     ChevronRight,
+    Trash2,
 } from 'lucide-react';
 import { GeneralReceiptPrint } from '@/components/general-receipts/GeneralReceiptPrint';
 import { ReceiptsReport } from '@/components/general-receipts/ReceiptsReport';
@@ -91,6 +93,7 @@ export default function GeneralReceiptsPage() {
 
     const [createContact, { isLoading: isCreatingContact }] = useCreateFinancialContactMutation();
     const [createReceipt, { isLoading: isCreatingReceipt }] = useCreateGeneralReceiptMutation();
+    const [deleteReceipt, { isLoading: isDeletingReceipt }] = useDeleteGeneralReceiptMutation();
 
     // Get current user and companies
     const { data: userData } = useGetCurrentUserQuery();
@@ -252,6 +255,19 @@ export default function GeneralReceiptsPage() {
         }
     };
 
+    const handleDeleteReceipt = async (id: number) => {
+        if (!window.confirm('هل أنت متأكد من حذف هذا الإيصال؟ سيتم عكس المبالغ في الخزينة وكشوفات الحساب.')) {
+            return;
+        }
+
+        try {
+            await deleteReceipt(id).unwrap();
+            alert('تم حذف الإيصال بنجاح');
+        } catch (err: any) {
+            alert(err?.data?.error || 'فشل في حذف الإيصال');
+        }
+    };
+
     const openStatement = (id: number) => {
         setSelectedContactId(id);
         setShowStatementModal(true);
@@ -310,7 +326,8 @@ export default function GeneralReceiptsPage() {
             endDate: '',
             minAmount: '',
             maxAmount: '',
-            treasuryId: ''
+            treasuryId: '',
+            companyId: ''
         });
         setCurrentPage(1);
     };
@@ -700,6 +717,14 @@ export default function GeneralReceiptsPage() {
                                                         title="طباعة الإيصال مباشرة"
                                                     >
                                                         <Printer className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteReceipt(r.id)}
+                                                        disabled={isDeletingReceipt}
+                                                        className="p-2 text-error-600 dark:text-error-400 hover:bg-error-50 dark:hover:bg-error-900/20 rounded-lg transition-colors group/btn"
+                                                        title="حذف الإيصال"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
                                                     </button>
                                                 </div>
                                             </td>

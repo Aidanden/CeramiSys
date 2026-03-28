@@ -323,6 +323,7 @@ export class PaymentReceiptService {
         }
 
         // ب. قيد في حساب العميل (DEBIT) إذا كان مرتبطاً بعميل (في حالة المردودات)
+        // عند دفع المردود، نسجل DEBIT لإلغاء الـ CREDIT الذي سُجل عند إنشاء المردود
         if (receipt.customerId) {
           const CustomerAccountService = (await import('./CustomerAccountService')).default;
           await CustomerAccountService.createAccountEntry({
@@ -331,7 +332,7 @@ export class PaymentReceiptService {
             amount: amountToPayInLYD,
             referenceType: 'PAYMENT' as any,
             referenceId: receipt.id,
-            description: notes || receipt.description || `تسديد إيصال مردود رقم ${receipt.id}`,
+            description: notes || receipt.description || `دفع مردود مبيعات - إيصال رقم ${receipt.id}`,
             transactionDate: new Date()
           }, tx as any);
         }
