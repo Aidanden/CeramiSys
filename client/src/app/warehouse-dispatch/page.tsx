@@ -44,6 +44,7 @@ export default function WarehouseDispatchPage() {
   // State for Dispatch Orders
   const [selectedOrder, setSelectedOrder] = useState<DispatchOrder | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [expandedLineId, setExpandedLineId] = useState<number | null>(null);
 
   // State for Return Orders
   const [selectedReturnOrder, setSelectedReturnOrder] = useState<ReturnOrder | null>(null);
@@ -1285,30 +1286,120 @@ export default function WarehouseDispatchPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-border-primary bg-white dark:bg-surface-primary">
-                    {selectedOrder.sale?.lines?.map((line, idx) => (
-                      <tr key={line.id} className={`hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors ${idx % 2 === 0 ? 'bg-white dark:bg-surface-primary' : 'bg-gray-50 dark:bg-surface-secondary'}`}>
-                        <td className="px-4 py-3 text-base font-semibold text-gray-900 dark:text-text-primary">{line.product?.name}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-text-secondary font-mono">{line.product?.sku}</td>
-                        <td className="px-4 py-3 text-base">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-sm font-semibold ${line.isFromParentCompany
-                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
-                            : 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-400'
-                            }`}>
-                            {line.isFromParentCompany ? 'التقازي' : selectedOrder.sale?.company?.name || 'الإمارات'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-base">
-                          <span className="font-bold text-orange-600 text-lg">
-                            {formatQuantityDisplay(line.qty, line.product)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-base">
-                          <span className="font-semibold text-blue-600 text-base">
-                            {formatTotalUnits(line.qty, line.product)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {selectedOrder.sale?.lines?.map((line, idx) => {
+                      const isExpanded = expandedLineId === line.id;
+                      const isBox = line.product?.unit === 'صندوق';
+                      const unitsPerBox = line.product?.unitsPerBox || 0;
+                      
+                      // حساب المخزون
+                      const stockInfo: { quantity: number; boxes: number; source: string } | null = (() => {
+                        const product = line.product;
+                        if (!product?.stocks || product.stocks.length === 0) return null;
+                        
+                        // البحث عن المخزون من الشركة الصحيحة
+                        if (line.isFromParentCompany) {
+                          // مخزن التقازي - استخدام parentId من createdByCompany
+                          const parentCompanyId = product.createdByCompany?.parentId;
+                          if (!parentCompanyId) return null;
+                          
+                          const parentStock = product.stocks.find((s: { companyId: number; boxes: number }) => s.companyId === parentCompanyId);
+                          if (parentStock) {
+                            const boxes = Number(parentStock.boxes) || 0;
+                            const quantity = isBox && unitsPerBox ? boxes * Number(unitsPerBox) : boxes;
+                            return {
+                              quantity: quantity,
+                              boxes: boxes,
+                              source: 'مخزن التقازي'
+                            };
+                          }
+                        } else {
+                          // المخزن المحلي
+                          const companyStock = product.stocks.find((s: { companyId: number; boxes: number }) => s.companyId === selectedOrder.sale?.companyId);
+                          if (companyStock) {
+                            const boxes = Number(companyStock.boxes) || 0;
+                            const quantity = isBox && unitsPerBox ? boxes * Number(unitsPerBox) : boxes;
+                            return {
+                              quantity: quantity,
+                              boxes: boxes,
+                              source: 'المخزن المحلي'
+                            };
+                          }
+                        }
+                        return null;
+                      })();
+                      
+                      const stockBoxes = stockInfo?.boxes ?? 0;
+                      const stockArea = isBox && unitsPerBox && stockInfo ? stockInfo.quantity : null;
+                      
+                      return (
+                        <React.Fragment key={line.id}>
+                          <tr 
+                            className={`hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors cursor-pointer ${idx % 2 === 0 ? 'bg-white dark:bg-surface-primary' : 'bg-gray-50 dark:bg-surface-secondary'} ${isExpanded ? 'border-b-2 border-orange-300 dark:border-orange-700' : ''}`}
+                            onClick={() => setExpandedLineId(isExpanded ? null : line.id)}
+                          >
+                            <td className="px-4 py-3 text-base font-semibold text-gray-900 dark:text-text-primary">{line.product?.name}</td>
+                            <td className="px-4 py-3 text-sm text-gray-600 dark:text-text-secondary font-mono">{line.product?.sku}</td>
+                            <td className="px-4 py-3 text-base">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-sm font-semibold ${line.isFromParentCompany
+                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
+                                : 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-400'
+                                }`}>
+                                {line.isFromParentCompany ? 'التقازي' : selectedOrder.sale?.company?.name || 'الإمارات'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-base">
+                              <span className="font-bold text-orange-600 text-lg">
+                                {formatQuantityDisplay(line.qty, line.product)}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-base">
+                              <span className="font-semibold text-blue-600 text-base">
+                                {formatTotalUnits(line.qty, line.product)}
+                              </span>
+                            </td>
+                          </tr>
+                          {isExpanded && (
+                            <tr className="bg-gradient-to-b from-orange-50 to-white dark:from-orange-900/10 dark:to-surface-primary">
+                              <td colSpan={5} className="px-4 py-4">
+                                <div className="rounded-xl overflow-hidden border border-orange-200 dark:border-orange-800/30 shadow-sm">
+                                  <div className="flex items-center justify-between px-4 py-2 bg-orange-600 dark:bg-orange-700 text-white">
+                                    <span className="font-bold text-sm">المخزون الحالي</span>
+                                    <span className="text-xs opacity-70">{stockInfo?.source || 'غير متوفر'}</span>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-0 divide-x divide-x-reverse divide-slate-100 dark:divide-border-primary">
+                                    {/* الكمية في المخزن */}
+                                    <div className={`flex flex-col items-center justify-center py-4 px-4 ${stockBoxes > 0 ? 'bg-green-50 dark:bg-green-900/10' : 'bg-red-50 dark:bg-red-900/10'}`}>
+                                      <span className={`text-xs mb-1 ${stockBoxes > 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+                                        المخزون الحالي {stockInfo ? `(${stockInfo.source})` : ''}
+                                      </span>
+                                      <span className={`text-2xl font-black ${stockBoxes > 0 ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
+                                        {stockBoxes}
+                                      </span>
+                                      <span className={`text-xs ${stockBoxes > 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+                                        {line.product?.unit || 'وحدة'}
+                                      </span>
+                                    </div>
+                                    {/* إجمالي العبوة في المخزن */}
+                                    {stockArea !== null ? (
+                                      <div className={`flex flex-col items-center justify-center py-4 px-4 ${stockBoxes > 0 ? 'bg-purple-50 dark:bg-purple-900/10' : 'bg-red-50 dark:bg-red-900/10'}`}>
+                                        <span className="text-xs text-purple-500 dark:text-purple-400 mb-1">إجمالي العبوة</span>
+                                        <span className="text-2xl font-black text-purple-700 dark:text-purple-300">{stockArea.toFixed(1)}</span>
+                                        <span className="text-xs text-purple-400">م²</span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex flex-col items-center justify-center py-4 px-4 bg-slate-50 dark:bg-surface-secondary">
+                                        <span className="text-xs text-slate-400 mb-1">إجمالي العبوة</span>
+                                        <span className="text-lg text-slate-400">—</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

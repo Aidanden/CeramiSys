@@ -86,9 +86,27 @@ export class ProductService {
       // بناء شروط البحث
       const searchConditions: Prisma.ProductWhereInput[] = [];
 
-      // البحث بالاسم
+      // البحث بالاسم - يدعم البحث بأوائل الكلمات
       if (search) {
-        searchConditions.push({ name: { contains: search, mode: Prisma.QueryMode.insensitive } });
+        // تقسيم نص البحث إلى كلمات
+        const searchWords = search.trim().split(/\s+/).filter(w => w.length > 0);
+        
+        if (searchWords.length === 1) {
+          // بحث بسيط بكلمة واحدة
+          searchConditions.push({ name: { contains: search, mode: Prisma.QueryMode.insensitive } });
+        } else {
+          // بحث متقدم بأوائل الكلمات
+          // مثال: "gr bl ma" يجد "GRES BLANCO MATE"
+          // كل كلمة يجب أن تكون موجودة في الاسم
+          const wordConditions = searchWords.map(word => ({
+            name: { contains: word, mode: Prisma.QueryMode.insensitive }
+          }));
+          
+          // نستخدم AND لضمان وجود جميع الكلمات
+          searchConditions.push({
+            AND: wordConditions
+          });
+        }
       }
 
       // البحث بالكود (SKU) - بحث مطابق تماماً

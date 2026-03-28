@@ -11,6 +11,7 @@ export interface DispatchOrder {
   sale?: {
     id: number;
     invoiceNumber: string;
+    companyId?: number;
     customer?: {
       id: number;
       name: string;
@@ -31,6 +32,14 @@ export interface DispatchOrder {
         sku: string;
         unit?: string;
         unitsPerBox?: number;
+        createdByCompanyId?: number;
+        createdByCompany?: {
+          parentId?: number;
+        };
+        stocks?: Array<{
+          companyId: number;
+          boxes: number;
+        }>;
       };
       qty: number;
       unitPrice: number;

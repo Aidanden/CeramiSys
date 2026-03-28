@@ -1202,11 +1202,30 @@ const SalesPage = () => {
     return product.sku.toLowerCase() === productCodeSearch.toLowerCase();
   }) || [];
 
-  // فلترة الأصناف بالاسم (like - جزء من الاسم)
+  // فلترة الأصناف بالاسم - يدعم البحث بأوائل الكلمات
   const filteredByName = productsData?.data?.products?.filter(product => {
     if (!productNameSearch) return false;
-    // البحث بجزء من الاسم
-    return product.name.toLowerCase().includes(productNameSearch.toLowerCase());
+    
+    const productName = product.name.toLowerCase();
+    const searchTerm = productNameSearch.toLowerCase().trim();
+    
+    // تقسيم نص البحث إلى كلمات
+    const searchWords = searchTerm.split(/\s+/).filter(w => w.length > 0);
+    
+    if (searchWords.length === 1) {
+      // بحث بسيط بكلمة واحدة
+      return productName.includes(searchTerm);
+    } else {
+      // بحث متقدم بأوائل الكلمات
+      // مثال: "gr bl ma" يجد "GRES BLANCO MATE"
+      // تقسيم اسم المنتج إلى كلمات
+      const productWords = productName.split(/\s+/);
+      
+      // كل كلمة بحث يجب أن تطابق بداية أي كلمة في اسم المنتج
+      return searchWords.every(searchWord => 
+        productWords.some(productWord => productWord.startsWith(searchWord))
+      );
+    }
   }) || [];
 
   // Debug: عرض نتائج الفلترة
