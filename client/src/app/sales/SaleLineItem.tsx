@@ -202,6 +202,12 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
                           setIsManualPrice(false); // إعادة تعيين السعر اليدوي لحساب السعر من الهامش
                           updateSaleLine(index, 'profitMargin', Number(e.target.value));
                         }}
+                        onWheel={(e) => e.currentTarget.blur()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                          }
+                        }}
                         className="w-16 bg-white dark:bg-surface-primary border border-orange-200 dark:border-orange-800/30 rounded px-1.5 py-1 text-sm font-black text-orange-800 dark:text-orange-300 outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800/50"
                       />
                       <span className="text-[10px] font-black text-orange-700 dark:text-orange-300">%</span>
@@ -270,6 +276,12 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
                 type="number"
                 value={localQty}
                 onChange={(e) => setLocalQty(e.target.value)}
+                onWheel={(e) => e.currentTarget.blur()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                  }
+                }}
                 className="w-16 bg-white dark:bg-surface-secondary border border-slate-200 dark:border-border-primary rounded px-1.5 py-1.5 text-base text-center font-black text-slate-800 dark:text-text-primary outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 transition-all"
               />
             </div>
@@ -300,6 +312,12 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
                   }
                 }
               }}
+              onWheel={(e) => e.currentTarget.blur()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                }
+              }}
               className={`bg-white dark:bg-surface-secondary border rounded px-2 py-1.5 text-center font-bold outline-none focus:ring-2 transition-all ${line.isFromParentCompany ? 'w-28 text-base text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700 focus:ring-orange-200 dark:focus:ring-orange-800/50' : 'w-24 text-base text-slate-800 dark:text-text-primary border-slate-200 dark:border-border-primary focus:ring-blue-100 dark:focus:ring-blue-900/50'}`}
             />
           </div>
@@ -321,6 +339,12 @@ const SaleLineItem: React.FC<SaleLineItemProps> = ({
                       type="number"
                       value={localDiscountAmount}
                       onChange={e => setLocalDiscountAmount(Number(e.target.value))}
+                      onWheel={(e) => e.currentTarget.blur()}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                        }
+                      }}
                       className="w-full border-b border-red-200 dark:border-red-800/50 bg-red-50/50 dark:bg-red-900/10 text-red-600 dark:text-red-400 text-xs text-center font-bold outline-none"
                     />
                   )}
