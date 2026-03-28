@@ -46,6 +46,7 @@ export interface SupplierAccountSummary {
   phone?: string;
   currentBalance: number;
   hasDebt: boolean;
+  balancesByCurrency: Record<string, number>; // الأرصدة حسب العملة
 }
 
 export interface OpenPurchase {

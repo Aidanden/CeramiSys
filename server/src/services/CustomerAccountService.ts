@@ -206,9 +206,23 @@ class CustomerAccountService {
     // إجمالي المردودات غير المدفوعة = المردودات المسجلة - المدفوع منها + المعلقة
     const totalReturnsAmount = returnsAmount - returnPaymentsAmount + pendingReturnsAmount;
 
-    // الرصيد الحالي المعدل (يخصم منه المردودات المعلقة)
-    // الرصيد في الداتابيس لا يشمل المعلق، لذا نطرحه منه
-    const adjustedCurrentBalance = currentBalance - pendingReturnsAmount;
+    // حساب الرصيد الصحيح من الفواتير المفتوحة
+    // الرصيد الحالي يجب أن يكون = مجموع remainingAmount في الفواتير المفتوحة
+    const openInvoices = await prisma.sale.findMany({
+      where: {
+        customerId,
+        status: 'APPROVED',
+        isFullyPaid: false
+      },
+      select: {
+        remainingAmount: true
+      }
+    });
+
+    const actualCurrentBalance = openInvoices.reduce((sum, inv) => sum + Number(inv.remainingAmount), 0);
+
+    // الرصيد المعدل للعرض (يشمل المردودات المعلقة للإشارة فقط)
+    const adjustedCurrentBalance = actualCurrentBalance - pendingReturnsAmount;
 
     console.log(`[DEBUG] Customer Account ID: ${customerId}`);
     console.log(`[DEBUG] Total Debit: ${debitAmount}`);
@@ -216,7 +230,8 @@ class CustomerAccountService {
     console.log(`[DEBUG] Pending Returns: ${pendingReturnsAmount}`);
     console.log(`[DEBUG] Total Credit (Adjusted): ${totalCreditAmount}`);
     console.log(`[DEBUG] Current Balance (DB): ${currentBalance}`);
-    console.log(`[DEBUG] Current Balance (Adjusted): ${adjustedCurrentBalance}`);
+    console.log(`[DEBUG] Actual Current Balance (from open invoices): ${actualCurrentBalance}`);
+    console.log(`[DEBUG] Adjusted Current Balance: ${adjustedCurrentBalance}`);
 
     // تحويل القيود المسجلة
     const mappedEntries = entries.map(entry => ({
@@ -316,7 +331,7 @@ class CustomerAccountService {
       totalPayments: paymentsAmount,
       totalReturns: totalReturnsAmount,
       totalOtherCredits: totalReturnsAmount,
-      currentBalance: adjustedCurrentBalance
+      currentBalance: actualCurrentBalance // ✅ استخدام الرصيد الفعلي من الفواتير المفتوحة
     };
   }
 
@@ -335,13 +350,30 @@ class CustomerAccountService {
    * جلب ملخص حسابات جميع العملاء
    */
   async getAllCustomersAccountSummary() {
-    const [customers, aggregates] = await Promise.all([
+    const [customers, aggregates, openInvoicesAggregates] = await Promise.all([
       prisma.customer.findMany(),
       prisma.customerAccount.groupBy({
         by: ['customerId', 'transactionType', 'referenceType'],
         _sum: { amount: true }
+      }),
+      // ✅ جلب مجموع الفواتير المفتوحة لكل عميل
+      prisma.sale.groupBy({
+        by: ['customerId'],
+        _sum: { remainingAmount: true },
+        where: {
+          status: 'APPROVED',
+          isFullyPaid: false
+        }
       })
     ]);
+
+    // تحويل مجموع الفواتير المفتوحة إلى ماب
+    const openInvoicesMap: Record<number, number> = {};
+    openInvoicesAggregates.forEach(agg => {
+      if (agg.customerId != null) {
+        openInvoicesMap[agg.customerId] = Number(agg._sum.remainingAmount || 0);
+      }
+    });
 
     // جلب مجموع المردودات المعلقة لكل عميل (RETURN PENDING) لمواءمة منطق getCustomerAccount
     const pendingReturnsAggregates = await prisma.supplierPaymentReceipt.groupBy({
@@ -397,12 +429,13 @@ class CustomerAccountService {
       const stats = statsMap[customer.id] || { debit: 0, payments: 0, returns: 0, returnPayments: 0 };
       const pendingReturnsAmount = pendingReturnsMap[customer.id] || 0;
 
+      // ✅ استخدام الرصيد الفعلي من الفواتير المفتوحة
+      const currentBalance = openInvoicesMap[customer.id] || 0;
+
       // إجمالي الخصومات (مدفوعات + مردودات + مردودات معلقة)
       const totalAllCredit = stats.payments + stats.returns + pendingReturnsAmount;
       // إجمالي المردودات غير المدفوعة = المردودات المسجلة - المدفوع منها + المعلقة
       const totalReturns = stats.returns - stats.returnPayments + pendingReturnsAmount;
-      // الرصيد الصافي = (الديون + دفعات المردودات) - الخصومات
-      const currentBalance = (stats.debit + stats.returnPayments) - totalAllCredit;
 
       return {
         id: customer.id,

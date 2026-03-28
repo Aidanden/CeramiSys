@@ -54,6 +54,7 @@ export interface SupplierAccountSummary {
   phone?: string;
   currentBalance: number;
   hasDebt: boolean;
+  balancesByCurrency: Record<string, number>; // الأرصدة حسب العملة
 }
 
 export interface OpenPurchase {
@@ -240,8 +241,7 @@ class SupplierAccountService {
     const suppliers = await prisma.supplier.findMany({
       include: {
         accountEntries: {
-          orderBy: { createdAt: 'desc' },
-          take: 1
+          orderBy: { createdAt: 'desc' }
         }
       }
     });
@@ -250,12 +250,32 @@ class SupplierAccountService {
       const lastEntry = supplier.accountEntries[0];
       const currentBalance = lastEntry ? Number(lastEntry.balance) : 0;
 
+      // حساب الأرصدة حسب العملة
+      const balancesByCurrency: Record<string, number> = {};
+      
+      // نحتاج لحساب آخر رصيد لكل عملة
+      const currenciesMap = new Map<string, number>();
+      
+      supplier.accountEntries.forEach(entry => {
+        const currency = entry.currency || 'LYD';
+        // نأخذ أول قيد لكل عملة (الأحدث) لأن القيود مرتبة desc
+        if (!currenciesMap.has(currency)) {
+          currenciesMap.set(currency, Number(entry.balance));
+        }
+      });
+      
+      // تحويل Map إلى Object
+      currenciesMap.forEach((balance, currency) => {
+        balancesByCurrency[currency] = balance;
+      });
+
       return {
         id: supplier.id,
         name: supplier.name,
         phone: supplier.phone || undefined,
         currentBalance,
         hasDebt: currentBalance !== 0,
+        balancesByCurrency,
       };
     });
   }

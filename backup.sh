@@ -6,13 +6,13 @@
 
 # Database Config
 DB_USER="postgres"
-DB_PASSWORD="4455"
+DB_PASSWORD="1Mohmaed120@"
 DB_HOST="localhost"
 DB_PORT="5432"
 DB_NAME="CeramiSys"
 
 # Backup directory
-BACKUP_DIR="G:\Code\CeramiSys\CeramiSys"
+BACKUP_DIR="/run/media/shark/033e2f56-34e7-4428-b4ef-bf76d5c4b6fb/CODE/CeramiSys"
 DATE=$(date +"%Y-%m-%d_%H-%M-%S")
 
 # Create backup directory if not exists

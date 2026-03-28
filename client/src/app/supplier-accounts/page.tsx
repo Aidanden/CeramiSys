@@ -415,17 +415,24 @@ const SupplierAccountsPage = () => {
                       <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">#</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">المورد</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">رقم الهاتف</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">الحالة</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">رصيد دينار</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">رصيد دولار</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">رصيد يورو</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-tertiary uppercase">الإجراءات</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-surface-primary divide-y divide-gray-200 dark:divide-border-primary">
                     {paginatedSuppliers.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-8 text-center text-slate-500 dark:text-text-tertiary">لا توجد نتائج</td>
+                        <td colSpan={7} className="px-6 py-8 text-center text-slate-500 dark:text-text-tertiary">لا توجد نتائج</td>
                       </tr>
                     ) : (
-                      paginatedSuppliers.map((supplier, index) => (
+                      paginatedSuppliers.map((supplier, index) => {
+                        const lydBalance = supplier.balancesByCurrency?.LYD || 0;
+                        const usdBalance = supplier.balancesByCurrency?.USD || 0;
+                        const eurBalance = supplier.balancesByCurrency?.EUR || 0;
+                        
+                        return (
                         <tr key={supplier.id} className="hover:bg-slate-50 dark:hover:bg-surface-hover transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-text-tertiary">
                             {(currentPage - 1) * itemsPerPage + index + 1}
@@ -444,9 +451,21 @@ const SupplierAccountsPage = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-text-primary">{supplier.phone || '-'}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${supplier.currentBalance > 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400' : supplier.currentBalance < 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' : 'bg-slate-100 dark:bg-surface-hover text-gray-800 dark:text-text-primary'
+                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${lydBalance > 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400' : lydBalance < 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' : 'bg-slate-100 dark:bg-surface-hover text-gray-800 dark:text-text-primary'
                               }`}>
-                              {getBalanceText(supplier.currentBalance)}
+                              {lydBalance === 0 ? '-' : `${Math.abs(lydBalance).toFixed(2)} ${lydBalance > 0 ? 'له' : 'عليه'}`}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${usdBalance > 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400' : usdBalance < 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' : 'bg-slate-100 dark:bg-surface-hover text-gray-800 dark:text-text-primary'
+                              }`}>
+                              {usdBalance === 0 ? '-' : `${Math.abs(usdBalance).toFixed(2)} ${usdBalance > 0 ? 'له' : 'عليه'}`}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${eurBalance > 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400' : eurBalance < 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' : 'bg-slate-100 dark:bg-surface-hover text-gray-800 dark:text-text-primary'
+                              }`}>
+                              {eurBalance === 0 ? '-' : `${Math.abs(eurBalance).toFixed(2)} ${eurBalance > 0 ? 'له' : 'عليه'}`}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -466,7 +485,8 @@ const SupplierAccountsPage = () => {
                             </button>
                           </td>
                         </tr>
-                      ))
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
