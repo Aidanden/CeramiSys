@@ -1214,13 +1214,13 @@ const ProductsPage = () => {
 
 
       {/* Products Table */}
-      <div className="bg-white dark:bg-surface-primary rounded-lg shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden w-full">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 dark:divide-border-primary">
-            <thead className="bg-slate-50 dark:bg-surface-secondary">
+      <div className="bg-surface-primary rounded-lg shadow-sm border border-border-primary overflow-hidden w-full">
+        <div className="w-full">
+          <table className="w-full table-fixed">
+            <thead className="bg-background-secondary">
               <tr>
                 {isBulkPrintMode && (
-                  <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-text-secondary uppercase w-[50px]">
+                  <th className="px-3 sm:px-4 lg:px-6 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider w-[50px]">
                     <input
                       type="checkbox"
                       checked={selectedProducts.size === products.length && products.length > 0}
@@ -1229,45 +1229,45 @@ const ProductsPage = () => {
                     />
                   </th>
                 )}
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase" style={{ width: '16%' }}>
+                <th className="px-2 py-3 text-right text-sm font-semibold text-text-secondary uppercase tracking-wider" style={{ width: '16%' }}>
                   الصنف
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase" style={{ width: '6%' }}>
+                <th className="px-2 py-3 text-right text-sm font-semibold text-text-secondary uppercase tracking-wider" style={{ width: '6%' }}>
                   الرمز
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase hidden sm:table-cell" style={{ width: '5%' }}>
+                <th className="px-2 py-3 text-right text-sm font-semibold text-text-secondary uppercase tracking-wider hidden sm:table-cell" style={{ width: '5%' }}>
                   الوحدة
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-text-secondary uppercase" style={{ width: '6%' }}>
+                <th className="px-2 py-3 text-center text-sm font-semibold text-text-secondary uppercase tracking-wider" style={{ width: '6%' }}>
                   العبوة
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-text-secondary uppercase" style={{ width: '7%' }}>
+                <th className="px-1 py-3 text-center text-sm font-semibold text-text-secondary uppercase tracking-wider" style={{ width: '7%' }}>
                   إجمالي العبوة
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-text-secondary uppercase" style={{ width: '8%' }}>
+                <th className="px-1 py-3 text-center text-sm font-semibold text-text-secondary uppercase tracking-wider" style={{ width: '8%' }}>
                   إجمالي المخزون
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-text-secondary uppercase" style={{ width: '8%' }}>
+                <th className="px-1 py-3 text-center text-sm font-semibold text-text-secondary uppercase tracking-wider" style={{ width: '8%' }}>
                   في المستودع
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-text-secondary uppercase" style={{ width: '8%' }}>
+                <th className="px-1 py-3 text-center text-sm font-semibold text-text-secondary uppercase tracking-wider" style={{ width: '8%' }}>
                   في المحلات
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase" style={{ width: '8%' }}>
+                <th className="px-2 py-3 text-right text-sm font-semibold text-text-secondary uppercase tracking-wider" style={{ width: '8%' }}>
                   السعر
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase hidden md:table-cell" style={{ width: '8%' }}>
+                <th className="px-2 py-3 text-right text-sm font-semibold text-text-secondary uppercase tracking-wider hidden md:table-cell" style={{ width: '8%' }}>
                   التكلفة
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase hidden lg:table-cell" style={{ width: '11%' }}>
+                <th className="px-2 py-3 text-right text-sm font-semibold text-text-secondary uppercase tracking-wider hidden lg:table-cell" style={{ width: '11%' }}>
                   الشركة
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-text-secondary uppercase" style={{ width: '15%' }}>
+                <th className="px-2 py-3 text-center text-sm font-semibold text-text-secondary uppercase tracking-wider" style={{ width: '15%' }}>
                   الإجراءات
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-surface-primary divide-y divide-slate-200 dark:divide-border-primary">
+            <tbody className="bg-surface-primary divide-y divide-border-primary">
               {isLoadingProducts ? (
                 <tr>
                   <td colSpan={9} className="px-3 sm:px-6 py-8 sm:py-12 text-center text-text-secondary">

@@ -81,34 +81,15 @@ const CustomerAccountsPage = () => {
     }
   }, [account]);
 
-  // ترتيب المعاملات وإعادة حساب الأرصدة
+  // ترتيب المعاملات تنازلياً (الأحدث أولاً)
   const sortedEntries = React.useMemo(() => {
     if (!account?.entries) return [];
-    
-    // 1. ترتيب تصاعدي (من الأقدم للأحدث) لحساب الأرصدة بشكل صحيح
-    const sortedAsc = [...account.entries].sort((a, b) => {
+    return [...account.entries].sort((a, b) => {
       const dateA = new Date(a.transactionDate).getTime();
       const dateB = new Date(b.transactionDate).getTime();
-      if (dateA !== dateB) return dateA - dateB;
-      return a.id - b.id;
+      if (dateB !== dateA) return dateB - dateA;
+      return b.id - a.id; // ترتيب المرجع الأكبر أولاً في حال تساوي التاريخ
     });
-    
-    // 2. إعادة حساب الأرصدة التراكمية من الأقدم للأحدث
-    let runningBalance = 0;
-    const entriesWithCorrectBalance = sortedAsc.map(entry => {
-      if (entry.transactionType === 'DEBIT') {
-        runningBalance += Number(entry.amount);
-      } else {
-        runningBalance -= Number(entry.amount);
-      }
-      return {
-        ...entry,
-        balance: runningBalance
-      };
-    });
-    
-    // 3. عكس الترتيب للعرض (الأحدث أولاً)
-    return entriesWithCorrectBalance.reverse();
   }, [account?.entries]);
 
   // تصفية العملاء بناءً على البحث

@@ -3,14 +3,14 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 /**
- * سكريبت لإصلاح قيود إيصالات دفع المردودات في حسابات العملاء
+ * سكريبت لإضافة القيود المفقودة لإيصالات دفع المردودات في حسابات العملاء
  * 
- * المشكلة: إيصالات المردودات المدفوعة كانت تُسجل كـ DEBIT بدلاً من CREDIT
- * الحل: حذف القيود الخاطئة وإعادة إنشائها بشكل صحيح
+ * المشكلة: إيصالات المردودات المدفوعة لم يتم تسجيل قيود دفعها في CustomerAccount
+ * الحل: إضافة القيود المفقودة بنوع CREDIT
  */
 
-async function fixReturnPaymentReceipts() {
-  console.log('🔧 بدء إصلاح قيود إيصالات دفع المردودات...\n');
+async function addMissingReturnPaymentEntries() {
+  console.log('🔧 بدء إضافة القيود المفقودة لإيصالات دفع المردودات...\n');
 
   try {
     // 1. جلب جميع إيصالات المردودات المدفوعة المرتبطة بعملاء
@@ -27,17 +27,18 @@ async function fixReturnPaymentReceipts() {
             name: true
           }
         }
-      }
+      },
+      orderBy: { paidAt: 'desc' }
     });
 
     console.log(`📊 تم العثور على ${paidReturnReceipts.length} إيصال مردود مدفوع\n`);
 
     if (paidReturnReceipts.length === 0) {
-      console.log('✅ لا توجد إيصالات تحتاج إصلاح');
+      console.log('✅ لا توجد إيصالات تحتاج معالجة');
       return;
     }
 
-    let fixedCount = 0;
+    let addedCount = 0;
     let skippedCount = 0;
     let errorCount = 0;
 
@@ -47,38 +48,28 @@ async function fixReturnPaymentReceipts() {
         console.log(`\n📝 معالجة إيصال #${receipt.id} - العميل: ${receipt.customer?.name || 'غير محدد'}`);
         console.log(`   المبلغ: ${receipt.amount} LYD - التاريخ: ${receipt.paidAt?.toLocaleDateString('ar-EG') || 'غير محدد'}`);
 
-        // 3. البحث عن القيود الخاطئة في حساب العميل
-        const wrongEntries = await prisma.customerAccount.findMany({
+        // 3. التحقق من وجود قيد لهذا الإيصال
+        const existingEntry = await prisma.customerAccount.findFirst({
           where: {
             customerId: receipt.customerId!,
-            referenceType: 'PAYMENT',
             referenceId: receipt.id,
-            transactionType: 'DEBIT' // القيود الخاطئة
+            OR: [
+              { referenceType: 'PAYMENT' },
+              { referenceType: 'RETURN' }
+            ]
           }
         });
 
-        if (wrongEntries.length === 0) {
-          console.log(`   ⏭️  لا توجد قيود خاطئة - تم تخطي الإيصال`);
+        if (existingEntry) {
+          console.log(`   ⏭️  القيد موجود بالفعل - تم تخطي الإيصال`);
           skippedCount++;
           continue;
         }
 
-        console.log(`   🔍 تم العثور على ${wrongEntries.length} قيد خاطئ`);
+        console.log(`   🔍 لا يوجد قيد - سيتم إضافته`);
 
-        // 4. حذف القيود الخاطئة وإعادة إنشائها بشكل صحيح
+        // 4. إضافة القيد المفقود
         await prisma.$transaction(async (tx) => {
-          // حذف القيود الخاطئة
-          const deletedCount = await tx.customerAccount.deleteMany({
-            where: {
-              customerId: receipt.customerId!,
-              referenceType: 'PAYMENT',
-              referenceId: receipt.id,
-              transactionType: 'DEBIT'
-            }
-          });
-
-          console.log(`   🗑️  تم حذف ${deletedCount.count} قيد خاطئ`);
-
           // جلب آخر رصيد للعميل
           const lastEntry = await tx.customerAccount.findFirst({
             where: { customerId: receipt.customerId! },
@@ -86,26 +77,28 @@ async function fixReturnPaymentReceipts() {
           });
 
           const previousBalance = lastEntry ? Number(lastEntry.balance) : 0;
-          const newBalance = previousBalance - Number(receipt.amount); // CREDIT ينقص الرصيد
+          
+          // CREDIT ينقص الرصيد (الشركة دفعت للعميل)
+          const newBalance = previousBalance - Number(receipt.amount);
 
-          // إنشاء القيد الصحيح
+          // إنشاء القيد
           await tx.customerAccount.create({
             data: {
               customerId: receipt.customerId!,
-              transactionType: 'CREDIT', // ✅ الصحيح
+              transactionType: 'CREDIT',
               amount: receipt.amount,
               balance: newBalance,
-              referenceType: 'RETURN', // ✅ أوضح من PAYMENT
+              referenceType: 'RETURN',
               referenceId: receipt.id,
               description: `صرف مردود مبيعات - إيصال رقم ${receipt.id}`,
               transactionDate: receipt.paidAt || receipt.createdAt
             }
           });
 
-          console.log(`   ✅ تم إنشاء القيد الصحيح (CREDIT) - الرصيد الجديد: ${newBalance}`);
+          console.log(`   ✅ تم إضافة القيد (CREDIT) - الرصيد الجديد: ${newBalance}`);
         });
 
-        fixedCount++;
+        addedCount++;
 
       } catch (error) {
         console.error(`   ❌ خطأ في معالجة الإيصال #${receipt.id}:`, error);
@@ -115,16 +108,16 @@ async function fixReturnPaymentReceipts() {
 
     // 5. ملخص النتائج
     console.log('\n' + '='.repeat(60));
-    console.log('📊 ملخص الإصلاح:');
+    console.log('📊 ملخص الإضافة:');
     console.log('='.repeat(60));
-    console.log(`✅ تم إصلاح: ${fixedCount} إيصال`);
-    console.log(`⏭️  تم تخطي: ${skippedCount} إيصال (لا يحتاج إصلاح)`);
+    console.log(`✅ تم إضافة: ${addedCount} قيد`);
+    console.log(`⏭️  تم تخطي: ${skippedCount} إيصال (القيد موجود)`);
     console.log(`❌ فشل: ${errorCount} إيصال`);
     console.log('='.repeat(60));
 
-    if (fixedCount > 0) {
-      console.log('\n✨ تم إصلاح قيود إيصالات المردودات بنجاح!');
-      console.log('💡 الآن يجب أن تظهر الإيصالات في كشف حسابات العملاء');
+    if (addedCount > 0) {
+      console.log('\n✨ تم إضافة القيود المفقودة بنجاح!');
+      console.log('💡 الآن يجب أن تظهر إيصالات المردودات المدفوعة في كشف حسابات العملاء');
     }
 
   } catch (error) {
@@ -136,7 +129,7 @@ async function fixReturnPaymentReceipts() {
 }
 
 // تشغيل السكريبت
-fixReturnPaymentReceipts()
+addMissingReturnPaymentEntries()
   .then(() => {
     console.log('\n✅ اكتمل السكريبت بنجاح');
     process.exit(0);

@@ -1364,35 +1364,35 @@ ${itemsText}
         </div>
 
         {/* Sales Table */}
-        <div className="bg-white dark:bg-surface-primary rounded-lg shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden">
+        <div className="bg-white dark:bg-surface-primary rounded-2xl shadow-sm border border-slate-200 dark:border-border-primary overflow-hidden transition-all duration-300">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 dark:divide-border-primary">
+            <table className="min-w-full divide-y divide-slate-100 dark:divide-border-primary">
               <thead className="bg-slate-50 dark:bg-surface-secondary">
                 <tr>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase">
+                  <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 dark:text-text-secondary uppercase tracking-wider">
                     رقم الفاتورة
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase">
+                  <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 dark:text-text-secondary uppercase tracking-wider">
                     العميل / الهاتف
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase">
+                  <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 dark:text-text-secondary uppercase tracking-wider">
                     الإجمالي
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase">
+                  <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 dark:text-text-secondary uppercase tracking-wider">
                     المدفوع
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase">
+                  <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 dark:text-text-secondary uppercase tracking-wider">
                     الباقي
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-text-secondary uppercase">
+                  <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 dark:text-text-secondary uppercase tracking-wider">
                     التاريخ
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-text-secondary uppercase">
+                  <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 dark:text-text-secondary uppercase tracking-wider">
                     الإجراءات
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-surface-primary divide-y divide-slate-200 dark:divide-border-primary">
+              <tbody className="bg-white dark:bg-surface-primary divide-y divide-slate-100 dark:divide-border-primary">
                 {isLoading || isFetching ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-12 text-center text-slate-400 dark:text-text-tertiary">
