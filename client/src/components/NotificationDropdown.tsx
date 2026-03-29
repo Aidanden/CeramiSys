@@ -12,6 +12,7 @@ import {
   type NotificationType
 } from '@/state/notificationsApi';
 import { useAppSelector } from '@/app/redux';
+import { useGetUserScreensQuery } from '@/state/permissionsApi';
 
 // Helper function to get notification icon
 const getNotificationIcon = (type: NotificationType) => {
@@ -82,20 +83,28 @@ const NotificationDropdown: React.FC = () => {
   
   const currentUser = useAppSelector((state) => state.auth.user);
   
+  // جلب الصلاحيات للتحقق من صلاحية الإشعارات
+  const { data: userScreensData } = useGetUserScreensQuery();
+  const hasNotificationPermission = userScreensData?.screens?.some(
+    s => s.permission === 'screen.notifications' || s.permission === 'screen.all'
+  ) || false;
+  
   // API calls with fast polling for real-time updates
   const { data: statsData } = useGetNotificationStatsQuery(undefined, {
-    pollingInterval: 5000, // تحديث كل 5 ثواني
+    pollingInterval: 5000,
     refetchOnFocus: true,
     refetchOnMountOrArgChange: true,
+    skip: !currentUser || !hasNotificationPermission
   });
   const { data: notificationsData, isLoading, refetch } = useGetNotificationsQuery({
     page: 1,
     limit: 20,
     isRead: selectedTab === 'unread' ? false : undefined
   }, {
-    pollingInterval: 5000, // تحديث كل 5 ثواني
+    pollingInterval: 5000,
     refetchOnFocus: true,
     refetchOnMountOrArgChange: true,
+    skip: !currentUser || !hasNotificationPermission
   });
   
   const [markAsRead] = useMarkAsReadMutation();

@@ -63,7 +63,10 @@ export const permissionsApi = createApi({
     getUserScreens: builder.query<UserScreensResponse, void>({
       query: () => "/users/me/screens",
       providesTags: ["UserScreens"],
-      transformResponse: (response: { success: boolean; data: UserScreensResponse }) => response.data,
+      transformResponse: (response: { success: boolean; data: UserScreensResponse }) => {
+        console.log('🔍 getUserScreens API Response:', response);
+        return response.data;
+      },
     }),
     
     getScreensByCategory: builder.query<ScreenByCategoryResponse, string>({

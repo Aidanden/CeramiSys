@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction, createSelector } from "@reduxjs/toolkit";
 import { Company } from "./companyApi";
 
 export interface CompanyState {
@@ -130,7 +130,11 @@ export const selectCurrentFilter = (state: { company: CompanyState }) => state.c
 export const selectSearchTerm = (state: { company: CompanyState }) => state.company.searchTerm;
 export const selectCurrentPage = (state: { company: CompanyState }) => state.company.currentPage;
 export const selectViewMode = (state: { company: CompanyState }) => state.company.viewMode;
-export const selectSortConfig = (state: { company: CompanyState }) => ({
-  sortBy: state.company.sortBy,
-  sortOrder: state.company.sortOrder
-});
+
+// Memoized selector to prevent unnecessary re-renders
+const selectSortBy = (state: { company: CompanyState }) => state.company.sortBy;
+const selectSortOrder = (state: { company: CompanyState }) => state.company.sortOrder;
+export const selectSortConfig = createSelector(
+  [selectSortBy, selectSortOrder],
+  (sortBy, sortOrder) => ({ sortBy, sortOrder })
+);

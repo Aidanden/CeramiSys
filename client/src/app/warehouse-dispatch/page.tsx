@@ -19,6 +19,7 @@ import {
   type Notification,
   type NotificationType
 } from '@/state/notificationsApi';
+import { useGetUserScreensQuery } from '@/state/permissionsApi';
 import { useToast } from '@/components/ui/Toast';
 import { formatArabicNumber } from '@/utils/formatArabicNumbers';
 import { Bell, Trash2, X, Package } from 'lucide-react';
@@ -66,11 +67,18 @@ export default function WarehouseDispatchPage() {
   const user = userData?.data;
   const { success, error: showError } = useToast();
 
+  // جلب الصلاحيات للتحقق من صلاحية الإشعارات
+  const { data: userScreensData } = useGetUserScreensQuery();
+  const hasNotificationPermission = userScreensData?.screens?.some(
+    s => s.permission === 'screen.notifications' || s.permission === 'screen.all'
+  ) || false;
+
   // Notification queries with fast polling for real-time updates
   const { data: notificationStatsData, refetch: refetchNotificationStats } = useGetNotificationStatsQuery(undefined, {
-    pollingInterval: 5000, // تحديث كل 5 ثواني
+    pollingInterval: 5000,
     refetchOnMountOrArgChange: true,
     refetchOnFocus: true,
+    skip: !user || !hasNotificationPermission
   });
   const { data: notificationsData, isLoading: isLoadingNotifications, refetch: refetchNotifications } = useGetNotificationsQuery({
     page: 1,
@@ -78,9 +86,10 @@ export default function WarehouseDispatchPage() {
     type: 'STOCK',
     isRead: notificationTab === 'unread' ? false : undefined
   }, {
-    pollingInterval: 5000, // تحديث كل 5 ثواني
+    pollingInterval: 5000,
     refetchOnMountOrArgChange: true,
     refetchOnFocus: true,
+    skip: !user || !hasNotificationPermission
   });
 
   const [markAsRead] = useMarkAsReadMutation();

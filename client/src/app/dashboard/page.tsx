@@ -90,7 +90,11 @@ const MainStatCard = ({
 // مكون مبيعات الشركات
 // ==========================================
 const CompanySalesCards = () => {
-  const { data: salesByCompanyData, isLoading } = useGetSalesByCompanyQuery();
+  const user = useAppSelector((state) => state.auth.user);
+  const hasPermission = user?.permissions?.includes('screen.sales') || user?.permissions?.includes('screen.all');
+  const { data: salesByCompanyData, isLoading } = useGetSalesByCompanyQuery(undefined, {
+    skip: !user || !hasPermission
+  });
 
   if (isLoading) {
     return (
@@ -190,7 +194,11 @@ const CompanySalesCards = () => {
 // مكون الخزائن (المدفوعات والإيداعات)
 // ==========================================
 const TreasuryCards = () => {
-  const { data: treasuryMonthlyStats, isLoading } = useGetMonthlyTreasuryStatsQuery();
+  const user = useAppSelector((state) => state.auth.user);
+  const hasPermission = user?.permissions?.includes('screen.treasury') || user?.permissions?.includes('screen.all');
+  const { data: treasuryMonthlyStats, isLoading } = useGetMonthlyTreasuryStatsQuery(undefined, {
+    skip: !user || !hasPermission
+  });
 
   if (isLoading) {
     return (
@@ -404,7 +412,11 @@ const OperationCard = ({
 // مكون الأصناف الأكثر مبيعاً
 // ==========================================
 const TopSellingProducts = () => {
-  const { data: topProductsData, isLoading } = useGetTopSellingProductsQuery({ limit: 5 });
+  const user = useAppSelector((state) => state.auth.user);
+  const hasPermission = user?.permissions?.includes('screen.products') || user?.permissions?.includes('screen.all');
+  const { data: topProductsData, isLoading } = useGetTopSellingProductsQuery({ limit: 5 }, {
+    skip: !user || !hasPermission
+  });
 
   if (isLoading) {
     return (
@@ -469,7 +481,11 @@ const TopSellingProducts = () => {
 // مكون الأصناف منخفضة المخزون
 // ==========================================
 const LowStockProducts = () => {
-  const { data: lowStockData, isLoading } = useGetLowStockProductsQuery({ limit: 5 });
+  const user = useAppSelector((state) => state.auth.user);
+  const hasPermission = user?.permissions?.includes('screen.products') || user?.permissions?.includes('screen.all');
+  const { data: lowStockData, isLoading } = useGetLowStockProductsQuery({ limit: 5 }, {
+    skip: !user || !hasPermission
+  });
 
   if (isLoading) {
     return (
@@ -566,9 +582,13 @@ const UsersSalesCard = () => {
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
 
+  const user = useAppSelector((state) => state.auth.user);
+  const hasPermission = user?.permissions?.includes('screen.dashboard') || user?.permissions?.includes('screen.all');
   const { data: usersData, isLoading } = useGetUsersSalesStatsQuery({
     year: selectedYear,
     month: selectedMonth
+  }, {
+    skip: !user || !hasPermission
   });
 
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -694,7 +714,11 @@ const ComprehensiveChart = () => {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
-  const { data: chartData, isLoading } = useGetComprehensiveChartDataQuery({ year: selectedYear });
+  const user = useAppSelector((state) => state.auth.user);
+  const hasPermission = user?.permissions?.includes('screen.dashboard') || user?.permissions?.includes('screen.all');
+  const { data: chartData, isLoading } = useGetComprehensiveChartDataQuery({ year: selectedYear }, {
+    skip: !user || !hasPermission
+  });
 
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
@@ -807,10 +831,23 @@ const ComprehensiveChart = () => {
 // الصفحة الرئيسية للوحة التحكم
 // ==========================================
 export default function Dashboard() {
-  const { data: salesStats, isLoading: salesLoading } = useGetSalesStatsQuery();
-  const { data: purchaseStats, isLoading: purchasesLoading } = useGetPurchaseStatsQuery({});
-  const { data: creditStats, isLoading: creditLoading } = useGetCreditSalesStatsQuery();
-  const { data: productStatsData, isLoading: productsLoading } = useGetProductStatsQuery();
+  const user = useAppSelector((state) => state.auth.user);
+  const hasSalesPermission = user?.permissions?.includes('screen.sales') || user?.permissions?.includes('screen.all');
+  const hasPurchasesPermission = user?.permissions?.includes('screen.purchases') || user?.permissions?.includes('screen.all');
+  const hasProductsPermission = user?.permissions?.includes('screen.products') || user?.permissions?.includes('screen.all');
+  
+  const { data: salesStats, isLoading: salesLoading } = useGetSalesStatsQuery(undefined, {
+    skip: !user || !hasSalesPermission
+  });
+  const { data: purchaseStats, isLoading: purchasesLoading } = useGetPurchaseStatsQuery({}, {
+    skip: !user || !hasPurchasesPermission
+  });
+  const { data: creditStats, isLoading: creditLoading } = useGetCreditSalesStatsQuery(undefined, {
+    skip: !user || !hasSalesPermission
+  });
+  const { data: productStatsData, isLoading: productsLoading } = useGetProductStatsQuery(undefined, {
+    skip: !user || !hasProductsPermission
+  });
 
   // الحصول على التاريخ الحالي بالتنسيق العربي
   const currentDate = new Date().toLocaleDateString('ar-LY', {

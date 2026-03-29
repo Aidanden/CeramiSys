@@ -74,7 +74,7 @@ const NotificationsPage: React.FC = () => {
   const currentUser = useAppSelector((state) => state.auth.user);
   const limit = 20;
 
-  // API calls
+  // API calls - هذه الصفحة محمية بـ PermissionGuard لذلك لا حاجة لـ skip
   const { data: statsData } = useGetNotificationStatsQuery();
   const {
     data: notificationsData,

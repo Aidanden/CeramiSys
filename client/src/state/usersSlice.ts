@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction, createSelector } from "@reduxjs/toolkit";
 import { User } from "./usersApi";
 
 export interface UsersState {
@@ -139,8 +139,13 @@ export const selectCurrentFilter = (state: { users: UsersState }) => state.users
 export const selectSearchTerm = (state: { users: UsersState }) => state.users.searchTerm;
 export const selectCurrentPage = (state: { users: UsersState }) => state.users.currentPage;
 export const selectViewMode = (state: { users: UsersState }) => state.users.viewMode;
-export const selectSortConfig = (state: { users: UsersState }) => ({
-  sortBy: state.users.sortBy,
-  sortOrder: state.users.sortOrder
-});
+
+// Memoized selector to prevent unnecessary re-renders
+const selectSortBy = (state: { users: UsersState }) => state.users.sortBy;
+const selectSortOrder = (state: { users: UsersState }) => state.users.sortOrder;
+export const selectSortConfig = createSelector(
+  [selectSortBy, selectSortOrder],
+  (sortBy, sortOrder) => ({ sortBy, sortOrder })
+);
+
 export const selectShowSystemUsers = (state: { users: UsersState }) => state.users.showSystemUsers;

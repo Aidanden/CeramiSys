@@ -57,11 +57,21 @@ export const getUserScreens = async (req: AuthRequest, res: Response): Promise<v
     // ولكن للتأكيد الإضافي، نستخدم normalizePermissions (مع أن auth.ts يضمن أنها مصفوفة)
     const userPermissions = req.user.permissions || [];
 
-    console.log('User permissions (normalized):', userPermissions); // للتشخيص
-
-
+    console.log('🔍 [getUserScreens] User Info:', {
+      userId: req.user.id,
+      username: req.user.username,
+      roleId: req.user.roleId,
+      roleName: req.user.roleName,
+      permissions: userPermissions,
+      permissionsCount: userPermissions.length
+    });
 
     const authorizedScreens = getAuthorizedScreens(userPermissions);
+    
+    console.log('🔍 [getUserScreens] Authorized Screens:', {
+      count: authorizedScreens.length,
+      screens: authorizedScreens.map(s => ({ route: s.route, permission: s.permission }))
+    });
 
     // تجميع الشاشات المصرح بها حسب الفئة
     const screensByCategory = authorizedScreens.reduce((acc, screen) => {

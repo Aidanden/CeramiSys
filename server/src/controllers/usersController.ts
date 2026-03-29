@@ -98,6 +98,17 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
 
     const userPermissions = normalizePermissions(permissions);
 
+    console.log('🔧 [CREATE USER] البيانات المستلمة:', {
+      username,
+      roleId,
+      permissionsReceived: permissions,
+      permissionsType: typeof permissions,
+      permissionsIsArray: Array.isArray(permissions),
+      permissionsIsUndefined: permissions === undefined,
+      normalizedPermissions: userPermissions,
+      normalizedLength: userPermissions.length
+    });
+
     if (!username || !fullName || !password) {
       res.status(400).json({
         success: false,
@@ -210,9 +221,25 @@ export const createUser = async (req: AuthRequest, res: Response): Promise<void>
       }
     });
 
+    console.log('✅ [CREATE USER] المستخدم تم إنشاؤه:', {
+      userId: newUser.UserID,
+      username: newUser.UserName,
+      roleId: newUser.RoleID,
+      permissionsSaved: (newUser as any).Permissions,
+      permissionsSavedType: typeof (newUser as any).Permissions,
+      permissionsSavedIsNull: (newUser as any).Permissions === null
+    });
+
     const effectivePermissions = userPermissions.length > 0
       ? userPermissions
       : normalizePermissions(role?.Permissions);
+
+    console.log('📤 [CREATE USER] الصلاحيات المُرسلة للـ Frontend:', {
+      effectivePermissions,
+      effectivePermissionsLength: effectivePermissions.length,
+      rolePermissions: role?.Permissions,
+      userCustomPermissions: userPermissions
+    });
 
     res.status(201).json({
       success: true,
@@ -247,7 +274,19 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
     const { id } = req.params;
     const { username, fullName, email, phone, roleId, permissions, isActive } = req.body;
 
+    console.log('🔍 [updateUser] Request:', {
+      id,
+      body: req.body,
+      permissions: permissions,
+      permissionsType: typeof permissions
+    });
+
     const userPermissions = permissions !== undefined ? normalizePermissions(permissions) : undefined;
+    
+    console.log('🔍 [updateUser] Normalized Permissions:', {
+      userPermissions,
+      length: userPermissions?.length
+    });
 
     if (!id) {
       res.status(400).json({
@@ -315,18 +354,27 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
       }
     }
 
+    // تحضير بيانات التحديث
+    const updateData: any = {
+      ...(username && { UserName: username }),
+      ...(fullName && { FullName: fullName }),
+      ...(email !== undefined && { Email: email }),
+      ...(phone !== undefined && { Phone: phone }),
+      ...(roleId && { RoleID: roleId }),
+      ...(isActive !== undefined && { IsActive: isActive }),
+    };
+
+    // معالجة الصلاحيات بشكل آمن
+    if (userPermissions !== undefined) {
+      updateData.Permissions = userPermissions.length > 0 ? userPermissions : Prisma.DbNull;
+    }
+
+    console.log('🔍 [updateUser] Update Data:', updateData);
+
     // تحديث المستخدم
     const updatedUser = await prisma.users.update({
       where: { UserID: id },
-      data: {
-        ...(username && { UserName: username }),
-        ...(fullName && { FullName: fullName }),
-        ...(email !== undefined && { Email: email }),
-        ...(phone !== undefined && { Phone: phone }),
-        ...(roleId && { RoleID: roleId }),
-        ...(isActive !== undefined && { IsActive: isActive }),
-        ...(userPermissions !== undefined && { Permissions: userPermissions.length > 0 ? userPermissions : Prisma.DbNull })
-      },
+      data: updateData,
       include: {
         Role: true
       }
@@ -354,11 +402,17 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
       }
     });
 
-  } catch (error) {
-    console.error('خطأ في تحديث المستخدم:', error);
+  } catch (error: any) {
+    console.error('❌ [updateUser] Error:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      meta: error.meta
+    });
     res.status(500).json({
       success: false,
-      message: 'خطأ في الخادم'
+      message: 'خطأ في الخادم',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

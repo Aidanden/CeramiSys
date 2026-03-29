@@ -128,6 +128,19 @@ export const authenticateToken = async (
     const userPermissionsRaw = (user as any).Permissions;
     const rolePermissionsRaw = user.Role?.Permissions;
 
+    console.log('🔍 [AUTH] تتبع الصلاحيات:', {
+      userId: user.UserID,
+      username: user.UserName,
+      roleId: user.RoleID,
+      roleName: user.Role?.RoleName,
+      userPermissionsRaw: userPermissionsRaw,
+      userPermissionsType: typeof userPermissionsRaw,
+      userPermissionsIsNull: userPermissionsRaw === null,
+      userPermissionsIsUndefined: userPermissionsRaw === undefined,
+      rolePermissionsRaw: rolePermissionsRaw,
+      rolePermissionsType: typeof rolePermissionsRaw
+    });
+
     // إذا كان لدى المستخدم permissions (حتى لو فارغة [])، نستخدمها
     // فقط إذا كانت null أو undefined نستخدم permissions الدور
     // هذا يسمح للمستخدم بأن يكون لديه "لا صلاحيات" بشكل صريح
@@ -138,6 +151,13 @@ export const authenticateToken = async (
     const rolePermissions = normalizePermissions(rolePermissionsRaw);
 
     permissions = userPermissions !== null ? userPermissions : rolePermissions;
+
+    console.log('✅ [AUTH] الصلاحيات النهائية:', {
+      userPermissions: userPermissions,
+      rolePermissions: rolePermissions,
+      finalPermissions: permissions,
+      permissionsCount: permissions.length
+    });
 
     // إضافة معلومات المستخدم إلى الطلب
     req.user = {

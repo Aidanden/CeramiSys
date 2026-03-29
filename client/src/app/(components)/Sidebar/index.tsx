@@ -113,6 +113,15 @@ const Sidebar = () => {
     setCostCalculationMethod((savedMethod as 'manual' | 'invoice') || 'manual');
   }, []);
 
+  // جلب الشاشات المصرح بها للمستخدم أولاً
+  const { data: userScreensData, isLoading: isLoadingScreens, error: screensError } = useGetUserScreensQuery(undefined, {
+    skip: !user // تخطي الجلب إذا لم يكن هناك مستخدم مسجل
+  });
+  const authorizedScreens = React.useMemo(
+    () => userScreensData?.screens || [],
+    [userScreensData?.screens]
+  );
+
   // جلب عدد الفواتير المعلقة (DRAFT)
   const { data: pendingSalesData } = useGetSalesQuery({
     status: 'DRAFT',
@@ -123,7 +132,7 @@ const Sidebar = () => {
     // تحديث البيانات كل 10 ثواني للاستجابة السريعة
     pollingInterval: 10000,
     refetchOnFocus: true,
-    skip: !user
+    skip: !user || !authorizedScreens.some(s => s.permission === 'screen.sales' || s.permission === 'screen.all')
   });
   const pendingCount = pendingSalesData?.data?.pagination?.total || 0;
 
@@ -134,7 +143,7 @@ const Sidebar = () => {
   }, {
     pollingInterval: 10000,
     refetchOnFocus: true,
-    skip: !user
+    skip: !user || !authorizedScreens.some(s => s.permission === 'screen.warehouse_dispatch' || s.permission === 'screen.all')
   });
   const pendingDispatchCount = pendingDispatchData?.data?.pagination?.total || 0;
 
@@ -145,7 +154,7 @@ const Sidebar = () => {
   }, {
     pollingInterval: 10000,
     refetchOnFocus: true,
-    skip: !user
+    skip: !user || !authorizedScreens.some(s => s.permission === 'screen.warehouse_returns' || s.permission === 'screen.all')
   });
   const pendingReturnCount = pendingReturnData?.data?.pagination?.total || 0;
 
@@ -159,7 +168,7 @@ const Sidebar = () => {
   }, {
     pollingInterval: 2000,
     refetchOnFocus: true,
-    skip: !user
+    skip: !user || !authorizedScreens.some(s => s.permission === 'screen.payment_receipts' || s.permission === 'screen.all')
   });
   const pendingPaymentReceiptsCount = pendingPaymentReceiptsData?.pagination?.total || 0;
 
@@ -167,29 +176,26 @@ const Sidebar = () => {
   const { data: externalStoreInvoicesStats } = useGetInvoiceStatsQuery(undefined, {
     pollingInterval: 10000,
     refetchOnFocus: true,
-    skip: !user
+    skip: !user || !authorizedScreens.some(s => s.permission === 'screen.external_store_invoices' || s.permission === 'screen.all')
   });
   const pendingExternalInvoicesCount = externalStoreInvoicesStats?.pendingInvoices || 0;
 
-  // جلب الشاشات المصرح بها للمستخدم
-  const { data: userScreensData, isLoading: isLoadingScreens, error: screensError } = useGetUserScreensQuery();
-  const authorizedScreens = React.useMemo(
-    () => userScreensData?.screens || [],
-    [userScreensData?.screens]
-  );
-
-  // Debug logging - معطل في الإنتاج لتحسين الأداء
-  // React.useEffect(() => {
-  //   if (process.env.NODE_ENV === 'development') {
-  //     console.log('🔍 Sidebar Debug:', { isLoading: isLoadingScreens, screensCount: authorizedScreens.length });
-  //   }
-  // }, [isLoadingScreens, authorizedScreens]);
+  // Debug logging - تفعيل للتشخيص
+  React.useEffect(() => {
+    console.log('🔍 Sidebar Debug:', {
+      user: user ? { id: user.id, username: user.username, permissions: user.permissions } : null,
+      isLoadingScreens,
+      screensError: screensError ? 'Error exists' : null,
+      authorizedScreensCount: authorizedScreens.length,
+      authorizedScreens: authorizedScreens.map(s => ({ route: s.route, permission: s.permission })),
+      userScreensData: userScreensData
+    });
+  }, [user, isLoadingScreens, screensError, authorizedScreens, userScreensData]);
 
   // التحقق من صلاحية الوصول لشاشة معينة
   const canAccessScreen = (route: string) => {
-    // إذا كان هناك خطأ، لا نعرض الشاشة (لحماية النظام)
-    if (screensError) {
-      console.warn('خطأ في جلب الصلاحيات:', screensError);
+    // إذا لا يوجد مستخدم، لا نعرض الشاشة
+    if (!user) {
       return false;
     }
 
@@ -198,7 +204,18 @@ const Sidebar = () => {
       return false; // لا نعرض الشاشة حتى يتم تحميل الصلاحيات
     }
 
-    // التحقق من الصلاحية
+    // إذا كان هناك خطأ في جلب الصلاحيات، نستخدم صلاحيات المستخدم من Redux
+    if (screensError && user.permissions) {
+      // استخدام الصلاحيات من user object مباشرة كـ fallback
+      const hasAllAccess = user.permissions.includes('screen.all');
+      if (hasAllAccess) return true;
+      
+      // التحقق من الصلاحية المحددة للشاشة
+      const screenPermission = `screen.${route.replace('/', '')}`;
+      return user.permissions.includes(screenPermission);
+    }
+
+    // التحقق من الصلاحية من authorizedScreens
     return hasScreenAccess(authorizedScreens, route);
   };
 
